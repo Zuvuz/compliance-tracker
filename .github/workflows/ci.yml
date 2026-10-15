@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Hent koden
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Installer .NET
         uses: actions/setup-dotnet@v5
