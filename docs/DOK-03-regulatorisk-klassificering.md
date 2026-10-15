@@ -26,7 +26,7 @@ next_review: 2027-01-15
 2. **Forbudt praksis (art. 5)?** *Nej. Ingen manipulation, social scoring eller biometri.*
 3. **Højrisiko (art. 6, bilag I og III)?** *Nej. Bilag III dækker fx biometri, kritisk infrastruktur, uddannelse, beskæftigelse og adgang til væsentlige ydelser. Et compliance-værktøj falder uden for alle områder, og det er ikke en sikkerhedskomponent i et reguleret produkt.*
 4. **Transparens (art. 50)?** *Sandsynligvis ikke påkrævet, da systemet ikke er en chatbot. Hvis det genererer fri tekst, kan art. 50(2) blive relevant. Vi mærker AI-forslag tydeligt uanset.*
-5. **Rolle:** *NordKontrol er udbyder af AI-systemet, fordi det sælges under eget navn. Bruges en ekstern sprogmodel, er vi samtidig "downstream" i forhold til modeludbyderen.*
+5. **Rolle:** *North Compliance Tracker er udbyder af AI-systemet, fordi det sælges under eget navn. Bruges en ekstern sprogmodel, er vi samtidig "downstream" i forhold til modeludbyderen.*
 
 *Pligter der gælder alligevel:* AI-kompetencer hos personalet (art. 4, gældende siden februar 2025) og frivillig brug af adfærdskodekser (art. 95). Menneskelig godkendelse af forslag indbygges som god praksis, selvom art. 14 kun kræver det for højrisiko.
 
