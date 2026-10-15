@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # Holder NuGet-pakkerne opdaterede
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Holder de actions, CI bruger, opdaterede
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

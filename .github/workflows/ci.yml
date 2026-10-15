@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Mindste rettigheder: workflowet må kun læse koden
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Hent koden
+        uses: actions/checkout@v5
+
+      - name: Installer .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Gendan pakker
+        run: dotnet restore
+
+      - name: Byg
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Kør tests
+        run: dotnet test --no-build --configuration Release --verbosity normal
