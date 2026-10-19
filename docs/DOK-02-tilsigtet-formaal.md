@@ -57,7 +57,18 @@ Produktet sælges kommercielt som et Docker-image, kunden selv driver. Det valg 
 - Systemet eksponeres direkte på internettet uden reverse proxy eller TLS
 - Følsomme dokumenter uploades som evidens uden adgangsstyring
 
-**Spørgsmål:** Hvilken AI-model bruges (ekstern API eller lokal model)? Det påvirker både dataflow, leverandørstyring og AI Act-rolle.
+**Valg:** Lokal model. Ingen data sendes til eksterne AI-udbydere.
+
+**Model i fase 1:** En lokal embedding-model (fx multilingual-e5 eller bge-m3) kørt via ONNX Runtime i .NET, eventuelt suppleret med en lokal reranker. Der bruges ikke en generativ sprogmodel i første fase; `aiBegrundelse` bygges ud fra score og de tekstdele, der matchede.
+
+**Dataflow:** Krav, kontroller og arbejdselementer (inkl. acceptkriterier) behandles udelukkende på organisationens egen infrastruktur. Fortrolige user stories forlader aldrig systemet.
+
+**Leverandørstyring:** Der er ingen databehandler for AI-delen og dermed ingen databehandleraftale eller overførsel uden for EU. Til gengæld behandles modellen som en tredjepartskomponent i forsyningskæden: version og kilde fastlåses, checksum verificeres, vægte hentes i `safetensors`-format, og modellen registreres i SBOM'en.
+
+**AI Act-rolle:** Ved at integrere en open source-model i eget system er projektet *udbyder* af AI-systemet, mens organisationer, der bruger trackeren, er *idriftsættere*. Mapping af compliance-krav falder ikke under højrisiko-kategorierne i bilag III og vurderes som begrænset risiko. Forslag markeres tydeligt som AI-genererede, og et menneske godkender altid (se B13).
+
+**Fravalgt:** Ekstern API (fx Claude eller GPT). Bedre sprogforståelse, men kræver databehandleraftale, sender fortrolige data ud af huset og gør trackeren afhængig af en ekstern leverandør.
+
 
 ---
 

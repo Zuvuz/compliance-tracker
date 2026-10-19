@@ -31,6 +31,7 @@ classDiagram
     -projects: List~Project~
     -controls: List~Control~
     -frameworks: List~OrganizationFramework~
+    -importedCatalogs: List~FrameworkVersion~
   }
   class User {
     -id: Guid
@@ -66,13 +67,25 @@ classDiagram
   class Framework {
     -id: Guid
     -name: string
-    -version: string
     -scope: FrameworkScope
+    -versions: List~FrameworkVersion~
+  }
+  class FrameworkVersion {
+    -id: Guid
+    -frameworkId: Guid
+    -label: string
+    -source: CatalogSource
+    -sourceReference: string
+    -ownerOrganizationId: Guid?
+    -status: CatalogStatus
+    -importedAt: DateTime?
+    -importedById: Guid?
+    -activatedAt: DateTime?
     -requirements: List~Requirement~
   }
   class Requirement {
     -id: Guid
-    -frameworkId: Guid
+    -frameworkVersionId: Guid
     -code: string
     -category: string
     -title: string
@@ -80,12 +93,12 @@ classDiagram
   }
   class OrganizationFramework {
     -organizationId: Guid
-    -frameworkId: Guid
+    -frameworkVersionId: Guid
     -selectedAt: DateTime
   }
   class ProjectFramework {
     -projectId: Guid
-    -frameworkId: Guid
+    -frameworkVersionId: Guid
     -selectedAt: DateTime
   }
 
@@ -164,6 +177,18 @@ classDiagram
     -decidedAt: DateTime?
   }
 
+  %% ================= Log =================
+  class ActivityLogEntry {
+    -id: Guid
+    -organizationId: Guid
+    -userId: Guid
+    -action: ActivityAction
+    -entityType: string
+    -entityId: Guid
+    -details: string
+    -occurredAt: DateTime
+  }
+
   %% ================= Enums =================
   class Sector {
     <<enumeration>>
@@ -221,6 +246,25 @@ classDiagram
     <<enumeration>>
     Organization
     Project
+  }
+  class CatalogSource {
+    <<enumeration>>
+    BuiltIn
+    Imported
+  }
+  class CatalogStatus {
+    <<enumeration>>
+    Draft
+    Active
+    Retired
+  }
+  class ActivityAction {
+    <<enumeration>>
+    OrganizationCreated
+    CatalogImported
+    CatalogActivated
+    FrameworkAdded
+    FrameworkRemoved
   }
   class MappingSource {
     <<enumeration>>
@@ -287,13 +331,15 @@ classDiagram
   Organization "1" --> "*" Project : projects
   Organization "1" --> "*" Control : controls
   Organization "1" --> "*" OrganizationFramework : frameworks
-  OrganizationFramework "*" --> "1" Framework
+  Organization "0..1" --> "*" FrameworkVersion : importedCatalogs
+  OrganizationFramework "*" --> "1" FrameworkVersion
   Project "1" --> "*" ProjectFramework : frameworks
-  ProjectFramework "*" --> "1" Framework
+  ProjectFramework "*" --> "1" FrameworkVersion
   Project "1" --> "*" Release : releases
   Project "1" --> "*" WorkItem : workItems
   WorkItem "*" --> "0..1" Release
-  Framework "1" --> "*" Requirement : requirements
+  Framework "1" --> "*" FrameworkVersion : versions
+  FrameworkVersion "1" --> "*" Requirement : requirements
   Control "1" --> "*" RequirementControl : requirements
   RequirementControl "*" --> "1" Requirement
   Control "*" --> "1" User : owner
@@ -307,15 +353,22 @@ classDiagram
   MappingSuggestion "*" --> "1" Requirement
   MappingSuggestion "*" --> "0..1" WorkItem
   MappingSuggestion "*" --> "0..1" Control
+  ActivityLogEntry "*" --> "1" Organization
+  ActivityLogEntry "*" --> "1" User
 
   note for MappingSuggestion "{xor} workItemId eller controlId"
   note for RequirementAssessment "{xor} releaseId eller organizationId"
+  note for FrameworkVersion "BuiltIn: ownerOrganizationId = null / Imported: ownerOrganizationId påkrævet"
 ```
 
 ## Designvalg
 
 - **Koblingsklasser med data.** `RequirementControl` og `RequirementWorkItem` registrerer via `MappingSource`, om koblingen er lavet manuelt eller via et godkendt AI-forslag.
 - **Vurderinger ændres ikke.** En ny `RequirementAssessment` oprettes i stedet, og den seneste er gældende. Det giver historik til en auditor.
+- **Frameworkversioner låses ved aktivering.** Når `status` er `Active`, kan `requirements` ikke ændres. Så kan en mapping nøjes med at pege på et `Requirement`, fordi teksten bag aldrig ændrer sig. En rettelse er en ny `FrameworkVersion`.
+- **`OrganizationFramework` og `ProjectFramework` peger på en version**, ikke et framework. Klassenavnene er beholdt, fordi de stadig beskriver "hvilket framework er valgt"; versionen er detaljen.
+- **`Framework` indeholder ingen kravtekst.** Den er kun navn og niveau, så den kan seedes som fælles referencedata uden ophavsretlige problemer.
+- **`ActivityLogEntry` er append-only.** Ingen opdatering eller sletning, heller ikke for Admin.
 - **Enums gemmes som tekst** i databasen (`.HasConversion<string>()`), så nye værdier ikke forskyder eksisterende data.
 - **`SourceSystem` indeholder kun det, der virker.** Azure DevOps, Jira og Internal tilføjes, når adapterne findes.
 - **Integration** (`IWorkItemSource` og adaptere) tilføjes, når den første story om GitHub-integration tages ind.
@@ -329,11 +382,14 @@ classDiagram
 | Projekt | Project |
 | Release | Release |
 | Framework | Framework |
+| Frameworkversion | FrameworkVersion |
 | Krav | Requirement |
 | Kontrol | Control |
 | Kravvurdering | RequirementAssessment |
 | Evidens | Evidence |
 | Arbejdselement | WorkItem |
 | Mappingforslag | MappingSuggestion |
+| Logpost | ActivityLogEntry |
 | Tilsigtet formål | IntendedPurpose |
 | Kildesystem | SourceSystem |
+| Indbygget / importeret | BuiltIn / Imported |
