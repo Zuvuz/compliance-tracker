@@ -1,4 +1,4 @@
-name: User Story
+﻿name: User Story
 description: BDD-lite user story til compliance-trackeren
 title: "[US-000] "
 labels: ["user-story", "status:draft"]
@@ -6,8 +6,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Udfyld storyen fra toppen. Hver regel skal have mindst ét eksempel, og hvert eksempel bliver til et Gherkin-scenarie.
-        **Kopiér aldrig tekst fra ISO-standarder** – skriv kun krav-ID og din egen korte beskrivelse.
+        Udfyld storyen fra toppen. Hver regel skal have mindst Ã©t eksempel, og hvert eksempel bliver til et Gherkin-scenarie.
+        **KopiÃ©r aldrig tekst fra ISO-standarder** â€“ skriv kun krav-ID og din egen korte beskrivelse.
 
   - type: dropdown
     id: role
@@ -35,14 +35,14 @@ body:
     id: frameworks
     attributes:
       label: Frameworks
-      description: Hvilke frameworks hjælper storyen trackeren selv med at opfylde? Sæt også de matchende framework:* labels.
+      description: Hvilke frameworks hjÃ¦lper storyen trackeren selv med at opfylde? SÃ¦t ogsÃ¥ de matchende framework:* labels.
       multiple: true
       options:
         - ISO/IEC 27001:2022
-        - CRA – Regulation (EU) 2024/2847
-        - AI Act – Regulation (EU) 2024/1689
+        - CRA â€“ Regulation (EU) 2024/2847
+        - AI Act â€“ Regulation (EU) 2024/1689
         - OWASP ASVS
-        - None
+        - Not applicable
     validations:
       required: true
 
@@ -50,7 +50,7 @@ body:
     id: compliance
     attributes:
       label: Compliance context
-      description: Ét krav pr. række. Kun ID og egne ord.
+      description: Ã‰t krav pr. rÃ¦kke. Kun ID og egne ord.
       value: |
         | Framework | Requirement ID | Short description (own words) | How this story contributes |
         |-----------|----------------|-------------------------------|----------------------------|
@@ -71,14 +71,14 @@ body:
     id: evidence
     attributes:
       label: Evidence produced
-      description: Hvad kan en auditor se, når storyen er done? (test, logpost, config, dokument)
+      description: Hvad kan en auditor se, nÃ¥r storyen er done? (test, logpost, config, dokument)
       value: "- "
 
   - type: textarea
     id: domain-impact
     attributes:
       label: Domain impact
-      description: Hvilke klasser i domænemodellen/klassediagrammet berøres? Nye klasser, attributter eller regler?
+      description: Hvilke klasser i domÃ¦nemodellen/klassediagrammet berÃ¸res? Nye klasser, attributter eller regler?
       value: "- "
 
   - type: textarea
@@ -96,7 +96,7 @@ body:
     id: examples
     attributes:
       label: Examples
-      description: Mindst ét konkret eksempel pr. regel.
+      description: Mindst Ã©t konkret eksempel pr. regel.
       value: |
         - R1:
         - R2:
@@ -107,7 +107,7 @@ body:
     id: gherkin
     attributes:
       label: Gherkin
-      description: "Tags: @US-<nr> + ét tag pr. krav, fx @iso27001-A.5.15"
+      description: "Tags: @US-<nr> + Ã©t tag pr. krav, fx @iso27001-A.5.15"
       render: gherkin
       value: |
         Feature:
@@ -133,7 +133,7 @@ body:
     id: dod
     attributes:
       label: Definition of Done
-      description: Afkryds i issuet, efterhånden som punkterne er opfyldt.
+      description: Afkryds i issuet, efterhÃ¥nden som punkterne er opfyldt.
       options:
         - label: Scenarios automated (Reqnroll) and green in `build-and-test`
         - label: Compliance context filled in and `framework:*` labels set
