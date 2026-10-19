@@ -1,0 +1,53 @@
+name: User story
+description: En ny funktion beskrevet fra brugerens perspektiv
+title: "[Story] "
+labels: ["story"]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: User story
+      description: Hvem vil hvad, og hvorfor?
+      placeholder: "Som <rolle> vil jeg <handling>, så <værdi>."
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptkriterier
+      description: Konkrete, testbare betingelser. Hvert punkt bør kunne blive til en test.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: classes
+    attributes:
+      label: Berørte klasser
+      description: Hvilke klasser fra klassediagrammet rører storyen?
+      placeholder: "Organization, Framework, ..."
+
+  - type: textarea
+    id: rules
+    attributes:
+      label: Regler fra domænemodellen
+      description: Hvilke regler skal håndhæves og testes?
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Noter og afhængigheder
+      description: Forudsætninger, andre stories, åbne spørgsmål.
+
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: Definition of Done
+      options:
+        - label: Acceptkriterierne er dækket af tests, og alle tests er grønne
+        - label: Klassediagrammet er opdateret, hvis designet er ændret
+        - label: Pull request er oprettet, og build-and-test er grøn
+        - label: Dokumentation er opdateret, hvis det er relevant
