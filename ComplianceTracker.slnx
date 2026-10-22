@@ -4,5 +4,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/ComplianceTracker.Domain.Tests/ComplianceTracker.Domain.Tests.csproj" />
+    <Project Path="tests/ComplianceTracker.Specs/ComplianceTracker.Specs.csproj" />
   </Folder>
 </Solution>
