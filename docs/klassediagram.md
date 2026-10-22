@@ -13,7 +13,9 @@ Koden er på engelsk; se ordlisten nederst.
 | `-` | privat | `private` felt (eller property med `private set`) |
 | `+` | offentlig | `public` |
 | `Type?` | kan være tom | nullable type |
+| `~` | intern | `internal` (kun synlig i samme projekt) |
 | `$` | statisk | `static` metode |
+| `«create»` | constructor | constructor |
 | `-->` | har et felt af typen | felt eller property |
 | `..>` | bruger typen | parameter, returtype eller lokal variabel |
 
@@ -35,6 +37,7 @@ classDiagram
     -controls: List~Control~
     -frameworks: List~OrganizationFramework~
     -importedCatalogs: List~FrameworkVersion~
+    -«create» Organization()
     +Create(name: string, cvr: string, sector: Sector?, size: OrganizationSize, creatorName: string)$ Organization
   }
   class User {
@@ -43,9 +46,10 @@ classDiagram
     -name: string
     -email: string
     -role: UserRole
+    ~«create» User(name: string, role: UserRole)
   }
 
-  %% ================= Services og repositories =================
+  %% ================= Application: services og repositories =================
   class OrganizationService {
     -organizations: IOrganizationRepository
     -activityLog: IActivityLogRepository
@@ -207,6 +211,7 @@ classDiagram
     -entityId: Guid
     -details: string
     -occurredAt: DateTime
+    +«create» ActivityLogEntry(organizationId: Guid, userId: Guid, action: ActivityAction, occurredAt: DateTime)
   }
 
   %% ================= Enums =================
@@ -401,6 +406,8 @@ classDiagram
 - **Validering deles i to.** Regler for de enkelte felter (navn, CVR-format, sektor) ligger som guard clauses i `Organization.Create`. Regler, der kræver kendskab til andre organisationer (unikt CVR), ligger i `OrganizationService`. (US-001)
 - **Repositories er interfaces i domænet.** Domænet beskriver kun, hvad der skal kunne gemmes og slås op. Implementeringen ligger udenfor: in-memory i testene nu, en database senere. (US-001)
 - **`IActivityLogRepository` har kun `Append`.** Der findes ingen metode til at ændre eller slette logposter, så append-only håndhæves af selve interfacet. (US-001)
+- **Clean Architecture.** Entiteter, enums og domæneregler ligger i `ComplianceTracker.Domain`. Services og repository-interfaces ligger i `ComplianceTracker.Application`. Domain kender ikke Application; afhængighederne peger kun indad.
+- **Entiteterne er indkapslede.** Properties har `private set`, og lister udstilles som `IReadOnlyList`. `Organization` har en privat constructor, så `Create` er eneste vej ind. `User` har en `internal` constructor, så brugere kun oprettes inde fra domænet. `ActivityLogEntry` har kun getters og sættes i constructoren, så en logpost ikke kan ændres efter oprettelse.
 
 ## Ordliste
 
