@@ -1,6 +1,6 @@
 # Compliance-tracker – Klassediagram
 
-Senest opdateret: 2026-10-19
+Senest opdateret: 2026-10-22
 
 Klassediagrammet bygger på [domænemodellen](domaenemodel.md) og viser modellagets klasser med attributter, datatyper og associationer. **Metoder tilføjes løbende**, når en user story kræver dem, og opdateres i samme pull request som koden. Reglerne, som metoderne skal håndhæve, står i domænemodellen.
 
@@ -13,6 +13,9 @@ Koden er på engelsk; se ordlisten nederst.
 | `-` | privat | `private` felt (eller property med `private set`) |
 | `+` | offentlig | `public` |
 | `Type?` | kan være tom | nullable type |
+| `$` | statisk | `static` metode |
+| `-->` | har et felt af typen | felt eller property |
+| `..>` | bruger typen | parameter, returtype eller lokal variabel |
 
 ## Diagram
 
@@ -32,6 +35,7 @@ classDiagram
     -controls: List~Control~
     -frameworks: List~OrganizationFramework~
     -importedCatalogs: List~FrameworkVersion~
+    +Create(name: string, cvr: string, sector: Sector?, size: OrganizationSize, creatorName: string)$ Organization
   }
   class User {
     -id: Guid
@@ -39,6 +43,22 @@ classDiagram
     -name: string
     -email: string
     -role: UserRole
+  }
+
+  %% ================= Services og repositories =================
+  class OrganizationService {
+    -organizations: IOrganizationRepository
+    -activityLog: IActivityLogRepository
+    +Create(name: string, cvr: string, sector: Sector?, size: OrganizationSize, creatorName: string) Organization
+  }
+  class IOrganizationRepository {
+    <<interface>>
+    +CvrExists(cvr: string) bool
+    +Add(organization: Organization)
+  }
+  class IActivityLogRepository {
+    <<interface>>
+    +Append(entry: ActivityLogEntry)
   }
 
   %% ================= Projekt og releases =================
@@ -355,6 +375,11 @@ classDiagram
   MappingSuggestion "*" --> "0..1" Control
   ActivityLogEntry "*" --> "1" Organization
   ActivityLogEntry "*" --> "1" User
+  OrganizationService --> IOrganizationRepository : organizations
+  OrganizationService --> IActivityLogRepository : activityLog
+  OrganizationService ..> Organization : opretter
+  IOrganizationRepository ..> Organization
+  IActivityLogRepository ..> ActivityLogEntry
 
   note for MappingSuggestion "{xor} workItemId eller controlId"
   note for RequirementAssessment "{xor} releaseId eller organizationId"
@@ -372,6 +397,10 @@ classDiagram
 - **Enums gemmes som tekst** i databasen (`.HasConversion<string>()`), så nye værdier ikke forskyder eksisterende data.
 - **`SourceSystem` indeholder kun det, der virker.** Azure DevOps, Jira og Internal tilføjes, når adapterne findes.
 - **Integration** (`IWorkItemSource` og adaptere) tilføjes, når den første story om GitHub-integration tages ind.
+- **`Organization.Create` er en statisk fabriksmetode** i stedet for en offentlig constructor, så en organisation ikke kan oprettes, uden at reglerne er tjekket. (US-001)
+- **Validering deles i to.** Regler for de enkelte felter (navn, CVR-format, sektor) ligger som guard clauses i `Organization.Create`. Regler, der kræver kendskab til andre organisationer (unikt CVR), ligger i `OrganizationService`. (US-001)
+- **Repositories er interfaces i domænet.** Domænet beskriver kun, hvad der skal kunne gemmes og slås op. Implementeringen ligger udenfor: in-memory i testene nu, en database senere. (US-001)
+- **`IActivityLogRepository` har kun `Append`.** Der findes ingen metode til at ændre eller slette logposter, så append-only håndhæves af selve interfacet. (US-001)
 
 ## Ordliste
 
