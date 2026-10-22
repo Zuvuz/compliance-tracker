@@ -1,8 +1,9 @@
-﻿using System;
+﻿using ComplianceTracker.Domain.Organizations;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ComplianceTracker.Domain.Organizations
+namespace ComplianceTracker.Application.Organizations
 {
     public interface IOrganizationRepository
     {

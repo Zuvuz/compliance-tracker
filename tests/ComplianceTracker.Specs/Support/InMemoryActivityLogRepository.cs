@@ -1,4 +1,5 @@
-﻿using ComplianceTracker.Domain.ActivityLog;
+﻿using ComplianceTracker.Application.ActivityLog;
+using ComplianceTracker.Domain.ActivityLog;
 
 namespace ComplianceTracker.Specs.Support
 {

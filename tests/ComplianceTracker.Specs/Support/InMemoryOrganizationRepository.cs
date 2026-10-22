@@ -1,4 +1,5 @@
-﻿using ComplianceTracker.Domain.Organizations;
+﻿using ComplianceTracker.Application.Organizations;
+using ComplianceTracker.Domain.Organizations;
 
 namespace ComplianceTracker.Specs.Support
 {

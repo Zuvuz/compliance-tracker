@@ -1,8 +1,9 @@
-﻿using System;
+﻿using ComplianceTracker.Domain.ActivityLog;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ComplianceTracker.Domain.ActivityLog
+namespace ComplianceTracker.Application.ActivityLog
 {
     public interface IActivityLogRepository
     {
