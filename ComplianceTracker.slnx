@@ -6,4 +6,5 @@
     <Project Path="tests/ComplianceTracker.Domain.Tests/ComplianceTracker.Domain.Tests.csproj" />
     <Project Path="tests/ComplianceTracker.Specs/ComplianceTracker.Specs.csproj" />
   </Folder>
+  <Project Path="src/ComplianceTracker.Application/ComplianceTracker.Application.csproj" Id="2bee9868-bbe2-478a-aee1-7cbda38f1760" />
 </Solution>

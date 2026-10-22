@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\ComplianceTracker.Application\ComplianceTracker.Application.csproj" />
     <ProjectReference Include="..\..\src\ComplianceTracker.Domain\ComplianceTracker.Domain.csproj" />
   </ItemGroup>
 

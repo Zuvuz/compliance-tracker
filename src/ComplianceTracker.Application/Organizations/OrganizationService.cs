@@ -1,7 +1,9 @@
-﻿using ComplianceTracker.Domain.ActivityLog;
+﻿using ComplianceTracker.Application.ActivityLog;
+using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Domain.Common;
+using ComplianceTracker.Domain.Organizations;
 
-namespace ComplianceTracker.Domain.Organizations
+namespace ComplianceTracker.Application.Organizations
 {
     public class OrganizationService
     {
@@ -30,13 +32,11 @@ namespace ComplianceTracker.Domain.Organizations
 
             // 4. Log
             var admin = organization.Users.Single();
-            _activityLog.Append(new ActivityLogEntry
-            {
-                OrganizationId = organization.Id,
-                UserId = admin.Id,
-                Action = ActivityAction.OrganizationCreated,
-                OccurredAt = DateTime.UtcNow
-            });
+            _activityLog.Append(new ActivityLogEntry(
+                organization.Id,
+                admin.Id,
+                ActivityAction.OrganizationCreated,
+                DateTime.UtcNow));
 
             return organization;
         }

@@ -8,10 +8,16 @@ namespace ComplianceTracker.Domain.Organizations
 {
     public class Organization
     {
+        private readonly List<User> _users = new();
+
         public Guid Id { get; } = Guid.NewGuid();
-        public string Name { get; set; } = "";
-        public string Cvr { get; set; } = "";
-        public List<User> Users { get; } = new();
+        public string Name { get; private set; } = "";
+        public string Cvr { get; private set; } = "";
+        public Sector Sector { get; private set; }
+        public OrganizationSize Size { get; private set; }
+        public IReadOnlyList<User> Users => _users;
+
+        private Organization() { }
 
         public static Organization Create(string name, string cvr, Sector? sector, OrganizationSize size, string creatorName)
         {
@@ -33,15 +39,12 @@ namespace ComplianceTracker.Domain.Organizations
             var organization = new Organization
             {
                 Name = name,
-                Cvr = cvr
+                Cvr = cvr,
+                Sector = sector.Value,
+                Size = size
             };
 
-            var admin = new User
-            {
-                Name = creatorName,
-                Role = UserRole.Admin
-            };
-            organization.Users.Add(admin);
+            organization._users.Add(new User(creatorName, UserRole.Admin));
 
             return organization;
         }

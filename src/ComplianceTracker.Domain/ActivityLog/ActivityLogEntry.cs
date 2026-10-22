@@ -6,9 +6,17 @@ namespace ComplianceTracker.Domain.ActivityLog
 {
     public class ActivityLogEntry
     {
-        public Guid OrganizationId { get; set; }
-        public Guid UserId { get; set; }
-        public ActivityAction Action { get; set; }
-        public DateTime OccurredAt { get; set; }
+        public Guid OrganizationId { get; }
+        public Guid UserId { get; }
+        public ActivityAction Action { get; }
+        public DateTime OccurredAt { get; }
+
+        public ActivityLogEntry(Guid organizationId, Guid userId, ActivityAction action, DateTime occurredAt)
+        {
+            OrganizationId = organizationId;
+            UserId = userId;
+            Action = action;
+            OccurredAt = occurredAt;
+        }
     }
 }

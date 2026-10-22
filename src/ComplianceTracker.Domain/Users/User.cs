@@ -9,5 +9,11 @@ namespace ComplianceTracker.Domain.Users
         public string Name { get; set; }
         public UserRole Role { get; set; }
         public Guid Id { get; } = Guid.NewGuid();
+
+        internal User(string name, UserRole role)
+        {
+            Name = name;
+            Role = role;
+        }
     }
 }
