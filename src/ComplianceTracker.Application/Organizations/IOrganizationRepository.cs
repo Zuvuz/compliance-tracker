@@ -1,13 +1,12 @@
 ﻿using ComplianceTracker.Domain.Organizations;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace ComplianceTracker.Application.Organizations
 {
+    // Repositories gemmer ikke selv. Det sker først, når IUnitOfWork.SaveChangesAsync kaldes.
     public interface IOrganizationRepository
     {
-        bool CvrExists(string cvr);
-        void Add(Organization organization);
+        Task<bool> CvrExistsAsync(string cvr, CancellationToken cancellationToken = default);
+        Task AddAsync(Organization organization, CancellationToken cancellationToken = default);
+        Task<Organization?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     }
 }

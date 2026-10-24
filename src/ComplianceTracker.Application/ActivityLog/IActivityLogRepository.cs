@@ -1,12 +1,10 @@
 ﻿using ComplianceTracker.Domain.ActivityLog;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace ComplianceTracker.Application.ActivityLog
 {
+    // Kun tilføjelse: loggen kan ikke ændres eller slettes gennem dette interface.
     public interface IActivityLogRepository
     {
-        void Append(ActivityLogEntry entry);
+        Task AppendAsync(ActivityLogEntry entry, CancellationToken cancellationToken = default);
     }
 }
