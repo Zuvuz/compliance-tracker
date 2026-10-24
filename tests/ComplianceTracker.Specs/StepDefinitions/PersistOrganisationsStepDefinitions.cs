@@ -13,19 +13,37 @@ namespace ComplianceTracker.Specs.StepDefinitions
     [Binding]
     public class PersistOrganisationsStepDefinitions
     {
-        private string _connectionString = "";
+        private readonly DatabaseScenario _database;
         private ComplianceTrackerDbContext? _db;
         private OrganizationService? _service;
 
         private Organization? _created;
         private Organization? _retrieved;
 
+        public PersistOrganisationsStepDefinitions(DatabaseScenario database)
+        {
+            _database = database;
+        }
+
         // ---------------------------------------------------------- Hjælpere
+
+        private OrganizationService Service
+        {
+            get
+            {
+                if (_service is null)
+                {
+                    StartApplication();
+                }
+
+                return _service!;
+            }
+        }
 
         private void StartApplication()
         {
             _db?.Dispose();
-            _db = TestDatabase.CreateContext(_connectionString);
+            _db = TestDatabase.CreateContext(_database.ConnectionString);
             _service = new OrganizationService(
                 new OrganizationRepository(_db),
                 new ActivityLogRepository(_db),
@@ -40,25 +58,17 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         // ---------------------------------------------------------- Given
 
-        [Given("an empty database")]
-        public async Task GivenAnEmptyDatabase()
-        {
-            _connectionString = await TestDatabase.GetConnectionStringAsync();
-            await TestDatabase.ResetAsync(_connectionString);
-            StartApplication();
-        }
-
         [Given("I have created the organisation {string}")]
         public async Task GivenIHaveCreatedTheOrganisation(string name)
         {
-            _created = await _service!.CreateAsync(name, "12345678", Sector.Manufacturing, OrganizationSize.Small, "Anna");
+            _created = await Service.CreateAsync(name, "12345678", Sector.Manufacturing, OrganizationSize.Small, "Anna");
         }
 
         [Given("I have created an organisation with name {string}")]
         public async Task GivenIHaveCreatedAnOrganisationWithName(string name)
         {
             // Andre værdier end standard-enum-værdierne, så en forkert mapping ikke kan snyde testen
-            _created = await _service!.CreateAsync(name, "87654321", Sector.Health, OrganizationSize.Medium, "Bo");
+            _created = await Service.CreateAsync(name, "87654321", Sector.Health, OrganizationSize.Medium, "Bo");
         }
 
         // ---------------------------------------------------------- When
