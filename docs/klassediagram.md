@@ -1,6 +1,6 @@
 # Compliance-tracker – Klassediagram
 
-Senest opdateret: 2026-10-23
+Senest opdateret: 2026-10-24
 
 Klassediagrammet bygger på [domænemodellen](domaenemodel.md) og viser modellagets klasser med attributter, datatyper og associationer. **Metoder tilføjes løbende**, når en user story kræver dem, og opdateres i samme pull request som koden. Reglerne, som metoderne skal håndhæve, står i domænemodellen.
 
@@ -411,6 +411,8 @@ classDiagram
 - **Repositories gemmer ikke selv.** De registrerer kun ændringer. `IUnitOfWork.SaveChangesAsync` gemmer det hele i én transaktion, så en organisation og logposten for dens oprettelse enten gemmes sammen eller slet ikke. (US-002)
 - **Databasens nøgler holdes ude af domænet.** `User.organizationId` findes kun som fremmednøgle i databasen, og `ActivityLogEntry` får et fortløbende id, som kun databasen kender (shadow properties). Domæneklasserne er derfor uændrede. (US-002)
 - **Connection string ligger aldrig i repoet.** Den læses fra miljøvariablen `ConnectionStrings__ComplianceTracker`. Integrationstestene starter deres egen PostgreSQL-container med Testcontainers. (US-002)
+- **Web-UI'et er en tynd skal.** `OrganizationsController` (ASP.NET Core MVC) oversætter kun mellem formularen og `OrganizationService`. Fejlbeskeder kommer fra `DomainException`, så reglerne kun findes ét sted. Web-laget er ikke med i diagrammet, fordi det ikke er en del af modellen. (US-003)
+- **Formularer kræver antiforgery-token** (`[ValidateAntiForgeryToken]`), så kun formularer fra applikationen selv kan oprette data (ASVS V3.5.1). (US-003)
 
 ## Ordliste
 

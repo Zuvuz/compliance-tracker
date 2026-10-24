@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AngleSharp" Version="1.8.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.13" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="Reqnroll.xUnit" Version="3.2.0" />
     <PackageReference Include="Testcontainers.PostgreSql" Version="4.16.0" />
@@ -18,6 +20,7 @@
     <ProjectReference Include="..\..\src\ComplianceTracker.Application\ComplianceTracker.Application.csproj" />
     <ProjectReference Include="..\..\src\ComplianceTracker.Domain\ComplianceTracker.Domain.csproj" />
     <ProjectReference Include="..\..\src\ComplianceTracker.Infrastructure\ComplianceTracker.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\ComplianceTracker.Web\ComplianceTracker.Web.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,48 @@
+@using ComplianceTracker.Domain.Organizations
+@model CreateOrganizationViewModel
+@{
+    ViewData["Title"] = "Create organisation";
+
+    // R4: kun de værdier, systemet kender. Værdien er enum-navnet, fx "Manufacturing".
+    var sectors = Enum.GetNames<Sector>().Select(s => new SelectListItem(s, s));
+    var sizes = Enum.GetNames<OrganizationSize>().Select(s => new SelectListItem(s, s));
+}
+
+<h1>Create organisation</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label"></label>
+                <input asp-for="Name" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Cvr" class="form-label"></label>
+                <input asp-for="Cvr" class="form-control" inputmode="numeric" />
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Sector" class="form-label"></label>
+                <select asp-for="Sector" asp-items="sectors" class="form-select">
+                    <option value="">-- Choose sector --</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Size" class="form-label"></label>
+                <select asp-for="Size" asp-items="sizes" class="form-select"></select>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="CreatorName" class="form-label"></label>
+                <input asp-for="CreatorName" class="form-control" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Create</button>
+        </form>
+    </div>
+</div>

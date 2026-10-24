@@ -1,0 +1,39 @@
+@using ComplianceTracker.Domain.Organizations
+@model Organization
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<h1 id="organisation-name">@Model.Name</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">CVR</dt>
+    <dd class="col-sm-9" id="organisation-cvr">@Model.Cvr</dd>
+
+    <dt class="col-sm-3">Sector</dt>
+    <dd class="col-sm-9" id="organisation-sector">@Model.Sector</dd>
+
+    <dt class="col-sm-3">Size</dt>
+    <dd class="col-sm-9" id="organisation-size">@Model.Size</dd>
+</dl>
+
+<h2>Users</h2>
+<table class="table" id="organisation-users">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Role</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model.Users)
+        {
+            <tr>
+                <td>@user.Name</td>
+                <td>@user.Role</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a asp-action="Create">Create another organisation</a>
