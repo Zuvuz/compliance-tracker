@@ -7,8 +7,16 @@ namespace ComplianceTracker.Specs.Support
     {
         private readonly List<Organization> _items = new();
 
-        public bool CvrExists(string cvr) => _items.Any(o => o.Cvr == cvr);
+        public Task<bool> CvrExistsAsync(string cvr, CancellationToken cancellationToken = default)
+            => Task.FromResult(_items.Any(o => o.Cvr == cvr));
 
-        public void Add(Organization organization) => _items.Add(organization);
+        public Task AddAsync(Organization organization, CancellationToken cancellationToken = default)
+        {
+            _items.Add(organization);
+            return Task.CompletedTask;
+        }
+
+        public Task<Organization?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+            => Task.FromResult(_items.FirstOrDefault(o => o.Id == id));
     }
 }

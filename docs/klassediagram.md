@@ -1,6 +1,6 @@
 # Compliance-tracker – Klassediagram
 
-Senest opdateret: 2026-10-22
+Senest opdateret: 2026-10-23
 
 Klassediagrammet bygger på [domænemodellen](domaenemodel.md) og viser modellagets klasser med attributter, datatyper og associationer. **Metoder tilføjes løbende**, når en user story kræver dem, og opdateres i samme pull request som koden. Reglerne, som metoderne skal håndhæve, står i domænemodellen.
 
@@ -49,16 +49,22 @@ classDiagram
   class OrganizationService {
     -organizations: IOrganizationRepository
     -activityLog: IActivityLogRepository
-    +Create(name: string, cvr: string, sector: Sector?, size: OrganizationSize, creatorName: string) Organization
+    -unitOfWork: IUnitOfWork
+    +CreateAsync(name: string, cvr: string, sector: Sector?, size: OrganizationSize, creatorName: string) Task~Organization~
   }
   class IOrganizationRepository {
     <<interface>>
-    +CvrExists(cvr: string) bool
-    +Add(organization: Organization)
+    +CvrExistsAsync(cvr: string) Task~bool~
+    +AddAsync(organization: Organization) Task
+    +GetByIdAsync(id: Guid) Task~Organization?~
   }
   class IActivityLogRepository {
     <<interface>>
-    +Append(entry: ActivityLogEntry)
+    +AppendAsync(entry: ActivityLogEntry) Task
+  }
+  class IUnitOfWork {
+    <<interface>>
+    +SaveChangesAsync() Task
   }
 
   %% ================= Projekt og releases =================
@@ -377,6 +383,7 @@ classDiagram
   ActivityLogEntry "*" --> "1" User
   OrganizationService --> IOrganizationRepository : organizations
   OrganizationService --> IActivityLogRepository : activityLog
+  OrganizationService --> IUnitOfWork : unitOfWork
   OrganizationService ..> Organization : opretter
   IOrganizationRepository ..> Organization
   IActivityLogRepository ..> ActivityLogEntry
@@ -399,8 +406,11 @@ classDiagram
 - **Integration** (`IWorkItemSource` og adaptere) tilføjes, når den første story om GitHub-integration tages ind.
 - **`Organization.Create` er en statisk fabriksmetode** i stedet for en offentlig constructor, så en organisation ikke kan oprettes, uden at reglerne er tjekket. (US-001)
 - **Validering deles i to.** Regler for de enkelte felter (navn, CVR-format, sektor) ligger som guard clauses i `Organization.Create`. Regler, der kræver kendskab til andre organisationer (unikt CVR), ligger i `OrganizationService`. (US-001)
-- **Repositories er interfaces i domænet.** Domænet beskriver kun, hvad der skal kunne gemmes og slås op. Implementeringen ligger udenfor: in-memory i testene nu, en database senere. (US-001)
-- **`IActivityLogRepository` har kun `Append`.** Der findes ingen metode til at ændre eller slette logposter, så append-only håndhæves af selve interfacet. (US-001)
+- **Repositories er interfaces i Application-laget.** De beskriver kun, hvad der skal kunne gemmes og slås op. Implementeringen ligger i Infrastructure (EF Core og PostgreSQL), og testene har en in-memory-udgave. (US-001, US-002)
+- **`IActivityLogRepository` har kun `AppendAsync`.** Der findes ingen metode til at ændre eller slette logposter, så append-only håndhæves af selve interfacet. (US-001)
+- **Repositories gemmer ikke selv.** De registrerer kun ændringer. `IUnitOfWork.SaveChangesAsync` gemmer det hele i én transaktion, så en organisation og logposten for dens oprettelse enten gemmes sammen eller slet ikke. (US-002)
+- **Databasens nøgler holdes ude af domænet.** `User.organizationId` findes kun som fremmednøgle i databasen, og `ActivityLogEntry` får et fortløbende id, som kun databasen kender (shadow properties). Domæneklasserne er derfor uændrede. (US-002)
+- **Connection string ligger aldrig i repoet.** Den læses fra miljøvariablen `ConnectionStrings__ComplianceTracker`. Integrationstestene starter deres egen PostgreSQL-container med Testcontainers. (US-002)
 
 ## Ordliste
 

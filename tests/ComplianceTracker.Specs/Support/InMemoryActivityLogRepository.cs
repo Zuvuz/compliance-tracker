@@ -9,6 +9,10 @@ namespace ComplianceTracker.Specs.Support
 
         public IReadOnlyList<ActivityLogEntry> Entries => _entries;
 
-        public void Append(ActivityLogEntry entry) => _entries.Add(entry);
+        public Task AppendAsync(ActivityLogEntry entry, CancellationToken cancellationToken = default)
+        {
+            _entries.Add(entry);
+            return Task.CompletedTask;
+        }
     }
 }

@@ -22,7 +22,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         public CreateOrganizationStepDefinitions()
         {
-            _service = new OrganizationService(new InMemoryOrganizationRepository(), _activityLog);
+            _service = new OrganizationService(new InMemoryOrganizationRepository(), _activityLog, new InMemoryUnitOfWork());
         }
 
         // ---------------------------------------------------------- Given
@@ -34,22 +34,22 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         [Given("an organization {string} exists with CVR {string}")]
-        public void GivenAnOrganizationExistsWithCvr(string name, string cvr)
+        public async Task GivenAnOrganizationExistsWithCvr(string name, string cvr)
         {
-            _service.Create(name, cvr, Sector.Other, OrganizationSize.Small, "Setup");
+            await _service.CreateAsync(name, cvr, Sector.Other, OrganizationSize.Small, "Setup");
         }
 
         // ---------------------------------------------------------- When
 
         [When("I create the organization {string} with CVR {string}, sector {string} and size {string}")]
-        public void WhenICreateTheOrganization(string name, string cvr, string sector, string size)
+        public async Task WhenICreateTheOrganization(string name, string cvr, string sector, string size)
         {
             var parsedSector = Enum.Parse<Sector>(sector);
             var parsedSize = Enum.Parse<OrganizationSize>(size);
 
             try
             {
-                _organization = _service.Create(name, cvr, parsedSector, parsedSize, _currentUser);
+                _organization = await _service.CreateAsync(name, cvr, parsedSector, parsedSize, _currentUser);
             }
             catch (DomainException ex)
             {
@@ -58,11 +58,11 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         [When("I create an organization with no name and CVR {string}")]
-        public void WhenICreateAnOrganizationWithNoName(string cvr)
+        public async Task WhenICreateAnOrganizationWithNoName(string cvr)
         {
             try
             {
-                _organization = _service.Create("", cvr, Sector.Manufacturing, OrganizationSize.Small, _currentUser);
+                _organization = await _service.CreateAsync("", cvr, Sector.Manufacturing, OrganizationSize.Small, _currentUser);
             }
             catch (DomainException ex)
             {
@@ -71,13 +71,13 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         [When("I create the organization {string} with CVR {string}, no sector and size {string}")]
-        public void WhenICreateTheOrganizationWithNoSector(string name, string cvr, string size)
+        public async Task WhenICreateTheOrganizationWithNoSector(string name, string cvr, string size)
         {
             var parsedSize = Enum.Parse<OrganizationSize>(size);
 
             try
             {
-                _organization = _service.Create(name, cvr, null, parsedSize, _currentUser);
+                _organization = await _service.CreateAsync(name, cvr, null, parsedSize, _currentUser);
             }
             catch (DomainException ex)
             {
