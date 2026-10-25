@@ -19,7 +19,7 @@ namespace ComplianceTracker.Domain.Organizations
 
         private Organization() { }
 
-        public static Organization Create(string name, string cvr, Sector? sector, OrganizationSize size, string creatorName)
+        public static Organization Create(string name, string cvr, Sector? sector, OrganizationSize size, UserIdentity creator)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -36,6 +36,11 @@ namespace ComplianceTracker.Domain.Organizations
                 throw new DomainException("Sector is required");
             }
 
+            if (string.IsNullOrWhiteSpace(creator.ExternalId))
+            {
+                throw new DomainException("Creator must be signed in");
+            }
+
             var organization = new Organization
             {
                 Name = name,
@@ -44,7 +49,7 @@ namespace ComplianceTracker.Domain.Organizations
                 Size = size
             };
 
-            organization._users.Add(new User(creatorName, UserRole.Admin));
+            organization._users.Add(new User(creator.ExternalId, creator.Name, creator.Email, UserRole.Admin));
 
             return organization;
         }

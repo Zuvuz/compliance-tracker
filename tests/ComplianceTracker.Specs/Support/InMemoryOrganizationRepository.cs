@@ -18,5 +18,8 @@ namespace ComplianceTracker.Specs.Support
 
         public Task<Organization?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
             => Task.FromResult(_items.FirstOrDefault(o => o.Id == id));
+
+        public Task<Organization?> GetByMemberAsync(string externalId, CancellationToken cancellationToken = default)
+            => Task.FromResult(_items.FirstOrDefault(o => o.Users.Any(u => u.ExternalId == externalId)));
     }
 }

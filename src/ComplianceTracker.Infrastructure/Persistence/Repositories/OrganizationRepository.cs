@@ -22,5 +22,8 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
 
         public Task<Organization?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
             => _db.Organizations.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+
+        public Task<Organization?> GetByMemberAsync(string externalId, CancellationToken cancellationToken = default)
+            => _db.Organizations.FirstOrDefaultAsync(o => o.Users.Any(u => u.ExternalId == externalId), cancellationToken);
     }
 }

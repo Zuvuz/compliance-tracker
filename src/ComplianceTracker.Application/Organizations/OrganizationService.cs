@@ -3,6 +3,7 @@ using ComplianceTracker.Application.Common;
 using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Domain.Organizations;
+using ComplianceTracker.Domain.Users;
 
 namespace ComplianceTracker.Application.Organizations
 {
@@ -27,13 +28,19 @@ namespace ComplianceTracker.Application.Organizations
             string cvr,
             Sector? sector,
             OrganizationSize size,
-            string creatorName,
+            UserIdentity creator,
             CancellationToken cancellationToken = default)
         {
             // 1. Valider felterne
-            var organization = Organization.Create(name, cvr, sector, size, creatorName);
+            var organization = Organization.Create(name, cvr, sector, size, creator);
 
             // 2. Tjek mod tidligere organisationer
+            if (await _organizations.GetByMemberAsync(creator.ExternalId, cancellationToken) is not null)
+            {
+                // US-004 R4: én organisation pr. bruger
+                throw new DomainException("User already has an organisation");
+            }
+
             if (await _organizations.CvrExistsAsync(organization.Cvr, cancellationToken))
             {
                 throw new DomainException("CVR already in use");

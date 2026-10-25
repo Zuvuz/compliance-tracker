@@ -6,6 +6,8 @@ namespace ComplianceTracker.Domain.ActivityLog
 {
     public enum ActivityAction
     {
-        OrganizationCreated
+        OrganizationCreated,
+        UserSignedIn,
+        UserSignedOut
     }
 }

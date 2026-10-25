@@ -1,0 +1,39 @@
+# Navnet bliver præfiks på containere og volumes, fx compliance-tracker-postgres-1
+name: compliance-tracker
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: compliance_tracker
+      POSTGRES_USER: postgres
+      # Hentes fra .env. ":?" stopper opstarten med en fejl, hvis værdien mangler
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "5433:5432"   # din computer:containeren. 5432 er optaget af dit andet projekt
+    volumes:
+      - postgres-data:/var/lib/postgresql/data   # data overlever genstart
+    healthcheck:
+      # Docker spørger Postgres, om den er klar, så andre ting kan vente på den
+      test: ["CMD-SHELL", "pg_isready -U postgres -d compliance_tracker"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3
+    # Udviklingstilstand (HTTP, ingen produktionskrav). --import-realm opretter realmen fra
+    # keycloak/compliance-tracker-realm.json første gang; findes den allerede, sker der ingenting.
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
+    ports:
+      - "8180:8080"   # 8080 gemmer vi til webappen i US-017
+    volumes:
+      - keycloak-data:/opt/keycloak/data   # brugere og opsætning overlever genstart
+      - ./keycloak:/opt/keycloak/data/import:ro   # realm-filen fra repoet (kun læse)
+
+volumes:
+  postgres-data:
+  keycloak-data:
