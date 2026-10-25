@@ -19,7 +19,6 @@ namespace ComplianceTracker.Web.Models
         [Display(Name = "Size")]
         public OrganizationSize Size { get; set; }
 
-        [Display(Name = "Your name")]
-        public string? CreatorName { get; set; }
+        // Ingen "Your name": den, der opretter, er den indloggede bruger (US-004 R3)
     }
 }

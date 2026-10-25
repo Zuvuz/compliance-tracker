@@ -1,8 +1,12 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Compliance Tracker";
 }
 
-<div class="text-center">
+<div class="text-center py-5" id="front-page">
     <h1 class="display-4">Compliance Tracker</h1>
-    <p><a class="btn btn-primary" asp-controller="Organizations" asp-action="Create">Create organisation</a></p>
+    <p class="lead">Keep track of the standards and regulations your organisation and products must meet.</p>
+    <p>
+        <a class="btn btn-primary btn-lg" asp-controller="Account" asp-action="Login">Sign in</a>
+    </p>
+    <p class="text-muted">New here? Choose "Register" on the sign-in page, and create your organisation afterwards.</p>
 </div>

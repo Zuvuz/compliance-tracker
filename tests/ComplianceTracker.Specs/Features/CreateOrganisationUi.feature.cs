@@ -24,7 +24,7 @@ namespace ComplianceTracker.Specs.Features
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Create organisation via web UI", null, global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Create organisation via web UI", "", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
         private global::Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -105,12 +105,15 @@ namespace ComplianceTracker.Specs.Features
         
         public virtual async global::System.Threading.Tasks.Task FeatureBackgroundAsync()
         {
-#line 3
+#line 5
   #line hidden
-#line 4
+#line 6
     await testRunner.GivenAsync("an empty database", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 5
+#line 7
+    await testRunner.AndAsync("I am signed in as \"Anna\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 8
     await testRunner.AndAsync("I am on the create organisation page", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
         }
@@ -162,7 +165,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Create an organisation through the form", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 8
+#line 11
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -172,17 +175,17 @@ namespace ComplianceTracker.Specs.Features
             else
             {
                 await this.ScenarioStartAsync();
-#line 3
+#line 5
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 9
-    await testRunner.WhenAsync("I submit the form with name \"Acme ApS\", CVR \"12345678\", sector \"Manufacturing\", s" +
-                        "ize \"Small\" and my name \"Anna\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line 12
+    await testRunner.WhenAsync("I submit the form with name \"Acme ApS\", CVR \"12345678\", sector \"Manufacturing\" an" +
+                        "d size \"Small\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 10
+#line 13
     await testRunner.ThenAsync("I see the details of the organisation \"Acme ApS\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 11
+#line 14
     await testRunner.AndAsync("\"Anna\" is shown as Admin", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -206,7 +209,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Validation errors are shown and input is kept", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 14
+#line 17
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -216,17 +219,17 @@ namespace ComplianceTracker.Specs.Features
             else
             {
                 await this.ScenarioStartAsync();
-#line 3
+#line 5
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 15
-    await testRunner.WhenAsync("I submit the form with name \"Acme ApS\", CVR \"1234\", sector \"Manufacturing\", size " +
-                        "\"Small\" and my name \"Anna\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line 18
+    await testRunner.WhenAsync("I submit the form with name \"Acme ApS\", CVR \"1234\", sector \"Manufacturing\" and si" +
+                        "ze \"Small\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 16
+#line 19
     await testRunner.ThenAsync("I see the error \"CVR must be 8 digits\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 17
+#line 20
     await testRunner.AndAsync("the name field still contains \"Acme ApS\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -248,7 +251,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A used CVR is rejected", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 20
+#line 23
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -258,17 +261,17 @@ namespace ComplianceTracker.Specs.Features
             else
             {
                 await this.ScenarioStartAsync();
-#line 3
+#line 5
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 21
+#line 24
     await testRunner.GivenAsync("an organisation with CVR \"12345678\" exists", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 22
-    await testRunner.WhenAsync("I submit the form with name \"Beta ApS\", CVR \"12345678\", sector \"Health\", size \"Me" +
-                        "dium\" and my name \"Bo\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line 25
+    await testRunner.WhenAsync("I submit the form with name \"Beta ApS\", CVR \"12345678\", sector \"Health\" and size " +
+                        "\"Medium\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 23
+#line 26
     await testRunner.ThenAsync("I see the error \"CVR already in use\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -292,7 +295,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The form rejects requests without an antiforgery token", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 26
+#line 29
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -302,16 +305,16 @@ namespace ComplianceTracker.Specs.Features
             else
             {
                 await this.ScenarioStartAsync();
-#line 3
+#line 5
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 27
+#line 30
     await testRunner.WhenAsync("I post the form without an antiforgery token", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 28
+#line 31
     await testRunner.ThenAsync("the request is rejected with status 400", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 29
+#line 32
     await testRunner.AndAsync("no organisation is saved", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }

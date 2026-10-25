@@ -22,7 +22,9 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.3
-    command: start-dev   # udviklingstilstand: HTTP og ingen produktionskrav
+    # Udviklingstilstand (HTTP, ingen produktionskrav). --import-realm opretter realmen fra
+    # keycloak/compliance-tracker-realm.json første gang; findes den allerede, sker der ingenting.
+    command: start-dev --import-realm
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
@@ -30,6 +32,7 @@ services:
       - "8180:8080"   # 8080 gemmer vi til webappen i US-017
     volumes:
       - keycloak-data:/opt/keycloak/data   # brugere og opsætning overlever genstart
+      - ./keycloak:/opt/keycloak/data/import:ro   # realm-filen fra repoet (kun læse)
 
 volumes:
   postgres-data:

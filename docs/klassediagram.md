@@ -1,6 +1,6 @@
 # Compliance-tracker – Klassediagram
 
-Senest opdateret: 2026-10-24
+Senest opdateret: 2026-10-25
 
 Klassediagrammet bygger på [domænemodellen](domaenemodel.md) og viser modellagets klasser med attributter, datatyper og associationer. **Metoder tilføjes løbende**, når en user story kræver dem, og opdateres i samme pull request som koden. Reglerne, som metoderne skal håndhæve, står i domænemodellen.
 
@@ -40,9 +40,16 @@ classDiagram
   class User {
     -id: Guid
     -organizationId: Guid
+    -externalId: string
     -name: string
     -email: string
     -role: UserRole
+  }
+  class UserIdentity {
+    <<record>>
+    +ExternalId: string
+    +Name: string
+    +Email: string
   }
 
   %% ================= Services og repositories =================
@@ -50,13 +57,21 @@ classDiagram
     -organizations: IOrganizationRepository
     -activityLog: IActivityLogRepository
     -unitOfWork: IUnitOfWork
-    +CreateAsync(name: string, cvr: string, sector: Sector?, size: OrganizationSize, creatorName: string) Task~Organization~
+    +CreateAsync(name: string, cvr: string, sector: Sector?, size: OrganizationSize, creator: UserIdentity) Task~Organization~
+  }
+  class UserActivityService {
+    -organizations: IOrganizationRepository
+    -activityLog: IActivityLogRepository
+    -unitOfWork: IUnitOfWork
+    +RecordSignInAsync(externalId: string) Task
+    +RecordSignOutAsync(externalId: string) Task
   }
   class IOrganizationRepository {
     <<interface>>
     +CvrExistsAsync(cvr: string) Task~bool~
     +AddAsync(organization: Organization) Task
     +GetByIdAsync(id: Guid) Task~Organization?~
+    +GetByMemberAsync(externalId: string) Task~Organization?~
   }
   class IActivityLogRepository {
     <<interface>>
@@ -287,6 +302,8 @@ classDiagram
   class ActivityAction {
     <<enumeration>>
     OrganizationCreated
+    UserSignedIn
+    UserSignedOut
     CatalogImported
     CatalogActivated
     FrameworkAdded
@@ -384,6 +401,10 @@ classDiagram
   OrganizationService --> IOrganizationRepository : organizations
   OrganizationService --> IActivityLogRepository : activityLog
   OrganizationService --> IUnitOfWork : unitOfWork
+  OrganizationService ..> UserIdentity : creator
+  UserActivityService --> IOrganizationRepository : organizations
+  UserActivityService --> IActivityLogRepository : activityLog
+  UserActivityService --> IUnitOfWork : unitOfWork
   OrganizationService ..> Organization : opretter
   IOrganizationRepository ..> Organization
   IActivityLogRepository ..> ActivityLogEntry
@@ -413,6 +434,10 @@ classDiagram
 - **Connection string ligger aldrig i repoet.** Den læses fra miljøvariablen `ConnectionStrings__ComplianceTracker`. Integrationstestene starter deres egen PostgreSQL-container med Testcontainers. (US-002)
 - **Web-UI'et er en tynd skal.** `OrganizationsController` (ASP.NET Core MVC) oversætter kun mellem formularen og `OrganizationService`. Fejlbeskeder kommer fra `DomainException`, så reglerne kun findes ét sted. Web-laget er ikke med i diagrammet, fordi det ikke er en del af modellen. (US-003)
 - **Formularer kræver antiforgery-token** (`[ValidateAntiForgeryToken]`), så kun formularer fra applikationen selv kan oprette data (ASVS V3.5.1). (US-003)
+- **Brugere genkendes på `externalId`**, Keycloaks `sub`-claim, og aldrig på navn eller e-mail, som kan ændres eller deles (ASVS V10.5.2). Kolonnen har et unikt index. (US-004)
+- **`UserIdentity` er den indloggede persons identitet**, som Web-laget laver ud fra login-cookien og giver videre til Application og Domain. Domænet ved ikke, at den kommer fra Keycloak. (US-004)
+- **Én organisation pr. bruger.** `OrganizationService` afviser en anden organisation for samme bruger, og en bruger kan kun se sin egen (andre giver 404). (US-004)
+- **Log ind og log ud logges af `UserActivityService`.** Første login logges ikke, fordi brugeren endnu ikke har en organisation; oprettelsen logges i stedet som `OrganizationCreated`. (US-004)
 
 ## Ordliste
 

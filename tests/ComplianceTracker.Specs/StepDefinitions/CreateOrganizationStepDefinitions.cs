@@ -36,7 +36,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Given("an organization {string} exists with CVR {string}")]
         public async Task GivenAnOrganizationExistsWithCvr(string name, string cvr)
         {
-            await _service.CreateAsync(name, cvr, Sector.Other, OrganizationSize.Small, "Setup");
+            await _service.CreateAsync(name, cvr, Sector.Other, OrganizationSize.Small, TestUsers.Identity("Setup"));
         }
 
         // ---------------------------------------------------------- When
@@ -49,7 +49,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
             try
             {
-                _organization = await _service.CreateAsync(name, cvr, parsedSector, parsedSize, _currentUser);
+                _organization = await _service.CreateAsync(name, cvr, parsedSector, parsedSize, TestUsers.Identity(_currentUser));
             }
             catch (DomainException ex)
             {
@@ -62,7 +62,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             try
             {
-                _organization = await _service.CreateAsync("", cvr, Sector.Manufacturing, OrganizationSize.Small, _currentUser);
+                _organization = await _service.CreateAsync("", cvr, Sector.Manufacturing, OrganizationSize.Small, TestUsers.Identity(_currentUser));
             }
             catch (DomainException ex)
             {
@@ -77,7 +77,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
             try
             {
-                _organization = await _service.CreateAsync(name, cvr, null, parsedSize, _currentUser);
+                _organization = await _service.CreateAsync(name, cvr, null, parsedSize, TestUsers.Identity(_currentUser));
             }
             catch (DomainException ex)
             {

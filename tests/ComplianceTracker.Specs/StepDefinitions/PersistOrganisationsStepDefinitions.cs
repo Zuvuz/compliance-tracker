@@ -61,14 +61,14 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Given("I have created the organisation {string}")]
         public async Task GivenIHaveCreatedTheOrganisation(string name)
         {
-            _created = await Service.CreateAsync(name, "12345678", Sector.Manufacturing, OrganizationSize.Small, "Anna");
+            _created = await Service.CreateAsync(name, "12345678", Sector.Manufacturing, OrganizationSize.Small, TestUsers.Identity("Anna"));
         }
 
         [Given("I have created an organisation with name {string}")]
         public async Task GivenIHaveCreatedAnOrganisationWithName(string name)
         {
             // Andre værdier end standard-enum-værdierne, så en forkert mapping ikke kan snyde testen
-            _created = await Service.CreateAsync(name, "87654321", Sector.Health, OrganizationSize.Medium, "Bo");
+            _created = await Service.CreateAsync(name, "87654321", Sector.Health, OrganizationSize.Medium, TestUsers.Identity("Bo"));
         }
 
         // ---------------------------------------------------------- When

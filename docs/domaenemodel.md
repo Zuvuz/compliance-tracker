@@ -1,6 +1,6 @@
 # Compliance-tracker – Domænemodel
 
-Senest opdateret: 2026-10-19
+Senest opdateret: 2026-10-25
 
 ## Formål
 
@@ -24,7 +24,9 @@ classDiagram
     størrelse
   }
   class Bruger {
+    eksterntId
     navn
+    email
     rolle
   }
   class Projekt {
@@ -162,7 +164,7 @@ classDiagram
 | Begreb | Betydning | Fase |
 |---|---|---|
 | Organisation | Virksomheden, der bruger trackeren. Sektor og størrelse afgør bl.a., om NIS2 er relevant. | 1 |
-| Bruger | En person i organisationen med en rolle. Kan være ansvarlig for kontroller og indsende evidens. | 1 |
+| Bruger | En person i organisationen med en rolle. Kan være ansvarlig for kontroller og indsende evidens. Logger ind via Keycloak og genkendes på sit eksterne id (`sub`). | 1 |
 | Projekt | Et produkt, der skal overholde regler. Tilsigtet formål og scope afgør, hvilke krav der gælder, og er kontekst for AI'en. | 1 |
 | Release | En konkret version af produktet. CRA tænker i versioner, så evidens og vurderinger kan knyttes hertil. | 1 |
 | Framework | Regelsættets navn, fx CRA, ISO 27001 eller AI Act. Niveau angiver, om det gælder organisationen eller et projekt. Indeholder ingen kravtekst. | 1 |

@@ -1,8 +1,10 @@
 using ComplianceTracker.Application.Organizations;
+using ComplianceTracker.Application.Users;
 using ComplianceTracker.Infrastructure;
-using Microsoft.AspNetCore.Authentication.Cookies;        
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;  
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,8 +13,9 @@ builder.Services.AddControllersWithViews();
 // Database, repositories og unit of work (Infrastructure) og use cases (Application)
 builder.Services.AddInfrastructure();
 builder.Services.AddScoped<OrganizationService>();
+builder.Services.AddScoped<UserActivityService>();
 
-// NYT: login med Keycloak via OpenID Connect
+// Login med Keycloak via OpenID Connect (US-004)
 builder.Services
     .AddAuthentication(options =>
     {
@@ -21,9 +24,15 @@ builder.Services
         options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
     })
     .AddCookie()
-    .AddOpenIdConnect(options =>
+    .AddOpenIdConnect();
+
+// Indstillingerne læses fra konfigurationen, når login bruges første gang.
+// På den måde kan integrationstestene give deres egen Keycloak-adresse og secret.
+builder.Services
+    .AddOptions<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme)
+    .Configure<IConfiguration>((options, configuration) =>
     {
-        var keycloak = builder.Configuration.GetSection("Authentication:Keycloak");
+        var keycloak = configuration.GetSection("Authentication:Keycloak");
         options.Authority = keycloak["Authority"];
         options.ClientId = keycloak["ClientId"];
         options.ClientSecret = keycloak["ClientSecret"]
@@ -37,17 +46,30 @@ builder.Services
         options.MapInboundClaims = false; // behold Keycloaks navne: "sub", "email", "name"
         options.TokenValidationParameters.NameClaimType = "name";
 
+        // Log hvert login, når Keycloak har bekræftet brugeren (R6)
+        options.Events.OnTokenValidated = async context =>
+        {
+            var externalId = context.Principal?.FindFirstValue("sub");
+            if (externalId is not null)
+            {
+                var activity = context.HttpContext.RequestServices.GetRequiredService<UserActivityService>();
+                await activity.RecordSignInAsync(externalId, context.HttpContext.RequestAborted);
+            }
+        };
+
         if (builder.Environment.IsDevelopment())
         {
             // Lokalt kører Keycloak på http, ikke https
             options.RequireHttpsMetadata = false;
             options.CorrelationCookie.SameSite = SameSiteMode.Lax;
             options.NonceCookie.SameSite = SameSiteMode.Lax;
+            // Tilbage fra Keycloak via et link (GET) i stedet for en formular,
+            // så cookies kommer med, selvom appen kører https og Keycloak http
             options.ResponseMode = OpenIdConnectResponseMode.Query;
         }
     });
 
-
+// Alle sider kræver login, medmindre de er markeret [AllowAnonymous] (R1)
 builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = options.DefaultPolicy;
@@ -64,9 +86,10 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 
-app.UseAuthentication();   
-app.UseAuthorization();
+app.UseAuthentication();   // hvem er brugeren?
+app.UseAuthorization();    // hvad må brugeren?
 
+// CSS, JavaScript og billeder skal kunne hentes uden login
 app.MapStaticAssets().AllowAnonymous();
 
 app.MapControllerRoute(

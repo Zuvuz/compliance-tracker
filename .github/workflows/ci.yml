@@ -23,6 +23,13 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Tjek docker-compose.yml (US-013)
+        # Pladsholdere, så "${...:?}" ikke stopper tjekket. Ingen rigtige kodeord i CI.
+        env:
+          POSTGRES_PASSWORD: ci-placeholder
+          KEYCLOAK_ADMIN_PASSWORD: ci-placeholder
+        run: docker compose config --quiet
+
       - name: Gendan pakker
         run: dotnet restore
 
