@@ -1,9 +1,11 @@
-using System.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
 using ComplianceTracker.Web.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 
 namespace ComplianceTracker.Web.Controllers;
 
+[AllowAnonymous]
 public class HomeController : Controller
 {
     public IActionResult Index()
