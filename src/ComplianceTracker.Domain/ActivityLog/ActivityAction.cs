@@ -8,6 +8,7 @@ namespace ComplianceTracker.Domain.ActivityLog
     {
         OrganizationCreated,
         UserSignedIn,
-        UserSignedOut
+        UserSignedOut,
+        CatalogImported
     }
 }

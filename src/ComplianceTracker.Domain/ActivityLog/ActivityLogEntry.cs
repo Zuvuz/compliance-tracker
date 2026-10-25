@@ -10,13 +10,15 @@ namespace ComplianceTracker.Domain.ActivityLog
         public Guid UserId { get; }
         public ActivityAction Action { get; }
         public DateTime OccurredAt { get; }
+        public Guid? SubjectId { get; }
 
-        public ActivityLogEntry(Guid organizationId, Guid userId, ActivityAction action, DateTime occurredAt)
+        public ActivityLogEntry(Guid organizationId, Guid userId, ActivityAction action, DateTime occurredAt, Guid? subjectId = null)
         {
             OrganizationId = organizationId;
             UserId = userId;
             Action = action;
             OccurredAt = occurredAt;
+            SubjectId = subjectId;
         }
     }
 }

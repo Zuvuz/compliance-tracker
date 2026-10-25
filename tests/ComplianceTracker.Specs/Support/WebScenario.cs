@@ -73,7 +73,9 @@ namespace ComplianceTracker.Specs.Support
         }
 
         public string AntiforgeryToken()
-            => Page!.QuerySelector<IHtmlInputElement>("input[name='__RequestVerificationToken']")!.Value;
+     => Page?.QuerySelector<IHtmlInputElement>("input[name='__RequestVerificationToken']")?.Value
+        ?? throw new Xunit.Sdk.XunitException(
+            $"No antiforgery token on the page {CurrentPath} (status {(int)Response!.StatusCode}). Does the page exist and contain a form?");
 
         // Stien på den side, klienten endte på efter eventuelle redirects
         public string CurrentPath => Response!.RequestMessage!.RequestUri!.AbsolutePath;
@@ -102,6 +104,24 @@ namespace ComplianceTracker.Specs.Support
                 Sector.Manufacturing,
                 OrganizationSize.Small,
                 TestUsers.Identity(creatorName));
+        }
+
+        public async Task PostFileAsync(string path, Dictionary<string, string> fields, string fileName, byte[] content)
+        {
+            using var form = new MultipartFormDataContent();
+            foreach (var (name,value) in fields)
+            {
+                form.Add(new StringContent(value), name);
+            }
+
+            form.Add(new StringContent(AntiforgeryToken()), "__RequestVerificationToken");
+
+            var file = new ByteArrayContent(content);
+            file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
+            form.Add(file, "File", fileName);
+
+            Response = await Client.PostAsync(path, form);
+            Page = await ParseAsync(Response);
         }
 
         public void Dispose()
