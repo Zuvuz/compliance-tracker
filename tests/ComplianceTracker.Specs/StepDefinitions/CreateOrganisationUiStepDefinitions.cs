@@ -5,8 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {
-    // Webtests af opret-formularen (US-003). Webappen kører i hukommelsen med test-login,
-    // og databasen er PostgreSQL i Testcontainers. De fleste "Then"-steps her bruges også af US-004.
+    // Web tests of the create form (US-003). The web app runs in memory with test sign-in,
+    // and the database is PostgreSQL in Testcontainers. Most "Then" steps here are also used by US-004.
     [Binding]
     public class CreateOrganisationUiStepDefinitions
     {
@@ -37,7 +37,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Given("an organisation with CVR {string} exists")]
         public async Task GivenAnOrganisationWithCvrExists(string cvr)
         {
-            // Oprettet af en anden bruger end den indloggede
+            // Created by another user than the signed-in one, so only the CVR clashes
             await _web.CreateOrganisationAsync("Other", "Acme ApS", cvr);
         }
 
@@ -58,8 +58,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I post the form without an antiforgery token")]
         public async Task WhenIPostTheFormWithoutAnAntiforgeryToken()
         {
-            // En indlogget bruger, men uden antiforgery-cookie og -token,
-            // som et forfalsket request fra et andet website
+            // A signed-in user, but without the antiforgery cookie and token,
+            // like a forged request from another website
             using var attacker = _web.CreateClient(signedInAs: "Anna");
 
             var form = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -83,15 +83,15 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         [Then("{string} is shown as Admin")]
-        public void ThenIsShownAsAdmin(string userName)
+        public async Task ThenIsShownAsAdmin(string userName)
         {
-            Assert.Contains(UserRows(), cells => cells[0] == userName && cells[2] == "Admin");
+            Assert.Contains(await UserRowsAsync(), cells => cells[0] == userName && cells[2] == "Admin");
         }
 
         [Then("{string} with e-mail {string} is shown as Admin")]
-        public void ThenWithEmailIsShownAsAdmin(string userName, string email)
+        public async Task ThenWithEmailIsShownAsAdmin(string userName, string email)
         {
-            Assert.Contains(UserRows(), cells => cells[0] == userName && cells[1] == email && cells[2] == "Admin");
+            Assert.Contains(await UserRowsAsync(), cells => cells[0] == userName && cells[1] == email && cells[2] == "Admin");
         }
 
         [Then("I see the error {string}")]
@@ -122,9 +122,18 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.False(await db.Organizations.AnyAsync());
         }
 
-        // Rækkerne i brugertabellen på detaljesiden: navn, e-mail, rolle
-        private IEnumerable<string[]> UserRows()
-            => _web.Page!.QuerySelectorAll("#organisation-users tbody tr")
-                .Select(row => row.QuerySelectorAll("td").Select(cell => cell.TextContent.Trim()).ToArray());
+        // The rows of the users table: name, e-mail, role.
+        // The users are on their own tab, so the test clicks "Users" on the organisation page first, like a user would.
+        private async Task<IEnumerable<string[]>> UserRowsAsync()
+        {
+            var usersTab = _web.Page!.QuerySelector("a#users-tab")?.GetAttribute("href")
+                ?? throw new Xunit.Sdk.XunitException($"The page {_web.CurrentPath} has no Users tab.");
+
+            await _web.OpenAsync(usersTab);
+
+            return _web.Page!.QuerySelectorAll("#organisation-users tbody tr")
+                .Select(row => row.QuerySelectorAll("td").Select(cell => cell.TextContent.Trim()).ToArray())
+                .ToList();
+        }
     }
 }

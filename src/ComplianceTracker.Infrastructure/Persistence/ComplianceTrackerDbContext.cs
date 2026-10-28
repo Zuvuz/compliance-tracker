@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ComplianceTracker.Infrastructure.Persistence
 {
+    // EF Core's view of the PostgreSQL database. Each DbSet is a table (Users are reached through Organizations).
+    // How each class is stored is described in the Configurations folder.
     public class ComplianceTrackerDbContext : DbContext
     {
         public ComplianceTrackerDbContext(DbContextOptions<ComplianceTrackerDbContext> options)
@@ -20,7 +22,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Henter alle IEntityTypeConfiguration-klasser i mappen Configurations
+            // Picks up every IEntityTypeConfiguration class in the Configurations folder
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(ComplianceTrackerDbContext).Assembly);
         }
     }

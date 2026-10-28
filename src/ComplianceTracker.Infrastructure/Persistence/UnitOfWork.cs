@@ -2,8 +2,8 @@ using ComplianceTracker.Application.Common;
 
 namespace ComplianceTracker.Infrastructure.Persistence
 {
-    // EF's SaveChanges kører alle ventende ændringer i én transaktion.
-    // Fejler én af dem, bliver ingen af dem gemt.
+    // Saves everything the repositories have registered. EF's SaveChanges runs all
+    // pending changes in one transaction: if one of them fails, none of them are saved.
     public class UnitOfWork : IUnitOfWork
     {
         private readonly ComplianceTrackerDbContext _db;

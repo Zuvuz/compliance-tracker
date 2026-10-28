@@ -1,4 +1,5 @@
-﻿@model FrameworkVersionsViewModel
+﻿@* US-005: every version of one framework, newest first. Earlier versions can still be opened (R3). *@
+@model FrameworkVersionsViewModel
 @{
     ViewData["Title"] = Model.Framework.Name;
 }
@@ -25,6 +26,7 @@
                 <td>@version.FileName</td>
                 <td>@version.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
                 <td>@Model.UploadedBy(version)</td>
+                @* Fingerprint of the PDF: an auditor can recalculate it to prove the file has not changed *@
                 <td><code class="small">@version.Sha256</code></td>
                 <td><a class="open-pdf" asp-action="Document" asp-route-id="@version.Id">Open PDF</a></td>
             </tr>

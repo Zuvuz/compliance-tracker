@@ -7,33 +7,40 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.Security.Claims;
 
+// Start-up of the web app. Two parts:
+// 1. Before builder.Build(): register services (what the app can do).
+// 2. After builder.Build(): the pipeline (the order every request passes through).
+
 var builder = WebApplication.CreateBuilder(args);
 
+// MVC: controllers with Razor views
 builder.Services.AddControllersWithViews();
 
-// Database, repositories og unit of work (Infrastructure) og use cases (Application)
+// Database, repositories and unit of work (Infrastructure) and the use cases (Application).
+// Scoped = one instance per HTTP request.
 builder.Services.AddInfrastructure();
 builder.Services.AddScoped<OrganizationService>();
 builder.Services.AddScoped<UserActivityService>();
 builder.Services.AddScoped<FrameworkService>();
 
-// Login med Keycloak via OpenID Connect (US-004)
+// Sign-in with Keycloak via OpenID Connect (US-004)
 builder.Services
     .AddAuthentication(options =>
     {
-        // Cookie husker brugeren; OpenID Connect bruges, når login mangler
+        // The cookie remembers the signed-in user; OpenID Connect is used when sign-in is missing
         options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
         options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
     })
     .AddCookie()
     .AddOpenIdConnect();
 
-// Indstillingerne læses fra konfigurationen, når login bruges første gang.
-// På den måde kan integrationstestene give deres egen Keycloak-adresse og secret.
+// The OpenID Connect settings are read from configuration the first time sign-in is used.
+// That way the integration tests can supply their own Keycloak address and secret.
 builder.Services
     .AddOptions<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme)
     .Configure<IConfiguration>((options, configuration) =>
     {
+        // Authority and ClientId are in appsettings.Development.json; the secret only in an environment variable
         var keycloak = configuration.GetSection("Authentication:Keycloak");
         options.Authority = keycloak["Authority"];
         options.ClientId = keycloak["ClientId"];
@@ -43,12 +50,12 @@ builder.Services
 
         options.ResponseType = "code";    // authorization code flow
         options.UsePkce = true;           // ASVS V10.2.1
-        options.Scope.Add("email");       // "openid" og "profile" er med som standard
-        options.SaveTokens = true;        // bruges ved log ud
-        options.MapInboundClaims = false; // behold Keycloaks navne: "sub", "email", "name"
-        options.TokenValidationParameters.NameClaimType = "name";
+        options.Scope.Add("email");       // "openid" and "profile" are included by default
+        options.SaveTokens = true;        // the ID token is needed for signing out of Keycloak
+        options.MapInboundClaims = false; // keep Keycloak's claim names: "sub", "email", "name"
+        options.TokenValidationParameters.NameClaimType = "name"; // User.Identity.Name shows the name
 
-        // Log hvert login, når Keycloak har bekræftet brugeren (R6)
+        // Log every sign-in once Keycloak has confirmed the user (US-004 R6)
         options.Events.OnTokenValidated = async context =>
         {
             var externalId = context.Principal?.FindFirstValue("sub");
@@ -61,17 +68,17 @@ builder.Services
 
         if (builder.Environment.IsDevelopment())
         {
-            // Lokalt kører Keycloak på http, ikke https
+            // Locally, Keycloak runs on http, not https
             options.RequireHttpsMetadata = false;
             options.CorrelationCookie.SameSite = SameSiteMode.Lax;
             options.NonceCookie.SameSite = SameSiteMode.Lax;
-            // Tilbage fra Keycloak via et link (GET) i stedet for en formular,
-            // så cookies kommer med, selvom appen kører https og Keycloak http
+            // Come back from Keycloak through a link (GET) instead of a form,
+            // so the cookies are sent even though the app runs on https and Keycloak on http
             options.ResponseMode = OpenIdConnectResponseMode.Query;
         }
     });
 
-// Alle sider kræver login, medmindre de er markeret [AllowAnonymous] (R1)
+// Every page requires sign-in, unless it is marked [AllowAnonymous] (US-004 R1)
 builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = options.DefaultPolicy;
@@ -79,6 +86,7 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
+// Outside Development: a friendly error page instead of technical details, and HSTS (always https)
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -88,12 +96,13 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 
-app.UseAuthentication();   // hvem er brugeren?
-app.UseAuthorization();    // hvad må brugeren?
+app.UseAuthentication();   // who is the user?
+app.UseAuthorization();    // what may the user do?
 
-// CSS, JavaScript og billeder skal kunne hentes uden login
+// CSS, JavaScript and images must be available without sign-in
 app.MapStaticAssets().AllowAnonymous();
 
+// URLs map to controller/action/id, e.g. /Frameworks/Versions/{id}. "/" goes to Home/Index.
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
@@ -101,5 +110,5 @@ app.MapControllerRoute(
 
 app.Run();
 
-// Gør Program synlig for integrationstestene (WebApplicationFactory<Program>)
+// Makes Program visible to the integration tests (WebApplicationFactory<Program>)
 public partial class Program { }

@@ -3,6 +3,8 @@ using ComplianceTracker.Domain.Organizations;
 
 namespace ComplianceTracker.Specs.Support
 {
+    // A fake repository kept in a list, for the fast US-001 tests that do not use a database.
+    // It behaves like the real one, so OrganizationService cannot tell the difference.
     public class InMemoryOrganizationRepository : IOrganizationRepository
     {
         private readonly List<Organization> _items = new();

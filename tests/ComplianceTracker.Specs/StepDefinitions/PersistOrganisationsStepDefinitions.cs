@@ -8,8 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {
-    // Integrationstests mod en rigtig PostgreSQL-database.
-    // "Applikationen genstarter" = en ny DbContext uden noget i hukommelsen, så alt skal hentes fra databasen.
+    // US-002: integration tests against a real PostgreSQL database.
+    // "The application restarts" = a new DbContext with nothing in memory, so everything must come from the database.
     [Binding]
     public class PersistOrganisationsStepDefinitions
     {
@@ -25,8 +25,9 @@ namespace ComplianceTracker.Specs.StepDefinitions
             _database = database;
         }
 
-        // ---------------------------------------------------------- Hjælpere
+        // ---------------------------------------------------------- Helpers
 
+        // The "running application": started the first time a step needs it
         private OrganizationService Service
         {
             get
@@ -40,6 +41,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             }
         }
 
+        // Throws away the old DbContext (and everything it remembers) and builds the service again
         private void StartApplication()
         {
             _db?.Dispose();
@@ -67,7 +69,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Given("I have created an organisation with name {string}")]
         public async Task GivenIHaveCreatedAnOrganisationWithName(string name)
         {
-            // Andre værdier end standard-enum-værdierne, så en forkert mapping ikke kan snyde testen
+            // Other values than the first enum values, so a wrong mapping cannot fool the test
             _created = await Service.CreateAsync(name, "87654321", Sector.Health, OrganizationSize.Medium, TestUsers.Identity("Bo"));
         }
 
@@ -82,7 +84,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I retrieve the organisation")]
         public async Task WhenIRetrieveTheOrganisation()
         {
-            // Ny DbContext, så organisationen hentes fra databasen og ikke fra EF's hukommelse
+            // New DbContext, so the organisation is read from the database and not from EF's memory
             StartApplication();
             _retrieved = await LoadCreatedOrganization();
         }
@@ -103,6 +105,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             Assert.NotNull(_created);
             Assert.NotNull(_retrieved);
+
+            // Two different objects: proves the data really came from the database
             Assert.NotSame(_created, _retrieved);
 
             Assert.Equal(_created.Id, _retrieved.Id);

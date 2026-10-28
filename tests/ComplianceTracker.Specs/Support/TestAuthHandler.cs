@@ -6,10 +6,10 @@ using System.Text.Encodings.Web;
 
 namespace ComplianceTracker.Specs.Support
 {
-    // Test-login: erstatter Keycloak i de fleste webtests.
-    // Testen sætter headeren X-Test-User til et navn, og så er klienten logget ind som den bruger,
-    // med de samme claims som Keycloak giver ("sub", "name", "email").
-    // Uden headeren er klienten ikke logget ind, og lukkede sider sender til /test-sign-in.
+    // Test sign-in: replaces Keycloak in most web tests.
+    // The test sets the header X-Test-User to a name, and the client is then signed in as that user,
+    // with the same claims Keycloak gives ("sub", "name", "email").
+    // Without the header the client is not signed in, and closed pages redirect to /test-sign-in.
     public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {
         public const string SchemeName = "Test";
@@ -25,14 +25,16 @@ namespace ComplianceTracker.Specs.Support
         {
         }
 
+        // Runs on every request: who is the user?
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             var name = Request.Headers[UserHeader].ToString();
             if (string.IsNullOrEmpty(name))
             {
-                return Task.FromResult(AuthenticateResult.NoResult());
+                return Task.FromResult(AuthenticateResult.NoResult()); // not signed in
             }
 
+            // Same fixed id for the same name, so a test user is recognised across requests
             var identity = TestUsers.Identity(name);
             var email = Request.Headers[EmailHeader].ToString();
 
@@ -43,11 +45,13 @@ namespace ComplianceTracker.Specs.Support
                 new Claim("email", string.IsNullOrEmpty(email) ? identity.Email : email)
             };
 
+            // "name" is the claim User.Identity.Name reads, like in Program.cs
             var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, SchemeName, "name", "role"));
             return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(principal, SchemeName)));
         }
 
-        // Svarer til, at appen sender brugeren til Keycloaks login-side
+        // Runs when a closed page is opened without sign-in.
+        // Matches the app sending the user to Keycloak's sign-in page.
         protected override Task HandleChallengeAsync(AuthenticationProperties properties)
         {
             Response.Redirect(SignInPath);

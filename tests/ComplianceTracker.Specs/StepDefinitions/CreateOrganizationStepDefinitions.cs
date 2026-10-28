@@ -9,15 +9,21 @@ using Xunit;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {
+    // US-001: the rules for creating an organisation, tested directly against OrganizationService
+    // with in-memory repositories. Fast, no database or web app.
     [Binding]
     public class CreateOrganizationStepDefinitions
     {
-        // Felter: "stafetten" mellem steps. Ny instans pr. scenarie.
+        // Fields pass data from one step to the next ("the baton"). Reqnroll creates a new instance per scenario.
         private readonly InMemoryActivityLogRepository _activityLog = new();
         private readonly OrganizationService _service;
 
         private string _currentUser = "";
+
+        // Set when creation succeeds ...
         private Organization? _organization;
+
+        // ... or when a rule rejects it, so a "Then" step can check the reason
         private DomainException? _error;
 
         public CreateOrganizationStepDefinitions()
@@ -33,6 +39,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             _currentUser = name;
         }
 
+        // Another organisation created by a different user, so only the CVR clashes
         [Given("an organization {string} exists with CVR {string}")]
         public async Task GivenAnOrganizationExistsWithCvr(string name, string cvr)
         {
@@ -44,9 +51,11 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I create the organization {string} with CVR {string}, sector {string} and size {string}")]
         public async Task WhenICreateTheOrganization(string name, string cvr, string sector, string size)
         {
+            // Turns the text from the Gherkin, e.g. "Manufacturing", into the enum value
             var parsedSector = Enum.Parse<Sector>(sector);
             var parsedSize = Enum.Parse<OrganizationSize>(size);
 
+            // A broken rule is not a test failure here: the error is saved and checked by a "Then" step
             try
             {
                 _organization = await _service.CreateAsync(name, cvr, parsedSector, parsedSize, TestUsers.Identity(_currentUser));
@@ -112,6 +121,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.Equal(reason, _error.Message);
         }
 
+        // US-001 R5: the creation is logged with the right user, action and organisation
         [Then("an activity log entry exists with user {string}, action {string} and organization {string}")]
         public void ThenAnActivityLogEntryExists(string userName, string action, string organizationName)
         {

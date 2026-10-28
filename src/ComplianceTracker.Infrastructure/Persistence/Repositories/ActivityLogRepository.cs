@@ -3,6 +3,7 @@ using ComplianceTracker.Domain.ActivityLog;
 
 namespace ComplianceTracker.Infrastructure.Persistence.Repositories
 {
+    // EF Core implementation of IActivityLogRepository. Append-only, like the interface.
     public class ActivityLogRepository : IActivityLogRepository
     {
         private readonly ComplianceTrackerDbContext _db;
@@ -12,7 +13,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
             _db = db;
         }
 
-        // Tilføjer kun til EF's change tracker. Gemmes først ved IUnitOfWork.SaveChangesAsync.
+        // Only adds the entry to EF's change tracker. It is saved by IUnitOfWork.SaveChangesAsync.
         public async Task AppendAsync(ActivityLogEntry entry, CancellationToken cancellationToken = default)
             => await _db.ActivityLog.AddAsync(entry, cancellationToken);
     }

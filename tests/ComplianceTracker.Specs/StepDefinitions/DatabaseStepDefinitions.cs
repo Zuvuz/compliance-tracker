@@ -2,7 +2,7 @@ using ComplianceTracker.Specs.Support;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {
-    // Fælles database-steps for alle integrationstests (US-002, US-003)
+    // Shared database step for all integration tests (US-002 and later)
     [Binding]
     public class DatabaseStepDefinitions
     {
@@ -13,6 +13,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             _database = database;
         }
 
+        // Starts the test database (first time only) and empties it, so every scenario starts clean
         [Given("an empty database")]
         public async Task GivenAnEmptyDatabase()
         {

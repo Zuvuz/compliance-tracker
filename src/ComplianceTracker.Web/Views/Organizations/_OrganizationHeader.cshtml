@@ -1,0 +1,22 @@
+@* Shared top of the organisation pages: the name, the CVR in small text, and the tabs.
+   The page that uses it sets ViewData["ActiveTab"] to "Overview" or "Users". *@
+@using ComplianceTracker.Domain.Organizations
+@model Organization
+@{
+    var activeTab = ViewData["ActiveTab"] as string;
+}
+
+<h1 id="organisation-name" class="mb-0">@Model.Name</h1>
+@* Sector and size are still stored, but not shown: they are used later to decide which frameworks apply *@
+<p class="text-muted small mb-3">CVR <span id="organisation-cvr">@Model.Cvr</span></p>
+
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+        <a id="overview-tab" class="nav-link @(activeTab == "Overview" ? "active" : "")"
+           asp-action="Details" asp-route-id="@Model.Id">Overview</a>
+    </li>
+    <li class="nav-item">
+        <a id="users-tab" class="nav-link @(activeTab == "Users" ? "active" : "")"
+           asp-action="Users" asp-route-id="@Model.Id">Users</a>
+    </li>
+</ul>

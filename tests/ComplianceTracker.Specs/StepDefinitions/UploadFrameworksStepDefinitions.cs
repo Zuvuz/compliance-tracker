@@ -6,13 +6,17 @@ using System.Net;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {
-    // US-005: upload af frameworks som PDF, testet gennem webappen med test-login
+    // US-005: uploading frameworks as PDF, tested through the web app with test sign-in.
+    // The steps define the UI "contract": the page /Frameworks, rows with data-framework-id,
+    // cells with the classes framework-name / framework-version / framework-file, and links with open-pdf.
     [Binding]
     public class UploadFrameworksStepDefinitions
     {
         private const string ListPath = "/Frameworks";
 
         private readonly WebScenario _web;
+
+        // Addresses of PDFs owned by another organisation, so the test can try to open them as Anna
         private readonly Dictionary<string, string> _otherOrganisationsPdfLinks = new();
 
         public UploadFrameworksStepDefinitions(WebScenario web)
@@ -31,7 +35,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             await _web.CreateOrganisationAsync(userName, organisationName);
 
-            
+            // The other user uploads in their own "browser"
             using var other = _web.CreateClient(signedInAs: userName);
             var listPage = await WebScenario.ParseAsync(await other.GetAsync(ListPath));
             var token = listPage.QuerySelector("input[name='__RequestVerificationToken']")!.GetAttribute("value")!;
@@ -44,7 +48,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             };
             var afterUpload = await WebScenario.ParseAsync(await other.PostAsync(ListPath + "/Add", form));
 
-            
+            // Remember the PDF's address, so Anna can try to open it
             _otherOrganisationsPdfLinks[frameworkName] = RowFor(afterUpload, frameworkName)
                 .QuerySelector("a.open-pdf")!.GetAttribute("href")!;
         }
@@ -55,6 +59,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public Task WhenIAddTheFrameworkWithTheFile(string name, string fileName)
             => AddFramework(name, fileName, TestFiles.Pdf());
 
+        // The next two steps come from the Scenario Outline examples about file type and size (R5)
         [When("I add the framework {string} with a text file named {string}")]
         public Task WhenIAddTheFrameworkWithATextFile(string name, string fileName)
             => AddFramework(name, fileName, TestFiles.TextFile());
@@ -66,6 +71,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I upload a new version of {string} with the file {string}")]
         public async Task WhenIUploadANewVersion(string name, string fileName)
         {
+            // Uses the "Upload new version" form on the framework's row
             await _web.OpenAsync(ListPath);
             var frameworkId = RowFor(_web.Page!, name).GetAttribute("data-framework-id")!;
 
@@ -102,6 +108,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await _web.OpenAsync(ListPath);
             var frameworkId = RowFor(_web.Page!, name).GetAttribute("data-framework-id");
 
+            // Find the old version on the versions page and download it
             await _web.OpenAsync($"{ListPath}/Versions/{frameworkId}");
             var versionRow = _web.Page!.QuerySelectorAll("tbody tr")
                 .Single(r => r.QuerySelector(".framework-version")!.TextContent.Trim() == version.ToString());
@@ -124,6 +131,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await _web.OpenAsync(ListPath);
             var link = _web.Page!.QuerySelector("a.open-pdf")!.GetAttribute("href");
 
+            // ASVS V5.4.1: the download's Content-Disposition has our cleaned name, not the uploaded one
             var pdf = await _web.Client.GetAsync(link);
             Assert.Equal(fileName, pdf.Content.Headers.ContentDisposition?.FileNameStar
                 ?? pdf.Content.Headers.ContentDisposition?.FileName?.Trim('"'));
@@ -137,7 +145,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             var organisation = await db.Organizations.SingleAsync(o => o.Name == organisationName);
             var user = organisation.Users.Single(u => u.Name == userName);
 
-            // Id'et på præcis den version, logposten skal handle om
+            // The id of exactly the version the log entry should be about
             var versionId = await (
                     from v in db.FrameworkVersions
                     join f in db.Frameworks on v.FrameworkId equals f.Id
@@ -147,6 +155,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
             var expectedAction = Enum.Parse<ActivityAction>(action);
 
+            // R8: who (user), what (action), where (organisation) and about what (SubjectId) all match
             Assert.True(
                 await db.ActivityLog.AnyAsync(e =>
                     e.OrganizationId == organisation.Id &&
@@ -156,8 +165,9 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 $"No '{action}' log entry by {userName} for {frameworkName} version {version}.");
         }
 
+        // ---------------------------------------------------------- Helpers
 
-
+        // Fills in the "add framework" form and submits it, like a user would
         private async Task AddFramework(string name, string fileName, byte[] content)
         {
             await _web.OpenAsync(ListPath);
@@ -166,6 +176,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 fileName, content);
         }
 
+        // The framework's row in the list, with a clear error if it is missing
         private static IElement RowFor(IDocument page, string frameworkName)
             => page.QuerySelectorAll("#frameworks tbody tr")
                 .SingleOrDefault(r => r.QuerySelector(".framework-name")?.TextContent.Trim() == frameworkName)

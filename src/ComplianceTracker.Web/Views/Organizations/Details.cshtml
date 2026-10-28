@@ -1,39 +1,16 @@
+@* The signed-in user's own organisation: the Overview tab (US-003 R2, US-004 R5).
+   The ids (#organisation-name, #organisation-projects ...) are used by the tests. *@
 @using ComplianceTracker.Domain.Organizations
 @model Organization
 @{
     ViewData["Title"] = Model.Name;
+    ViewData["ActiveTab"] = "Overview";
 }
 
-<h1 id="organisation-name">@Model.Name</h1>
+<partial name="_OrganizationHeader" model="Model" />
 
-<dl class="row">
-    <dt class="col-sm-3">CVR</dt>
-    <dd class="col-sm-9" id="organisation-cvr">@Model.Cvr</dd>
-
-    <dt class="col-sm-3">Sector</dt>
-    <dd class="col-sm-9" id="organisation-sector">@Model.Sector</dd>
-
-    <dt class="col-sm-3">Size</dt>
-    <dd class="col-sm-9" id="organisation-size">@Model.Size</dd>
-</dl>
-
-<h2>Users</h2>
-<table class="table" id="organisation-users">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>E-mail</th>
-            <th>Role</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var user in Model.Users)
-        {
-            <tr>
-                <td>@user.Name</td>
-                <td>@user.Email</td>
-                <td>@user.Role</td>
-            </tr>
-        }
-    </tbody>
-</table>
+@* The organisation's running projects will be listed here when the project story (US-008) is built *@
+<section id="organisation-projects">
+    <h2 class="h4">Projects</h2>
+    <p class="text-muted">No projects yet. The organisation's projects will be shown here.</p>
+</section>

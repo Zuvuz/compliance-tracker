@@ -1,4 +1,5 @@
-﻿@{
+﻿@* The public front page (US-004 R1). Signed-in users never see it: HomeController sends them to their organisation. *@
+@{
     ViewData["Title"] = "Compliance Tracker";
 }
 
@@ -6,6 +7,7 @@
     <h1 class="display-4">Compliance Tracker</h1>
     <p class="lead">Keep track of the standards and regulations your organisation and products must meet.</p>
     <p>
+        @* Goes to AccountController.Login, which sends the user to Keycloak *@
         <a class="btn btn-primary btn-lg" asp-controller="Account" asp-action="Login">Sign in</a>
     </p>
     <p class="text-muted">New here? Choose "Register" on the sign-in page, and create your organisation afterwards.</p>

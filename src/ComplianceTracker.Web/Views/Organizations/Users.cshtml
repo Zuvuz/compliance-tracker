@@ -1,0 +1,33 @@
+@* The Users tab: the members of the organisation and their roles.
+   Adding users (US-009), changing roles (US-010) and removing users will be built here.
+   Each column is checked by the tests: name, e-mail, role. *@
+@using ComplianceTracker.Domain.Organizations
+@model Organization
+@{
+    ViewData["Title"] = $"{Model.Name} – Users";
+    ViewData["ActiveTab"] = "Users";
+}
+
+<partial name="_OrganizationHeader" model="Model" />
+
+<table class="table" id="organisation-users">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>E-mail</th>
+            <th>Role</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model.Users)
+        {
+            <tr>
+                <td>@user.Name</td>
+                <td>@user.Email</td>
+                <td>@user.Role</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<p class="text-muted small">Inviting users, giving them roles and removing them will be possible here later.</p>

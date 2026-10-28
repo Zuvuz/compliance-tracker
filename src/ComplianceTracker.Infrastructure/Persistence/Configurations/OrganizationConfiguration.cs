@@ -4,36 +4,37 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ComplianceTracker.Infrastructure.Persistence.Configurations
 {
+    // How Organization (and its list of users) is stored in the table "Organizations"
     public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
     {
         public void Configure(EntityTypeBuilder<Organization> builder)
         {
             builder.ToTable("Organizations");
 
-            // Id sættes af domænet (Guid.NewGuid), ikke af databasen
+            // The id is set by the domain (Guid.NewGuid), not by the database
             builder.HasKey(o => o.Id);
             builder.Property(o => o.Id).ValueGeneratedNever();
 
             builder.Property(o => o.Name).IsRequired();
 
             builder.Property(o => o.Cvr).IsRequired().HasMaxLength(8);
-            // Sikkerhedsnet i databasen bag tjekket i OrganizationService
+            // Safety net in the database behind the check in OrganizationService
             builder.HasIndex(o => o.Cvr).IsUnique();
 
-            // Enums gemmes som tekst, så nye værdier ikke forskyder eksisterende data
+            // Enums are stored as text, so new values never shift existing data
             builder.Property(o => o.Sector).HasConversion<string>().HasMaxLength(50);
             builder.Property(o => o.Size).HasConversion<string>().HasMaxLength(50);
 
-            // Brugerne hører til organisationen. Fremmednøglen findes kun i databasen (shadow property),
-            // så User-klassen i domænet ikke skal ændres.
+            // The users belong to the organisation. The foreign key only exists in the database
+            // (a "shadow property"), so the User class in the domain does not need it.
             builder.HasMany(o => o.Users)
                 .WithOne()
                 .HasForeignKey("OrganizationId")
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // EF skriver direkte i det private felt _users, fordi Users er read-only udadtil.
-            // AutoInclude henter brugerne med, hver gang en organisation hentes.
+            // EF writes straight into the private field _users, because Users is read-only.
+            // AutoInclude loads the users every time an organisation is loaded.
             builder.Navigation(o => o.Users)
                 .HasField("_users")
                 .UsePropertyAccessMode(PropertyAccessMode.Field)

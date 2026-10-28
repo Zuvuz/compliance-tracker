@@ -7,8 +7,8 @@ using System.Net;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {
-    // US-004 med test-login (TestAuthHandler) i stedet for Keycloak.
-    // Det rigtige Keycloak-login testes i KeycloakSignInStepDefinitions.
+    // US-004 with test sign-in (TestAuthHandler) instead of Keycloak.
+    // The real Keycloak sign-in is tested in KeycloakSignInStepDefinitions.
     [Binding]
     public class SignInStepDefinitions
     {
@@ -24,7 +24,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Given("I am not signed in")]
         public void GivenIAmNotSignedIn()
         {
-            // Klienten sender ingen X-Test-User-header, så den er ikke logget ind
+            // The client sends no X-Test-User header, so it is not signed in
         }
 
         [Given("I am signed in as {string} with e-mail {string} for the first time")]
@@ -70,8 +70,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I post the create form for {string} with CVR {string}")]
         public async Task WhenIPostTheCreateFormFor(string name, string cvr)
         {
-            // Opret-siden sender videre til brugerens organisation, men menuens log ud-formular
-            // har et gyldigt antiforgery-token, som et "manuelt" POST kan bruge
+            // The create page redirects to the user's organisation, but the menu's sign-out form
+            // has a valid antiforgery token that a "manual" POST can use
             await _web.OpenAsync("/");
             await _web.PostFormAsync("/Organizations/Create", new Dictionary<string, string>
             {
@@ -94,7 +94,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("{string} signs in")]
         public async Task WhenSignsIn(string userName)
         {
-            // Samme kode, som appen kører, når Keycloak har bekræftet et login (OnTokenValidated i Program.cs)
+            // The same code the app runs when Keycloak has confirmed a sign-in (OnTokenValidated in Program.cs)
             using var scope = _web.App.Factory.Services.CreateScope();
             var activity = scope.ServiceProvider.GetRequiredService<UserActivityService>();
             await activity.RecordSignInAsync(TestUsers.Identity(userName).ExternalId);
@@ -103,12 +103,12 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("{string} signs out")]
         public async Task WhenSignsOut(string userName)
         {
-            // Log ud via menuens formular, som en bruger ville gøre
+            // Sign out through the menu's form, like a user would
             _web.SignInAs(userName);
             await _web.OpenAsync("/");
             await _web.PostFormAsync("/Account/Logout", new Dictionary<string, string>());
 
-            // Appen sender videre til Keycloaks log ud-side, så brugeren også logges ud dér
+            // The app redirects to Keycloak's sign-out page, so the user is signed out there too
             Assert.EndsWith("/protocol/openid-connect/logout", _web.CurrentPath);
         }
 

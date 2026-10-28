@@ -9,7 +9,8 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace ComplianceTracker.Specs.Support
 {
-    // Starter den rigtige webapp i hukommelsen (WebApplicationFactory) mod testdatabasen.
+    // Starts the real web app in memory (WebApplicationFactory) against the test database.
+    // Requests go straight to the app without a network, but through the full pipeline.
     public sealed class TestApp : IDisposable
     {
         private readonly WebApplicationFactory<Program> _base;
@@ -22,13 +23,13 @@ namespace ComplianceTracker.Specs.Support
             Factory = factory;
         }
 
-        // Webappen med test-login i stedet for Keycloak (se TestAuthHandler)
+        // The web app with test sign-in instead of Keycloak (see TestAuthHandler)
         public static TestApp WithTestSignIn(string connectionString)
         {
             var settings = new Dictionary<string, string?>
             {
                 ["ConnectionStrings:ComplianceTracker"] = connectionString,
-                // Bruges kun, når appen sender videre til Keycloak ved log ud. Der er ingen rigtig Keycloak i disse tests.
+                // Only used when the app redirects to Keycloak on sign-out. There is no real Keycloak in these tests.
                 ["Authentication:Keycloak:Authority"] = FakeKeycloak.Issuer,
                 ["Authentication:Keycloak:ClientId"] = "compliance-tracker-web",
                 ["Authentication:Keycloak:ClientSecret"] = "not-used-in-tests"
@@ -36,6 +37,7 @@ namespace ComplianceTracker.Specs.Support
 
             return Create(settings, services =>
             {
+                // Make the test sign-in the default, replacing the cookie + Keycloak setup from Program.cs
                 services
                     .AddAuthentication(options =>
                     {
@@ -45,7 +47,7 @@ namespace ComplianceTracker.Specs.Support
                     })
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
 
-                // OpenID Connect skal ikke hente Keycloaks opsætning over netværket i testene
+                // OpenID Connect must not fetch Keycloak's settings over the network in the tests
                 services.PostConfigure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme, options =>
                 {
                     options.Configuration = FakeKeycloak.Configuration;
@@ -55,7 +57,7 @@ namespace ComplianceTracker.Specs.Support
             });
         }
 
-        // Webappen med rigtigt login mod en Keycloak-container
+        // The web app with real sign-in against a Keycloak container
         public static TestApp WithKeycloak(string connectionString, string authority, string clientSecret)
         {
             var settings = new Dictionary<string, string?>
@@ -69,6 +71,7 @@ namespace ComplianceTracker.Specs.Support
             return Create(settings, _ => { });
         }
 
+        // Overrides the configuration (connection string, Keycloak) and services for the test
         private static TestApp Create(Dictionary<string, string?> settings, Action<IServiceCollection> configureServices)
         {
             var baseFactory = new WebApplicationFactory<Program>();
@@ -87,6 +90,7 @@ namespace ComplianceTracker.Specs.Support
             _base.Dispose();
         }
 
+        // A made-up Keycloak setup, so the app knows where Keycloak's sign-out page "is" without asking it
         private static class FakeKeycloak
         {
             public const string Issuer = "http://keycloak.test/realms/compliance-tracker";

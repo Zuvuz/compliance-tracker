@@ -8,6 +8,7 @@ using System.Security.Claims;
 
 namespace ComplianceTracker.Web.Controllers
 {
+    // Sign in and sign out through Keycloak (US-004). The app never sees passwords.
     public class AccountController : Controller
     {
         private readonly UserActivityService _activity;
@@ -17,15 +18,17 @@ namespace ComplianceTracker.Web.Controllers
             _activity = activity;
         }
 
-        // Sender brugeren til Keycloak og derefter tilbage til forsiden
+        // Sends the user to Keycloak's sign-in page, and back to the front page afterwards.
+        // AllowAnonymous: you must be able to reach this page before you are signed in.
         [AllowAnonymous]
         public IActionResult Login()
         {
             return Challenge(new AuthenticationProperties { RedirectUri = "/" });
         }
 
-        // Logger ud både i appen (cookien) og i Keycloak.
-        // POST + antiforgery, så et andet website ikke kan logge brugeren ud.
+        // Signs out of both the app (deletes the cookie) and Keycloak; otherwise the next
+        // "Sign in" would let the user straight back in without a password.
+        // POST + antiforgery token, so another website cannot sign the user out.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout(CancellationToken cancellationToken)
@@ -33,9 +36,10 @@ namespace ComplianceTracker.Web.Controllers
             var externalId = User.FindFirstValue("sub");
             if (externalId is not null)
             {
-                await _activity.RecordSignOutAsync(externalId, cancellationToken); // R6
+                await _activity.RecordSignOutAsync(externalId, cancellationToken); // R6: log the sign-out
             }
 
+            // The built-in SignOut: first the cookie, then a redirect to Keycloak's sign-out page
             return SignOut(
                 new AuthenticationProperties { RedirectUri = "/" },
                 CookieAuthenticationDefaults.AuthenticationScheme,
