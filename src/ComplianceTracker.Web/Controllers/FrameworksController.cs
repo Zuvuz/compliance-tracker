@@ -8,10 +8,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ComplianceTracker.Web.Controllers
 {
-    // US-005: organisationens frameworks som PDF. Kræver login (FallbackPolicy).
+    // US-005: the organisation's frameworks as PDF files. Requires sign-in (FallbackPolicy in Program.cs).
+    // Thin controller: the rules live in FrameworkService and the domain.
     public class FrameworksController : Controller
     {
-        // Lidt over 20 MB, så en for stor fil når frem til domænet og får en forståelig fejl (R5)
+        // A little over 20 MB, so a file that is too large reaches the domain and gets a clear message (R5)
+        // instead of being cut off by the web server with a technical error
         private const long MaxRequestSize = 25 * 1024 * 1024;
 
         private readonly FrameworkService _service;
@@ -25,9 +27,11 @@ namespace ComplianceTracker.Web.Controllers
             _organizations = organizations;
         }
 
+        // GET /Frameworks: the list of the organisation's frameworks and the "add" form
         [HttpGet]
         public async Task<IActionResult> Index(CancellationToken cancellationToken)
         {
+            // Users without an organisation must create one first
             var organization = await MyOrganizationAsync(cancellationToken);
             if (organization is null)
             {
@@ -37,6 +41,7 @@ namespace ComplianceTracker.Web.Controllers
             return View(await PageAsync(organization, cancellationToken));
         }
 
+        // POST /Frameworks/Add: a new framework with its first PDF (R1)
         [HttpPost]
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(MaxRequestSize)]
@@ -48,6 +53,7 @@ namespace ComplianceTracker.Web.Controllers
                 file, cancellationToken);
         }
 
+        // POST /Frameworks/UploadVersion: a new version of an existing framework (R3)
         [HttpPost]
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(MaxRequestSize)]
@@ -59,6 +65,7 @@ namespace ComplianceTracker.Web.Controllers
                 file, cancellationToken);
         }
 
+        // GET /Frameworks/Versions/{id}: all versions of one framework
         [HttpGet]
         public async Task<IActionResult> Versions(Guid id, CancellationToken cancellationToken)
         {
@@ -66,13 +73,13 @@ namespace ComplianceTracker.Web.Controllers
             var framework = organization is null ? null : await _frameworks.GetAsync(organization.Id, id, cancellationToken);
             if (framework is null)
             {
-                return NotFound(); // R7
+                return NotFound(); // R7: also when the framework belongs to another organisation
             }
 
             return View(new FrameworkVersionsViewModel(framework, organization!));
         }
 
-        // Åbn PDF'en for en bestemt version
+        // GET /Frameworks/Document/{versionId}: opens the PDF of one version
         [HttpGet]
         public async Task<IActionResult> Document(Guid id, CancellationToken cancellationToken)
         {
@@ -80,15 +87,17 @@ namespace ComplianceTracker.Web.Controllers
             var document = organization is null ? null : await _frameworks.GetDocumentAsync(organization.Id, id, cancellationToken);
             if (document is null)
             {
-                return NotFound(); // R7: også når PDF'en tilhører en anden organisation
+                return NotFound(); // R7: also when the PDF belongs to another organisation
             }
 
-            // ASVS V5.4.1: altid som PDF og med vores eget, rensede filnavn i Content-Disposition
+            // ASVS V5.4.1: always sent as a PDF, with our own cleaned file name in Content-Disposition.
+            // nosniff stops the browser from guessing another content type.
             Response.Headers["X-Content-Type-Options"] = "nosniff";
             return File(document.Value.Content, "application/pdf", document.Value.Version.FileName);
         }
 
-        // Fælles for "tilføj" og "ny version": læs filen, kald use casen, vis fejl eller gå tilbage til listen
+        // Shared by "add" and "new version": read the file, call the use case,
+        // then either go back to the list or show the error on the same page
         private async Task<IActionResult> UploadAsync(Func<byte[], Task> upload, IFormFile? file, CancellationToken cancellationToken)
         {
             try
@@ -98,14 +107,17 @@ namespace ComplianceTracker.Web.Controllers
                     throw new DomainException("Choose a PDF file");
                 }
 
+                // The file is at most 25 MB (MaxRequestSize), so it is fine to read it into memory
                 using var buffer = new MemoryStream();
                 await file.CopyToAsync(buffer, cancellationToken);
                 await upload(buffer.ToArray());
 
-                return RedirectToAction(nameof(Index)); // Post/Redirect/Get
+                // Post/Redirect/Get: reloading the page afterwards does not upload the file again
+                return RedirectToAction(nameof(Index));
             }
             catch (DomainException ex)
             {
+                // Show the rule that was broken, e.g. "Only PDF files are allowed"
                 ModelState.AddModelError(string.Empty, ex.Message);
                 var organization = await MyOrganizationAsync(cancellationToken);
                 return View(nameof(Index), await PageAsync(organization!, cancellationToken));
@@ -115,6 +127,7 @@ namespace ComplianceTracker.Web.Controllers
         private async Task<FrameworksPageViewModel> PageAsync(Organization organization, CancellationToken cancellationToken)
             => new(organization, await _frameworks.ListAsync(organization.Id, cancellationToken));
 
+        // The organisation the signed-in user belongs to (null if none yet)
         private Task<Organization?> MyOrganizationAsync(CancellationToken cancellationToken)
             => _organizations.GetByMemberAsync(User.ExternalId(), cancellationToken);
     }

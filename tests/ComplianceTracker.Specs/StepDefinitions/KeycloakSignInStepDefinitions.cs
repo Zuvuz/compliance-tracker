@@ -6,9 +6,9 @@ using System.Net;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {
-    // Det rigtige login: webappen taler OpenID Connect med en Keycloak-container (US-004 R2, ASVS V10.2.1).
-    // Testen spiller browser og flytter brugeren frem og tilbage mellem webappen og Keycloak,
-    // præcis som en browser følger redirects.
+    // The real sign-in: the web app talks OpenID Connect with a Keycloak container (US-004 R2, ASVS V10.2.1).
+    // The test plays the browser and moves the user back and forth between the web app and Keycloak,
+    // exactly as a browser follows redirects.
     [Binding]
     public class KeycloakSignInStepDefinitions
     {
@@ -40,28 +40,28 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task WhenISignInThroughKeycloakAs(string username)
         {
             _app = TestApp.WithKeycloak(_database.ConnectionString, TestKeycloak.Authority, TestKeycloak.ClientSecret);
-            // https, ligesom en rigtig browser: login-cookies er "Secure" og sendes kun over https
+            // https, like a real browser: the sign-in cookies are "Secure" and are only sent over https
             _appClient = _app.Factory.CreateClient(new WebApplicationFactoryClientOptions
             {
                 BaseAddress = new Uri("https://localhost"),
                 AllowAutoRedirect = false
             });
 
-            // "Browseren" mod Keycloak: følger ikke redirects af sig selv
+            // The "browser" towards Keycloak: does not follow redirects by itself
             using var browser = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false });
             var keycloakCookies = new Dictionary<string, string>();
 
-            // 1. Webappen sender til Keycloak (med PKCE)
+            // 1. The web app sends the user to Keycloak (with PKCE)
             var toKeycloak = await _appClient.GetAsync("/Account/Login");
             Assert.Equal(HttpStatusCode.Redirect, toKeycloak.StatusCode);
 
-            // 2. Keycloaks login-side
+            // 2. Keycloak's sign-in page
             var loginPage = await SendAsync(browser, keycloakCookies, new HttpRequestMessage(HttpMethod.Get, toKeycloak.Headers.Location));
             loginPage.EnsureSuccessStatusCode();
             var form = (await WebScenario.ParseAsync(loginPage)).QuerySelector<IHtmlFormElement>("#kc-form-login");
             Assert.NotNull(form);
 
-            // 3. Brugeren logger ind hos Keycloak. Webappen ser aldrig kodeordet.
+            // 3. The user signs in at Keycloak. The web app never sees the password.
             var afterLogin = await SendAsync(browser, keycloakCookies, new HttpRequestMessage(HttpMethod.Post, form.GetAttribute("action"))
             {
                 Content = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -74,17 +74,17 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.True(afterLogin.StatusCode == HttpStatusCode.Found,
                 $"Keycloak did not send the user back. Status {afterLogin.StatusCode}: {await afterLogin.Content.ReadAsStringAsync()}");
 
-            // 4. Tilbage til webappen med en kode, som webappen bytter til tokens hos Keycloak
+            // 4. Back to the web app with a code, which the web app exchanges for tokens at Keycloak
             var callback = await _appClient.GetAsync(afterLogin.Headers.Location!.PathAndQuery);
             Assert.True(callback.StatusCode == HttpStatusCode.Redirect,
                 $"The app did not accept the sign-in. Status {callback.StatusCode}: {await callback.Content.ReadAsStringAsync()}");
 
-            // 5. Nu er brugeren logget ind (cookie) og kan åbne en lukket side
+            // 5. Now the user is signed in (cookie) and can open a closed page
             _response = await _appClient.GetAsync("/Organizations/Create");
         }
 
-        // Keycloak sætter sine cookies som "Secure". Chrome sender dem alligevel til http://localhost,
-        // men .NET's CookieContainer gør ikke. Derfor husker testen selv Keycloaks cookies.
+        // Keycloak sets its cookies as "Secure". Chrome still sends them to http://localhost,
+        // but .NET's CookieContainer does not. So the test remembers Keycloak's cookies itself.
         private static async Task<HttpResponseMessage> SendAsync(
             HttpClient browser, Dictionary<string, string> cookies, HttpRequestMessage request)
         {

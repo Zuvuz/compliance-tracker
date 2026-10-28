@@ -5,8 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {
-    // Webtests af opret-formularen (US-003). Webappen kører i hukommelsen med test-login,
-    // og databasen er PostgreSQL i Testcontainers. De fleste "Then"-steps her bruges også af US-004.
+    // Web tests of the create form (US-003). The web app runs in memory with test sign-in,
+    // and the database is PostgreSQL in Testcontainers. Most "Then" steps here are also used by US-004.
     [Binding]
     public class CreateOrganisationUiStepDefinitions
     {
@@ -37,7 +37,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Given("an organisation with CVR {string} exists")]
         public async Task GivenAnOrganisationWithCvrExists(string cvr)
         {
-            // Oprettet af en anden bruger end den indloggede
+            // Created by another user than the signed-in one, so only the CVR clashes
             await _web.CreateOrganisationAsync("Other", "Acme ApS", cvr);
         }
 
@@ -58,8 +58,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I post the form without an antiforgery token")]
         public async Task WhenIPostTheFormWithoutAnAntiforgeryToken()
         {
-            // En indlogget bruger, men uden antiforgery-cookie og -token,
-            // som et forfalsket request fra et andet website
+            // A signed-in user, but without the antiforgery cookie and token,
+            // like a forged request from another website
             using var attacker = _web.CreateClient(signedInAs: "Anna");
 
             var form = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -122,7 +122,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.False(await db.Organizations.AnyAsync());
         }
 
-        // Rækkerne i brugertabellen på detaljesiden: navn, e-mail, rolle
+        // The rows of the users table on the current page: name, e-mail, role
         private IEnumerable<string[]> UserRows()
             => _web.Page!.QuerySelectorAll("#organisation-users tbody tr")
                 .Select(row => row.QuerySelectorAll("td").Select(cell => cell.TextContent.Trim()).ToArray());

@@ -1,3 +1,5 @@
+@* The signed-in user's own organisation (US-003 R2, US-004 R5).
+   The ids (#organisation-name, #organisation-users ...) are used by the tests. *@
 @using ComplianceTracker.Domain.Organizations
 @model Organization
 @{
@@ -17,6 +19,7 @@
     <dd class="col-sm-9" id="organisation-size">@Model.Size</dd>
 </dl>
 
+@* The members of the organisation. Each column is checked by the tests: name, e-mail, role. *@
 <h2>Users</h2>
 <table class="table" id="organisation-users">
     <thead>

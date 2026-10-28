@@ -5,8 +5,10 @@ using ComplianceTracker.Domain.ActivityLog;
 
 namespace ComplianceTracker.Application.Users
 {
-    // Logger log ind og log ud (US-004 R6, ISO 27001 A.8.15).
-    // Første login logges ikke: brugeren har endnu ingen organisation, og oprettelsen logges som OrganizationCreated.
+    // Logs sign-in and sign-out (US-004 R6, ISO 27001 A.8.15).
+    // Called by the web app when Keycloak has confirmed a sign-in, and when the user signs out.
+    // The first sign-in is not logged: the user has no organisation yet,
+    // and creating the organisation is logged as OrganizationCreated instead.
     public class UserActivityService
     {
         private readonly IOrganizationRepository _organizations;
@@ -31,6 +33,7 @@ namespace ComplianceTracker.Application.Users
 
         private async Task RecordAsync(string externalId, ActivityAction action, CancellationToken cancellationToken)
         {
+            // Without an organisation there is nowhere to log the entry (see the class comment)
             var organization = await _organizations.GetByMemberAsync(externalId, cancellationToken);
             if (organization is null)
             {

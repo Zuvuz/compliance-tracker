@@ -10,17 +10,20 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ComplianceTracker.Infrastructure
 {
+    // Connects the interfaces from Application to their database implementations.
+    // The web app calls AddInfrastructure() once in Program.cs.
     public static class DependencyInjection
     {
         public const string ConnectionStringName = "ComplianceTracker";
 
-        // Registrerer database, repositories og unit of work.
-        // Connection string hentes fra konfigurationen (ConnectionStrings:ComplianceTracker), fx fra
-        // miljøvariablen ConnectionStrings__ComplianceTracker eller user secrets. Aldrig fra appsettings.json i repoet.
+        // Registers the database, the repositories and the unit of work.
+        // The connection string comes from configuration (ConnectionStrings:ComplianceTracker), e.g. the
+        // environment variable ConnectionStrings__ComplianceTracker. Never from appsettings.json in the repo.
         public static IServiceCollection AddInfrastructure(this IServiceCollection services)
         {
             services.AddDbContext<ComplianceTrackerDbContext>((serviceProvider, options) =>
             {
+                // Read when the DbContext is first used, so the integration tests can supply their own database
                 var configuration = serviceProvider.GetRequiredService<IConfiguration>();
                 var connectionString = configuration.GetConnectionString(ConnectionStringName)
                     ?? throw new InvalidOperationException(
@@ -30,8 +33,8 @@ namespace ComplianceTracker.Infrastructure
                 options.UseNpgsql(connectionString);
             });
 
-            // Én DbContext pr. HTTP-request, delt af repositories og unit of work,
-            // så de gemmer i samme transaktion.
+            // "Scoped" = one instance per HTTP request. The repositories and the unit of work
+            // therefore share the same DbContext and save in the same transaction.
             services.AddScoped<IOrganizationRepository, OrganizationRepository>();
             services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();

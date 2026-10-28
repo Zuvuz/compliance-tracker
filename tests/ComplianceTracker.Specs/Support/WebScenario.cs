@@ -9,13 +9,15 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace ComplianceTracker.Specs.Support
 {
-    // Det, webtestene deler i ét scenarie: webappen, "browseren" og den side, der sidst blev vist.
-    // Reqnroll laver én instans pr. scenarie og giver den til alle step-klasser, der beder om den.
+    // What the web tests share within one scenario: the web app, the "browser" and the page shown last.
+    // Reqnroll creates one instance per scenario and gives it to every step class that asks for it.
     public sealed class WebScenario : IDisposable
     {
         private readonly DatabaseScenario _database;
         private TestApp? _app;
         private HttpClient? _client;
+
+        // CVR numbers for organisations created by the tests; each one is unique in the scenario
         private int _nextCvr = 10000000;
 
         public WebScenario(DatabaseScenario database)
@@ -23,14 +25,17 @@ namespace ComplianceTracker.Specs.Support
             _database = database;
         }
 
+        // The last response and its HTML, parsed so the tests can look for elements
         public HttpResponseMessage? Response { get; set; }
         public IDocument? Page { get; set; }
 
+        // Started the first time it is used, after "Given an empty database" has set the connection string
         public TestApp App => _app ??= TestApp.WithTestSignIn(_database.ConnectionString);
 
-        // Klienten følger redirects og husker cookies, som en browser
+        // The client follows redirects and remembers cookies, like a browser
         public HttpClient Client => _client ??= App.Factory.CreateClient();
 
+        // Signs the client in as this user (see TestAuthHandler). The e-mail is optional.
         public void SignInAs(string name, string? email = null)
         {
             Client.DefaultRequestHeaders.Remove(TestAuthHandler.UserHeader);
@@ -42,7 +47,7 @@ namespace ComplianceTracker.Specs.Support
             }
         }
 
-        // En ekstra klient, fx en angriber eller en klient, der ikke må følge redirects
+        // An extra client, e.g. an attacker or a client that must not follow redirects
         public HttpClient CreateClient(string? signedInAs = null, bool followRedirects = true)
         {
             var client = App.Factory.CreateClient(new WebApplicationFactoryClientOptions
@@ -58,13 +63,14 @@ namespace ComplianceTracker.Specs.Support
             return client;
         }
 
+        // Opens a page, like typing the address in the browser
         public async Task OpenAsync(string path)
         {
             Response = await Client.GetAsync(path);
             Page = await ParseAsync(Response);
         }
 
-        // Sender en formular med antiforgery-tokenet fra den side, der sidst blev vist
+        // Sends a form with the antiforgery token from the page shown last
         public async Task PostFormAsync(string path, Dictionary<string, string> fields)
         {
             fields["__RequestVerificationToken"] = AntiforgeryToken();
@@ -72,14 +78,16 @@ namespace ComplianceTracker.Specs.Support
             Page = await ParseAsync(Response);
         }
 
+        // The hidden antiforgery token in the current page's form, with a clear error if there is none
         public string AntiforgeryToken()
      => Page?.QuerySelector<IHtmlInputElement>("input[name='__RequestVerificationToken']")?.Value
         ?? throw new Xunit.Sdk.XunitException(
             $"No antiforgery token on the page {CurrentPath} (status {(int)Response!.StatusCode}). Does the page exist and contain a form?");
 
-        // Stien på den side, klienten endte på efter eventuelle redirects
+        // The path of the page the client ended on, after any redirects
         public string CurrentPath => Response!.RequestMessage!.RequestUri!.AbsolutePath;
 
+        // Turns the HTML into a document that can be searched with CSS selectors (AngleSharp)
         public static async Task<IDocument> ParseAsync(HttpResponseMessage response)
         {
             var html = await response.Content.ReadAsStringAsync();
@@ -87,9 +95,10 @@ namespace ComplianceTracker.Specs.Support
             return await context.OpenAsync(request => request.Content(html));
         }
 
+        // Direct access to the test database, for setting up data and checking results
         public ComplianceTrackerDbContext CreateDbContext() => TestDatabase.CreateContext(_database.ConnectionString);
 
-        // Opretter en organisation direkte i databasen, som om brugeren havde gjort det
+        // Creates an organisation directly in the database, as if the user had done it in the app
         public async Task<Organization> CreateOrganisationAsync(string creatorName, string organisationName, string? cvr = null)
         {
             await using var db = CreateDbContext();
@@ -106,6 +115,9 @@ namespace ComplianceTracker.Specs.Support
                 TestUsers.Identity(creatorName));
         }
 
+        // Sends a form with a file, like a browser does when uploading (multipart/form-data).
+        // The content type is always application/pdf, also for fake files: an attacker can claim anything,
+        // so the server must look inside the file itself.
         public async Task PostFileAsync(string path, Dictionary<string, string> fields, string fileName, byte[] content)
         {
             using var form = new MultipartFormDataContent();
@@ -124,6 +136,7 @@ namespace ComplianceTracker.Specs.Support
             Page = await ParseAsync(Response);
         }
 
+        // Called by Reqnroll at the end of the scenario
         public void Dispose()
         {
             _client?.Dispose();

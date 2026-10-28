@@ -1,4 +1,6 @@
-﻿@model FrameworksPageViewModel
+﻿@* US-005: the organisation's frameworks. The form adds a new framework; each row shows the current version.
+   The ids and classes (#frameworks, data-framework-id, framework-name, open-pdf ...) are used by the tests. *@
+@model FrameworksPageViewModel
 @{
     ViewData["Title"] = "Frameworks";
 }
@@ -6,8 +8,10 @@
 <h1>Frameworks</h1>
 <p>The standards and policies @Model.Organization.Name follows. Upload each as a PDF of at most 20 MB.</p>
 
+@* Shows the domain's error messages, e.g. "Only PDF files are allowed" *@
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
 
+@* enctype="multipart/form-data" is required to send a file. The form tag helper adds the antiforgery token. *@
 <form asp-action="Add" method="post" enctype="multipart/form-data" class="row g-2 mb-4">
     <div class="col-md-5">
         <label for="name" class="form-label">Framework</label>
@@ -15,6 +19,7 @@
     </div>
     <div class="col-md-5">
         <label for="file" class="form-label">PDF file</label>
+        @* accept only filters the file picker; the server still checks the file *@
         <input id="file" name="file" type="file" accept=".pdf,application/pdf" class="form-control" />
     </div>
     <div class="col-md-2 d-flex align-items-end">
@@ -36,16 +41,19 @@
     <tbody>
         @foreach (var framework in Model.Frameworks)
         {
+            @* The newest version is the one that applies (R3) *@
             var current = framework.CurrentVersion;
             <tr data-framework-id="@framework.Id">
                 <td class="framework-name">@framework.Name</td>
                 <td class="framework-version">@current.Number</td>
                 <td class="framework-file">@current.FileName</td>
+                @* Stored in UTC, shown in local time *@
                 <td>@current.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
                 <td>@Model.UploadedBy(current)</td>
                 <td>
                     <a class="open-pdf" asp-action="Document" asp-route-id="@current.Id">Open PDF</a>
                     · <a asp-action="Versions" asp-route-id="@framework.Id">All versions</a>
+                    @* One small upload form per row, so you never have to type the framework name again *@
                     <form asp-action="UploadVersion" method="post" enctype="multipart/form-data" class="d-flex gap-1 mt-1">
                         <input type="hidden" name="frameworkId" value="@framework.Id" />
                         <input name="file" type="file" accept=".pdf,application/pdf" class="form-control form-control-sm" />

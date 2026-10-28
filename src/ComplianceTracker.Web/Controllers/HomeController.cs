@@ -5,10 +5,12 @@ using System.Diagnostics;
 
 namespace ComplianceTracker.Web.Controllers;
 
+// The public pages: front page, privacy and the error page.
+// AllowAnonymous overrides the rule in Program.cs that every page requires sign-in.
 [AllowAnonymous]
 public class HomeController : Controller
 {
-    // Forsiden er offentlig (US-004 R1). Indloggede brugere sendes videre til deres organisation.
+    // The front page is public (US-004 R1). Signed-in users are sent on to their organisation.
     public IActionResult Index()
     {
         if (User.Identity?.IsAuthenticated == true)
@@ -24,6 +26,8 @@ public class HomeController : Controller
         return View();
     }
 
+    // Shown outside Development when something unexpected goes wrong.
+    // It shows a request id for troubleshooting, but no technical details.
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {

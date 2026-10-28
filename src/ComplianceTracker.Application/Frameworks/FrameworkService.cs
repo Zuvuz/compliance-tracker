@@ -8,7 +8,8 @@ using ComplianceTracker.Domain.Organizations;
 
 namespace ComplianceTracker.Application.Frameworks
 {
-    // US-005: tilføj frameworks og upload nye versioner som PDF
+    // US-005 use cases: add a framework with its first PDF, and upload new versions.
+    // Holds the rules that need the database (unique names, membership) and saves everything at once.
     public class FrameworkService
     {
         private readonly IFrameworkRepository _frameworks;
@@ -28,14 +29,16 @@ namespace ComplianceTracker.Application.Frameworks
             _unitOfWork = unitOfWork;
         }
 
+        // Adds a new framework to the signed-in user's organisation, with the PDF as version 1
         public async Task<Framework> AddAsync(string userExternalId, string name, string fileName, byte[] content, CancellationToken cancellationToken = default)
         {
             var (organization, userId) = await MembershipAsync(userExternalId, cancellationToken);
-            var file = CatalogFile.Create(fileName, content); // R5 + R6
+            var file = CatalogFile.Create(fileName, content); // R5 + R6: valid PDF, safe file name
 
+            // R4: a name can only be used once per organisation (the repository ignores upper/lower case)
             if (await _frameworks.NameExistsAsync(organization.Id, name.Trim(), cancellationToken))
             {
-                throw new DomainException("Framework already exists. Upload a new version instead"); // R4
+                throw new DomainException("Framework already exists. Upload a new version instead");
             }
 
             var framework = Framework.Create(organization.Id, name, file, userId, DateTime.UtcNow);
@@ -44,20 +47,24 @@ namespace ComplianceTracker.Application.Frameworks
             return framework;
         }
 
+        // Uploads a new version of an existing framework; earlier versions are kept (R3)
         public async Task<FrameworkVersion> UploadVersionAsync(string userExternalId, Guid frameworkId, string fileName, byte[] content, CancellationToken cancellationToken = default)
         {
             var (organization, userId) = await MembershipAsync(userExternalId, cancellationToken);
             var file = CatalogFile.Create(fileName, content);
 
+            // R7: the lookup only finds the organisation's own frameworks,
+            // so a framework owned by someone else looks exactly like one that does not exist
             var framework = await _frameworks.GetAsync(organization.Id, frameworkId, cancellationToken)
-                ?? throw new DomainException("Framework not found"); // R7: også når det tilhører en anden
+                ?? throw new DomainException("Framework not found");
 
-            var version = framework.AddVersion(file, userId, DateTime.UtcNow); // R3
+            var version = framework.AddVersion(file, userId, DateTime.UtcNow);
             await SaveVersionAsync(organization.Id, userId, version, file, cancellationToken);
             return version;
         }
 
-        // Gem PDF'en og logposten sammen med versionen i én transaktion (R8)
+        // Saves the PDF and the log entry together with the version in one transaction (R8).
+        // If anything fails, none of it is stored.
         private async Task SaveVersionAsync(Guid organizationId, Guid userId, FrameworkVersion version, CatalogFile file, CancellationToken cancellationToken)
         {
             await _frameworks.AddDocumentAsync(version.Id, file.Content, cancellationToken);
@@ -67,6 +74,7 @@ namespace ComplianceTracker.Application.Frameworks
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        // Finds the organisation the signed-in user belongs to, and the user's id in it
         private async Task<(Organization Organization, Guid UserId)> MembershipAsync(string userExternalId, CancellationToken cancellationToken)
         {
             var organization = await _organizations.GetByMemberAsync(userExternalId, cancellationToken)

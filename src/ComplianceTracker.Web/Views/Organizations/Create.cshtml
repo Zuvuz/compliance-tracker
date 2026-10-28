@@ -1,9 +1,10 @@
+@* US-003/US-004: the form for creating the organisation. The creator is the signed-in user, so there is no name field. *@
 @using ComplianceTracker.Domain.Organizations
 @model CreateOrganizationViewModel
 @{
     ViewData["Title"] = "Create organisation";
 
-    // R4: kun de værdier, systemet kender. Værdien er enum-navnet, fx "Manufacturing".
+    // US-003 R4: only the values the system knows. The value is the enum name, e.g. "Manufacturing".
     var sectors = Enum.GetNames<Sector>().Select(s => new SelectListItem(s, s));
     var sizes = Enum.GetNames<OrganizationSize>().Select(s => new SelectListItem(s, s));
 }
@@ -12,9 +13,12 @@
 
 <div class="row">
     <div class="col-md-6">
+        @* The form tag helper adds the antiforgery token automatically (US-003 R5) *@
         <form asp-action="Create" method="post">
+            @* Shows the domain's error messages, e.g. "CVR must be 8 digits" *@
             <div asp-validation-summary="All" class="text-danger" role="alert"></div>
 
+            @* asp-for fills in the label, the field name and the value the user typed (kept after an error) *@
             <div class="mb-3">
                 <label asp-for="Name" class="form-label"></label>
                 <input asp-for="Name" class="form-control" />

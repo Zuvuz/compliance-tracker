@@ -9,9 +9,9 @@ using System.Security.Claims;
 
 namespace ComplianceTracker.Web.Controllers
 {
-    // Tynd controller: den oversætter kun mellem formularen og OrganizationService.
-    // Alle forretningsregler ligger i domænet og Application-laget (US-003 R6).
-    // Kræver login via FallbackPolicy i Program.cs (US-004 R1).
+    // Thin controller: it only translates between the form and OrganizationService.
+    // All business rules live in the domain and the Application layer (US-003 R6).
+    // Requires sign-in through the FallbackPolicy in Program.cs (US-004 R1).
     public class OrganizationsController : Controller
     {
         private readonly OrganizationService _service;
@@ -23,7 +23,7 @@ namespace ComplianceTracker.Web.Controllers
             _organizations = organizations;
         }
 
-        // "Min organisation": brugerens egen, eller opret-siden ved første login (US-004 R3)
+        // "My organisation": the user's own, or the create page on first sign-in (US-004 R3)
         [HttpGet]
         public async Task<IActionResult> Mine(CancellationToken cancellationToken)
         {
@@ -33,10 +33,11 @@ namespace ComplianceTracker.Web.Controllers
                 : RedirectToAction(nameof(Details), new { id = organization.Id });
         }
 
+        // GET: shows the empty create form
         [HttpGet]
         public async Task<IActionResult> Create(CancellationToken cancellationToken)
         {
-            // US-004 R4: har brugeren allerede en organisation, vises den i stedet
+            // US-004 R4: if the user already has an organisation, show that instead
             var organization = await MyOrganizationAsync(cancellationToken);
             if (organization is not null)
             {
@@ -46,11 +47,12 @@ namespace ComplianceTracker.Web.Controllers
             return View(new CreateOrganizationViewModel());
         }
 
+        // POST: creates the organisation from the form
         [HttpPost]
-        [ValidateAntiForgeryToken] // US-003 R5: kun formularer fra applikationen selv (ASVS V3.5.1)
+        [ValidateAntiForgeryToken] // US-003 R5: only forms from the app itself (ASVS V3.5.1)
         public async Task<IActionResult> Create(CreateOrganizationViewModel model, CancellationToken cancellationToken)
         {
-            // Fejl her betyder, at nogen har sendt en værdi, formularen ikke kan lave (fx en ukendt sektor)
+            // An error here means someone sent a value the form cannot produce (e.g. an unknown sector)
             if (!ModelState.IsValid)
             {
                 return View(model);
@@ -63,15 +65,15 @@ namespace ComplianceTracker.Web.Controllers
                     model.Cvr ?? "",
                     model.Sector,
                     model.Size,
-                    User.ToUserIdentity(),
+                    User.ToUserIdentity(), // the creator is the signed-in user
                     cancellationToken);
 
-                // US-003 R2: vis den nye organisation (Post/Redirect/Get, så en genindlæsning ikke opretter den igen)
+                // US-003 R2: show the new organisation (Post/Redirect/Get, so a reload does not create it again)
                 return RedirectToAction(nameof(Details), new { id = organization.Id });
             }
             catch (DomainException ex)
             {
-                // US-003 R3: vis domænets begrundelse og behold det indtastede
+                // US-003 R3: show the domain's reason and keep what the user typed
                 ModelState.AddModelError(string.Empty, ex.Message);
                 return View(model);
             }
@@ -80,8 +82,8 @@ namespace ComplianceTracker.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
         {
-            // US-004 R5: kun brugerens egen organisation. Andre giver "ikke fundet",
-            // så man ikke kan se, om en organisation med det id overhovedet findes.
+            // US-004 R5: only the user's own organisation. Others return "not found",
+            // so you cannot even tell whether an organisation with that id exists.
             var organization = await MyOrganizationAsync(cancellationToken);
             if (organization is null || organization.Id != id)
             {
@@ -91,6 +93,7 @@ namespace ComplianceTracker.Web.Controllers
             return View(organization);
         }
 
+        // The organisation the signed-in user belongs to (null if none yet)
         private Task<Organization?> MyOrganizationAsync(CancellationToken cancellationToken)
             => _organizations.GetByMemberAsync(User.ExternalId(), cancellationToken);
     }

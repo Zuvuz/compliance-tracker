@@ -4,11 +4,12 @@ using Testcontainers.PostgreSql;
 
 namespace ComplianceTracker.Specs.Support
 {
-    // Starter én PostgreSQL-container til hele testkørslen, første gang en integrationstest beder om den.
-    // Testcontainers finder selv på brugernavn og kodeord, så der ligger ingen credentials i repoet.
-    // Kræver at Docker kører (lokalt: Docker Desktop, i CI: GitHub's ubuntu-runner).
+    // Starts one PostgreSQL container for the whole test run, the first time an integration test asks for it.
+    // Testcontainers makes up the user name and password itself, so there are no credentials in the repo.
+    // Requires Docker to be running (locally: Docker Desktop; in CI: GitHub's ubuntu runner).
     public static class TestDatabase
     {
+        // Makes sure only one test starts the container
         private static readonly SemaphoreSlim Lock = new(1, 1);
         private static PostgreSqlContainer? _container;
         private static string? _connectionString;
@@ -24,7 +25,7 @@ namespace ComplianceTracker.Specs.Support
                     await _container.StartAsync();
                     _connectionString = _container.GetConnectionString();
 
-                    // Kører den migration, der ligger i repoet, så testen også beviser, at den virker
+                    // Runs the migrations in the repo, so the tests also prove that they work
                     await using var db = CreateContext(_connectionString);
                     await db.Database.MigrateAsync();
                 }
@@ -46,6 +47,8 @@ namespace ComplianceTracker.Specs.Support
             return new ComplianceTrackerDbContext(options);
         }
 
+        // Empties the database before each scenario. CASCADE also empties every table that
+        // points at these (users, frameworks, versions, documents ...).
         public static async Task ResetAsync(string connectionString)
         {
             await using var db = CreateContext(connectionString);

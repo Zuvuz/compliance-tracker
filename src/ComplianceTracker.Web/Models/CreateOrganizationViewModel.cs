@@ -3,10 +3,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace ComplianceTracker.Web.Models
 {
-    // Formularens felter. Ingen valideringsregler her: dem håndhæver domænet (R6).
-    // Felterne er nullable, så MVC ikke selv laver "required"-fejl, men lader domænet svare.
+    // The fields of the create form. No validation rules here: the domain enforces them (US-003 R6).
+    // The fields are nullable, so MVC does not create its own "required" errors but lets the domain answer.
     public class CreateOrganizationViewModel
     {
+        // [Display] sets the label text shown next to the field
         [Display(Name = "Name")]
         public string? Name { get; set; }
 
@@ -19,6 +20,6 @@ namespace ComplianceTracker.Web.Models
         [Display(Name = "Size")]
         public OrganizationSize Size { get; set; }
 
-        // Ingen "Your name": den, der opretter, er den indloggede bruger (US-004 R3)
+        // No "Your name": the creator is the signed-in user (US-004 R3)
     }
 }

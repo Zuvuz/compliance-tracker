@@ -3,8 +3,8 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace ComplianceTracker.Infrastructure.Persistence
 {
-    // Bruges kun af dotnet ef (migrations og database update).
-    // Connection string læses fra en miljøvariabel, så den aldrig ligger i repoet.
+    // Only used by the dotnet ef tool (migrations add, database update), not by the running app.
+    // The connection string is read from an environment variable, so it never ends up in the repo.
     public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<ComplianceTrackerDbContext>
     {
         public const string ConnectionStringVariable = "ConnectionStrings__ComplianceTracker";

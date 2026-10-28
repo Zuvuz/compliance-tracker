@@ -2,7 +2,8 @@
 
 namespace ComplianceTracker.Application.ActivityLog
 {
-    // Kun tilføjelse: loggen kan ikke ændres eller slettes gennem dette interface.
+    // Append-only: the log cannot be changed or deleted through this interface.
+    // Like all repositories, it only registers the entry; IUnitOfWork saves it.
     public interface IActivityLogRepository
     {
         Task AppendAsync(ActivityLogEntry entry, CancellationToken cancellationToken = default);
