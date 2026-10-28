@@ -1,6 +1,6 @@
 # Compliance-tracker – Domænemodel
 
-Senest opdateret: 2026-10-25
+Senest opdateret: 2026-10-28
 
 ## Formål
 
@@ -47,11 +47,14 @@ classDiagram
     niveau
   }
   class Frameworkversion {
+    versionsnummer
     betegnelse
     kilde
     kildereference
     status
-    importeretDato
+    filnavn
+    fingeraftryk
+    uploadetDato
   }
   class Krav {
     kravId
@@ -168,7 +171,7 @@ classDiagram
 | Projekt | Et produkt, der skal overholde regler. Tilsigtet formål og scope afgør, hvilke krav der gælder, og er kontekst for AI'en. | 1 |
 | Release | En konkret version af produktet. CRA tænker i versioner, så evidens og vurderinger kan knyttes hertil. | 1 |
 | Framework | Regelsættets navn, fx CRA, ISO 27001 eller AI Act. Niveau angiver, om det gælder organisationen eller et projekt. Indeholder ingen kravtekst. | 1 |
-| Frameworkversion | En konkret udgave af et framework, fx "ISO/IEC 27001:2022" eller "Forordning (EU) 2024/2847". Det er versionen, der indeholder kravene, og som vælges. Kilden er enten *indbygget* (offentlig EU-lovgivning, der følger med trackeren) eller *importeret* (organisationens eget licenserede katalog). | 1 |
+| Frameworkversion | En konkret udgave af et framework, fx "ISO/IEC 27001:2022" eller "Forordning (EU) 2024/2847". Det er versionen, der indeholder kravene, og som vælges. Kilden er enten *indbygget* (offentlig EU-lovgivning, der følger med trackeren) eller *importeret* (organisationens eget licenserede katalog). Et importeret katalog uploades som PDF; hver upload bliver en ny version med et fingeraftryk (SHA-256), og den nyeste gælder. | 1 |
 | Krav | Ét krav i en frameworkversion, fx et Annex I-krav i CRA. Kategori afspejler frameworkets egen struktur. | 1 |
 | Kontrol | Organisationens eget tiltag, der opfylder et eller flere krav. Én kontrol kan dække krav fra flere frameworks. | 1 |
 | Kravvurdering | Status for ét krav, fx opfyldt, delvist, ikke opfyldt eller ikke relevant, med begrundelse. | 1 |
@@ -187,7 +190,7 @@ Disse regler kan ikke udtrykkes med multipliciteter alene. De vises som noter i 
 1. **Mappingforslag:** peger på præcis ét af følgende: et arbejdselement eller en kontrol.
 2. **Kravvurdering:** hører til præcis ét af følgende: en release (projektframeworks som CRA) eller organisationen (organisationsframeworks som ISO 27001).
 3. **Fund:** vedrører mindst ét krav eller én kontrol.
-4. **Framework** er fælles referencedata (kun navn og niveau). **Indbyggede frameworkversioner** er også fælles. **Importerede frameworkversioner** ejes af præcis én organisation og er usynlige for alle andre.
+4. **Framework** er fælles referencedata (kun navn og niveau). **Indbyggede frameworkversioner** er også fælles. **Importerede frameworkversioner** ejes af præcis én organisation og er usynlige for alle andre. Organisationer kan også oprette egne frameworks, fx en sikkerhedspolitik; de ejes ligeledes af præcis én organisation og er usynlige for alle andre (B18).
 5. **Evidens** knyttes altid til en kontrol og kan desuden knyttes til en release, når den kun gælder en bestemt version (fx en SBOM).
 6. **En frameworkversion er låst, når den er aktiv.** Den starter som *kladde* og kan rettes; når den aktiveres, kan dens krav ikke længere ændres. Rettelser kræver en ny version. Derfor peger en mapping eller vurdering altid på præcis den tekst, den blev lavet imod.
 7. **Kun aktive versioner kan vælges**, og et projekt kan kun vælge versioner med niveau *projekt*, mens organisationen vælger versioner med niveau *organisation*.

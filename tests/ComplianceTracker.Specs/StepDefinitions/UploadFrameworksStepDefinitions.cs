@@ -1,9 +1,8 @@
 using AngleSharp.Dom;
 using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Specs.Support;
-using System.Net;
-using ComplianceTracker.Domain.ActivityLog;
 using Microsoft.EntityFrameworkCore;
+using System.Net;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {
