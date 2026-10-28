@@ -36,7 +36,8 @@ namespace ComplianceTracker.Domain.Organizations
                 throw new DomainException("Name is required");
             }
 
-            if (cvr.Length != 8 || !cvr.All(char.IsDigit))
+            // IsAsciiDigit only accepts 0-9. IsDigit would also accept digits from other alphabets, e.g. "١٢٣٤٥٦٧٨".
+            if (cvr.Length != 8 || !cvr.All(char.IsAsciiDigit))
             {
                 throw new DomainException("CVR must be 8 digits");
             }
