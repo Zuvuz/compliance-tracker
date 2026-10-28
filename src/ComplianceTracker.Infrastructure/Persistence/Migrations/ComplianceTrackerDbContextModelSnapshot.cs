@@ -56,6 +56,67 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("ActivityLog", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.Framework", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("OwnerOrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerOrganizationId", "Name");
+
+                    b.ToTable("Frameworks", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.FrameworkVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<Guid>("FrameworkId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Number")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .IsFixedLength();
+
+                    b.Property<long>("SizeInBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UploadedById")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UploadedById");
+
+                    b.HasIndex("FrameworkId", "Number")
+                        .IsUnique();
+
+                    b.ToTable("FrameworkVersions", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Organization", b =>
                 {
                     b.Property<Guid>("Id")
@@ -125,6 +186,20 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.CatalogDocument", b =>
+                {
+                    b.Property<Guid>("FrameworkVersionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("FrameworkVersionId");
+
+                    b.ToTable("CatalogDocuments", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.ActivityLog.ActivityLogEntry", b =>
                 {
                     b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
@@ -140,6 +215,30 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.Framework", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerOrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.FrameworkVersion", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Frameworks.Framework", null)
+                        .WithMany("Versions")
+                        .HasForeignKey("FrameworkId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UploadedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Users.User", b =>
                 {
                     b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
@@ -147,6 +246,20 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.CatalogDocument", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Frameworks.FrameworkVersion", null)
+                        .WithOne()
+                        .HasForeignKey("ComplianceTracker.Infrastructure.Persistence.CatalogDocument", "FrameworkVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.Framework", b =>
+                {
+                    b.Navigation("Versions");
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Organization", b =>
