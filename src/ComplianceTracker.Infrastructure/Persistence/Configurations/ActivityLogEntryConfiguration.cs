@@ -23,6 +23,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(e => e.UserId);
             builder.Property(e => e.Action).HasConversion<string>().HasMaxLength(50);
             builder.Property(e => e.OccurredAt);
+            builder.Property(e => e.SubjectId);
 
             // Restrict: en organisation eller bruger kan ikke slettes, så længe der findes logposter
             builder.HasOne<Organization>()
