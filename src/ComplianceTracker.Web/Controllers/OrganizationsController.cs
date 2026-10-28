@@ -79,11 +79,20 @@ namespace ComplianceTracker.Web.Controllers
             }
         }
 
+        // The Overview tab: name, CVR and (later) the organisation's projects
         [HttpGet]
-        public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
+        public Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
+            => OwnOrganizationViewAsync(id, cancellationToken);
+
+        // The Users tab: the members and their roles
+        [HttpGet]
+        public Task<IActionResult> Users(Guid id, CancellationToken cancellationToken)
+            => OwnOrganizationViewAsync(id, cancellationToken);
+
+        // Shows the view with the same name as the action, but only for the user's own organisation.
+        // US-004 R5: others return "not found", so you cannot even tell whether an organisation with that id exists.
+        private async Task<IActionResult> OwnOrganizationViewAsync(Guid id, CancellationToken cancellationToken)
         {
-            // US-004 R5: only the user's own organisation. Others return "not found",
-            // so you cannot even tell whether an organisation with that id exists.
             var organization = await MyOrganizationAsync(cancellationToken);
             if (organization is null || organization.Id != id)
             {

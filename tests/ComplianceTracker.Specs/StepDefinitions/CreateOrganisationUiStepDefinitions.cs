@@ -83,15 +83,15 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         [Then("{string} is shown as Admin")]
-        public void ThenIsShownAsAdmin(string userName)
+        public async Task ThenIsShownAsAdmin(string userName)
         {
-            Assert.Contains(UserRows(), cells => cells[0] == userName && cells[2] == "Admin");
+            Assert.Contains(await UserRowsAsync(), cells => cells[0] == userName && cells[2] == "Admin");
         }
 
         [Then("{string} with e-mail {string} is shown as Admin")]
-        public void ThenWithEmailIsShownAsAdmin(string userName, string email)
+        public async Task ThenWithEmailIsShownAsAdmin(string userName, string email)
         {
-            Assert.Contains(UserRows(), cells => cells[0] == userName && cells[1] == email && cells[2] == "Admin");
+            Assert.Contains(await UserRowsAsync(), cells => cells[0] == userName && cells[1] == email && cells[2] == "Admin");
         }
 
         [Then("I see the error {string}")]
@@ -122,9 +122,18 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.False(await db.Organizations.AnyAsync());
         }
 
-        // The rows of the users table on the current page: name, e-mail, role
-        private IEnumerable<string[]> UserRows()
-            => _web.Page!.QuerySelectorAll("#organisation-users tbody tr")
-                .Select(row => row.QuerySelectorAll("td").Select(cell => cell.TextContent.Trim()).ToArray());
+        // The rows of the users table: name, e-mail, role.
+        // The users are on their own tab, so the test clicks "Users" on the organisation page first, like a user would.
+        private async Task<IEnumerable<string[]>> UserRowsAsync()
+        {
+            var usersTab = _web.Page!.QuerySelector("a#users-tab")?.GetAttribute("href")
+                ?? throw new Xunit.Sdk.XunitException($"The page {_web.CurrentPath} has no Users tab.");
+
+            await _web.OpenAsync(usersTab);
+
+            return _web.Page!.QuerySelectorAll("#organisation-users tbody tr")
+                .Select(row => row.QuerySelectorAll("td").Select(cell => cell.TextContent.Trim()).ToArray())
+                .ToList();
+        }
     }
 }
