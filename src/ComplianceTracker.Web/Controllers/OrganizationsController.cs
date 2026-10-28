@@ -3,6 +3,7 @@ using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Web.Models;
+using ComplianceTracker.Web.Security;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -62,7 +63,7 @@ namespace ComplianceTracker.Web.Controllers
                     model.Cvr ?? "",
                     model.Sector,
                     model.Size,
-                    SignedInUser(),
+                    User.ToUserIdentity(),
                     cancellationToken);
 
                 // US-003 R2: vis den nye organisation (Post/Redirect/Get, så en genindlæsning ikke opretter den igen)
@@ -91,13 +92,6 @@ namespace ComplianceTracker.Web.Controllers
         }
 
         private Task<Organization?> MyOrganizationAsync(CancellationToken cancellationToken)
-            => _organizations.GetByMemberAsync(SignedInUser().ExternalId, cancellationToken);
-
-        // Den indloggede brugers identitet fra Keycloak (claims i login-cookien)
-        private UserIdentity SignedInUser() => new(
-            User.FindFirstValue("sub")
-                ?? throw new InvalidOperationException("The signed-in user has no 'sub' claim."),
-            User.FindFirstValue("name") ?? "",
-            User.FindFirstValue("email") ?? "");
+            => _organizations.GetByMemberAsync(User.ExternalId(), cancellationToken);
     }
 }

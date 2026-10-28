@@ -1,6 +1,9 @@
 using AngleSharp.Dom;
+using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Specs.Support;
 using System.Net;
+using ComplianceTracker.Domain.ActivityLog;
+using Microsoft.EntityFrameworkCore;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {
@@ -128,13 +131,33 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         [Then("the activity log for {string} has {string} for {string} concerning {string} version {int}")]
-        public void ThenTheActivityLogHasConcerning(string organisationName, string action, string userName, string frameworkName, int version)
+        public async Task ThenTheActivityLogHasConcerning(string organisationName, string action, string userName, string frameworkName, int version)
         {
-            
-            throw new PendingStepException();
+            await using var db = _web.CreateDbContext();
+
+            var organisation = await db.Organizations.SingleAsync(o => o.Name == organisationName);
+            var user = organisation.Users.Single(u => u.Name == userName);
+
+            // Id'et på præcis den version, logposten skal handle om
+            var versionId = await (
+                    from v in db.FrameworkVersions
+                    join f in db.Frameworks on v.FrameworkId equals f.Id
+                    where f.OwnerOrganizationId == organisation.Id && f.Name == frameworkName && v.Number == version
+                    select v.Id)
+                .SingleAsync();
+
+            var expectedAction = Enum.Parse<ActivityAction>(action);
+
+            Assert.True(
+                await db.ActivityLog.AnyAsync(e =>
+                    e.OrganizationId == organisation.Id &&
+                    e.UserId == user.Id &&
+                    e.Action == expectedAction &&
+                    e.SubjectId == versionId),
+                $"No '{action}' log entry by {userName} for {frameworkName} version {version}.");
         }
 
-       
+
 
         private async Task AddFramework(string name, string fileName, byte[] content)
         {
