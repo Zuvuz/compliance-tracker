@@ -18,6 +18,9 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // A framework PDF was uploaded as a new version (US-005).
         // The log entry's SubjectId points at the framework version.
-        CatalogImported
+        CatalogImported,
+
+        // A project was created (US-008). The log entry's SubjectId points at the project.
+        ProjectCreated
     }
 }

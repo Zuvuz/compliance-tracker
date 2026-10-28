@@ -1,6 +1,7 @@
 using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Domain.Frameworks;
 using ComplianceTracker.Domain.Organizations;
+using ComplianceTracker.Domain.Projects;
 using Microsoft.EntityFrameworkCore;
 
 namespace ComplianceTracker.Infrastructure.Persistence
@@ -19,6 +20,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<Framework> Frameworks => Set <Framework>();
         public DbSet<FrameworkVersion> FrameworkVersions => Set<FrameworkVersion>();
         public DbSet<CatalogDocument> CatalogDocuments => Set<CatalogDocument>();
+        public DbSet<Project> Projects => Set<Project>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

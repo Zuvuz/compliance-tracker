@@ -1,5 +1,6 @@
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
+using ComplianceTracker.Application.Projects;
 using ComplianceTracker.Application.Users;
 using ComplianceTracker.Infrastructure;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -22,6 +23,7 @@ builder.Services.AddInfrastructure();
 builder.Services.AddScoped<OrganizationService>();
 builder.Services.AddScoped<UserActivityService>();
 builder.Services.AddScoped<FrameworkService>();
+builder.Services.AddScoped<ProjectService>();
 
 // Sign-in with Keycloak via OpenID Connect (US-004)
 builder.Services
