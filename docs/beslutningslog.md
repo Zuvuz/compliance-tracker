@@ -130,9 +130,18 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** Organisationer skal kunne følge interne politikker på samme måde som officielle standarder.
 - **Ændrer:** B06, som sagde, at frameworks altid er fælles referencedata.
 
+## Projekter
+
+### B19 – Fire livscyklusfaser for et projekt
+
+- **Status:** Vedtaget
+- **Beslutning:** Et projekt har én af fire faser: `Planning`, `Development`, `Released` og `EndOfSupport`. Fasen er valgfri ved oprettelse og starter som `Planning`. (US-008)
+- **Begrundelse:** De fire faser dækker et produkts hele levetid fra idé til ophør af support, som CRA tænker i. Færre faser end det første forslag (`Design`, `Development`, `Released`, `Maintenance`, `Retired`) gør valget enkelt for brugeren; vedligeholdelse er en del af `Released`.
+- **Bygger på:** B02, som siger, at livscyklusfasen erstatter udviklingsmetoden i modellen.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
-- Hvilke attributter bliver enums (status, type, niveau, livscyklusfase)?
+- Hvilke attributter bliver enums (status, type, niveau)? Livscyklusfasen er afgjort i B19.
 - Skal mange-til-mange-koblingerne (fx Krav–Kontrol) have egne data, som en begrundelse for koblingen?
 - Kører AI-modellen lokalt eller hos en udbyder? En lokal model beskytter fortrolige stories bedre.
