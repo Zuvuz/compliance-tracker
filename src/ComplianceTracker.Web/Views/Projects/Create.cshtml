@@ -1,0 +1,52 @@
+@* US-008: the form for creating a project. Only name and intended purpose are required (R2). *@
+@using ComplianceTracker.Domain.Projects
+@model CreateProjectViewModel
+@{
+    ViewData["Title"] = "New project";
+
+    // Only the phases the system knows. The value is the enum name, e.g. "Development".
+    var phases = Enum.GetNames<LifecyclePhase>().Select(p => new SelectListItem(p, p));
+}
+
+<h1>New project</h1>
+<p class="text-muted">A project is a product your organisation builds. Its intended purpose decides which rules apply.</p>
+
+<div class="row">
+    <div class="col-md-8">
+        @* The form tag helper adds the antiforgery token automatically *@
+        <form asp-action="Create" method="post">
+            @* Shows the domain's error messages, e.g. "Intended purpose is required" *@
+            <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label"></label>
+                <input asp-for="Name" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="IntendedPurpose" class="form-label"></label>
+                <textarea asp-for="IntendedPurpose" class="form-control" rows="3"
+                          placeholder="What is the product meant to be used for, and by whom?"></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label"></label>
+                <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Scope" class="form-label"></label>
+                <textarea asp-for="Scope" class="form-control" rows="2"
+                          placeholder="What is included in the project, and what is not?"></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="LifecyclePhase" class="form-label"></label>
+                <select asp-for="LifecyclePhase" asp-items="phases" class="form-select"></select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Create project</button>
+            <a asp-controller="Organizations" asp-action="Mine" class="btn btn-link">Cancel</a>
+        </form>
+    </div>
+</div>

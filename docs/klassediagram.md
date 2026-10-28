@@ -82,6 +82,20 @@ classDiagram
     +ListAsync(organizationId: Guid) Task~IReadOnlyList~Framework~~
     +GetDocumentAsync(organizationId: Guid, frameworkVersionId: Guid) Task
   }
+  class ProjectService {
+    -projects: IProjectRepository
+    -organizations: IOrganizationRepository
+    -activityLog: IActivityLogRepository
+    -unitOfWork: IUnitOfWork
+    +CreateAsync(userExternalId: string, name: string, description: string?, intendedPurpose: string, scope: string?, phase: LifecyclePhase) Task~Project~
+  }
+  class IProjectRepository {
+    <<interface>>
+    +NameExistsAsync(organizationId: Guid, name: string) Task~bool~
+    +AddAsync(project: Project) Task
+    +GetAsync(organizationId: Guid, projectId: Guid) Task~Project?~
+    +ListAsync(organizationId: Guid) Task~IReadOnlyList~Project~~
+  }
   class IOrganizationRepository {
     <<interface>>
     +CvrExistsAsync(cvr: string) Task~bool~
@@ -111,6 +125,7 @@ classDiagram
     -releases: List~Release~
     -workItems: List~WorkItem~
     -frameworks: List~ProjectFramework~
+    +Create(organizationId: Guid, name: string, description: string?, intendedPurpose: string, scope: string?, phase: LifecyclePhase)$ Project
   }
   class Release {
     -id: Guid
@@ -296,11 +311,10 @@ classDiagram
   }
   class LifecyclePhase {
     <<enumeration>>
-    Design
+    Planning
     Development
     Released
-    Maintenance
-    Retired
+    EndOfSupport
   }
   class CraClass {
     <<enumeration>>
@@ -437,6 +451,12 @@ classDiagram
   FrameworkService --> IActivityLogRepository : activityLog
   FrameworkService --> IUnitOfWork : unitOfWork
   FrameworkService ..> CatalogFile : validerer
+  ProjectService --> IProjectRepository : projects
+  ProjectService --> IOrganizationRepository : organizations
+  ProjectService --> IActivityLogRepository : activityLog
+  ProjectService --> IUnitOfWork : unitOfWork
+  ProjectService ..> Project : opretter
+  IProjectRepository ..> Project
   IFrameworkRepository ..> Framework
   Framework ..> CatalogFile
   OrganizationService ..> Organization : opretter
@@ -478,6 +498,9 @@ classDiagram
 - **PDF'en gemmes i sin egen tabel** (`CatalogDocuments` i Infrastructure), så lister over frameworks ikke henter filindholdet. Domænet kender kun fingeraftrykket. (US-005)
 - **Alle opslag filtrerer på organisationen.** `IFrameworkRepository` tager altid `organizationId`, så en bruger aldrig kan hente en anden organisations filer, heller ikke ved at gætte et id (ASVS V8.2.2). (US-005)
 - **Logposter kan pege på det, de handler om** via `subjectId`, fx frameworkversionen ved `CatalogImported`. (US-005)
+- **Et projekt kræver navn og tilsigtet formål.** Det tilsigtede formål afgør, hvilke krav der gælder (CRA Annex VII, punkt 1(a)). Beskrivelse og scope er valgfri, og fasen starter som `Planning`. Navnet er unikt i organisationen uden hensyn til store og små bogstaver; det tjekkes i `ProjectService`. (US-008)
+- **`LifecyclePhase` dækker hele produktets levetid**: `Planning`, `Development`, `Released` og `EndOfSupport`. De erstatter de tidligere foreslåede `Design`, `Maintenance` og `Retired` (B19). (US-008)
+- **Projekter følger samme adgangsregel som frameworks**: `IProjectRepository` tager altid `organizationId`, og andre organisationers projekter giver 404. Oprettelse logges som `ProjectCreated` med projektet som `subjectId`. (US-008)
 
 ## Ordliste
 

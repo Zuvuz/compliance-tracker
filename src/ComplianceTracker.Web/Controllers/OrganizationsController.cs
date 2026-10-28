@@ -1,4 +1,5 @@
 using ComplianceTracker.Application.Organizations;
+using ComplianceTracker.Application.Projects;
 using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Domain.Users;
@@ -16,11 +17,13 @@ namespace ComplianceTracker.Web.Controllers
     {
         private readonly OrganizationService _service;
         private readonly IOrganizationRepository _organizations;
+        private readonly IProjectRepository _projects;
 
-        public OrganizationsController(OrganizationService service, IOrganizationRepository organizations)
+        public OrganizationsController(OrganizationService service, IOrganizationRepository organizations, IProjectRepository projects)
         {
             _service = service;
             _organizations = organizations;
+            _projects = projects;
         }
 
         // "My organisation": the user's own, or the create page on first sign-in (US-004 R3)
@@ -79,27 +82,34 @@ namespace ComplianceTracker.Web.Controllers
             }
         }
 
-        // The Overview tab: name, CVR and (later) the organisation's projects
+        // The Overview tab: name, CVR and the organisation's projects (US-008 R4)
         [HttpGet]
-        public Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
-            => OwnOrganizationViewAsync(id, cancellationToken);
-
-        // The Users tab: the members and their roles
-        [HttpGet]
-        public Task<IActionResult> Users(Guid id, CancellationToken cancellationToken)
-            => OwnOrganizationViewAsync(id, cancellationToken);
-
-        // Shows the view with the same name as the action, but only for the user's own organisation.
-        // US-004 R5: others return "not found", so you cannot even tell whether an organisation with that id exists.
-        private async Task<IActionResult> OwnOrganizationViewAsync(Guid id, CancellationToken cancellationToken)
+        public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
         {
-            var organization = await MyOrganizationAsync(cancellationToken);
-            if (organization is null || organization.Id != id)
+            var organization = await OwnOrganizationAsync(id, cancellationToken);
+            if (organization is null)
             {
                 return NotFound();
             }
 
-            return View(organization);
+            var projects = await _projects.ListAsync(organization.Id, cancellationToken);
+            return View(new OrganizationOverviewViewModel(organization, projects));
+        }
+
+        // The Users tab: the members and their roles
+        [HttpGet]
+        public async Task<IActionResult> Users(Guid id, CancellationToken cancellationToken)
+        {
+            var organization = await OwnOrganizationAsync(id, cancellationToken);
+            return organization is null ? NotFound() : View(organization);
+        }
+
+        // The organisation with this id, but only if it is the user's own.
+        // US-004 R5: others return null ("not found"), so you cannot even tell whether an organisation with that id exists.
+        private async Task<Organization?> OwnOrganizationAsync(Guid id, CancellationToken cancellationToken)
+        {
+            var organization = await MyOrganizationAsync(cancellationToken);
+            return organization is not null && organization.Id == id ? organization : null;
         }
 
         // The organisation the signed-in user belongs to (null if none yet)
