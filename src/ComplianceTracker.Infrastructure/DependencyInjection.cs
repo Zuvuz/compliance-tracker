@@ -1,5 +1,6 @@
 using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
+using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Infrastructure.Persistence;
 using ComplianceTracker.Infrastructure.Persistence.Repositories;
@@ -34,6 +35,7 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<IOrganizationRepository, OrganizationRepository>();
             services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<IFrameworkRepository, FrameworkRepository>();
 
             return services;
         }

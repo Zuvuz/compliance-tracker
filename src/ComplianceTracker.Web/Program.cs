@@ -1,3 +1,4 @@
+using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Application.Users;
 using ComplianceTracker.Infrastructure;
@@ -14,6 +15,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddInfrastructure();
 builder.Services.AddScoped<OrganizationService>();
 builder.Services.AddScoped<UserActivityService>();
+builder.Services.AddScoped<FrameworkService>();
 
 // Login med Keycloak via OpenID Connect (US-004)
 builder.Services

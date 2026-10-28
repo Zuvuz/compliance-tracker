@@ -1,6 +1,6 @@
 # Compliance-tracker – Klassediagram
 
-Senest opdateret: 2026-10-25
+Senest opdateret: 2026-10-28
 
 Klassediagrammet bygger på [domænemodellen](domaenemodel.md) og viser modellagets klasser med attributter, datatyper og associationer. **Metoder tilføjes løbende**, når en user story kræver dem, og opdateres i samme pull request som koden. Reglerne, som metoderne skal håndhæve, står i domænemodellen.
 
@@ -34,8 +34,7 @@ classDiagram
     -projects: List~Project~
     -controls: List~Control~
     -frameworks: List~OrganizationFramework~
-    -importedCatalogs: List~FrameworkVersion~
-    +Create(name: string, cvr: string, sector: Sector?, size: OrganizationSize, creatorName: string)$ Organization
+    +Create(name: string, cvr: string, sector: Sector?, size: OrganizationSize, creator: UserIdentity)$ Organization
   }
   class User {
     -id: Guid
@@ -65,6 +64,23 @@ classDiagram
     -unitOfWork: IUnitOfWork
     +RecordSignInAsync(externalId: string) Task
     +RecordSignOutAsync(externalId: string) Task
+  }
+  class FrameworkService {
+    -frameworks: IFrameworkRepository
+    -organizations: IOrganizationRepository
+    -activityLog: IActivityLogRepository
+    -unitOfWork: IUnitOfWork
+    +AddAsync(userExternalId: string, name: string, fileName: string, content: byte[]) Task~Framework~
+    +UploadVersionAsync(userExternalId: string, frameworkId: Guid, fileName: string, content: byte[]) Task~FrameworkVersion~
+  }
+  class IFrameworkRepository {
+    <<interface>>
+    +NameExistsAsync(organizationId: Guid, name: string) Task~bool~
+    +AddAsync(framework: Framework) Task
+    +AddDocumentAsync(frameworkVersionId: Guid, content: byte[]) Task
+    +GetAsync(organizationId: Guid, frameworkId: Guid) Task~Framework?~
+    +ListAsync(organizationId: Guid) Task~IReadOnlyList~Framework~~
+    +GetDocumentAsync(organizationId: Guid, frameworkVersionId: Guid) Task
   }
   class IOrganizationRepository {
     <<interface>>
@@ -107,22 +123,35 @@ classDiagram
   %% ================= Frameworks og krav =================
   class Framework {
     -id: Guid
+    -ownerOrganizationId: Guid?
     -name: string
     -scope: FrameworkScope
     -versions: List~FrameworkVersion~
+    +CurrentVersion: FrameworkVersion
+    +Create(organizationId: Guid, name: string, file: CatalogFile, uploadedById: Guid, uploadedAt: DateTime)$ Framework
+    +AddVersion(file: CatalogFile, uploadedById: Guid, uploadedAt: DateTime) FrameworkVersion
   }
   class FrameworkVersion {
     -id: Guid
     -frameworkId: Guid
-    -label: string
+    -number: int
+    -fileName: string
+    -sizeInBytes: long
+    -sha256: string
+    -uploadedById: Guid
+    -uploadedAt: DateTime
     -source: CatalogSource
     -sourceReference: string
-    -ownerOrganizationId: Guid?
     -status: CatalogStatus
-    -importedAt: DateTime?
-    -importedById: Guid?
     -activatedAt: DateTime?
     -requirements: List~Requirement~
+  }
+  class CatalogFile {
+    <<value object>>
+    +FileName: string
+    +Content: byte[]
+    +Sha256: string
+    +Create(fileName: string, content: byte[])$ CatalogFile
   }
   class Requirement {
     -id: Guid
@@ -224,9 +253,7 @@ classDiagram
     -organizationId: Guid
     -userId: Guid
     -action: ActivityAction
-    -entityType: string
-    -entityId: Guid
-    -details: string
+    -subjectId: Guid?
     -occurredAt: DateTime
   }
 
@@ -374,7 +401,7 @@ classDiagram
   Organization "1" --> "*" Project : projects
   Organization "1" --> "*" Control : controls
   Organization "1" --> "*" OrganizationFramework : frameworks
-  Organization "0..1" --> "*" FrameworkVersion : importedCatalogs
+  Framework "*" --> "0..1" Organization : owner
   OrganizationFramework "*" --> "1" FrameworkVersion
   Project "1" --> "*" ProjectFramework : frameworks
   ProjectFramework "*" --> "1" FrameworkVersion
@@ -405,6 +432,13 @@ classDiagram
   UserActivityService --> IOrganizationRepository : organizations
   UserActivityService --> IActivityLogRepository : activityLog
   UserActivityService --> IUnitOfWork : unitOfWork
+  FrameworkService --> IFrameworkRepository : frameworks
+  FrameworkService --> IOrganizationRepository : organizations
+  FrameworkService --> IActivityLogRepository : activityLog
+  FrameworkService --> IUnitOfWork : unitOfWork
+  FrameworkService ..> CatalogFile : validerer
+  IFrameworkRepository ..> Framework
+  Framework ..> CatalogFile
   OrganizationService ..> Organization : opretter
   IOrganizationRepository ..> Organization
   IActivityLogRepository ..> ActivityLogEntry
@@ -438,6 +472,12 @@ classDiagram
 - **`UserIdentity` er den indloggede persons identitet**, som Web-laget laver ud fra login-cookien og giver videre til Application og Domain. Domænet ved ikke, at den kommer fra Keycloak. (US-004)
 - **Én organisation pr. bruger.** `OrganizationService` afviser en anden organisation for samme bruger, og en bruger kan kun se sin egen (andre giver 404). (US-004)
 - **Log ind og log ud logges af `UserActivityService`.** Første login logges ikke, fordi brugeren endnu ikke har en organisation; oprettelsen logges i stedet som `OrganizationCreated`. (US-004)
+- **Frameworks uploades som PDF.** En version er et dokument med versionsnummer, filnavn, størrelse og SHA-256-fingeraftryk. Kravene trækkes først ud af PDF'en i US-007; indtil da er `requirements`, `status` og `activatedAt` ikke i brug. (US-005)
+- **`CatalogFile` er et value object**, som kun kan oprettes med en gyldig PDF på højst 20 MB og et renset filnavn. Reglerne for filer findes derfor ét sted (ASVS V5.2.1, V5.2.2, V5.3.2). (US-005)
+- **Et framework har altid mindst én version**, og versionsnumrene tælles af `Framework` selv. En version ændres aldrig; en ny upload er en ny version, og `CurrentVersion` er den nyeste. (US-005)
+- **PDF'en gemmes i sin egen tabel** (`CatalogDocuments` i Infrastructure), så lister over frameworks ikke henter filindholdet. Domænet kender kun fingeraftrykket. (US-005)
+- **Alle opslag filtrerer på organisationen.** `IFrameworkRepository` tager altid `organizationId`, så en bruger aldrig kan hente en anden organisations filer, heller ikke ved at gætte et id (ASVS V8.2.2). (US-005)
+- **Logposter kan pege på det, de handler om** via `subjectId`, fx frameworkversionen ved `CatalogImported`. (US-005)
 
 ## Ordliste
 
