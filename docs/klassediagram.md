@@ -71,7 +71,8 @@ classDiagram
     -activityLog: IActivityLogRepository
     -unitOfWork: IUnitOfWork
     +AddAsync(userExternalId: string, name: string, fileName: string, content: byte[]) Task~Framework~
-    +UploadVersionAsync(userExternalId: string, frameworkId: Guid, fileName: string, content: byte[]) Task~FrameworkVersion~
+    -projects: IProjectRepository
+    +UploadVersionAsync(userExternalId: string, frameworkId: Guid, fileName: string, content: byte[], moveProjectIds: Guid[]?) Task~FrameworkVersion~
     +EnableBuiltInAsync(userExternalId: string, frameworkId: Guid) Task
     +DisableBuiltInAsync(userExternalId: string, frameworkId: Guid) Task
   }
@@ -82,6 +83,7 @@ classDiagram
     +AddDocumentAsync(frameworkVersionId: Guid, content: byte[]) Task
     +GetAsync(organizationId: Guid, frameworkId: Guid) Task~Framework?~
     +ListAsync(organizationId: Guid) Task~IReadOnlyList~Framework~~
+    +GetAvailableAsync(organizationId: Guid, frameworkId: Guid) Task~Framework?~
     +GetDocumentAsync(organizationId: Guid, frameworkVersionId: Guid) Task
     +ListBuiltInAsync() Task~IReadOnlyList~Framework~~
     +GetBuiltInAsync(frameworkId: Guid) Task~Framework?~
@@ -90,10 +92,14 @@ classDiagram
   }
   class ProjectService {
     -projects: IProjectRepository
+    -frameworks: IFrameworkRepository
     -organizations: IOrganizationRepository
     -activityLog: IActivityLogRepository
     -unitOfWork: IUnitOfWork
-    +CreateAsync(userExternalId: string, name: string, description: string?, intendedPurpose: string, scope: string?, phase: LifecyclePhase) Task~Project~
+    +CreateAsync(userExternalId: string, name: string, description: string?, intendedPurpose: string, scope: string?, phase: LifecyclePhase, frameworkIds: Guid[]?) Task~Project~
+    +AddFrameworkAsync(userExternalId: string, projectId: Guid, frameworkId: Guid, frameworkVersionId: Guid?) Task
+    +UseNewestVersionAsync(userExternalId: string, projectId: Guid, frameworkId: Guid) Task
+    +RemoveFrameworkAsync(userExternalId: string, projectId: Guid, frameworkId: Guid) Task
   }
   class IProjectRepository {
     <<interface>>
@@ -101,6 +107,7 @@ classDiagram
     +AddAsync(project: Project) Task
     +GetAsync(organizationId: Guid, projectId: Guid) Task~Project?~
     +ListAsync(organizationId: Guid) Task~IReadOnlyList~Project~~
+    +ListUsingFrameworkAsync(organizationId: Guid, frameworkId: Guid) Task~IReadOnlyList~Project~~
   }
   class IOrganizationRepository {
     <<interface>>
@@ -131,7 +138,12 @@ classDiagram
     -releases: List~Release~
     -workItems: List~WorkItem~
     -frameworks: List~ProjectFramework~
+    +Frameworks: IEnumerable~ProjectFramework~
     +Create(organizationId: Guid, name: string, description: string?, intendedPurpose: string, scope: string?, phase: LifecyclePhase)$ Project
+    +FrameworkInUse(frameworkId: Guid) ProjectFramework?
+    +UseFramework(framework: Framework, version: FrameworkVersion, userId: Guid, at: DateTime) ProjectFramework
+    +ChangeFrameworkVersion(framework: Framework, version: FrameworkVersion, userId: Guid, at: DateTime) bool
+    +RemoveFramework(framework: Framework, userId: Guid, at: DateTime)
   }
   class Release {
     -id: Guid
@@ -196,9 +208,15 @@ classDiagram
     +Disable(disabledById: Guid, disabledAt: DateTime)
   }
   class ProjectFramework {
+    -id: Guid
     -projectId: Guid
+    -frameworkId: Guid
     -frameworkVersionId: Guid
-    -selectedAt: DateTime
+    -addedAt: DateTime
+    -addedById: Guid
+    -removedAt: DateTime?
+    -removedById: Guid?
+    +IsActive: bool
   }
 
   %% ================= Kontroller og evidens =================
@@ -363,6 +381,9 @@ classDiagram
     CatalogActivated
     FrameworkEnabled
     FrameworkDisabled
+    ProjectFrameworkAdded
+    ProjectFrameworkRemoved
+    ProjectFrameworkVersionChanged
   }
   class MappingSource {
     <<enumeration>>
@@ -471,6 +492,8 @@ classDiagram
   ProjectService --> IUnitOfWork : unitOfWork
   ProjectService ..> Project : opretter
   IProjectRepository ..> Project
+  ProjectService --> IFrameworkRepository : frameworks
+  FrameworkService --> IProjectRepository : projects
   IFrameworkRepository ..> Framework
   IFrameworkRepository ..> OrganizationFramework
   Framework ..> CatalogFile
@@ -518,6 +541,11 @@ classDiagram
 - **Indbyggede frameworks har ingen ejer.** CRA og AI Act seedes af en migration med faste id'er, `ownerOrganizationId = null`, én version uden fil og uploader og et link til den officielle tekst på EUR-Lex i `sourceReference`. Kravene seedes ikke endnu (B20). (US-006)
 - **Indbyggede frameworks kan ikke ændres.** `Framework.AddVersion` afviser dem (`IsBuiltIn`), og `IFrameworkRepository.GetAsync` finder kun organisationens egne frameworks, så upload af en ny version giver en fejl. (US-006)
 - **At slå et framework til er en `OrganizationFramework`-række.** Slås det fra, sættes `disabledAt`; rækken slettes aldrig, så historikken bevares, og slås det til igen, oprettes en ny række. Begge dele logges som `FrameworkEnabled`/`FrameworkDisabled` med versionen som `subjectId`. `ListAsync` viser organisationens egne frameworks og de indbyggede, der er slået til. (US-006)
+- **Et projekt følger én version af hvert framework.** `Project` holder sine `ProjectFramework`-rækker og afviser en anden version af et framework, det allerede bruger. Databasen har samme regel som et unikt index på projekt og framework for aktive rækker. `frameworkId` gemmes ved siden af versionen, så reglen er nem at tjekke. (US-011)
+- **Versionsskift og fjernelse bevarer historikken.** Et versionsskift sætter `removedAt` på den gamle række og opretter en ny; en fjernelse sætter kun `removedAt`. Rækker slettes aldrig. (US-011)
+- **Projektet vælger blandt organisationens frameworks**: de uploadede og de indbyggede, der er slået til (`IFrameworkRepository.GetAvailableAsync`). Et indbygget framework kan ikke slås fra, mens projekter bruger det. (US-011)
+- **En ny version flytter kun de valgte projekter.** `FrameworkService.UploadVersionAsync` tager de projekter, brugeren har krydset af, og gemmer versionen og versionsskiftene i én transaktion. De andre projekter beholder deres version. (US-011)
+- **Logposter om projektets frameworks peger på projektet** (`subjectId`). Framework og versioner står i `ProjectFramework`-rækkerne med samme tidspunkt og bruger. (US-011)
 - **Projekter følger samme adgangsregel som frameworks**: `IProjectRepository` tager altid `organizationId`, og andre organisationers projekter giver 404. Oprettelse logges som `ProjectCreated` med projektet som `subjectId`. (US-008)
 
 ## Ordliste
