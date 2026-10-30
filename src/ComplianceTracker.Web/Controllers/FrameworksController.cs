@@ -1,5 +1,6 @@
 ﻿using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
+using ComplianceTracker.Application.Projects;
 using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Web.Models;
@@ -18,12 +19,18 @@ namespace ComplianceTracker.Web.Controllers
 
         private readonly FrameworkService _service;
         private readonly IFrameworkRepository _frameworks;
+        private readonly IProjectRepository _projects;
         private readonly IOrganizationRepository _organizations;
 
-        public FrameworksController(FrameworkService service, IFrameworkRepository frameworks, IOrganizationRepository organizations)
+        public FrameworksController(
+            FrameworkService service,
+            IFrameworkRepository frameworks,
+            IProjectRepository projects,
+            IOrganizationRepository organizations)
         {
             _service = service;
             _frameworks = frameworks;
+            _projects = projects;
             _organizations = organizations;
         }
 
@@ -53,15 +60,16 @@ namespace ComplianceTracker.Web.Controllers
                 file, cancellationToken);
         }
 
-        // POST /Frameworks/UploadVersion: a new version of an existing framework (R3)
+        // POST /Frameworks/UploadVersion: a new version of an existing framework (R3).
+        // US-011 R4: the ticked projects move to the new version.
         [HttpPost]
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(MaxRequestSize)]
         [RequestFormLimits(MultipartBodyLengthLimit = MaxRequestSize)]
-        public async Task<IActionResult> UploadVersion(Guid frameworkId, IFormFile? file, CancellationToken cancellationToken)
+        public async Task<IActionResult> UploadVersion(Guid frameworkId, IFormFile? file, List<Guid>? projectIds, CancellationToken cancellationToken)
         {
             return await UploadAsync(async content =>
-                await _service.UploadVersionAsync(User.ExternalId(), frameworkId, file!.FileName, content, cancellationToken),
+                await _service.UploadVersionAsync(User.ExternalId(), frameworkId, file!.FileName, content, projectIds, cancellationToken),
                 file, cancellationToken);
         }
 
@@ -176,7 +184,9 @@ namespace ComplianceTracker.Web.Controllers
         }
 
         private async Task<FrameworksPageViewModel> PageAsync(Organization organization, CancellationToken cancellationToken)
-            => new(organization, await _frameworks.ListAsync(organization.Id, cancellationToken));
+            => new(organization,
+                await _frameworks.ListAsync(organization.Id, cancellationToken),
+                await _projects.ListAsync(organization.Id, cancellationToken));
 
         // The organisation the signed-in user belongs to (null if none yet)
         private Task<Organization?> MyOrganizationAsync(CancellationToken cancellationToken)

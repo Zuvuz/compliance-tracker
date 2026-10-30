@@ -4,8 +4,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ComplianceTracker.Infrastructure.Persistence.Repositories
 {
-    // EF Core implementation of IProjectRepository (US-008).
+    // EF Core implementation of IProjectRepository (US-008, US-011).
     // Every query filters on the organisation, so other organisations' projects are never returned (R5).
+    // The project's frameworks are loaded by AutoInclude (ProjectConfiguration).
     public class ProjectRepository : IProjectRepository
     {
         private readonly ComplianceTrackerDbContext _db;
@@ -33,6 +34,13 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         public async Task<IReadOnlyList<Project>> ListAsync(Guid organizationId, CancellationToken cancellationToken = default)
             => await _db.Projects
                 .Where(p => p.OrganizationId == organizationId)
+                .OrderBy(p => p.Name)
+                .ToListAsync(cancellationToken);
+
+        public async Task<IReadOnlyList<Project>> ListUsingFrameworkAsync(Guid organizationId, Guid frameworkId, CancellationToken cancellationToken = default)
+            => await _db.Projects
+                .Where(p => p.OrganizationId == organizationId
+                    && p.FrameworkHistory.Any(f => f.FrameworkId == frameworkId && f.RemovedAt == null))
                 .OrderBy(p => p.Name)
                 .ToListAsync(cancellationToken);
     }

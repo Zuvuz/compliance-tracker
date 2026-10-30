@@ -1,4 +1,5 @@
 using ComplianceTracker.Domain.Common;
+using ComplianceTracker.Domain.Frameworks;
 
 namespace ComplianceTracker.Domain.Projects
 {
@@ -7,6 +8,9 @@ namespace ComplianceTracker.Domain.Projects
     // Belongs to exactly one organisation and is invisible to all others.
     public class Project
     {
+        // Every framework version the project has used, also removed ones (the history, US-011 R7)
+        private readonly List<ProjectFramework> _frameworks = new();
+
         public Guid Id { get; } = Guid.NewGuid();
         public Guid OrganizationId { get; private set; }
 
@@ -23,6 +27,11 @@ namespace ComplianceTracker.Domain.Projects
         public string Scope { get; private set; } = "";
 
         public LifecyclePhase Phase { get; private set; }
+
+        public IReadOnlyList<ProjectFramework> FrameworkHistory => _frameworks;
+
+        // The framework versions the project follows now, one per framework (US-011 R3)
+        public IEnumerable<ProjectFramework> Frameworks => _frameworks.Where(f => f.IsActive);
 
         // For EF Core only. Everyone else must use Create, so the rules always run.
         private Project() { }
@@ -55,6 +64,65 @@ namespace ComplianceTracker.Domain.Projects
                 Scope = scope?.Trim() ?? "",
                 Phase = phase
             };
+        }
+
+        // ---------------------------------------------------------- Frameworks (US-011)
+
+        // The version of this framework the project follows now, or null
+        public ProjectFramework? FrameworkInUse(Guid frameworkId)
+            => Frameworks.FirstOrDefault(f => f.FrameworkId == frameworkId);
+
+        // R1, R2: the project starts following a version of a framework.
+        // The caller makes sure the organisation may use the framework.
+        public ProjectFramework UseFramework(Framework framework, FrameworkVersion version, Guid userId, DateTime at)
+        {
+            EnsureVersionOf(framework, version);
+
+            // R3: never two versions of the same framework
+            if (FrameworkInUse(framework.Id) is not null)
+            {
+                throw new DomainException($"The project already uses {framework.Name}");
+            }
+
+            var link = new ProjectFramework(Id, framework.Id, version.Id, userId, at);
+            _frameworks.Add(link);
+            return link;
+        }
+
+        // R4, R6: moves the project to another version of a framework it already uses.
+        // The old link is kept as history. Returns false if the project already uses that version.
+        public bool ChangeFrameworkVersion(Framework framework, FrameworkVersion version, Guid userId, DateTime at)
+        {
+            EnsureVersionOf(framework, version);
+
+            var current = FrameworkInUse(framework.Id)
+                ?? throw new DomainException($"The project does not use {framework.Name}");
+
+            if (current.FrameworkVersionId == version.Id)
+            {
+                return false;
+            }
+
+            current.Remove(userId, at);
+            _frameworks.Add(new ProjectFramework(Id, framework.Id, version.Id, userId, at));
+            return true;
+        }
+
+        // R7: the project stops following a framework; the link is kept as history
+        public void RemoveFramework(Framework framework, Guid userId, DateTime at)
+        {
+            var current = FrameworkInUse(framework.Id)
+                ?? throw new DomainException($"The project does not use {framework.Name}");
+
+            current.Remove(userId, at);
+        }
+
+        private static void EnsureVersionOf(Framework framework, FrameworkVersion version)
+        {
+            if (version.FrameworkId != framework.Id)
+            {
+                throw new DomainException("The version does not belong to the framework");
+            }
         }
     }
 }

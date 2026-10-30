@@ -70,10 +70,22 @@
                         <a class="open-pdf" asp-action="Document" asp-route-id="@current.Id">Open PDF</a>
                         · <a asp-action="Versions" asp-route-id="@framework.Id">All versions</a>
                         @* One small upload form per row, so you never have to type the framework name again *@
-                        <form asp-action="UploadVersion" method="post" enctype="multipart/form-data" class="d-flex gap-1 mt-1">
+                        <form asp-action="UploadVersion" method="post" enctype="multipart/form-data" class="mt-1">
                             <input type="hidden" name="frameworkId" value="@framework.Id" />
-                            <input name="file" type="file" accept=".pdf,application/pdf" class="form-control form-control-sm" />
-                            <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Upload new version</button>
+                            <div class="d-flex gap-1">
+                                <input name="file" type="file" accept=".pdf,application/pdf" class="form-control form-control-sm" />
+                                <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Upload new version</button>
+                            </div>
+                            @* US-011 R4: tick the projects that move to the new version; the others keep theirs *@
+                            @foreach (var project in Model.ProjectsUsing(framework))
+                            {
+                                var id = $"move-{framework.Id}-{project.Id}";
+                                <div class="form-check form-check-inline small">
+                                    <input class="form-check-input move-project" type="checkbox" name="projectIds" id="@id"
+                                           value="@project.Id" data-project-name="@project.Name" />
+                                    <label class="form-check-label" for="@id">Move @project.Name</label>
+                                </div>
+                            }
                         </form>
                     </td>
                 }

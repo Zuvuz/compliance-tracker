@@ -41,14 +41,21 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         // The organisation's own frameworks plus the built-in ones it has switched on,
         // in alphabetical order (versions are included by AutoInclude)
         public async Task<IReadOnlyList<Framework>> ListAsync(Guid organizationId, CancellationToken cancellationToken = default)
-            => await _db.Frameworks
+            => await Available(organizationId)
+                .OrderBy(f => f.Name)
+                .ToListAsync(cancellationToken);
+
+        public Task<Framework?> GetAvailableAsync(Guid organizationId, Guid frameworkId, CancellationToken cancellationToken = default)
+            => Available(organizationId).FirstOrDefaultAsync(f => f.Id == frameworkId, cancellationToken);
+
+        // The organisation's own frameworks plus the built-in ones it has switched on
+        private IQueryable<Framework> Available(Guid organizationId)
+            => _db.Frameworks
                 .Where(f => f.OwnerOrganizationId == organizationId
                     || (f.OwnerOrganizationId == null && _db.OrganizationFrameworks.Any(s =>
                         s.OrganizationId == organizationId
                         && s.DisabledAt == null
-                        && f.Versions.Any(v => v.Id == s.FrameworkVersionId))))
-                .OrderBy(f => f.Name)
-                .ToListAsync(cancellationToken);
+                        && f.Versions.Any(v => v.Id == s.FrameworkVersionId))));
 
         // R7: only if the version belongs to a framework in the user's organisation.
         // Joins version → framework (to check the owner) → document (to get the PDF) in one query.

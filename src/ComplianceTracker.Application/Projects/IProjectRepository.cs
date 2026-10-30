@@ -6,6 +6,7 @@ namespace ComplianceTracker.Application.Projects
     // Every lookup takes the organisation's id, so a user can never reach another
     // organisation's projects, not even by guessing an id (R5, ASVS V8.2.2).
     // AddAsync only registers the project; IUnitOfWork saves it.
+    // A project is always loaded with its frameworks (US-011).
     public interface IProjectRepository
     {
         // True if the organisation already has a project with this name (upper/lower case ignored)
@@ -18,5 +19,8 @@ namespace ComplianceTracker.Application.Projects
 
         // The organisation's projects in alphabetical order
         Task<IReadOnlyList<Project>> ListAsync(Guid organizationId, CancellationToken cancellationToken = default);
+
+        // The organisation's projects that use any version of this framework now (US-011 R4, R8)
+        Task<IReadOnlyList<Project>> ListUsingFrameworkAsync(Guid organizationId, Guid frameworkId, CancellationToken cancellationToken = default);
     }
 }

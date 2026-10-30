@@ -57,6 +57,7 @@ namespace ComplianceTracker.Specs.Support
                 """
                 DELETE FROM "ActivityLog";
                 DELETE FROM "OrganizationFrameworks";
+                DELETE FROM "ProjectFrameworks";
                 DELETE FROM "CatalogDocuments";
                 DELETE FROM "FrameworkVersions"
                     WHERE "FrameworkId" IN (SELECT "Id" FROM "Frameworks" WHERE "OwnerOrganizationId" IS NOT NULL);

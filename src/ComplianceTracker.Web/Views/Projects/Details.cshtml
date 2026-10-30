@@ -1,29 +1,104 @@
-@* US-008: the project's own page. The id #project-name is used by the tests.
-   The project's frameworks (US-011) and user stories (US-018) will be added here later. *@
-@using ComplianceTracker.Domain.Projects
-@model Project
+@* US-008: the project's own page. US-011: the frameworks the project follows.
+   The ids and classes (#project-name, #project-frameworks, data-framework-id, framework-name,
+   framework-version, framework-newer ...) are used by the tests.
+   The project's user stories (US-018) will be added here later. *@
+@model ProjectDetailsViewModel
 @{
-    ViewData["Title"] = Model.Name;
+    var project = Model.Project;
+    ViewData["Title"] = project.Name;
 }
 
 <p class="mb-1"><a asp-controller="Organizations" asp-action="Mine">← Back to the organisation</a></p>
-<h1 id="project-name" class="mb-0">@Model.Name</h1>
-<p class="text-muted small mb-4">Lifecycle phase: <span id="project-phase">@Model.Phase</span></p>
+<h1 id="project-name" class="mb-0">@project.Name</h1>
+<p class="text-muted small mb-4">Lifecycle phase: <span id="project-phase">@project.Phase</span></p>
 
 <dl class="row">
     <dt class="col-sm-3">Intended purpose</dt>
-    <dd class="col-sm-9" id="project-intended-purpose">@Model.IntendedPurpose</dd>
+    <dd class="col-sm-9" id="project-intended-purpose">@project.IntendedPurpose</dd>
 
     @* Optional fields are only shown when they have a value *@
-    @if (!string.IsNullOrEmpty(Model.Description))
+    @if (!string.IsNullOrEmpty(project.Description))
     {
         <dt class="col-sm-3">Description</dt>
-        <dd class="col-sm-9">@Model.Description</dd>
+        <dd class="col-sm-9">@project.Description</dd>
     }
 
-    @if (!string.IsNullOrEmpty(Model.Scope))
+    @if (!string.IsNullOrEmpty(project.Scope))
     {
         <dt class="col-sm-3">Scope</dt>
-        <dd class="col-sm-9">@Model.Scope</dd>
+        <dd class="col-sm-9">@project.Scope</dd>
     }
 </dl>
+
+<section id="project-frameworks" class="mt-4">
+    <h2 class="h4">Frameworks</h2>
+
+    @* Shows the domain's error messages, e.g. "The project already uses Security policy" *@
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+    @if (Model.Frameworks.Count == 0)
+    {
+        <p class="text-muted">The project does not follow any frameworks yet.</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Framework</th>
+                    <th>Version</th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.Frameworks)
+                {
+                    <tr data-framework-id="@row.Framework.Id">
+                        <td class="framework-name">@row.Framework.Name</td>
+                        <td class="framework-version">@row.Version.Number</td>
+                        <td>
+                            @* R6: a newer version exists; one click moves the project to it *@
+                            @if (row.NewerVersionExists)
+                            {
+                                <span class="framework-newer badge text-bg-warning">newer version available</span>
+                                <form asp-action="UseNewest" method="post" class="d-inline">
+                                    <input type="hidden" name="projectId" value="@project.Id" />
+                                    <input type="hidden" name="frameworkId" value="@row.Framework.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Use newest</button>
+                                </form>
+                            }
+                        </td>
+                        <td class="text-end">
+                            @* R7: removing keeps the history *@
+                            <form asp-action="RemoveFramework" method="post">
+                                <input type="hidden" name="projectId" value="@project.Id" />
+                                <input type="hidden" name="frameworkId" value="@row.Framework.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    @* R2: add one of the organisation's frameworks; the newest version is used *@
+    @if (Model.CanBeAdded.Any())
+    {
+        <form asp-action="AddFramework" method="post" class="row g-2" id="add-framework">
+            <input type="hidden" name="projectId" value="@project.Id" />
+            <div class="col-md-6">
+                <select name="frameworkId" class="form-select" aria-label="Framework">
+                    @foreach (var framework in Model.CanBeAdded)
+                    {
+                        <option value="@framework.Id">@framework.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary">Add framework</button>
+            </div>
+        </form>
+    }
+</section>

@@ -1,3 +1,4 @@
+using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Application.Projects;
 using ComplianceTracker.Domain.Common;
@@ -18,12 +19,18 @@ namespace ComplianceTracker.Web.Controllers
         private readonly OrganizationService _service;
         private readonly IOrganizationRepository _organizations;
         private readonly IProjectRepository _projects;
+        private readonly IFrameworkRepository _frameworks;
 
-        public OrganizationsController(OrganizationService service, IOrganizationRepository organizations, IProjectRepository projects)
+        public OrganizationsController(
+            OrganizationService service,
+            IOrganizationRepository organizations,
+            IProjectRepository projects,
+            IFrameworkRepository frameworks)
         {
             _service = service;
             _organizations = organizations;
             _projects = projects;
+            _frameworks = frameworks;
         }
 
         // "My organisation": the user's own, or the create page on first sign-in (US-004 R3)
@@ -82,7 +89,8 @@ namespace ComplianceTracker.Web.Controllers
             }
         }
 
-        // The Overview tab: name, CVR and the organisation's projects (US-008 R4)
+        // The Overview tab: name, CVR, the organisation's projects (US-008 R4)
+        // and which framework versions they use (US-011 R5)
         [HttpGet]
         public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
         {
@@ -93,7 +101,8 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             var projects = await _projects.ListAsync(organization.Id, cancellationToken);
-            return View(new OrganizationOverviewViewModel(organization, projects));
+            var frameworks = await _frameworks.ListAsync(organization.Id, cancellationToken);
+            return View(new OrganizationOverviewViewModel(organization, projects, frameworks));
         }
 
         // The Users tab: the members and their roles

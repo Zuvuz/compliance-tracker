@@ -32,6 +32,14 @@ namespace ComplianceTracker.Specs.StepDefinitions
             _projectLinks[name] = await ProjectLinkAsync(name);
         }
 
+        // US-011 Background
+        [Given("the projects {string} and {string} exist")]
+        public async Task GivenTheProjectsExist(string first, string second)
+        {
+            await GivenTheProjectExists(first);
+            await GivenTheProjectExists(second);
+        }
+
         // ---------------------------------------------------------- When
 
         [When("I create the project {string} with intended purpose {string}")]

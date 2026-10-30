@@ -261,6 +261,49 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("Projects", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Projects.ProjectFramework", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("AddedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("FrameworkId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("FrameworkVersionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("RemovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RemovedById")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AddedById");
+
+                    b.HasIndex("FrameworkId");
+
+                    b.HasIndex("FrameworkVersionId");
+
+                    b.HasIndex("RemovedById");
+
+                    b.HasIndex("ProjectId", "FrameworkId")
+                        .IsUnique()
+                        .HasFilter("\"RemovedAt\" IS NULL");
+
+                    b.ToTable("ProjectFrameworks", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -384,6 +427,38 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Projects.ProjectFramework", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("AddedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Frameworks.Framework", null)
+                        .WithMany()
+                        .HasForeignKey("FrameworkId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Frameworks.FrameworkVersion", null)
+                        .WithMany()
+                        .HasForeignKey("FrameworkVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany("FrameworkHistory")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("RemovedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Users.User", b =>
                 {
                     b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
@@ -410,6 +485,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Organization", b =>
                 {
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Projects.Project", b =>
+                {
+                    b.Navigation("FrameworkHistory");
                 });
 #pragma warning restore 612, 618
         }
