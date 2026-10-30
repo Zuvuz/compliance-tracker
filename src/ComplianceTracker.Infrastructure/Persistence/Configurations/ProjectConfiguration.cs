@@ -35,6 +35,20 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
 
             // Speeds up "does this organisation already have a project with this name?"
             builder.HasIndex(p => new { p.OrganizationId, p.Name });
+
+            // US-011: the project's frameworks, also removed ones (the history).
+            // EF writes straight into the private field _frameworks; AutoInclude loads them with the project.
+            builder.HasMany(p => p.FrameworkHistory)
+                .WithOne()
+                .HasForeignKey(f => f.ProjectId)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.Navigation(p => p.FrameworkHistory)
+                .HasField("_frameworks")
+                .UsePropertyAccessMode(PropertyAccessMode.Field)
+                .AutoInclude();
+
+            // Frameworks is calculated from FrameworkHistory and not stored
+            builder.Ignore(p => p.Frameworks);
         }
     }
 }

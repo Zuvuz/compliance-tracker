@@ -26,6 +26,12 @@ namespace ComplianceTracker.Domain.ActivityLog
         // A built-in framework was switched on or off for the organisation (US-006).
         // The log entry's SubjectId points at the framework version.
         FrameworkEnabled,
-        FrameworkDisabled
+        FrameworkDisabled,
+
+        // A project started using a framework, stopped using it, or moved to another version (US-011).
+        // The log entry's SubjectId points at the project; the ProjectFramework rows hold the versions.
+        ProjectFrameworkAdded,
+        ProjectFrameworkRemoved,
+        ProjectFrameworkVersionChanged
     }
 }

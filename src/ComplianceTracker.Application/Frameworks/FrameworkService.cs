@@ -1,6 +1,7 @@
 ﻿using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Organizations;
+using ComplianceTracker.Application.Projects;
 using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Domain.Frameworks;
@@ -13,17 +14,20 @@ namespace ComplianceTracker.Application.Frameworks
     public class FrameworkService
     {
         private readonly IFrameworkRepository _frameworks;
+        private readonly IProjectRepository _projects;
         private readonly IOrganizationRepository _organizations;
         private readonly IActivityLogRepository _activityLog;
         private readonly IUnitOfWork _unitOfWork;
 
         public FrameworkService(
             IFrameworkRepository frameworks,
+            IProjectRepository projects,
             IOrganizationRepository organizations,
             IActivityLogRepository activityLog,
             IUnitOfWork unitOfWork)
         {
             _frameworks = frameworks;
+            _projects = projects;
             _organizations = organizations;
             _activityLog = activityLog;
             _unitOfWork = unitOfWork;
@@ -47,8 +51,11 @@ namespace ComplianceTracker.Application.Frameworks
             return framework;
         }
 
-        // Uploads a new version of an existing framework; earlier versions are kept (R3)
-        public async Task<FrameworkVersion> UploadVersionAsync(string userExternalId, Guid frameworkId, string fileName, byte[] content, CancellationToken cancellationToken = default)
+        // Uploads a new version of an existing framework; earlier versions are kept (R3).
+        // US-011 R4: the ticked projects move to the new version; all other projects keep theirs.
+        public async Task<FrameworkVersion> UploadVersionAsync(
+            string userExternalId, Guid frameworkId, string fileName, byte[] content,
+            IReadOnlyCollection<Guid>? moveProjectIds = null, CancellationToken cancellationToken = default)
         {
             var (organization, userId) = await MembershipAsync(userExternalId, cancellationToken);
             var file = CatalogFile.Create(fileName, content);
@@ -58,7 +65,22 @@ namespace ComplianceTracker.Application.Frameworks
             var framework = await _frameworks.GetAsync(organization.Id, frameworkId, cancellationToken)
                 ?? throw new DomainException("Framework not found");
 
-            var version = framework.AddVersion(file, userId, DateTime.UtcNow);
+            var now = DateTime.UtcNow;
+            var version = framework.AddVersion(file, userId, now);
+
+            // US-011 R4: only projects that already use the framework can move; saved together with the version
+            foreach (var projectId in (moveProjectIds ?? []).Distinct())
+            {
+                var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
+                    ?? throw new DomainException("Project not found");
+                if (project.ChangeFrameworkVersion(framework, version, userId, now))
+                {
+                    await _activityLog.AppendAsync(
+                        new ActivityLogEntry(organization.Id, userId, ActivityAction.ProjectFrameworkVersionChanged, now, project.Id),
+                        cancellationToken);
+                }
+            }
+
             await SaveVersionAsync(organization.Id, userId, version, file, cancellationToken);
             return version;
         }
@@ -99,6 +121,13 @@ namespace ComplianceTracker.Application.Frameworks
             if (selection is null)
             {
                 return;
+            }
+
+            // US-011 R8: not while projects use it, so no project is left following a framework that is off
+            var users = await _projects.ListUsingFrameworkAsync(organization.Id, framework.Id, cancellationToken);
+            if (users.Count > 0)
+            {
+                throw new DomainException("Used by projects: " + string.Join(", ", users.Select(p => p.Name)));
             }
 
             selection.Disable(userId, DateTime.UtcNow);

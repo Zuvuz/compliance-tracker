@@ -22,6 +22,9 @@ namespace ComplianceTracker.Application.Frameworks
         // The frameworks the organisation follows: its own uploaded ones and the built-in ones it has switched on (US-006 R3)
         Task<IReadOnlyList<Framework>> ListAsync(Guid organizationId, CancellationToken cancellationToken = default);
 
+        // One framework the organisation follows (as in ListAsync), or null. Used when projects choose frameworks (US-011 R1).
+        Task<Framework?> GetAvailableAsync(Guid organizationId, Guid frameworkId, CancellationToken cancellationToken = default);
+
         // ---------------------------------------------------------- Built-in frameworks (US-006)
 
         // Every built-in framework, whether switched on or not
