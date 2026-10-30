@@ -72,6 +72,8 @@ classDiagram
     -unitOfWork: IUnitOfWork
     +AddAsync(userExternalId: string, name: string, fileName: string, content: byte[]) Task~Framework~
     +UploadVersionAsync(userExternalId: string, frameworkId: Guid, fileName: string, content: byte[]) Task~FrameworkVersion~
+    +EnableBuiltInAsync(userExternalId: string, frameworkId: Guid) Task
+    +DisableBuiltInAsync(userExternalId: string, frameworkId: Guid) Task
   }
   class IFrameworkRepository {
     <<interface>>
@@ -81,6 +83,10 @@ classDiagram
     +GetAsync(organizationId: Guid, frameworkId: Guid) Task~Framework?~
     +ListAsync(organizationId: Guid) Task~IReadOnlyList~Framework~~
     +GetDocumentAsync(organizationId: Guid, frameworkVersionId: Guid) Task
+    +ListBuiltInAsync() Task~IReadOnlyList~Framework~~
+    +GetBuiltInAsync(frameworkId: Guid) Task~Framework?~
+    +GetActiveSelectionAsync(organizationId: Guid, frameworkVersionId: Guid) Task~OrganizationFramework?~
+    +AddSelectionAsync(selection: OrganizationFramework) Task
   }
   class ProjectService {
     -projects: IProjectRepository
@@ -143,6 +149,7 @@ classDiagram
     -scope: FrameworkScope
     -versions: List~FrameworkVersion~
     +CurrentVersion: FrameworkVersion
+    +IsBuiltIn: bool
     +Create(organizationId: Guid, name: string, file: CatalogFile, uploadedById: Guid, uploadedAt: DateTime)$ Framework
     +AddVersion(file: CatalogFile, uploadedById: Guid, uploadedAt: DateTime) FrameworkVersion
   }
@@ -153,10 +160,10 @@ classDiagram
     -fileName: string
     -sizeInBytes: long
     -sha256: string
-    -uploadedById: Guid
+    -uploadedById: Guid?
     -uploadedAt: DateTime
     -source: CatalogSource
-    -sourceReference: string
+    -sourceReference: string?
     -status: CatalogStatus
     -activatedAt: DateTime?
     -requirements: List~Requirement~
@@ -177,9 +184,16 @@ classDiagram
     -description: string
   }
   class OrganizationFramework {
+    -id: Guid
     -organizationId: Guid
     -frameworkVersionId: Guid
-    -selectedAt: DateTime
+    -enabledAt: DateTime
+    -enabledById: Guid
+    -disabledAt: DateTime?
+    -disabledById: Guid?
+    +IsActive: bool
+    +Enable(organizationId: Guid, frameworkVersionId: Guid, enabledById: Guid, enabledAt: DateTime)$ OrganizationFramework
+    +Disable(disabledById: Guid, disabledAt: DateTime)
   }
   class ProjectFramework {
     -projectId: Guid
@@ -347,8 +361,8 @@ classDiagram
     UserSignedOut
     CatalogImported
     CatalogActivated
-    FrameworkAdded
-    FrameworkRemoved
+    FrameworkEnabled
+    FrameworkDisabled
   }
   class MappingSource {
     <<enumeration>>
@@ -458,6 +472,7 @@ classDiagram
   ProjectService ..> Project : opretter
   IProjectRepository ..> Project
   IFrameworkRepository ..> Framework
+  IFrameworkRepository ..> OrganizationFramework
   Framework ..> CatalogFile
   OrganizationService ..> Organization : opretter
   IOrganizationRepository ..> Organization
@@ -500,6 +515,9 @@ classDiagram
 - **Logposter kan pege på det, de handler om** via `subjectId`, fx frameworkversionen ved `CatalogImported`. (US-005)
 - **Et projekt kræver navn og tilsigtet formål.** Det tilsigtede formål afgør, hvilke krav der gælder (CRA Annex VII, punkt 1(a)). Beskrivelse og scope er valgfri, og fasen starter som `Planning`. Navnet er unikt i organisationen uden hensyn til store og små bogstaver; det tjekkes i `ProjectService`. (US-008)
 - **`LifecyclePhase` dækker hele produktets levetid**: `Planning`, `Development`, `Released` og `EndOfSupport`. De erstatter de tidligere foreslåede `Design`, `Maintenance` og `Retired` (B19). (US-008)
+- **Indbyggede frameworks har ingen ejer.** CRA og AI Act seedes af en migration med faste id'er, `ownerOrganizationId = null`, én version uden fil og uploader og et link til den officielle tekst på EUR-Lex i `sourceReference`. Kravene seedes ikke endnu (B20). (US-006)
+- **Indbyggede frameworks kan ikke ændres.** `Framework.AddVersion` afviser dem (`IsBuiltIn`), og `IFrameworkRepository.GetAsync` finder kun organisationens egne frameworks, så upload af en ny version giver en fejl. (US-006)
+- **At slå et framework til er en `OrganizationFramework`-række.** Slås det fra, sættes `disabledAt`; rækken slettes aldrig, så historikken bevares, og slås det til igen, oprettes en ny række. Begge dele logges som `FrameworkEnabled`/`FrameworkDisabled` med versionen som `subjectId`. `ListAsync` viser organisationens egne frameworks og de indbyggede, der er slået til. (US-006)
 - **Projekter følger samme adgangsregel som frameworks**: `IProjectRepository` tager altid `organizationId`, og andre organisationers projekter giver 404. Oprettelse logges som `ProjectCreated` med projektet som `subjectId`. (US-008)
 
 ## Ordliste
