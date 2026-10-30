@@ -96,6 +96,57 @@ namespace ComplianceTracker.Web.Controllers
             return File(document.Value.Content, "application/pdf", document.Value.Version.FileName);
         }
 
+        // ---------------------------------------------------------- Built-in frameworks (US-006)
+
+        // GET /Frameworks/BuiltIn: every built-in framework, with an On/Off switch for the organisation
+        [HttpGet]
+        public async Task<IActionResult> BuiltIn(CancellationToken cancellationToken)
+        {
+            var organization = await MyOrganizationAsync(cancellationToken);
+            if (organization is null)
+            {
+                return RedirectToAction("Create", "Organizations");
+            }
+
+            return View(await BuiltInPageAsync(organization, cancellationToken));
+        }
+
+        // POST /Frameworks/Enable: switches a built-in framework on (R2)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public Task<IActionResult> Enable(Guid frameworkId, CancellationToken cancellationToken)
+            => SwitchAsync(() => _service.EnableBuiltInAsync(User.ExternalId(), frameworkId, cancellationToken), cancellationToken);
+
+        // POST /Frameworks/Disable: switches it off again; the history is kept (R4)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public Task<IActionResult> Disable(Guid frameworkId, CancellationToken cancellationToken)
+            => SwitchAsync(() => _service.DisableBuiltInAsync(User.ExternalId(), frameworkId, cancellationToken), cancellationToken);
+
+        // Shared by "on" and "off": call the use case, then show the page again (with the error, if any)
+        private async Task<IActionResult> SwitchAsync(Func<Task> change, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await change();
+                return RedirectToAction(nameof(BuiltIn)); // Post/Redirect/Get
+            }
+            catch (DomainException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                var organization = await MyOrganizationAsync(cancellationToken);
+                return View(nameof(BuiltIn), await BuiltInPageAsync(organization!, cancellationToken));
+            }
+        }
+
+        // All built-in frameworks, and which of them the organisation has switched on
+        private async Task<BuiltInFrameworksViewModel> BuiltInPageAsync(Organization organization, CancellationToken cancellationToken)
+        {
+            var builtIn = await _frameworks.ListBuiltInAsync(cancellationToken);
+            var followed = await _frameworks.ListAsync(organization.Id, cancellationToken);
+            return new BuiltInFrameworksViewModel(builtIn, followed.Where(f => f.IsBuiltIn).Select(f => f.Id).ToHashSet());
+        }
+
         // Shared by "add" and "new version": read the file, call the use case,
         // then either go back to the list or show the error on the same page
         private async Task<IActionResult> UploadAsync(Func<byte[], Task> upload, IFormFile? file, CancellationToken cancellationToken)

@@ -11,6 +11,12 @@ namespace ComplianceTracker.Web.Models
             => Organization.Users.FirstOrDefault(u => u.Id == version.UploadedById)?.Name ?? "Unknown";
     }
 
+    // Data for the built-in frameworks page (Views/Frameworks/BuiltIn.cshtml, US-006)
+    public record BuiltInFrameworksViewModel(IReadOnlyList<Framework> Frameworks, IReadOnlySet<Guid> SwitchedOn)
+    {
+        public bool IsOn(Framework framework) => SwitchedOn.Contains(framework.Id);
+    }
+
     // Data for the page with all versions of one framework (Views/Frameworks/Versions.cshtml)
     public record FrameworkVersionsViewModel(Framework Framework, Organization Organization)
     {

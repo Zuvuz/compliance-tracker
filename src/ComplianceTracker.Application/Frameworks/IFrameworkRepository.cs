@@ -16,10 +16,24 @@ namespace ComplianceTracker.Application.Frameworks
         // Stores the PDF content for a version (kept apart from the version itself)
         Task AddDocumentAsync(Guid frameworkVersionId, byte[] content, CancellationToken cancellationToken = default);
 
-        // Only the organisation's own frameworks. Others return null.
+        // Only the organisation's own (uploaded) frameworks. Others, and built-in ones, return null.
         Task<Framework?> GetAsync(Guid organizationId, Guid frameworkId, CancellationToken cancellationToken = default);
 
+        // The frameworks the organisation follows: its own uploaded ones and the built-in ones it has switched on (US-006 R3)
         Task<IReadOnlyList<Framework>> ListAsync(Guid organizationId, CancellationToken cancellationToken = default);
+
+        // ---------------------------------------------------------- Built-in frameworks (US-006)
+
+        // Every built-in framework, whether switched on or not
+        Task<IReadOnlyList<Framework>> ListBuiltInAsync(CancellationToken cancellationToken = default);
+
+        // A built-in framework by id. Uploaded frameworks return null.
+        Task<Framework?> GetBuiltInAsync(Guid frameworkId, CancellationToken cancellationToken = default);
+
+        // The organisation's current "switched on" record for a framework version, or null if it is off
+        Task<OrganizationFramework?> GetActiveSelectionAsync(Guid organizationId, Guid frameworkVersionId, CancellationToken cancellationToken = default);
+
+        Task AddSelectionAsync(OrganizationFramework selection, CancellationToken cancellationToken = default);
 
         // The PDF for a version, but only if it belongs to the organisation. Others return null.
         Task<(FrameworkVersion Version, byte[] Content)?> GetDocumentAsync(Guid organizationId, Guid frameworkVersionId, CancellationToken cancellationToken = default);

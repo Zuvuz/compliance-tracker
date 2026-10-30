@@ -47,13 +47,24 @@ namespace ComplianceTracker.Specs.Support
             return new ComplianceTrackerDbContext(options);
         }
 
-        // Empties the database before each scenario. CASCADE also empties every table that
-        // points at these (users, frameworks, versions, documents ...).
+        // Empties the database before each scenario, but keeps the built-in frameworks (CRA, AI Act)
+        // that the migrations add (US-006). TRUNCATE ... CASCADE would delete those too, so the tables
+        // are emptied one by one, children before parents. A new table must be added here.
         public static async Task ResetAsync(string connectionString)
         {
             await using var db = CreateContext(connectionString);
             await db.Database.ExecuteSqlRawAsync(
-                """TRUNCATE "ActivityLog", "Users", "Organizations" RESTART IDENTITY CASCADE""");
+                """
+                DELETE FROM "ActivityLog";
+                DELETE FROM "OrganizationFrameworks";
+                DELETE FROM "CatalogDocuments";
+                DELETE FROM "FrameworkVersions"
+                    WHERE "FrameworkId" IN (SELECT "Id" FROM "Frameworks" WHERE "OwnerOrganizationId" IS NOT NULL);
+                DELETE FROM "Frameworks" WHERE "OwnerOrganizationId" IS NOT NULL;
+                DELETE FROM "Projects";
+                DELETE FROM "Users";
+                DELETE FROM "Organizations";
+                """);
         }
 
         public static async Task DisposeAsync()

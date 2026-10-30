@@ -17,11 +17,21 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(f => f.Id).ValueGeneratedNever();
             builder.Property(f => f.Name).IsRequired().HasMaxLength(200);
 
-            // Belongs to exactly one organisation (US-005 R7)
+            // An uploaded framework belongs to exactly one organisation (US-005 R7).
+            // Built-in frameworks have no owner, so the foreign key is optional (US-006).
             builder.HasOne<Organization>()
                 .WithMany()
                 .HasForeignKey(f => f.OwnerOrganizationId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // IsBuiltIn is calculated from OwnerOrganizationId and not stored
+            builder.Ignore(f => f.IsBuiltIn);
+
+            // The built-in frameworks that come with every database (US-006)
+            builder.HasData(
+                new { Id = BuiltInFrameworks.Cra.FrameworkId, OwnerOrganizationId = (Guid?)null, Name = BuiltInFrameworks.Cra.Name },
+                new { Id = BuiltInFrameworks.AiAct.FrameworkId, OwnerOrganizationId = (Guid?)null, Name = BuiltInFrameworks.AiAct.Name });
 
             // Speeds up "does this organisation already have a framework with this name?"
             builder.HasIndex(f => new { f.OwnerOrganizationId, f.Name });

@@ -63,6 +63,51 @@ namespace ComplianceTracker.Application.Frameworks
             return version;
         }
 
+        // US-006: switches a built-in framework on for the user's organisation (R2, R3).
+        // Switching on a framework that is already on does nothing.
+        public async Task EnableBuiltInAsync(string userExternalId, Guid frameworkId, CancellationToken cancellationToken = default)
+        {
+            var (organization, userId) = await MembershipAsync(userExternalId, cancellationToken);
+            var framework = await _frameworks.GetBuiltInAsync(frameworkId, cancellationToken)
+                ?? throw new DomainException("Framework not found");
+            var version = framework.CurrentVersion;
+
+            if (await _frameworks.GetActiveSelectionAsync(organization.Id, version.Id, cancellationToken) is not null)
+            {
+                return;
+            }
+
+            await _frameworks.AddSelectionAsync(
+                OrganizationFramework.Enable(organization.Id, version.Id, userId, DateTime.UtcNow),
+                cancellationToken);
+            await _activityLog.AppendAsync(
+                new ActivityLogEntry(organization.Id, userId, ActivityAction.FrameworkEnabled, DateTime.UtcNow, version.Id),
+                cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-006: switches a built-in framework off again. The history is kept (R4).
+        // Switching off a framework that is already off does nothing.
+        public async Task DisableBuiltInAsync(string userExternalId, Guid frameworkId, CancellationToken cancellationToken = default)
+        {
+            var (organization, userId) = await MembershipAsync(userExternalId, cancellationToken);
+            var framework = await _frameworks.GetBuiltInAsync(frameworkId, cancellationToken)
+                ?? throw new DomainException("Framework not found");
+            var version = framework.CurrentVersion;
+
+            var selection = await _frameworks.GetActiveSelectionAsync(organization.Id, version.Id, cancellationToken);
+            if (selection is null)
+            {
+                return;
+            }
+
+            selection.Disable(userId, DateTime.UtcNow);
+            await _activityLog.AppendAsync(
+                new ActivityLogEntry(organization.Id, userId, ActivityAction.FrameworkDisabled, DateTime.UtcNow, version.Id),
+                cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
         // Saves the PDF and the log entry together with the version in one transaction (R8).
         // If anything fails, none of it is stored.
         private async Task SaveVersionAsync(Guid organizationId, Guid userId, FrameworkVersion version, CatalogFile file, CancellationToken cancellationToken)

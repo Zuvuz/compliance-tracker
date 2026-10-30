@@ -21,6 +21,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<FrameworkVersion> FrameworkVersions => Set<FrameworkVersion>();
         public DbSet<CatalogDocument> CatalogDocuments => Set<CatalogDocument>();
         public DbSet<Project> Projects => Set<Project>();
+        public DbSet<OrganizationFramework> OrganizationFrameworks => Set<OrganizationFramework>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

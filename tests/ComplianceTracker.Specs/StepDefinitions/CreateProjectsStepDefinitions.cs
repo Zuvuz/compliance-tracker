@@ -59,29 +59,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await ProjectLinkAsync(name);
         }
 
-        [Then("the activity log for {string} has {string} for {string} concerning {string}")]
-        public async Task ThenTheActivityLogHasConcerning(string organisationName, string action, string userName, string projectName)
-        {
-            await using var db = _web.CreateDbContext();
-
-            var organisation = await db.Organizations.SingleAsync(o => o.Name == organisationName);
-            var user = organisation.Users.Single(u => u.Name == userName);
-            var projectId = await db.Projects
-                .Where(p => p.OrganizationId == organisation.Id && p.Name == projectName)
-                .Select(p => p.Id)
-                .SingleAsync();
-
-            var expectedAction = Enum.Parse<ActivityAction>(action);
-
-            // R6: who (user), what (action), where (organisation) and about what (SubjectId = the project)
-            Assert.True(
-                await db.ActivityLog.AnyAsync(e =>
-                    e.OrganizationId == organisation.Id &&
-                    e.UserId == user.Id &&
-                    e.Action == expectedAction &&
-                    e.SubjectId == projectId),
-                $"No '{action}' log entry by {userName} for the project {projectName}.");
-        }
+        // R6 (logging) uses the shared step in ActivityLogStepDefinitions
 
         // ---------------------------------------------------------- Helpers
 
