@@ -7,6 +7,7 @@
 
 <h1>Frameworks</h1>
 <p>The standards and policies @Model.Organization.Name follows. Upload each as a PDF of at most 20 MB.</p>
+<p><a id="built-in-link" asp-action="BuiltIn">Built-in frameworks (CRA, AI Act)</a> can be switched on without uploading anything.</p>
 
 @* Shows the domain's error messages, e.g. "Only PDF files are allowed" *@
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
@@ -31,6 +32,7 @@
     <thead>
         <tr>
             <th>Framework</th>
+            <th>Source</th>
             <th>Version</th>
             <th>File</th>
             <th>Uploaded</th>
@@ -45,21 +47,48 @@
             var current = framework.CurrentVersion;
             <tr data-framework-id="@framework.Id">
                 <td class="framework-name">@framework.Name</td>
+                <td class="framework-source">@(framework.IsBuiltIn ? "Built-in" : "Uploaded")</td>
                 <td class="framework-version">@current.Number</td>
-                <td class="framework-file">@current.FileName</td>
-                @* Stored in UTC, shown in local time *@
-                <td>@current.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
-                <td>@Model.UploadedBy(current)</td>
-                <td>
-                    <a class="open-pdf" asp-action="Document" asp-route-id="@current.Id">Open PDF</a>
-                    · <a asp-action="Versions" asp-route-id="@framework.Id">All versions</a>
-                    @* One small upload form per row, so you never have to type the framework name again *@
-                    <form asp-action="UploadVersion" method="post" enctype="multipart/form-data" class="d-flex gap-1 mt-1">
-                        <input type="hidden" name="frameworkId" value="@framework.Id" />
-                        <input name="file" type="file" accept=".pdf,application/pdf" class="form-control form-control-sm" />
-                        <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Upload new version</button>
-                    </form>
-                </td>
+                @if (framework.IsBuiltIn)
+                {
+                    @* Built-in (US-006): no file and no uploader, a link to the official text instead *@
+                    <td class="framework-file">–</td>
+                    <td>@current.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy")</td>
+                    <td>–</td>
+                    <td>
+                        <a href="@current.SourceReference" target="_blank" rel="noopener noreferrer">Official text (EUR-Lex)</a>
+                        · <a asp-action="BuiltIn">Switch off</a>
+                    </td>
+                }
+                else
+                {
+                    <td class="framework-file">@current.FileName</td>
+                    @* Stored in UTC, shown in local time *@
+                    <td>@current.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
+                    <td>@Model.UploadedBy(current)</td>
+                    <td>
+                        <a class="open-pdf" asp-action="Document" asp-route-id="@current.Id">Open PDF</a>
+                        · <a asp-action="Versions" asp-route-id="@framework.Id">All versions</a>
+                        @* One small upload form per row, so you never have to type the framework name again *@
+                        <form asp-action="UploadVersion" method="post" enctype="multipart/form-data" class="mt-1">
+                            <input type="hidden" name="frameworkId" value="@framework.Id" />
+                            <div class="d-flex gap-1">
+                                <input name="file" type="file" accept=".pdf,application/pdf" class="form-control form-control-sm" />
+                                <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Upload new version</button>
+                            </div>
+                            @* US-011 R4: tick the projects that move to the new version; the others keep theirs *@
+                            @foreach (var project in Model.ProjectsUsing(framework))
+                            {
+                                var id = $"move-{framework.Id}-{project.Id}";
+                                <div class="form-check form-check-inline small">
+                                    <input class="form-check-input move-project" type="checkbox" name="projectIds" id="@id"
+                                           value="@project.Id" data-project-name="@project.Name" />
+                                    <label class="form-check-label" for="@id">Move @project.Name</label>
+                                </div>
+                            }
+                        </form>
+                    </td>
+                }
             </tr>
         }
     </tbody>

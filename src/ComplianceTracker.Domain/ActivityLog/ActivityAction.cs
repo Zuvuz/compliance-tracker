@@ -21,6 +21,17 @@ namespace ComplianceTracker.Domain.ActivityLog
         CatalogImported,
 
         // A project was created (US-008). The log entry's SubjectId points at the project.
-        ProjectCreated
+        ProjectCreated,
+
+        // A built-in framework was switched on or off for the organisation (US-006).
+        // The log entry's SubjectId points at the framework version.
+        FrameworkEnabled,
+        FrameworkDisabled,
+
+        // A project started using a framework, stopped using it, or moved to another version (US-011).
+        // The log entry's SubjectId points at the project; the ProjectFramework rows hold the versions.
+        ProjectFrameworkAdded,
+        ProjectFrameworkRemoved,
+        ProjectFrameworkVersionChanged
     }
 }

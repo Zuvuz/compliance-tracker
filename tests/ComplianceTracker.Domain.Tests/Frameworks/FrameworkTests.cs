@@ -165,4 +165,35 @@ public class FrameworkTests
         // Assert
         Assert.NotEqual(framework.Versions[0].Id, second.Id);
     }
+
+    // ---------------------------------------------------------- Built-in frameworks (US-006)
+
+    [Fact]
+    public void An_uploaded_framework_is_not_built_in()
+    {
+        // Arrange (the helper creates an uploaded framework)
+
+        // Act
+        var framework = CreateFramework();
+
+        // Assert
+        Assert.False(framework.IsBuiltIn);
+    }
+
+    [Fact]
+    public void A_built_in_framework_cannot_get_a_new_version()
+    {
+        // Arrange: built-in frameworks only come from the migration's seed data, so the test
+        // removes the owner the same way EF Core loads a seeded row (no owner = built-in)
+        var framework = CreateFramework();
+        typeof(Framework).GetProperty(nameof(Framework.OwnerOrganizationId))!.SetValue(framework, null);
+
+        // Act
+        var exception = Record.Exception(() => framework.AddVersion(PdfFile(marker: 1), AnnaId, Monday));
+
+        // Assert
+        Assert.True(framework.IsBuiltIn);
+        Assert.IsType<DomainException>(exception);
+        Assert.Single(framework.Versions);
+    }
 }

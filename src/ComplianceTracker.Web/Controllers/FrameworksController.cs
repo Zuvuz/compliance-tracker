@@ -1,5 +1,6 @@
 ﻿using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
+using ComplianceTracker.Application.Projects;
 using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Web.Models;
@@ -18,12 +19,18 @@ namespace ComplianceTracker.Web.Controllers
 
         private readonly FrameworkService _service;
         private readonly IFrameworkRepository _frameworks;
+        private readonly IProjectRepository _projects;
         private readonly IOrganizationRepository _organizations;
 
-        public FrameworksController(FrameworkService service, IFrameworkRepository frameworks, IOrganizationRepository organizations)
+        public FrameworksController(
+            FrameworkService service,
+            IFrameworkRepository frameworks,
+            IProjectRepository projects,
+            IOrganizationRepository organizations)
         {
             _service = service;
             _frameworks = frameworks;
+            _projects = projects;
             _organizations = organizations;
         }
 
@@ -53,15 +60,16 @@ namespace ComplianceTracker.Web.Controllers
                 file, cancellationToken);
         }
 
-        // POST /Frameworks/UploadVersion: a new version of an existing framework (R3)
+        // POST /Frameworks/UploadVersion: a new version of an existing framework (R3).
+        // US-011 R4: the ticked projects move to the new version.
         [HttpPost]
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(MaxRequestSize)]
         [RequestFormLimits(MultipartBodyLengthLimit = MaxRequestSize)]
-        public async Task<IActionResult> UploadVersion(Guid frameworkId, IFormFile? file, CancellationToken cancellationToken)
+        public async Task<IActionResult> UploadVersion(Guid frameworkId, IFormFile? file, List<Guid>? projectIds, CancellationToken cancellationToken)
         {
             return await UploadAsync(async content =>
-                await _service.UploadVersionAsync(User.ExternalId(), frameworkId, file!.FileName, content, cancellationToken),
+                await _service.UploadVersionAsync(User.ExternalId(), frameworkId, file!.FileName, content, projectIds, cancellationToken),
                 file, cancellationToken);
         }
 
@@ -96,6 +104,57 @@ namespace ComplianceTracker.Web.Controllers
             return File(document.Value.Content, "application/pdf", document.Value.Version.FileName);
         }
 
+        // ---------------------------------------------------------- Built-in frameworks (US-006)
+
+        // GET /Frameworks/BuiltIn: every built-in framework, with an On/Off switch for the organisation
+        [HttpGet]
+        public async Task<IActionResult> BuiltIn(CancellationToken cancellationToken)
+        {
+            var organization = await MyOrganizationAsync(cancellationToken);
+            if (organization is null)
+            {
+                return RedirectToAction("Create", "Organizations");
+            }
+
+            return View(await BuiltInPageAsync(organization, cancellationToken));
+        }
+
+        // POST /Frameworks/Enable: switches a built-in framework on (R2)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public Task<IActionResult> Enable(Guid frameworkId, CancellationToken cancellationToken)
+            => SwitchAsync(() => _service.EnableBuiltInAsync(User.ExternalId(), frameworkId, cancellationToken), cancellationToken);
+
+        // POST /Frameworks/Disable: switches it off again; the history is kept (R4)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public Task<IActionResult> Disable(Guid frameworkId, CancellationToken cancellationToken)
+            => SwitchAsync(() => _service.DisableBuiltInAsync(User.ExternalId(), frameworkId, cancellationToken), cancellationToken);
+
+        // Shared by "on" and "off": call the use case, then show the page again (with the error, if any)
+        private async Task<IActionResult> SwitchAsync(Func<Task> change, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await change();
+                return RedirectToAction(nameof(BuiltIn)); // Post/Redirect/Get
+            }
+            catch (DomainException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                var organization = await MyOrganizationAsync(cancellationToken);
+                return View(nameof(BuiltIn), await BuiltInPageAsync(organization!, cancellationToken));
+            }
+        }
+
+        // All built-in frameworks, and which of them the organisation has switched on
+        private async Task<BuiltInFrameworksViewModel> BuiltInPageAsync(Organization organization, CancellationToken cancellationToken)
+        {
+            var builtIn = await _frameworks.ListBuiltInAsync(cancellationToken);
+            var followed = await _frameworks.ListAsync(organization.Id, cancellationToken);
+            return new BuiltInFrameworksViewModel(builtIn, followed.Where(f => f.IsBuiltIn).Select(f => f.Id).ToHashSet());
+        }
+
         // Shared by "add" and "new version": read the file, call the use case,
         // then either go back to the list or show the error on the same page
         private async Task<IActionResult> UploadAsync(Func<byte[], Task> upload, IFormFile? file, CancellationToken cancellationToken)
@@ -125,7 +184,9 @@ namespace ComplianceTracker.Web.Controllers
         }
 
         private async Task<FrameworksPageViewModel> PageAsync(Organization organization, CancellationToken cancellationToken)
-            => new(organization, await _frameworks.ListAsync(organization.Id, cancellationToken));
+            => new(organization,
+                await _frameworks.ListAsync(organization.Id, cancellationToken),
+                await _projects.ListAsync(organization.Id, cancellationToken));
 
         // The organisation the signed-in user belongs to (null if none yet)
         private Task<Organization?> MyOrganizationAsync(CancellationToken cancellationToken)

@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.Frameworks;
 using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Domain.Projects;
 using System.ComponentModel.DataAnnotations;
@@ -23,8 +24,61 @@ namespace ComplianceTracker.Web.Models
         // Defaults to Planning when the user does not choose another phase
         [Display(Name = "Lifecycle phase")]
         public LifecyclePhase LifecyclePhase { get; set; } = LifecyclePhase.Planning;
+
+        // US-011 R2: the ticked frameworks (the newest version of each is used)
+        public List<Guid> FrameworkIds { get; set; } = new();
+
+        // The frameworks that can be ticked. Filled by the controller, never posted.
+        public IReadOnlyList<Framework> AvailableFrameworks { get; set; } = [];
     }
 
-    // Data for the organisation's Overview tab: the organisation and its projects
-    public record OrganizationOverviewViewModel(Organization Organization, IReadOnlyList<Project> Projects);
+    // One framework a project follows, with the version it uses (US-011 R6)
+    public record ProjectFrameworkRow(Framework Framework, FrameworkVersion Version)
+    {
+        public bool NewerVersionExists => Version.Number < Framework.CurrentVersion.Number;
+    }
+
+    // Data for the project page (Views/Projects/Details.cshtml)
+    public record ProjectDetailsViewModel(Project Project, IReadOnlyList<Framework> AvailableFrameworks)
+    {
+        // The project's frameworks, in alphabetical order
+        public IReadOnlyList<ProjectFrameworkRow> Frameworks { get; } = Project.Frameworks
+            .Select(link =>
+            {
+                var framework = AvailableFrameworks.FirstOrDefault(f => f.Id == link.FrameworkId);
+                var version = framework?.Versions.FirstOrDefault(v => v.Id == link.FrameworkVersionId);
+                return framework is null || version is null ? null : new ProjectFrameworkRow(framework, version);
+            })
+            .OfType<ProjectFrameworkRow>()
+            .OrderBy(r => r.Framework.Name)
+            .ToList();
+
+        // The frameworks that can still be added (the project uses each framework at most once, R3)
+        public IEnumerable<Framework> CanBeAdded
+            => AvailableFrameworks.Where(f => Project.FrameworkInUse(f.Id) is null);
+    }
+
+    // One line in the organisation overview: a framework version and the projects using it (US-011 R5)
+    public record FrameworkUsageRow(Framework Framework, FrameworkVersion Version, IReadOnlyList<Project> Projects)
+    {
+        public bool IsNewest => Version.Id == Framework.CurrentVersion.Id;
+    }
+
+    // Data for the organisation's Overview tab: the organisation, its projects and which frameworks they use
+    public record OrganizationOverviewViewModel(
+        Organization Organization,
+        IReadOnlyList<Project> Projects,
+        IReadOnlyList<Framework> Frameworks)
+    {
+        // Per framework: the newest version (even with no projects yet), then every older version in use
+        public IReadOnlyList<FrameworkUsageRow> FrameworkUsage { get; } = Frameworks
+            .SelectMany(framework => framework.Versions
+                .OrderByDescending(v => v.Number)
+                .Select(version => new FrameworkUsageRow(
+                    framework,
+                    version,
+                    Projects.Where(p => p.Frameworks.Any(f => f.FrameworkVersionId == version.Id)).ToList()))
+                .Where(row => row.IsNewest || row.Projects.Count > 0))
+            .ToList();
+    }
 }

@@ -1,0 +1,41 @@
+@* US-006: the built-in frameworks (CRA, AI Act) and whether the organisation follows them.
+   The ids and classes (#built-in-frameworks, data-framework-id, framework-name, framework-state) are used by the tests. *@
+@model BuiltInFrameworksViewModel
+@{
+    ViewData["Title"] = "Built-in frameworks";
+}
+
+<h1>Built-in frameworks</h1>
+<p>EU regulations that are ready to use. Switch one on to show it in your <a asp-action="Index">framework list</a>.
+   They cannot be changed; switching one off keeps the history.</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+<table class="table" id="built-in-frameworks">
+    <thead>
+        <tr>
+            <th>Framework</th>
+            <th>Official text</th>
+            <th>State</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var framework in Model.Frameworks)
+        {
+            var on = Model.IsOn(framework);
+            <tr data-framework-id="@framework.Id">
+                <td class="framework-name">@framework.Name</td>
+                <td><a href="@framework.CurrentVersion.SourceReference" target="_blank" rel="noopener noreferrer">EUR-Lex</a></td>
+                <td class="framework-state">@(on ? "On" : "Off")</td>
+                <td>
+                    @* The form tag helper adds the antiforgery token *@
+                    <form asp-action="@(on ? "Disable" : "Enable")" method="post">
+                        <input type="hidden" name="frameworkId" value="@framework.Id" />
+                        <button type="submit" class="btn btn-sm @(on ? "btn-outline-secondary" : "btn-primary")">@(on ? "Switch off" : "Switch on")</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
