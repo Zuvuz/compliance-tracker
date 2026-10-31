@@ -1,4 +1,4 @@
-﻿using ComplianceTracker.Application.Frameworks;
+using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Domain.Frameworks;
 using Microsoft.EntityFrameworkCore;
 
@@ -37,6 +37,14 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
             => _db.Frameworks.FirstOrDefaultAsync(
                 f => f.Id == frameworkId && f.OwnerOrganizationId == organizationId,
                 cancellationToken);
+
+        // Requirements are not loaded by default, because most pages only need the versions
+        public Task<Framework?> GetByVersionWithRequirementsAsync(Guid organizationId, Guid frameworkVersionId, CancellationToken cancellationToken = default)
+            => _db.Frameworks
+                .Include(f => f.Versions).ThenInclude(v => v.Requirements)
+                .FirstOrDefaultAsync(
+                    f => f.OwnerOrganizationId == organizationId && f.Versions.Any(v => v.Id == frameworkVersionId),
+                    cancellationToken);
 
         // The organisation's own frameworks plus the built-in ones it has switched on,
         // in alphabetical order (versions are included by AutoInclude)

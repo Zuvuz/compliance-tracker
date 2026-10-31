@@ -48,7 +48,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("SubjectId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("UserId")
+                    b.Property<Guid?>("UserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -97,6 +97,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ActivatedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -120,6 +126,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<DateTime>("UploadedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -127,6 +138,8 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ActivatedById");
 
                     b.HasIndex("UploadedById");
 
@@ -139,23 +152,27 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            ActivatedAt = new DateTime(2024, 11, 20, 0, 0, 0, 0, DateTimeKind.Utc),
                             FileName = "",
                             FrameworkId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c01"),
                             Number = 1,
                             Sha256 = "",
                             SizeInBytes = 0L,
                             SourceReference = "https://eur-lex.europa.eu/eli/reg/2024/2847/oj",
+                            Status = "Active",
                             UploadedAt = new DateTime(2024, 11, 20, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            ActivatedAt = new DateTime(2024, 7, 12, 0, 0, 0, 0, DateTimeKind.Utc),
                             FileName = "",
                             FrameworkId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c03"),
                             Number = 1,
                             Sha256 = "",
                             SizeInBytes = 0L,
                             SourceReference = "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
+                            Status = "Active",
                             UploadedAt = new DateTime(2024, 7, 12, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
@@ -194,6 +211,40 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrganizationId", "FrameworkVersionId");
 
                     b.ToTable("OrganizationFrameworks", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.Requirement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<Guid>("FrameworkVersionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FrameworkVersionId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("Requirements", (string)null);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Organization", b =>
@@ -345,6 +396,75 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.WorkItems.WorkItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Examples")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ExternalReference")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("FirstSyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Gherkin")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Labels")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("LastSyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Rules")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId", "Source", "ExternalReference")
+                        .IsUnique();
+
+                    b.ToTable("WorkItems", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.CatalogDocument", b =>
                 {
                     b.Property<Guid>("FrameworkVersionId")
@@ -359,6 +479,25 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("CatalogDocuments", (string)null);
                 });
 
+            modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FriendlyName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Xml")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DataProtectionKeys");
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.ActivityLog.ActivityLogEntry", b =>
                 {
                     b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
@@ -370,8 +509,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasOne("ComplianceTracker.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.Framework", b =>
@@ -384,6 +522,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.FrameworkVersion", b =>
                 {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActivatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ComplianceTracker.Domain.Frameworks.Framework", null)
                         .WithMany("Versions")
                         .HasForeignKey("FrameworkId")
@@ -422,6 +565,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.Requirement", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Frameworks.FrameworkVersion", null)
+                        .WithMany("Requirements")
+                        .HasForeignKey("FrameworkVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Projects.Project", b =>
                 {
                     b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
@@ -429,6 +581,89 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.OwnsOne("ComplianceTracker.Domain.Projects.GitHubLink", "GitHub", b1 =>
+                        {
+                            b1.Property<Guid>("ProjectId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<DateTime>("ConnectedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<Guid>("ConnectedById")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("EncryptedToken")
+                                .HasMaxLength(2000)
+                                .HasColumnType("character varying(2000)");
+
+                            b1.Property<string>("Label")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)");
+
+                            b1.Property<string>("LastSyncError")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)");
+
+                            b1.Property<DateTime?>("LastSyncedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<string>("Repository")
+                                .IsRequired()
+                                .HasMaxLength(140)
+                                .HasColumnType("character varying(140)");
+
+                            b1.Property<DateTime?>("TokenChangedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.HasKey("ProjectId");
+
+                            b1.ToTable("Projects");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProjectId");
+
+                            b1.OwnsMany("ComplianceTracker.Domain.Projects.SkippedIssue", "Skipped", b2 =>
+                                {
+                                    b2.Property<int>("Id")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("integer");
+
+                                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b2.Property<int>("Id"));
+
+                                    b2.Property<string>("ExternalReference")
+                                        .IsRequired()
+                                        .HasMaxLength(200)
+                                        .HasColumnType("character varying(200)");
+
+                                    b2.Property<Guid>("GitHubLinkProjectId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<string>("Reason")
+                                        .IsRequired()
+                                        .HasMaxLength(200)
+                                        .HasColumnType("character varying(200)");
+
+                                    b2.Property<string>("Title")
+                                        .IsRequired()
+                                        .HasMaxLength(500)
+                                        .HasColumnType("character varying(500)");
+
+                                    b2.HasKey("Id");
+
+                                    b2.HasIndex("GitHubLinkProjectId");
+
+                                    b2.ToTable("SkippedIssues", (string)null);
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("GitHubLinkProjectId");
+                                });
+
+                            b1.Navigation("Skipped");
+                        });
+
+                    b.Navigation("GitHub");
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Projects.ProjectFramework", b =>
@@ -472,6 +707,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.WorkItems.WorkItem", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.CatalogDocument", b =>
                 {
                     b.HasOne("ComplianceTracker.Domain.Frameworks.FrameworkVersion", null)
@@ -484,6 +728,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.Framework", b =>
                 {
                     b.Navigation("Versions");
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.FrameworkVersion", b =>
+                {
+                    b.Navigation("Requirements");
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Organization", b =>

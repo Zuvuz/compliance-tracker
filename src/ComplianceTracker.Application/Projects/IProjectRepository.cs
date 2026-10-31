@@ -23,5 +23,13 @@ namespace ComplianceTracker.Application.Projects
 
         // The organisation's projects that use any version of this framework now (US-011 R4, R8)
         Task<IReadOnlyList<Project>> ListUsingFrameworkAsync(Guid organizationId, Guid frameworkId, CancellationToken cancellationToken = default);
+
+        // ---------------------------------------------------------- Only for the scheduled GitHub check (US-018 R6)
+        // These two ignore the organisation, because the check runs for every organisation without a user.
+        // Nothing they return is ever shown to a user.
+
+        Task<IReadOnlyList<Guid>> ListIdsLinkedToGitHubAsync(CancellationToken cancellationToken = default);
+
+        Task<Project?> GetForSyncAsync(Guid projectId, CancellationToken cancellationToken = default);
     }
 }

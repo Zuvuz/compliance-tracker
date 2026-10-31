@@ -1,6 +1,7 @@
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Application.Projects;
+using ComplianceTracker.Application.WorkItems;
 using ComplianceTracker.Domain.Projects;
 using ComplianceTracker.Web.Filters;
 using ComplianceTracker.Web.Models;
@@ -17,17 +18,23 @@ namespace ComplianceTracker.Web.Controllers
         private readonly ProjectQueries _projects;
         private readonly FrameworkQueries _frameworks;
         private readonly OrganizationQueries _organizations;
+        private readonly WorkItemSyncService _sync;
+        private readonly WorkItemQueries _workItems;
 
         public ProjectsController(
             ProjectService service,
             ProjectQueries projects,
             FrameworkQueries frameworks,
-            OrganizationQueries organizations)
+            OrganizationQueries organizations,
+            WorkItemSyncService sync,
+            WorkItemQueries workItems)
         {
             _service = service;
             _projects = projects;
             _frameworks = frameworks;
             _organizations = organizations;
+            _sync = sync;
+            _workItems = workItems;
         }
 
         // GET /Projects/Create: the empty form (the framework checkboxes come from the FrameworkChoices view component)
@@ -67,17 +74,89 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = project.Id });
         }
 
-        // GET /Projects/Details/{id}: the project's own page, with its frameworks (US-011 R6)
-        [HttpGet]
-        public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
+        // GET /Projects/Details/{id}/{tab?}: the project's own page (US-008), split into tabs (US-022).
+        // Each tab has its own address (R6), e.g. /Projects/Details/{id}/frameworks. Without a tab: Overview.
+        [HttpGet("Projects/Details/{id:guid}/{tab?}")]
+        public async Task<IActionResult> Details(Guid id, string? tab, CancellationToken cancellationToken)
         {
+            var activeTab = ProjectTabs.Find(tab);
             var project = await _projects.GetAsync(id, cancellationToken);
-            if (project is null)
+            var organization = await _organizations.MineAsync(cancellationToken);
+            if (project is null || organization is null || activeTab is null)
             {
-                return NotFound(); // R5: also when the project belongs to another organisation
+                return NotFound(); // US-008 R5: also when the project belongs to another organisation
             }
 
-            return View(new ProjectDetailsViewModel(project, await _frameworks.ListAsync(cancellationToken)));
+            // The Activity tab is the only one that reads the log
+            var activity = activeTab == ProjectTabs.Activity
+                ? await _projects.ActivityAsync(id, cancellationToken)
+                : [];
+
+            return View(new ProjectDetailsViewModel(
+                project,
+                await _frameworks.ListAsync(cancellationToken),
+                await _workItems.ListAsync(id, cancellationToken) ?? [])
+            {
+                Tab = activeTab,
+                Organization = organization,
+                Activity = activity
+            });
+        }
+
+        // ---------------------------------------------------------- User stories from GitHub (US-018)
+
+        // GET /Projects/WorkItems/{id}: only the work items section, fetched again by the page when SignalR says it changed (R7)
+        [HttpGet]
+        public async Task<IActionResult> WorkItems(Guid id, CancellationToken cancellationToken)
+        {
+            var project = await _projects.GetAsync(id, cancellationToken);
+            var workItems = await _workItems.ListAsync(id, cancellationToken);
+            if (project is null || workItems is null)
+            {
+                return NotFound(); // R9
+            }
+
+            return PartialView("_WorkItems", new WorkItemsViewModel(project, workItems));
+        }
+
+        // POST /Projects/LinkGitHub: R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        public async Task<IActionResult> LinkGitHub(Guid projectId, string? repository, string? label, CancellationToken cancellationToken)
+        {
+            await _sync.LinkGitHubAsync(projectId, repository ?? "", label, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+        }
+
+        // POST /Projects/SetGitHubToken: US-031 R1-R3. A refused token is shown as an error and never sent back to the page.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        public async Task<IActionResult> SetGitHubToken(Guid projectId, string? token, CancellationToken cancellationToken)
+        {
+            await _sync.SetGitHubTokenAsync(projectId, token ?? "", cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+        }
+
+        // POST /Projects/RemoveGitHubToken: US-031 R3
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        public async Task<IActionResult> RemoveGitHubToken(Guid projectId, CancellationToken cancellationToken)
+        {
+            await _sync.RemoveGitHubTokenAsync(projectId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+        }
+
+        // POST /Projects/SyncNow: R5. A failed sync is shown on the page from the project's GitHub link.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        public async Task<IActionResult> SyncNow(Guid projectId, CancellationToken cancellationToken)
+        {
+            await _sync.SyncNowAsync(projectId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
         }
 
         // ---------------------------------------------------------- Editing (US-024)
@@ -127,31 +206,31 @@ namespace ComplianceTracker.Web.Controllers
         // POST /Projects/AddFramework: R2, R3. Without a version, the newest is used.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [OnDomainError(nameof(Details), IdFrom = "projectId")]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Frameworks)]
         public async Task<IActionResult> AddFramework(Guid projectId, Guid frameworkId, Guid? frameworkVersionId, CancellationToken cancellationToken)
         {
             await _service.AddFrameworkAsync(projectId, frameworkId, frameworkVersionId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId }); // Post/Redirect/Get
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Frameworks }); // Post/Redirect/Get
         }
 
         // POST /Projects/UseNewest: R6
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [OnDomainError(nameof(Details), IdFrom = "projectId")]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Frameworks)]
         public async Task<IActionResult> UseNewest(Guid projectId, Guid frameworkId, CancellationToken cancellationToken)
         {
             await _service.UseNewestVersionAsync(projectId, frameworkId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId });
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Frameworks });
         }
 
         // POST /Projects/RemoveFramework: R7
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [OnDomainError(nameof(Details), IdFrom = "projectId")]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Frameworks)]
         public async Task<IActionResult> RemoveFramework(Guid projectId, Guid frameworkId, CancellationToken cancellationToken)
         {
             await _service.RemoveFrameworkAsync(projectId, frameworkId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId });
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Frameworks });
         }
     }
 }

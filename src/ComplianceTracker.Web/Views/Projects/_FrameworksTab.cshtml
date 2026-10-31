@@ -1,0 +1,94 @@
+@* US-011, US-022 R4: the frameworks the project follows, with "Add framework", "Use newest" and "Remove".
+   Ids and classes used by the tests: #project-frameworks, rows with data-framework-id, cells framework-name,
+   framework-source, framework-version, framework-status, framework-added-by, framework-added-on, the badge
+   framework-newer, and #add-framework. *@
+@model ProjectDetailsViewModel
+@{
+    var project = Model.Project;
+}
+
+<section id="project-frameworks">
+    @if (Model.Frameworks.Count == 0)
+    {
+        @* R7 *@
+        <p class="text-muted" id="no-frameworks">No frameworks yet</p>
+    }
+    else
+    {
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Framework</th>
+                    <th>Source</th>
+                    <th>Version</th>
+                    <th>Status</th>
+                    <th>Added by</th>
+                    <th>Added on</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.Frameworks)
+                {
+                    <tr data-framework-id="@row.Framework.Id">
+                        <td class="framework-name">@row.Framework.Name</td>
+                        <td class="framework-source">@(row.Framework.IsBuiltIn ? "Built-in" : "Uploaded")</td>
+                        <td class="framework-version">@row.Version.Number</td>
+                        <td>
+                            @if (row.NewerVersionExists)
+                            {
+                                <span class="framework-status framework-newer badge text-bg-warning">@row.Status</span>
+                            }
+                            else
+                            {
+                                <span class="framework-status badge text-bg-success">@row.Status</span>
+                            }
+                        </td>
+                        <td class="framework-added-by">@Model.NameOf(row.Link.AddedById)</td>
+                        <td class="framework-added-on">@row.Link.AddedAt.ToLocalTime().ToString("dd-MM-yyyy")</td>
+                        <td class="text-end text-nowrap">
+                            @* US-024 R4: nothing changes at end of support *@
+                            @if (!project.IsClosed)
+                            {
+                                @* US-011 R6: one click moves the project to the newest active version *@
+                                @if (row.NewerVersionExists)
+                                {
+                                    <form asp-action="UseNewest" method="post" class="d-inline">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="frameworkId" value="@row.Framework.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">Use newest</button>
+                                    </form>
+                                }
+                                @* US-011 R7: removing keeps the history *@
+                                <form asp-action="RemoveFramework" method="post" class="d-inline">
+                                    <input type="hidden" name="projectId" value="@project.Id" />
+                                    <input type="hidden" name="frameworkId" value="@row.Framework.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    @* US-011 R2: add one of the organisation's frameworks; the newest active version is used *@
+    @if (Model.CanBeAdded.Any() && !project.IsClosed)
+    {
+        <form asp-action="AddFramework" method="post" class="row g-2" id="add-framework">
+            <input type="hidden" name="projectId" value="@project.Id" />
+            <div class="col-md-6">
+                <select name="frameworkId" class="form-select" aria-label="Framework">
+                    @foreach (var framework in Model.CanBeAdded.OrderBy(f => f.Name))
+                    {
+                        <option value="@framework.Id">@framework.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary">Add framework</button>
+            </div>
+        </form>
+    }
+</section>

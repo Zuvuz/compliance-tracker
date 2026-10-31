@@ -49,6 +49,31 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
 
             // Frameworks is calculated from FrameworkHistory and not stored
             builder.Ignore(p => p.Frameworks);
+            builder.Ignore(p => p.IsClosed);
+
+            // US-018: the GitHub link is stored in the Projects table (columns GitHub_Repository, ...).
+            // Its skipped issues are a small table of their own, replaced at every sync.
+            builder.OwnsOne(p => p.GitHub, link =>
+            {
+                link.Property(l => l.Repository).HasMaxLength(140).IsRequired();
+                link.Property(l => l.Label).HasMaxLength(100).IsRequired();
+                link.Property(l => l.LastSyncError).HasMaxLength(500);
+                link.Ignore(l => l.HasToken);
+
+                // US-031: only the encrypted token is stored (Data Protection output, base64url)
+                link.Property(l => l.EncryptedToken).HasMaxLength(2000);
+
+                link.OwnsMany(l => l.Skipped, skipped =>
+                {
+                    skipped.ToTable("SkippedIssues");
+                    skipped.Property<int>("Id");
+                    skipped.HasKey("Id");
+                    skipped.Property(i => i.ExternalReference).HasMaxLength(200).IsRequired();
+                    skipped.Property(i => i.Title).HasMaxLength(500).IsRequired();
+                    skipped.Property(i => i.Reason).HasMaxLength(200).IsRequired();
+                });
+                link.Navigation(l => l.Skipped).HasField("_skipped").UsePropertyAccessMode(PropertyAccessMode.Field);
+            });
         }
     }
 }

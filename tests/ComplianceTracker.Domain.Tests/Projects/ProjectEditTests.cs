@@ -159,7 +159,7 @@ public class ProjectEditTests
 
         // Act
         var error = Assert.Throws<DomainException>(
-            () => project.UseFramework(framework, framework.CurrentVersion, Guid.NewGuid(), DateTime.UtcNow));
+            () => project.UseFramework(framework, framework.LatestVersion, Guid.NewGuid(), DateTime.UtcNow));
 
         // Assert
         Assert.Equal("A project at end of support cannot be changed", error.Message);

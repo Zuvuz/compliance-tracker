@@ -7,13 +7,15 @@ using ComplianceTracker.Domain.Frameworks;
 
 namespace ComplianceTracker.Application.Frameworks
 {
-    // Use cases that change frameworks: add and upload versions (US-005), switch built-in ones on and off (US-006).
+    // Use cases that change frameworks: add and upload versions (US-005), switch built-in ones on and off (US-006),
+    // and check, correct and activate the requirements of a new version (US-007).
     // Holds the rules that need the database (unique names, membership) and saves everything at once.
     // Always acts for the signed-in member (CurrentMember); reading is done by FrameworkQueries.
     public class FrameworkService
     {
         private readonly IFrameworkRepository _frameworks;
         private readonly IProjectRepository _projects;
+        private readonly IRequirementExtractor _extractor;
         private readonly CurrentMember _member;
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
@@ -22,6 +24,7 @@ namespace ComplianceTracker.Application.Frameworks
         public FrameworkService(
             IFrameworkRepository frameworks,
             IProjectRepository projects,
+            IRequirementExtractor extractor,
             CurrentMember member,
             IActivityLogger log,
             IUnitOfWork unitOfWork,
@@ -29,13 +32,15 @@ namespace ComplianceTracker.Application.Frameworks
         {
             _frameworks = frameworks;
             _projects = projects;
+            _extractor = extractor;
             _member = member;
             _log = log;
             _unitOfWork = unitOfWork;
             _clock = clock;
         }
 
-        // Adds a new framework to the organisation, with the PDF as version 1
+        // Adds a new framework to the organisation, with the PDF as version 1.
+        // US-007 R1: the version is a draft with the requirements found in the PDF.
         public async Task<Framework> AddAsync(string name, string fileName, byte[] content, CancellationToken cancellationToken = default)
         {
             var (organization, user) = await _member.RequireAsync(cancellationToken);
@@ -48,16 +53,17 @@ namespace ComplianceTracker.Application.Frameworks
             }
 
             var framework = Framework.Create(organization.Id, name, file, user.Id, Now);
+            AddFoundRequirements(framework.LatestVersion, file);
             await _frameworks.AddAsync(framework, cancellationToken);
-            await SaveVersionAsync(framework.CurrentVersion, file, cancellationToken);
+            await SaveVersionAsync(framework.LatestVersion, file, cancellationToken);
             return framework;
         }
 
         // Uploads a new version of an existing framework; earlier versions are kept (R3).
-        // US-011 R4: the ticked projects move to the new version; all other projects keep theirs.
+        // US-007: the new version is a draft, so every project keeps its version until it is activated
+        // and the project is moved with "Use newest" (US-011 R6).
         public async Task<FrameworkVersion> UploadVersionAsync(
-            Guid frameworkId, string fileName, byte[] content,
-            IReadOnlyCollection<Guid>? moveProjectIds = null, CancellationToken cancellationToken = default)
+            Guid frameworkId, string fileName, byte[] content, CancellationToken cancellationToken = default)
         {
             var (organization, user) = await _member.RequireAsync(cancellationToken);
             var file = CatalogFile.Create(fileName, content);
@@ -67,22 +73,66 @@ namespace ComplianceTracker.Application.Frameworks
             var framework = await _frameworks.GetAsync(organization.Id, frameworkId, cancellationToken)
                 ?? throw new DomainException("Framework not found");
 
-            var now = Now;
-            var version = framework.AddVersion(file, user.Id, now);
-
-            // US-011 R4: only projects that already use the framework can move; saved together with the version
-            foreach (var projectId in (moveProjectIds ?? []).Distinct())
-            {
-                var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
-                    ?? throw new DomainException("Project not found");
-                if (project.ChangeFrameworkVersion(framework, version, user.Id, now))
-                {
-                    await _log.LogAsync(ActivityAction.ProjectFrameworkVersionChanged, project.Id, cancellationToken);
-                }
-            }
-
+            var version = framework.AddVersion(file, user.Id, Now);
+            AddFoundRequirements(version, file);
             await SaveVersionAsync(version, file, cancellationToken);
             return version;
+        }
+
+        // ---------------------------------------------------------- Draft requirements (US-007)
+
+        // R2, R5: adds a requirement by hand
+        public async Task AddRequirementAsync(Guid frameworkVersionId, string code, string title, string? description, CancellationToken cancellationToken = default)
+        {
+            var version = await DraftAsync(frameworkVersionId, cancellationToken);
+            version.AddRequirement(code, title, description);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // R2: corrects one requirement
+        public async Task ChangeRequirementAsync(Guid frameworkVersionId, Guid requirementId, string code, string title, string? description, CancellationToken cancellationToken = default)
+        {
+            var version = await DraftAsync(frameworkVersionId, cancellationToken);
+            version.ChangeRequirement(requirementId, code, title, description);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // R2: removes a wrong row
+        public async Task RemoveRequirementAsync(Guid frameworkVersionId, Guid requirementId, CancellationToken cancellationToken = default)
+        {
+            var version = await DraftAsync(frameworkVersionId, cancellationToken);
+            version.RemoveRequirement(requirementId);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // R3, R4, R6: locks the version; it becomes the framework's current version. Logged.
+        public async Task ActivateAsync(Guid frameworkVersionId, CancellationToken cancellationToken = default)
+        {
+            var (_, user) = await _member.RequireAsync(cancellationToken);
+            var version = await DraftAsync(frameworkVersionId, cancellationToken);
+
+            version.Activate(user.Id, Now);
+            await _log.LogAsync(ActivityAction.CatalogActivated, version.Id, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // One of the organisation's own versions, with its requirements loaded.
+        // Whether it is still a draft is checked by the domain ("An active version cannot be changed").
+        private async Task<FrameworkVersion> DraftAsync(Guid frameworkVersionId, CancellationToken cancellationToken)
+        {
+            var (organization, _) = await _member.RequireAsync(cancellationToken);
+            var framework = await _frameworks.GetByVersionWithRequirementsAsync(organization.Id, frameworkVersionId, cancellationToken)
+                ?? throw new DomainException("Framework version not found");
+            return framework.Version(frameworkVersionId);
+        }
+
+        // R1: the requirements found in the PDF become the draft's rows
+        private void AddFoundRequirements(FrameworkVersion version, CatalogFile file)
+        {
+            foreach (var found in _extractor.Extract(file.Content))
+            {
+                version.AddRequirement(found.Code, found.Title, found.Description);
+            }
         }
 
         // US-006: switches a built-in framework on for the organisation (R2, R3).
@@ -90,7 +140,7 @@ namespace ComplianceTracker.Application.Frameworks
         public async Task EnableBuiltInAsync(Guid frameworkId, CancellationToken cancellationToken = default)
         {
             var (organization, user) = await _member.RequireAsync(cancellationToken);
-            var version = (await BuiltInAsync(frameworkId, cancellationToken)).CurrentVersion;
+            var version = (await BuiltInAsync(frameworkId, cancellationToken)).RequireCurrentVersion();
 
             if (await _frameworks.GetActiveSelectionAsync(organization.Id, version.Id, cancellationToken) is not null)
             {
@@ -110,7 +160,7 @@ namespace ComplianceTracker.Application.Frameworks
         {
             var (organization, user) = await _member.RequireAsync(cancellationToken);
             var framework = await BuiltInAsync(frameworkId, cancellationToken);
-            var version = framework.CurrentVersion;
+            var version = framework.RequireCurrentVersion();
 
             var selection = await _frameworks.GetActiveSelectionAsync(organization.Id, version.Id, cancellationToken);
             if (selection is null)

@@ -38,6 +38,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
                 .OrderBy(p => p.Name)
                 .ToListAsync(cancellationToken);
 
+        public async Task<IReadOnlyList<Guid>> ListIdsLinkedToGitHubAsync(CancellationToken cancellationToken = default)
+            => await _db.Projects
+                .Where(p => p.GitHub != null)
+                .Select(p => p.Id)
+                .ToListAsync(cancellationToken);
+
+        public Task<Project?> GetForSyncAsync(Guid projectId, CancellationToken cancellationToken = default)
+            => _db.Projects.FirstOrDefaultAsync(p => p.Id == projectId, cancellationToken);
+
         public async Task<IReadOnlyList<Project>> ListUsingFrameworkAsync(Guid organizationId, Guid frameworkId, CancellationToken cancellationToken = default)
             => await _db.Projects
                 .Where(p => p.OrganizationId == organizationId

@@ -16,7 +16,13 @@ namespace ComplianceTracker.Web.ViewComponents
             _frameworks = frameworks;
         }
 
+        // US-007: frameworks that only have a draft cannot be used by projects yet, so they are not offered
         public async Task<IViewComponentResult> InvokeAsync(IReadOnlyCollection<Guid> selected)
-            => View(new FrameworkChoicesViewModel(await _frameworks.ListAsync(HttpContext.RequestAborted), selected));
+        {
+            var usable = (await _frameworks.ListAsync(HttpContext.RequestAborted))
+                .Where(f => f.CurrentVersion is not null)
+                .ToList();
+            return View(new FrameworkChoicesViewModel(usable, selected));
+        }
     }
 }

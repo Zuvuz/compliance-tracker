@@ -4,7 +4,7 @@ Feature: Use the organisation's frameworks in projects
     Given an empty database
     And "Anna" has created the organisation "Acme ApS"
     And I am signed in as "Anna"
-    And the framework "Security policy" has been uploaded
+    And the framework "Security policy" has been uploaded and activated
     And the projects "Acme Portal" and "Acme App" exist
 
   @US-011 @iso27001-A.5.31 @integration
@@ -17,11 +17,13 @@ Feature: Use the organisation's frameworks in projects
     When I add "Security policy" to the project "Acme Portal"
     Then the project "Acme Portal" uses "Security policy" version 1
 
-  @US-011 @iso27001-7.5.3 @integration
-  Scenario: Choose which projects move to a new version
+  # Changed by US-007 and #52: an upload no longer moves projects. They keep their version
+  # until the new one is activated and they choose "Use newest" (R6).
+  @US-011 @US-007 @iso27001-7.5.3 @integration
+  Scenario: Projects keep their version when a new version is uploaded
     Given "Acme Portal" and "Acme App" use "Security policy" version 1
-    When I upload a new version of "Security policy" for the project "Acme Portal"
-    Then the project "Acme Portal" uses "Security policy" version 2
+    When a new version of "Security policy" is uploaded and activated
+    Then the project "Acme Portal" uses "Security policy" version 1
     And the project "Acme App" uses "Security policy" version 1
 
   @US-011 @iso27001-7.5.3 @integration
@@ -61,14 +63,14 @@ Feature: Use the organisation's frameworks in projects
   @US-011 @iso27001-A.8.15 @integration
   Scenario: Changes are logged
     Given "Acme App" uses "Security policy" version 1
-    And a new version of "Security policy" has been uploaded
+    And a new version of "Security policy" has been uploaded and activated
     When I move "Acme App" to the newest version of "Security policy"
     Then the activity log for "Acme ApS" has "ProjectFrameworkVersionChanged" for "Anna" concerning "Acme App"
 
   @US-011 @US-016 @iso27001-7.5.3 @integration
   Scenario: The project page says when a newer version exists
     Given "Acme App" uses "Security policy" version 1
-    And a new version of "Security policy" has been uploaded
+    And a new version of "Security policy" has been uploaded and activated
     Then the page of "Acme App" says "Security policy" has a newer version
 
   @US-011 @US-016 @iso27001-7.5.3 @integration

@@ -182,6 +182,51 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Fuld CQRS med separate læsemodeller.
   - MediatR og lignende biblioteker, fordi almindelig DI er nok og nemmere at forklare.
 
+### B24 – En upload er en kladde, der skal aktiveres
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-007)
+  - En ny frameworkversion starter som kladde med de krav, der blev fundet i PDF'en.
+  - Kladden kan rettes: krav kan ændres, slettes og tilføjes i hånden. Aktivering låser den og kræver mindst ét krav.
+  - Projekter kan kun bruge aktive versioner. Den gældende version er den senest aktiverede.
+  - En upload flytter ikke længere projekter. De flyttes med "Use newest", når den nye version er aktiveret. Checkboksene "Move …" er fjernet (punkt i #52).
+  - Versioner fra før US-007 og de indbyggede versioner blev markeret som aktive i migrationen, så ingen projekter gik i stykker.
+  - Udtrækningen bruger PdfPig og en fast regel (linjer, der starter med en nummereret kode). Der bruges ikke AI (domænemodellens regel 9).
+- **Begrundelse:** Et projekt skal vurderes mod en tekst, der ikke kan ændre sig bagefter (ISO 27001 7.5.3). En automatisk udtrækning er aldrig perfekt, så et menneske skal godkende den først.
+- **Fravalgt:**
+  - At flytte projekter ved upload, fordi kladden kan ændre sig.
+  - OCR af scannede PDF'er.
+  - En "kategori" på kravet. Koden viser allerede kategorien (fx `A.5`).
+
+### B25 – User stories fra GitHub synkroniseres af systemet
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-018)
+  - Et projekt kan linkes til et offentligt GitHub-repository (`owner/name`) og en label (standard `user-story`). Trackeren læser kun.
+  - Issues med labelen, der ikke følger BDD-skabelonen (ingen "Rules"), springes over og vises med grunden.
+  - Work items slettes aldrig. Et lukket issue bliver `Closed`, og et issue, der ikke længere kommer med, bliver `Removed`.
+  - Ud over "Sync now" tjekker en baggrundsjob alle linkede repositories hvert 15. minut (`WorkItemSync:IntervalMinutes`). GitHub tillader 60 forespørgsler i timen uden nøgle.
+  - En planlagt sync logges kun, når den fandt ændringer. Den logges uden bruger: `ActivityLogEntry.UserId` er null og betyder "systemet". En sync startet af et medlem logges altid med medlemmet.
+  - Åbne projektsider opdateres med SignalR. Hubben tjekker, at brugeren hører til projektets organisation.
+- **Begrundelse:** En handling må ikke skrives på en person, der ikke udførte den (ISO 27001 A.8.15). Derfor er systemet sin egen "bruger" i loggen.
+- **Fravalgt:**
+  - Webhooks fra GitHub, fordi de kræver en offentlig adresse. De kan erstatte baggrundsjobbet, når trackeren hostes.
+  - At logge hver planlagt sync uden ændringer, fordi loggen så ville fyldes med ét indslag pr. kvarter pr. projekt.
+
+### B26 – Adgangsnøgler gemmes krypteret pr. projekt
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-031, genbruges af US-030)
+  - Et projekt kan få en read-only nøgle til sit GitHub-repository. Nøglen tjekkes hos GitHub, før den gemmes.
+  - Nøglen gemmes krypteret med ASP.NET Core Data Protection (`ISecretProtector`). Den vises aldrig igen og kommer aldrig i loggen, i fejlbeskeder eller i sidens HTML. Den kan skiftes og fjernes.
+  - Data Protection-nøglerne ligger i databasen (`DataProtectionKeys`), så krypterede nøgler og login-cookies stadig kan læses efter en genstart eller i en ny container.
+  - Skifter projektet repository, slettes nøglen, fordi den hører til det gamle repository.
+- **Begrundelse:** En nøgle i klartekst kunne læses af alle med adgang til databasen eller en backup (ISO 27001 A.8.24, A.5.17).
+- **Kendt begrænsning:** Data Protection-nøglerne ligger ukrypteret i den samme database. Før trackeren hostes, skal de beskyttes med et certifikat eller en key vault (`ProtectKeysWith...`).
+- **Fravalgt:**
+  - Én fælles nøgle til hele trackeren i serverens konfiguration, fordi alle organisationer så ville dele adgang.
+  - En GitHub App eller OAuth, fordi det kræver en offentlig adresse og en app-registrering.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

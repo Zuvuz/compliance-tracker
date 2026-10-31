@@ -1,3 +1,4 @@
+using ComplianceTracker.Infrastructure.WorkItems;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -26,15 +27,19 @@ namespace ComplianceTracker.Specs.Support
         // The web app with test sign-in instead of Keycloak (see TestAuthHandler)
         // The clock replaces TimeProvider.System, so "Given the time is ..." also applies inside the app (US-016)
         // overrides: settings to change, e.g. an empty ClientId to test the start-up check (US-029 R3)
-        public static TestApp WithTestSignIn(string connectionString, TimeProvider clock, IDictionary<string, string?>? overrides = null)
+        // github: the pretend GitHub the app reads user stories from (US-018); without one, an empty one
+        public static TestApp WithTestSignIn(string connectionString, TimeProvider clock, IDictionary<string, string?>? overrides = null, FakeGitHub? github = null)
         {
+            github ??= new FakeGitHub();
             var settings = new Dictionary<string, string?>
             {
                 ["ConnectionStrings:ComplianceTracker"] = connectionString,
                 // Only used when the app redirects to Keycloak on sign-out. There is no real Keycloak in these tests.
                 ["Authentication:Keycloak:Authority"] = FakeKeycloak.Issuer,
                 ["Authentication:Keycloak:ClientId"] = "compliance-tracker-web",
-                ["Authentication:Keycloak:ClientSecret"] = "not-used-in-tests"
+                ["Authentication:Keycloak:ClientSecret"] = "not-used-in-tests",
+                // The tests run the scheduled GitHub check themselves ("the scheduled check runs"), never on a timer
+                ["WorkItemSync:Enabled"] = "false"
             };
             foreach (var (key, value) in overrides ?? new Dictionary<string, string?>())
             {
@@ -44,6 +49,9 @@ namespace ComplianceTracker.Specs.Support
             return Create(settings, services =>
             {
                 services.AddSingleton(clock);
+
+                // US-018: the GitHub adapter talks to the pretend GitHub instead of api.github.com
+                services.AddHttpClient<GitHubWorkItemSource>().ConfigurePrimaryHttpMessageHandler(github.CreateHandler);
 
                 // Make the test sign-in the default, replacing the cookie + Keycloak setup from Program.cs
                 services

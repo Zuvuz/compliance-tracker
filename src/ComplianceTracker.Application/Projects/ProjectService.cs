@@ -68,7 +68,7 @@ namespace ComplianceTracker.Application.Projects
             foreach (var frameworkId in (frameworkIds ?? []).Distinct())
             {
                 var framework = await AvailableFrameworkAsync(organization.Id, frameworkId, cancellationToken);
-                project.UseFramework(framework, framework.CurrentVersion, user.Id, now);
+                project.UseFramework(framework, framework.RequireCurrentVersion(), user.Id, now);
                 await _log.LogAsync(ActivityAction.ProjectFrameworkAdded, project.Id, cancellationToken);
             }
 
@@ -130,21 +130,20 @@ namespace ComplianceTracker.Application.Projects
             var (userId, project, framework) = await LoadAsync(projectId, frameworkId, cancellationToken);
 
             var version = frameworkVersionId is null
-                ? framework.CurrentVersion
-                : framework.Versions.FirstOrDefault(v => v.Id == frameworkVersionId)
-                  ?? throw new DomainException("Framework version not found");
+                ? framework.RequireCurrentVersion()
+                : framework.Version(frameworkVersionId.Value);
 
             project.UseFramework(framework, version, userId, Now);
             await _log.LogAsync(ActivityAction.ProjectFrameworkAdded, project.Id, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
-        // US-011 R6: moves the project to the newest version of a framework it uses
+        // US-011 R6: moves the project to the newest version of a framework it uses (US-007: the current active one)
         public async Task UseNewestVersionAsync(Guid projectId, Guid frameworkId, CancellationToken cancellationToken = default)
         {
             var (userId, project, framework) = await LoadAsync(projectId, frameworkId, cancellationToken);
 
-            if (project.ChangeFrameworkVersion(framework, framework.CurrentVersion, userId, Now))
+            if (project.ChangeFrameworkVersion(framework, framework.RequireCurrentVersion(), userId, Now))
             {
                 await _log.LogAsync(ActivityAction.ProjectFrameworkVersionChanged, project.Id, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);

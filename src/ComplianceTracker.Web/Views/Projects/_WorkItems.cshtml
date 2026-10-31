@@ -1,0 +1,89 @@
+@* US-018: the project's user stories from GitHub, the sync button and what the last sync skipped.
+   Also returned alone by /Projects/WorkItems/{id}, so the page can replace it when SignalR says it changed.
+   The ids and classes (#sync-now, #last-synced, #sync-error, #skipped-issues, .skipped-issue, #work-items,
+   .work-item, .work-item-title, .work-item-state, .work-item-rules, .work-item-examples, .work-item-gherkin,
+   .work-item-link) are used by the tests. *@
+@model WorkItemsViewModel
+@{
+    var project = Model.Project;
+    var link = project.GitHub;
+}
+
+@if (link is null)
+{
+    <p class="text-muted" id="not-linked">Link a public GitHub repository to read the project's user stories.</p>
+    return;
+}
+
+<div class="d-flex align-items-center gap-3 mb-2">
+    @if (!project.IsClosed)
+    {
+        <form asp-controller="Projects" asp-action="SyncNow" method="post" id="sync-now">
+            <input type="hidden" name="projectId" value="@project.Id" />
+            <button type="submit" class="btn btn-primary">Sync now</button>
+        </form>
+    }
+    <span class="small text-muted">
+        <a href="https://github.com/@link.Repository" target="_blank" rel="noopener noreferrer">@link.Repository</a>,
+        label <code>@link.Label</code> ·
+        <span id="last-synced">Last synced: @(link.LastSyncedAt?.ToLocalTime().ToString("dd-MM-yyyy HH:mm") ?? "never")</span>
+    </span>
+</div>
+
+@if (link.LastSyncError is { } error)
+{
+    <div class="alert alert-warning" id="sync-error">Sync failed: @error</div>
+}
+
+@if (link.Skipped.Count > 0)
+{
+    @* R3: issues with the label that do not follow the BDD template *@
+    <details class="mb-3" id="skipped-issues">
+        <summary class="small">@link.Skipped.Count skipped</summary>
+        <ul class="small mb-0">
+            @foreach (var skipped in link.Skipped)
+            {
+                <li class="skipped-issue" data-reference="@skipped.ExternalReference">@skipped.ExternalReference @skipped.Title: Skipped: @skipped.Reason</li>
+            }
+        </ul>
+    </details>
+}
+
+@if (Model.WorkItems.Count == 0)
+{
+    <p class="text-muted">No user stories read yet.</p>
+}
+else
+{
+    <div id="work-items">
+        @foreach (var item in Model.WorkItems)
+        {
+            @* R4: title, state and the template's sections, with a link to the issue *@
+            <details class="work-item border rounded p-2 mb-2" data-reference="@item.ExternalReference">
+                <summary>
+                    <span class="work-item-title">@item.Title</span>
+                    <span class="work-item-state badge @(item.State == ComplianceTracker.Domain.WorkItems.WorkItemState.Open ? "text-bg-success" : "text-bg-secondary")">@item.State</span>
+                </summary>
+                <p class="small mb-2">
+                    <a class="work-item-link" href="@item.Url" target="_blank" rel="noopener noreferrer">@item.ExternalReference on GitHub</a>
+                    @if (!string.IsNullOrEmpty(item.Labels))
+                    {
+                        <text> · @item.Labels</text>
+                    }
+                </p>
+                <h3 class="h6">Rules</h3>
+                <pre class="work-item-rules small">@item.Rules</pre>
+                @if (!string.IsNullOrEmpty(item.Examples))
+                {
+                    <h3 class="h6">Examples</h3>
+                    <pre class="work-item-examples small">@item.Examples</pre>
+                }
+                @if (!string.IsNullOrEmpty(item.Gherkin))
+                {
+                    <h3 class="h6">Gherkin</h3>
+                    <pre class="work-item-gherkin small">@item.Gherkin</pre>
+                }
+            </details>
+        }
+    </div>
+}

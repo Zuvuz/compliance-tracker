@@ -24,6 +24,9 @@ namespace ComplianceTracker.Web.Filters
 
         public string Action { get; }
         public string? IdFrom { get; init; }
+
+        // The tab of the page to go back to, e.g. "frameworks" on the project page (US-022 R6)
+        public string? Tab { get; init; }
     }
 
     // The one place that turns a broken domain rule (DomainException) into an error the user can see (US-029 R4).
@@ -62,7 +65,7 @@ namespace ComplianceTracker.Web.Filters
 
             controller.TempData[TempDataKey] = error.Message;
             var routeValues = target.IdFrom is not null && context.ActionArguments.TryGetValue(target.IdFrom, out var id)
-                ? new { id }
+                ? new { id, tab = target.Tab }
                 : null;
             executed.Result = controller.RedirectToAction(target.Action, routeValues);
             executed.ExceptionHandled = true;
