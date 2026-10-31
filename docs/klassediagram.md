@@ -93,12 +93,17 @@ classDiagram
   class FrameworkService {
     -frameworks: IFrameworkRepository
     -projects: IProjectRepository
+    -extractor: IRequirementExtractor
     -member: CurrentMember
     -log: IActivityLogger
     -unitOfWork: IUnitOfWork
     -clock: TimeProvider
     +AddAsync(name: string, fileName: string, content: byte[]) Task~Framework~
-    +UploadVersionAsync(frameworkId: Guid, fileName: string, content: byte[], moveProjectIds: Guid[]?) Task~FrameworkVersion~
+    +UploadVersionAsync(frameworkId: Guid, fileName: string, content: byte[]) Task~FrameworkVersion~
+    +AddRequirementAsync(frameworkVersionId: Guid, code: string, title: string, description: string?) Task
+    +ChangeRequirementAsync(frameworkVersionId: Guid, requirementId: Guid, code: string, title: string, description: string?) Task
+    +RemoveRequirementAsync(frameworkVersionId: Guid, requirementId: Guid) Task
+    +ActivateAsync(frameworkVersionId: Guid) Task
     +EnableBuiltInAsync(frameworkId: Guid) Task
     +DisableBuiltInAsync(frameworkId: Guid) Task
   }
@@ -112,6 +117,7 @@ classDiagram
     -member: CurrentMember
     +ListAsync() Task~IReadOnlyList~Framework~~
     +GetOwnAsync(frameworkId: Guid) Task~Framework?~
+    +GetVersionAsync(frameworkVersionId: Guid) Task
     +GetDocumentAsync(frameworkVersionId: Guid) Task
     +BuiltInAsync() Task
   }
@@ -121,12 +127,18 @@ classDiagram
     +ListAsync() Task~IReadOnlyList~Project~~
     +GetAsync(projectId: Guid) Task~Project?~
   }
+  class IRequirementExtractor {
+    <<interface>>
+    +Extract(pdf: byte[]) IReadOnlyList~ExtractedRequirement~
+  }
+  class PdfRequirementExtractor
   class IFrameworkRepository {
     <<interface>>
     +NameExistsAsync(organizationId: Guid, name: string) Task~bool~
     +AddAsync(framework: Framework) Task
     +AddDocumentAsync(frameworkVersionId: Guid, content: byte[]) Task
     +GetAsync(organizationId: Guid, frameworkId: Guid) Task~Framework?~
+    +GetByVersionWithRequirementsAsync(organizationId: Guid, frameworkVersionId: Guid) Task~Framework?~
     +ListAsync(organizationId: Guid) Task~IReadOnlyList~Framework~~
     +GetAvailableAsync(organizationId: Guid, frameworkId: Guid) Task~Framework?~
     +GetDocumentAsync(organizationId: Guid, frameworkVersionId: Guid) Task
@@ -217,8 +229,11 @@ classDiagram
     -name: string
     -scope: FrameworkScope
     -versions: List~FrameworkVersion~
-    +CurrentVersion: FrameworkVersion
+    +LatestVersion: FrameworkVersion
+    +CurrentVersion: FrameworkVersion?
     +IsBuiltIn: bool
+    +RequireCurrentVersion() FrameworkVersion
+    +Version(versionId: Guid) FrameworkVersion
     +Create(organizationId: Guid, name: string, file: CatalogFile, uploadedById: Guid, uploadedAt: DateTime)$ Framework
     +AddVersion(file: CatalogFile, uploadedById: Guid, uploadedAt: DateTime) FrameworkVersion
   }
@@ -233,9 +248,15 @@ classDiagram
     -uploadedAt: DateTime
     -source: CatalogSource
     -sourceReference: string?
-    -status: CatalogStatus
+    -status: FrameworkVersionStatus
     -activatedAt: DateTime?
+    -activatedById: Guid?
     -requirements: List~Requirement~
+    +IsActive: bool
+    +AddRequirement(code: string, title: string, description: string?) Requirement
+    +ChangeRequirement(requirementId: Guid, code: string, title: string, description: string?)
+    +RemoveRequirement(requirementId: Guid)
+    +Activate(userId: Guid, at: DateTime)
   }
   class CatalogFile {
     <<value object>>
@@ -248,9 +269,9 @@ classDiagram
     -id: Guid
     -frameworkVersionId: Guid
     -code: string
-    -category: string
     -title: string
     -description: string
+    -position: int
   }
   class OrganizationFramework {
     -id: Guid
@@ -424,11 +445,10 @@ classDiagram
     BuiltIn
     Imported
   }
-  class CatalogStatus {
+  class FrameworkVersionStatus {
     <<enumeration>>
     Draft
     Active
-    Retired
   }
   class ActivityAction {
     <<enumeration>>
@@ -550,6 +570,8 @@ classDiagram
   UserActivityService --> IActivityLogger : log
   UserActivityService --> IUnitOfWork : unitOfWork
   FrameworkService --> IFrameworkRepository : frameworks
+  FrameworkService --> IRequirementExtractor : extractor
+  PdfRequirementExtractor ..|> IRequirementExtractor
   FrameworkService --> CurrentMember : member
   FrameworkService --> IActivityLogger : log
   FrameworkService --> IUnitOfWork : unitOfWork
@@ -584,6 +606,7 @@ classDiagram
 - **Koblingsklasser med data.** `RequirementControl` og `RequirementWorkItem` registrerer via `MappingSource`, om koblingen er lavet manuelt eller via et godkendt AI-forslag.
 - **Vurderinger ændres ikke.** En ny `RequirementAssessment` oprettes i stedet, og den seneste er gældende. Det giver historik til en auditor.
 - **Frameworkversioner låses ved aktivering.** Når `status` er `Active`, kan `requirements` ikke ændres. Så kan en mapping nøjes med at pege på et `Requirement`, fordi teksten bag aldrig ændrer sig. En rettelse er en ny `FrameworkVersion`.
+- **En ny upload er en kladde.** `IRequirementExtractor` (PdfPig, ingen AI) finder linjer, der starter med en nummereret kode som `A.5.15`, og lægger dem i kladden. Medlemmet retter, sletter og tilføjer krav og aktiverer så versionen (mindst ét krav). `CurrentVersion` er den senest aktiverede version og er `null`, mens frameworket kun har en kladde; `LatestVersion` er den nyeste upload. Projekter kan kun bruge aktive versioner, og en upload flytter ingen projekter (B24). (US-007)
 - **`OrganizationFramework` og `ProjectFramework` peger på en version**, ikke et framework. Klassenavnene er beholdt, fordi de stadig beskriver "hvilket framework er valgt"; versionen er detaljen.
 - **`Framework` indeholder ingen kravtekst.** Den er kun navn og niveau, så den kan seedes som fælles referencedata uden ophavsretlige problemer.
 - **`ActivityLogEntry` er append-only.** Ingen opdatering eller sletning, heller ikke for Admin.

@@ -27,11 +27,17 @@ public class ProjectFrameworkTests
     private static Project CreateProject()
         => Project.Create(OrganizationId, "Acme Portal", null, "Web portal", null, LifecyclePhase.Planning);
 
-    // "Security policy" with version 1 and version 2
+    // "Security policy" with version 1 and version 2, both activated (US-007: projects only use active versions)
     private static Framework PolicyWithTwoVersions()
     {
         var framework = Framework.Create(OrganizationId, "Security policy", PdfFile(), AnnaId, Monday);
         framework.AddVersion(PdfFile(marker: 1), AnnaId, Monday);
+        foreach (var version in framework.Versions)
+        {
+            version.AddRequirement("1.1", "Passwords", null);
+            version.Activate(AnnaId, Monday);
+        }
+
         return framework;
     }
 
@@ -39,6 +45,22 @@ public class ProjectFrameworkTests
         => framework.Versions.Single(v => v.Number == number);
 
     // ---------------------------------------------------------- UseFramework
+
+    // US-007: a draft can still change, so a project cannot follow it
+    [Fact]
+    public void A_draft_version_cannot_be_used()
+    {
+        // Arrange
+        var project = CreateProject();
+        var framework = Framework.Create(OrganizationId, "Security policy", PdfFile(), AnnaId, Monday);
+
+        // Act
+        var exception = Record.Exception(() => project.UseFramework(framework, framework.LatestVersion, AnnaId, Monday));
+
+        // Assert
+        Assert.Equal("Only active versions can be used", Assert.IsType<DomainException>(exception).Message);
+        Assert.Empty(project.Frameworks);
+    }
 
     [Fact]
     public void A_new_project_uses_no_frameworks()
@@ -98,7 +120,7 @@ public class ProjectFrameworkTests
         var other = Framework.Create(OrganizationId, "ISO/IEC 27001", PdfFile(marker: 2), AnnaId, Monday);
 
         // Act
-        var exception = Record.Exception(() => project.UseFramework(policy, other.CurrentVersion, AnnaId, Monday));
+        var exception = Record.Exception(() => project.UseFramework(policy, other.LatestVersion, AnnaId, Monday));
 
         // Assert
         Assert.IsType<DomainException>(exception);

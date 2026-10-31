@@ -1,4 +1,4 @@
-﻿using ComplianceTracker.Domain.Common;
+using ComplianceTracker.Domain.Common;
 
 namespace ComplianceTracker.Domain.Frameworks
 {
@@ -23,8 +23,25 @@ namespace ComplianceTracker.Domain.Frameworks
         // Built-in frameworks have no owner (US-006)
         public bool IsBuiltIn => OwnerOrganizationId is null;
 
-        // The newest version is the one that applies (R3). Calculated, not stored.
-        public FrameworkVersion CurrentVersion => _versions.MaxBy(v => v.Number)!;
+        // The newest upload, whether it is a draft or active. Never null, because a framework always has a version.
+        public FrameworkVersion LatestVersion => _versions.MaxBy(v => v.Number)!;
+
+        // US-007 R4: the version that applies is the one activated last. Null while the framework only has a draft.
+        // Calculated, not stored.
+        public FrameworkVersion? CurrentVersion => _versions
+            .Where(v => v.IsActive)
+            .OrderBy(v => v.ActivatedAt ?? v.UploadedAt)
+            .ThenBy(v => v.Number)
+            .LastOrDefault();
+
+        // The current version, or a clear error when there is none yet (e.g. a project tries to use the framework)
+        public FrameworkVersion RequireCurrentVersion()
+            => CurrentVersion ?? throw new DomainException($"{Name} has no active version yet");
+
+        // A version of this framework, or an error
+        public FrameworkVersion Version(Guid versionId)
+            => _versions.FirstOrDefault(v => v.Id == versionId)
+               ?? throw new DomainException("Framework version not found");
 
         // For EF Core only
         private Framework() { }

@@ -182,6 +182,22 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Fuld CQRS med separate læsemodeller.
   - MediatR og lignende biblioteker, fordi almindelig DI er nok og nemmere at forklare.
 
+### B24 – En upload er en kladde, der skal aktiveres
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-007)
+  - En ny frameworkversion starter som kladde med de krav, der blev fundet i PDF'en.
+  - Kladden kan rettes: krav kan ændres, slettes og tilføjes i hånden. Aktivering låser den og kræver mindst ét krav.
+  - Projekter kan kun bruge aktive versioner. Den gældende version er den senest aktiverede.
+  - En upload flytter ikke længere projekter. De flyttes med "Use newest", når den nye version er aktiveret. Checkboksene "Move …" er fjernet (punkt i #52).
+  - Versioner fra før US-007 og de indbyggede versioner blev markeret som aktive i migrationen, så ingen projekter gik i stykker.
+  - Udtrækningen bruger PdfPig og en fast regel (linjer, der starter med en nummereret kode). Der bruges ikke AI (domænemodellens regel 9).
+- **Begrundelse:** Et projekt skal vurderes mod en tekst, der ikke kan ændre sig bagefter (ISO 27001 7.5.3). En automatisk udtrækning er aldrig perfekt, så et menneske skal godkende den først.
+- **Fravalgt:**
+  - At flytte projekter ved upload, fordi kladden kan ændre sig.
+  - OCR af scannede PDF'er.
+  - En "kategori" på kravet. Koden viser allerede kategorien (fx `A.5`).
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

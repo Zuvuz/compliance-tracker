@@ -1,6 +1,5 @@
-﻿using ComplianceTracker.Application.Frameworks;
+using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
-using ComplianceTracker.Application.Projects;
 using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Web.Filters;
 using ComplianceTracker.Web.Models;
@@ -8,7 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ComplianceTracker.Web.Controllers
 {
-    // US-005 and US-006: the organisation's frameworks (uploaded PDFs and built-in regulations).
+    // US-005, US-006 and US-007: the organisation's frameworks (uploaded PDFs and built-in regulations)
+    // and the requirements of each version.
     // Requires sign-in (FallbackPolicy in Program.cs).
     // Thin controller: FrameworkService changes data, the queries read it, and DomainExceptionFilter
     // sends the user back to the page with the error when a rule is broken.
@@ -20,18 +20,15 @@ namespace ComplianceTracker.Web.Controllers
 
         private readonly FrameworkService _service;
         private readonly FrameworkQueries _frameworks;
-        private readonly ProjectQueries _projects;
         private readonly OrganizationQueries _organizations;
 
         public FrameworksController(
             FrameworkService service,
             FrameworkQueries frameworks,
-            ProjectQueries projects,
             OrganizationQueries organizations)
         {
             _service = service;
             _frameworks = frameworks;
-            _projects = projects;
             _organizations = organizations;
         }
 
@@ -46,10 +43,7 @@ namespace ComplianceTracker.Web.Controllers
                 return RedirectToAction("Create", "Organizations");
             }
 
-            return View(new FrameworksPageViewModel(
-                organization,
-                await _frameworks.ListAsync(cancellationToken),
-                await _projects.ListAsync(cancellationToken)));
+            return View(new FrameworksPageViewModel(organization, await _frameworks.ListAsync(cancellationToken)));
         }
 
         // POST /Frameworks/Add: a new framework with its first PDF (R1)
@@ -61,22 +55,81 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> Add(string? name, IFormFile? file, CancellationToken cancellationToken)
         {
             var content = await ReadPdfAsync(file, cancellationToken); // first, so a missing file gives "Choose a PDF file"
-            await _service.AddAsync(name ?? "", file!.FileName, content, cancellationToken);
-            return RedirectToAction(nameof(Index)); // Post/Redirect/Get: a reload does not upload the file again
+            var framework = await _service.AddAsync(name ?? "", file!.FileName, content, cancellationToken);
+
+            // US-007 R1: straight to the draft, so the member can check the requirements that were found.
+            // Post/Redirect/Get: a reload does not upload the file again.
+            return RedirectToAction(nameof(Version), new { id = framework.LatestVersion.Id });
         }
 
         // POST /Frameworks/UploadVersion: a new version of an existing framework (R3).
-        // US-011 R4: the ticked projects move to the new version.
+        // US-007: it is a draft; projects keep their version until it is activated and they choose "Use newest".
         [HttpPost]
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(MaxRequestSize)]
         [RequestFormLimits(MultipartBodyLengthLimit = MaxRequestSize)]
         [OnDomainError(nameof(Index))]
-        public async Task<IActionResult> UploadVersion(Guid frameworkId, IFormFile? file, List<Guid>? projectIds, CancellationToken cancellationToken)
+        public async Task<IActionResult> UploadVersion(Guid frameworkId, IFormFile? file, CancellationToken cancellationToken)
         {
             var content = await ReadPdfAsync(file, cancellationToken);
-            await _service.UploadVersionAsync(frameworkId, file!.FileName, content, projectIds, cancellationToken);
-            return RedirectToAction(nameof(Index));
+            var version = await _service.UploadVersionAsync(frameworkId, file!.FileName, content, cancellationToken);
+            return RedirectToAction(nameof(Version), new { id = version.Id });
+        }
+
+        // ---------------------------------------------------------- Requirements (US-007)
+
+        // GET /Frameworks/Version/{id}: one version and its requirements. A draft can be edited and activated.
+        [HttpGet]
+        public async Task<IActionResult> Version(Guid id, CancellationToken cancellationToken)
+        {
+            var found = await _frameworks.GetVersionAsync(id, cancellationToken);
+            var organization = await _organizations.MineAsync(cancellationToken);
+            if (found is null || organization is null)
+            {
+                return NotFound(); // US-005 R7: also when the version belongs to another organisation
+            }
+
+            return View(new FrameworkVersionPageViewModel(found.Value.Framework, found.Value.Version, organization));
+        }
+
+        // POST /Frameworks/AddRequirement: R2, R5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Version), IdFrom = "versionId")]
+        public async Task<IActionResult> AddRequirement(Guid versionId, string? code, string? title, string? description, CancellationToken cancellationToken)
+        {
+            await _service.AddRequirementAsync(versionId, code ?? "", title ?? "", description, cancellationToken);
+            return RedirectToAction(nameof(Version), new { id = versionId });
+        }
+
+        // POST /Frameworks/ChangeRequirement: R2
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Version), IdFrom = "versionId")]
+        public async Task<IActionResult> ChangeRequirement(Guid versionId, Guid requirementId, string? code, string? title, string? description, CancellationToken cancellationToken)
+        {
+            await _service.ChangeRequirementAsync(versionId, requirementId, code ?? "", title ?? "", description, cancellationToken);
+            return RedirectToAction(nameof(Version), new { id = versionId });
+        }
+
+        // POST /Frameworks/RemoveRequirement: R2
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Version), IdFrom = "versionId")]
+        public async Task<IActionResult> RemoveRequirement(Guid versionId, Guid requirementId, CancellationToken cancellationToken)
+        {
+            await _service.RemoveRequirementAsync(versionId, requirementId, cancellationToken);
+            return RedirectToAction(nameof(Version), new { id = versionId });
+        }
+
+        // POST /Frameworks/Activate: R3, R4, R6
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Version), IdFrom = "versionId")]
+        public async Task<IActionResult> Activate(Guid versionId, CancellationToken cancellationToken)
+        {
+            await _service.ActivateAsync(versionId, cancellationToken);
+            return RedirectToAction(nameof(Version), new { id = versionId });
         }
 
         // GET /Frameworks/Versions/{id}: all versions of one framework

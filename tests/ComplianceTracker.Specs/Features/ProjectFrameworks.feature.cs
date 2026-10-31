@@ -117,7 +117,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.AndAsync("I am signed in as \"Anna\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 7
-    await testRunner.AndAsync("the framework \"Security policy\" has been uploaded", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the framework \"Security policy\" has been uploaded and activated", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 8
     await testRunner.AndAsync("the projects \"Acme Portal\" and \"Acme App\" exist", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -234,24 +234,26 @@ namespace ComplianceTracker.Specs.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="Choose which projects move to a new version")]
+        [global::Xunit.SkippableFactAttribute(DisplayName="Projects keep their version when a new version is uploaded")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Use the organisation\'s frameworks in projects")]
-        [global::Xunit.TraitAttribute("Description", "Choose which projects move to a new version")]
+        [global::Xunit.TraitAttribute("Description", "Projects keep their version when a new version is uploaded")]
         [global::Xunit.TraitAttribute("Category", "US-011")]
+        [global::Xunit.TraitAttribute("Category", "US-007")]
         [global::Xunit.TraitAttribute("Category", "iso27001-7.5.3")]
         [global::Xunit.TraitAttribute("Category", "integration")]
-        public async global::System.Threading.Tasks.Task ChooseWhichProjectsMoveToANewVersion()
+        public async global::System.Threading.Tasks.Task ProjectsKeepTheirVersionWhenANewVersionIsUploaded()
         {
             string[] tagsOfScenario = new string[] {
                     "US-011",
+                    "US-007",
                     "iso27001-7.5.3",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "2";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Choose which projects move to a new version", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Projects keep their version when a new version is uploaded", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 21
+#line 23
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -264,16 +266,16 @@ namespace ComplianceTracker.Specs.Features
 #line 3
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 22
+#line 24
     await testRunner.GivenAsync("\"Acme Portal\" and \"Acme App\" use \"Security policy\" version 1", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 23
-    await testRunner.WhenAsync("I upload a new version of \"Security policy\" for the project \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
-#line 24
-    await testRunner.ThenAsync("the project \"Acme Portal\" uses \"Security policy\" version 2", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-#line hidden
 #line 25
+    await testRunner.WhenAsync("a new version of \"Security policy\" is uploaded and activated", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 26
+    await testRunner.ThenAsync("the project \"Acme Portal\" uses \"Security policy\" version 1", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 27
     await testRunner.AndAsync("the project \"Acme App\" uses \"Security policy\" version 1", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -297,7 +299,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The organisation page shows outdated projects", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 28
+#line 30
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -310,19 +312,19 @@ namespace ComplianceTracker.Specs.Features
 #line 3
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 29
+#line 31
     await testRunner.GivenAsync("\"Acme Portal\" uses \"Security policy\" version 2", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 30
+#line 32
     await testRunner.AndAsync("\"Acme App\" uses \"Security policy\" version 1", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 31
+#line 33
     await testRunner.WhenAsync("I open the organisation page", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 32
+#line 34
     await testRunner.ThenAsync("I see \"Security policy\" version 2 used by \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 33
+#line 35
     await testRunner.AndAsync("I see \"Security policy\" version 1 used by \"Acme App\" marked \"not on newest versio" +
                         "n\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
@@ -347,7 +349,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Move a project to the newest version", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 36
+#line 38
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -360,16 +362,16 @@ namespace ComplianceTracker.Specs.Features
 #line 3
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 37
+#line 39
     await testRunner.GivenAsync("\"Acme Portal\" uses \"Security policy\" version 2", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 38
+#line 40
     await testRunner.AndAsync("\"Acme App\" uses \"Security policy\" version 1", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 39
+#line 41
     await testRunner.WhenAsync("I move \"Acme App\" to the newest version of \"Security policy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 40
+#line 42
     await testRunner.ThenAsync("the organisation page shows only \"Security policy\" version 2, used by \"Acme Porta" +
                         "l\" and \"Acme App\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
@@ -392,7 +394,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A project uses only one version of a framework", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 43
+#line 45
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -405,13 +407,13 @@ namespace ComplianceTracker.Specs.Features
 #line 3
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 44
+#line 46
     await testRunner.GivenAsync("\"Acme Portal\" uses \"Security policy\" version 2", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 45
+#line 47
     await testRunner.WhenAsync("I add \"Security policy\" version 1 to the project \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 46
+#line 48
     await testRunner.ThenAsync("I see the error \"The project already uses Security policy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -433,7 +435,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Remove a framework from a project", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 49
+#line 51
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -446,13 +448,13 @@ namespace ComplianceTracker.Specs.Features
 #line 3
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 50
+#line 52
     await testRunner.GivenAsync("\"Acme App\" uses \"Security policy\" version 1", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 51
+#line 53
     await testRunner.WhenAsync("I remove \"Security policy\" from the project \"Acme App\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 52
+#line 54
     await testRunner.ThenAsync("the project \"Acme App\" does not use \"Security policy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -474,7 +476,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A built-in framework in use cannot be switched off", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 55
+#line 57
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -487,16 +489,16 @@ namespace ComplianceTracker.Specs.Features
 #line 3
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 56
+#line 58
     await testRunner.GivenAsync("\"CRA – Regulation (EU) 2024/2847\" is switched on", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 57
+#line 59
     await testRunner.AndAsync("\"Acme Portal\" uses \"CRA – Regulation (EU) 2024/2847\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 58
+#line 60
     await testRunner.WhenAsync("I switch \"CRA – Regulation (EU) 2024/2847\" off", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 59
+#line 61
     await testRunner.ThenAsync("I see the error \"Used by projects: Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -520,7 +522,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Changes are logged", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 62
+#line 64
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -533,16 +535,16 @@ namespace ComplianceTracker.Specs.Features
 #line 3
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 63
+#line 65
     await testRunner.GivenAsync("\"Acme App\" uses \"Security policy\" version 1", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 64
-    await testRunner.AndAsync("a new version of \"Security policy\" has been uploaded", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line 66
+    await testRunner.AndAsync("a new version of \"Security policy\" has been uploaded and activated", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 65
+#line 67
     await testRunner.WhenAsync("I move \"Acme App\" to the newest version of \"Security policy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 66
+#line 68
     await testRunner.ThenAsync("the activity log for \"Acme ApS\" has \"ProjectFrameworkVersionChanged\" for \"Anna\" c" +
                         "oncerning \"Acme App\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
@@ -569,7 +571,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The project page says when a newer version exists", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 69
+#line 71
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -582,13 +584,13 @@ namespace ComplianceTracker.Specs.Features
 #line 3
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 70
+#line 72
     await testRunner.GivenAsync("\"Acme App\" uses \"Security policy\" version 1", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 71
-    await testRunner.AndAsync("a new version of \"Security policy\" has been uploaded", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line 73
+    await testRunner.AndAsync("a new version of \"Security policy\" has been uploaded and activated", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 72
+#line 74
     await testRunner.ThenAsync("the page of \"Acme App\" says \"Security policy\" has a newer version", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -614,7 +616,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Removing a framework keeps the history", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 75
+#line 77
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -627,13 +629,13 @@ namespace ComplianceTracker.Specs.Features
 #line 3
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 76
+#line 78
     await testRunner.GivenAsync("\"Acme App\" uses \"Security policy\" version 1", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 77
+#line 79
     await testRunner.WhenAsync("I remove \"Security policy\" from the project \"Acme App\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 78
+#line 80
     await testRunner.ThenAsync("the history of \"Acme App\" shows \"Security policy\" version 1 was added and then re" +
                         "moved", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
@@ -660,7 +662,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Adding and removing are logged with their time", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 81
+#line 83
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -673,20 +675,20 @@ namespace ComplianceTracker.Specs.Features
 #line 3
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 82
+#line 84
     await testRunner.GivenAsync("the time is \"2026-10-24T14:02:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 83
+#line 85
     await testRunner.WhenAsync("I add \"Security policy\" to the project \"Acme App\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 84
+#line 86
     await testRunner.AndAsync("I remove \"Security policy\" from the project \"Acme App\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 85
+#line 87
     await testRunner.ThenAsync("the activity log for \"Acme ApS\" has \"ProjectFrameworkAdded\" at \"2026-10-24T14:02:" +
                         "00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 86
+#line 88
     await testRunner.AndAsync("the activity log for \"Acme ApS\" has \"ProjectFrameworkRemoved\" at \"2026-10-24T14:0" +
                         "2:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden

@@ -26,7 +26,7 @@
             var on = Model.IsOn(framework);
             <tr data-framework-id="@framework.Id">
                 <td class="framework-name">@framework.Name</td>
-                <td><a href="@framework.CurrentVersion.SourceReference" target="_blank" rel="noopener noreferrer">EUR-Lex</a></td>
+                <td><a href="@framework.LatestVersion.SourceReference" target="_blank" rel="noopener noreferrer">EUR-Lex</a></td>
                 <td class="framework-state">@(on ? "On" : "Off")</td>
                 <td>
                     @* The form tag helper adds the antiforgery token *@

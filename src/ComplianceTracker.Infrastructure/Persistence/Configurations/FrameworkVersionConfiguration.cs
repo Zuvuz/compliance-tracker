@@ -1,4 +1,4 @@
-﻿using ComplianceTracker.Domain.Frameworks;
+using ComplianceTracker.Domain.Frameworks;
 using ComplianceTracker.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -23,6 +23,27 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
 
             // Where the official text is published (built-in frameworks only)
             builder.Property(v => v.SourceReference).HasMaxLength(500);
+
+            // US-007: Draft or Active, stored as text
+            builder.Property(v => v.Status).HasConversion<string>().HasMaxLength(20);
+            builder.Ignore(v => v.IsActive);
+
+            // Who activated it; null for drafts and built-in versions
+            builder.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(v => v.ActivatedById)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // The requirements belong to the version. EF writes straight into the private field _requirements.
+            // Not AutoInclude: they are loaded only where needed (IFrameworkRepository.GetByVersionWithRequirementsAsync).
+            builder.HasMany(v => v.Requirements)
+                .WithOne()
+                .HasForeignKey(r => r.FrameworkVersionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Navigation(v => v.Requirements)
+                .HasField("_requirements")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
 
             // The version number is unique within a framework (1, 2, 3 ...)
             builder.HasIndex(v => new { v.FrameworkId, v.Number }).IsUnique();
@@ -55,7 +76,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
                 Sha256 = "",
                 UploadedById = (Guid?)null,
                 UploadedAt = publishedAt,
-                SourceReference = sourceReference
+                SourceReference = sourceReference,
+                // Built-in versions follow the published regulation and are always active (US-007)
+                Status = FrameworkVersionStatus.Active,
+                ActivatedAt = (DateTime?)publishedAt,
+                ActivatedById = (Guid?)null
             };
     }
 }

@@ -30,6 +30,18 @@ namespace ComplianceTracker.Application.Frameworks
                 ? await _frameworks.GetAsync(organization.Id, frameworkId, cancellationToken)
                 : null;
 
+        // US-007: one of the organisation's own framework versions with its requirements, or null
+        public async Task<(Framework Framework, FrameworkVersion Version)?> GetVersionAsync(Guid frameworkVersionId, CancellationToken cancellationToken = default)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is not { } organization
+                || await _frameworks.GetByVersionWithRequirementsAsync(organization.Id, frameworkVersionId, cancellationToken) is not { } framework)
+            {
+                return null;
+            }
+
+            return (framework, framework.Versions.Single(v => v.Id == frameworkVersionId));
+        }
+
         // The PDF of one version, if it belongs to the organisation
         public async Task<(FrameworkVersion Version, byte[] Content)?> GetDocumentAsync(Guid frameworkVersionId, CancellationToken cancellationToken = default)
             => await _member.FindOrganizationAsync(cancellationToken) is { } organization

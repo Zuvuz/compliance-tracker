@@ -20,6 +20,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         // The log entry's SubjectId points at the framework version.
         CatalogImported,
 
+        // A framework version was activated, which locks its requirements (US-007).
+        // The log entry's SubjectId points at the framework version.
+        CatalogActivated,
+
         // A project was created (US-008). The log entry's SubjectId points at the project.
         ProjectCreated,
 

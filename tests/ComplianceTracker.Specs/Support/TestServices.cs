@@ -5,6 +5,7 @@ using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Application.Projects;
 using ComplianceTracker.Domain.Users;
+using ComplianceTracker.Infrastructure.Frameworks;
 using ComplianceTracker.Infrastructure.Persistence;
 using ComplianceTracker.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -40,6 +41,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<IFrameworkRepository, FrameworkRepository>();
                 services.AddScoped<IProjectRepository, ProjectRepository>();
                 services.AddScoped<IUnitOfWork, UnitOfWork>();
+                services.AddSingleton<IRequirementExtractor, PdfRequirementExtractor>(); // US-007
             };
     }
 

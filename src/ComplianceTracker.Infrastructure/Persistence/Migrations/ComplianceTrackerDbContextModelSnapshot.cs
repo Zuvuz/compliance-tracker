@@ -97,6 +97,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ActivatedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -120,6 +126,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<DateTime>("UploadedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -127,6 +138,8 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ActivatedById");
 
                     b.HasIndex("UploadedById");
 
@@ -139,23 +152,27 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            ActivatedAt = new DateTime(2024, 11, 20, 0, 0, 0, 0, DateTimeKind.Utc),
                             FileName = "",
                             FrameworkId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c01"),
                             Number = 1,
                             Sha256 = "",
                             SizeInBytes = 0L,
                             SourceReference = "https://eur-lex.europa.eu/eli/reg/2024/2847/oj",
+                            Status = "Active",
                             UploadedAt = new DateTime(2024, 11, 20, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            ActivatedAt = new DateTime(2024, 7, 12, 0, 0, 0, 0, DateTimeKind.Utc),
                             FileName = "",
                             FrameworkId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c03"),
                             Number = 1,
                             Sha256 = "",
                             SizeInBytes = 0L,
                             SourceReference = "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
+                            Status = "Active",
                             UploadedAt = new DateTime(2024, 7, 12, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
@@ -194,6 +211,40 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrganizationId", "FrameworkVersionId");
 
                     b.ToTable("OrganizationFrameworks", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.Requirement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<Guid>("FrameworkVersionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FrameworkVersionId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("Requirements", (string)null);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Organization", b =>
@@ -384,6 +435,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.FrameworkVersion", b =>
                 {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActivatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ComplianceTracker.Domain.Frameworks.Framework", null)
                         .WithMany("Versions")
                         .HasForeignKey("FrameworkId")
@@ -419,6 +475,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.Requirement", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Frameworks.FrameworkVersion", null)
+                        .WithMany("Requirements")
+                        .HasForeignKey("FrameworkVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
@@ -484,6 +549,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.Framework", b =>
                 {
                     b.Navigation("Versions");
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.FrameworkVersion", b =>
+                {
+                    b.Navigation("Requirements");
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Organization", b =>

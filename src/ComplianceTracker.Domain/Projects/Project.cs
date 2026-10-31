@@ -198,6 +198,12 @@ namespace ComplianceTracker.Domain.Projects
             {
                 throw new DomainException("The version does not belong to the framework");
             }
+
+            // US-007: a draft can still change, so projects only follow active versions
+            if (!version.IsActive)
+            {
+                throw new DomainException("Only active versions can be used");
+            }
         }
     }
 }

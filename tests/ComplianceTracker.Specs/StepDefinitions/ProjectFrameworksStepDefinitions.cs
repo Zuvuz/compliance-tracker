@@ -9,7 +9,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
     // - the create-project form has checkboxes FrameworkIds (class framework-option) with the framework's name as label;
     // - the project page has #project-frameworks with rows data-framework-id, cells framework-name and
     //   framework-version, and the forms /Projects/AddFramework, /Projects/UseNewest and /Projects/RemoveFramework;
-    // - the "Upload new version" form on /Frameworks has checkboxes projectIds with data-project-name;
+    // - new versions are uploaded with the "Upload new version" form on /Frameworks and activated on their page (US-007);
     // - the organisation page has #organisation-frameworks with rows framework-usage, cells framework-name,
     //   framework-version and links usage-project, and the badge framework-outdated.
     [Binding]
@@ -31,22 +31,23 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await GivenUsesVersion(secondProject, frameworkName, version);
         }
 
-        // Uploads new versions until the version exists (without moving any project), then adds exactly that version
+        // Uploads and activates new versions until the version exists, then adds exactly that version
         [Given("{string} uses {string} version {int}")]
         public async Task GivenUsesVersion(string projectName, string frameworkName, int version)
         {
             while (await NewestVersionNumberAsync(frameworkName) < version)
             {
-                await UploadNewVersionAsync(frameworkName, moveProject: null);
+                await UploadAndActivateNewVersionAsync(frameworkName);
             }
 
             await AddFrameworkAsync(projectName, frameworkName, version);
         }
 
-        // A new version that no project is moved to yet
-        [Given("a new version of {string} has been uploaded")]
-        public Task GivenANewVersionHasBeenUploaded(string frameworkName)
-            => UploadNewVersionAsync(frameworkName, moveProject: null);
+        // A new active version that no project is moved to yet
+        [Given("a new version of {string} has been uploaded and activated")]
+        [When("a new version of {string} is uploaded and activated")]
+        public Task GivenANewVersionHasBeenUploadedAndActivated(string frameworkName)
+            => UploadAndActivateNewVersionAsync(frameworkName);
 
         [Given("{string} uses {string}")]
         public Task GivenUses(string projectName, string frameworkName)
@@ -82,11 +83,6 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I add {string} version {int} to the project {string}")]
         public Task WhenIAddVersionToTheProject(string frameworkName, int version, string projectName)
             => AddFrameworkAsync(projectName, frameworkName, version);
-
-        // R4: uploads version n+1 and ticks only this project
-        [When("I upload a new version of {string} for the project {string}")]
-        public Task WhenIUploadANewVersionForTheProject(string frameworkName, string projectName)
-            => UploadNewVersionAsync(frameworkName, moveProject: projectName);
 
         [When("I open the organisation page")]
         public Task WhenIOpenTheOrganisationPage()
@@ -224,22 +220,16 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await _web.PostFormAsync("/Projects/AddFramework", fields);
         }
 
-        // Uses the "Upload new version" form on /Frameworks, ticking one project or none
-        private async Task UploadNewVersionAsync(string frameworkName, string? moveProject)
+        // Uses the "Upload new version" form on /Frameworks, then activates the new draft (US-007)
+        private async Task UploadAndActivateNewVersionAsync(string frameworkName)
         {
             await _web.OpenAsync("/Frameworks");
             var row = _web.Page!.QuerySelectorAll("#frameworks tbody tr")
                 .Single(r => r.QuerySelector(".framework-name")?.TextContent.Trim() == frameworkName);
 
             var fields = new Dictionary<string, string> { ["FrameworkId"] = row.GetAttribute("data-framework-id")! };
-            if (moveProject is not null)
-            {
-                var checkbox = row.QuerySelector($"input[name='projectIds'][data-project-name='{moveProject}']")
-                    ?? throw new Xunit.Sdk.XunitException($"The upload form for '{frameworkName}' has no checkbox for '{moveProject}'.");
-                fields["ProjectIds"] = checkbox.GetAttribute("value")!;
-            }
-
             await _web.PostFileAsync("/Frameworks/UploadVersion", fields, "new-version.pdf", TestFiles.Pdf());
+            await FrameworkUi.ActivateUploadedDraftAsync(_web);
         }
 
         // The framework's id and, if asked for, the id of one of its versions (own or built-in framework)
@@ -255,7 +245,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             await using var db = _web.CreateDbContext();
             var framework = await db.Frameworks.SingleAsync(f => f.Name == frameworkName);
-            return framework.CurrentVersion.Number;
+            return framework.LatestVersion.Number;
         }
 
         // The framework's row on the project page, or null (the page must be open)
