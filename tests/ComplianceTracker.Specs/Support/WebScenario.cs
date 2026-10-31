@@ -4,8 +4,8 @@ using AngleSharp.Html.Dom;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Infrastructure.Persistence;
-using ComplianceTracker.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ComplianceTracker.Specs.Support
 {
@@ -103,19 +103,16 @@ namespace ComplianceTracker.Specs.Support
         // Creates an organisation directly in the database, as if the user had done it in the app
         public async Task<Organization> CreateOrganisationAsync(string creatorName, string organisationName, string? cvr = null)
         {
-            await using var db = CreateDbContext();
-            var service = new OrganizationService(
-                new OrganizationRepository(db),
-                new ActivityLogRepository(db),
-                new UnitOfWork(db),
-                _clock);
+            // The same use case the app runs, with the creator as the signed-in user (US-029)
+            await using var services = TestServices.Create(
+                _clock, new TestCurrentUser(TestUsers.Identity(creatorName)), TestServices.Database(_database.ConnectionString));
+            await using var scope = services.CreateAsyncScope();
 
-            return await service.CreateAsync(
+            return await scope.ServiceProvider.GetRequiredService<OrganizationService>().CreateAsync(
                 organisationName,
                 cvr ?? (_nextCvr++).ToString(),
                 Sector.Manufacturing,
-                OrganizationSize.Small,
-                TestUsers.Identity(creatorName));
+                OrganizationSize.Small);
         }
 
         // Sends a form with a file, like a browser does when uploading (multipart/form-data).
