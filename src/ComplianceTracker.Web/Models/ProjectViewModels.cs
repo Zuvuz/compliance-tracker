@@ -1,13 +1,15 @@
 using ComplianceTracker.Domain.Frameworks;
 using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Domain.Projects;
+using ComplianceTracker.Web.Filters;
 using System.ComponentModel.DataAnnotations;
 
 namespace ComplianceTracker.Web.Models
 {
     // The fields of the create-project form (US-008). No validation rules here: the domain enforces them.
     // The text fields are nullable, so MVC does not create its own "required" errors but lets the domain answer.
-    public class CreateProjectViewModel
+    // IFormModel: on a broken rule, DomainExceptionFilter shows the form again with what the user typed
+    public class CreateProjectViewModel : IFormModel
     {
         [Display(Name = "Name")]
         public string? Name { get; set; }
@@ -25,12 +27,13 @@ namespace ComplianceTracker.Web.Models
         [Display(Name = "Lifecycle phase")]
         public LifecyclePhase LifecyclePhase { get; set; } = LifecyclePhase.Planning;
 
-        // US-011 R2: the ticked frameworks (the newest version of each is used)
+        // US-011 R2: the ticked frameworks (the newest version of each is used).
+        // The checkboxes themselves come from the FrameworkChoices view component.
         public List<Guid> FrameworkIds { get; set; } = new();
-
-        // The frameworks that can be ticked. Filled by the controller, never posted.
-        public IReadOnlyList<Framework> AvailableFrameworks { get; set; } = [];
     }
+
+    // The framework checkboxes on the create-project form (Views/Shared/Components/FrameworkChoices)
+    public record FrameworkChoicesViewModel(IReadOnlyList<Framework> Frameworks, IReadOnlyCollection<Guid> Selected);
 
     // One framework a project follows, with the version it uses (US-011 R6)
     public record ProjectFrameworkRow(Framework Framework, FrameworkVersion Version)

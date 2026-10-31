@@ -1,9 +1,12 @@
+using ComplianceTracker.Application.ActivityLog;
+using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Specs.Support;
+using Microsoft.Extensions.DependencyInjection;
 using Reqnroll;
 using Xunit;
 
@@ -12,11 +15,15 @@ namespace ComplianceTracker.Specs.StepDefinitions
     // US-001: the rules for creating an organisation, tested directly against OrganizationService
     // with in-memory repositories. Fast, no database or web app.
     [Binding]
-    public class CreateOrganizationStepDefinitions
+    public class CreateOrganizationStepDefinitions : IDisposable
     {
         // Fields pass data from one step to the next ("the baton"). Reqnroll creates a new instance per scenario.
         private readonly InMemoryActivityLogRepository _activityLog = new();
-        private readonly OrganizationService _service;
+
+        // The Application layer as the app builds it (AddApplication), with in-memory storage.
+        // The signed-in user is whoever the scenario says it is ("I am ...").
+        private readonly TestCurrentUser _signedIn = new(TestUsers.Identity("Nobody"));
+        private readonly ServiceProvider _services;
 
         private string _currentUser = "";
 
@@ -28,8 +35,16 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         public CreateOrganizationStepDefinitions(ScenarioClock clock)
         {
-            _service = new OrganizationService(new InMemoryOrganizationRepository(), _activityLog, new InMemoryUnitOfWork(), clock);
+            var organizations = new InMemoryOrganizationRepository();
+            _services = TestServices.Create(clock, _signedIn, services =>
+            {
+                services.AddSingleton<IOrganizationRepository>(organizations);
+                services.AddSingleton<IActivityLogRepository>(_activityLog);
+                services.AddSingleton<IUnitOfWork, InMemoryUnitOfWork>();
+            }, validateAll: false); // only organisations are faked; the other use cases are not used here
         }
+
+        public void Dispose() => _services.Dispose();
 
         // ---------------------------------------------------------- Given
 
@@ -43,69 +58,48 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Given("an organization {string} exists with CVR {string}")]
         public async Task GivenAnOrganizationExistsWithCvr(string name, string cvr)
         {
-            await _service.CreateAsync(name, cvr, Sector.Other, OrganizationSize.Small, TestUsers.Identity("Setup"));
+            await CreateAsAsync("Setup", name, cvr, Sector.Other, OrganizationSize.Small);
         }
 
         // ---------------------------------------------------------- When
 
         [When("I create the organization {string} with CVR {string}, sector {string} and size {string}")]
-        public async Task WhenICreateTheOrganization(string name, string cvr, string sector, string size)
-        {
+        public Task WhenICreateTheOrganization(string name, string cvr, string sector, string size)
             // Turns the text from the Gherkin, e.g. "Manufacturing", into the enum value
-            var parsedSector = Enum.Parse<Sector>(sector);
-            var parsedSize = Enum.Parse<OrganizationSize>(size);
-
-            // A broken rule is not a test failure here: the error is saved and checked by a "Then" step
-            try
-            {
-                _organization = await _service.CreateAsync(name, cvr, parsedSector, parsedSize, TestUsers.Identity(_currentUser));
-            }
-            catch (DomainException ex)
-            {
-                _error = ex;
-            }
-        }
+            => TryCreateAsync(name, cvr, Enum.Parse<Sector>(sector), Enum.Parse<OrganizationSize>(size));
 
         [When("I create an organization with no name and CVR {string}")]
-        public async Task WhenICreateAnOrganizationWithNoName(string cvr)
-        {
-            try
-            {
-                _organization = await _service.CreateAsync("", cvr, Sector.Manufacturing, OrganizationSize.Small, TestUsers.Identity(_currentUser));
-            }
-            catch (DomainException ex)
-            {
-                _error = ex;
-            }
-        }
+        public Task WhenICreateAnOrganizationWithNoName(string cvr)
+            => TryCreateAsync("", cvr, Sector.Manufacturing, OrganizationSize.Small);
 
         [When("I create the organization {string} with CVR {string}, no sector and size {string}")]
-        public async Task WhenICreateTheOrganizationWithNoSector(string name, string cvr, string size)
-        {
-            var parsedSize = Enum.Parse<OrganizationSize>(size);
-
-            try
-            {
-                _organization = await _service.CreateAsync(name, cvr, null, parsedSize, TestUsers.Identity(_currentUser));
-            }
-            catch (DomainException ex)
-            {
-                _error = ex;
-            }
-        }
+        public Task WhenICreateTheOrganizationWithNoSector(string name, string cvr, string size)
+            => TryCreateAsync(name, cvr, null, Enum.Parse<OrganizationSize>(size));
 
         // US-016 R1: size left out
         [When("I create the organization {string} with CVR {string}, sector {string} and no size")]
-        public async Task WhenICreateTheOrganizationWithNoSize(string name, string cvr, string sector)
+        public Task WhenICreateTheOrganizationWithNoSize(string name, string cvr, string sector)
+            => TryCreateAsync(name, cvr, Enum.Parse<Sector>(sector), null);
+
+        // A broken rule is not a test failure here: the error is saved and checked by a "Then" step
+        private async Task TryCreateAsync(string name, string cvr, Sector? sector, OrganizationSize? size)
         {
             try
             {
-                _organization = await _service.CreateAsync(name, cvr, Enum.Parse<Sector>(sector), null, TestUsers.Identity(_currentUser));
+                _organization = await CreateAsAsync(_currentUser, name, cvr, sector, size);
             }
             catch (DomainException ex)
             {
                 _error = ex;
             }
+        }
+
+        // Signs in as the user and runs the use case in its own scope, like one request in the app
+        private async Task<Organization> CreateAsAsync(string userName, string name, string cvr, Sector? sector, OrganizationSize? size)
+        {
+            _signedIn.Identity = TestUsers.Identity(userName);
+            await using var scope = _services.CreateAsyncScope();
+            return await scope.ServiceProvider.GetRequiredService<OrganizationService>().CreateAsync(name, cvr, sector, size);
         }
 
         // ---------------------------------------------------------- Then

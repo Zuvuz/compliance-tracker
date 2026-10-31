@@ -2,15 +2,16 @@
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Application.Projects;
 using ComplianceTracker.Domain.Common;
-using ComplianceTracker.Domain.Organizations;
+using ComplianceTracker.Web.Filters;
 using ComplianceTracker.Web.Models;
-using ComplianceTracker.Web.Security;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ComplianceTracker.Web.Controllers
 {
-    // US-005: the organisation's frameworks as PDF files. Requires sign-in (FallbackPolicy in Program.cs).
-    // Thin controller: the rules live in FrameworkService and the domain.
+    // US-005 and US-006: the organisation's frameworks (uploaded PDFs and built-in regulations).
+    // Requires sign-in (FallbackPolicy in Program.cs).
+    // Thin controller: FrameworkService changes data, the queries read it, and DomainExceptionFilter
+    // sends the user back to the page with the error when a rule is broken.
     public class FrameworksController : Controller
     {
         // A little over 20 MB, so a file that is too large reaches the domain and gets a clear message (R5)
@@ -18,15 +19,15 @@ namespace ComplianceTracker.Web.Controllers
         private const long MaxRequestSize = 25 * 1024 * 1024;
 
         private readonly FrameworkService _service;
-        private readonly IFrameworkRepository _frameworks;
-        private readonly IProjectRepository _projects;
-        private readonly IOrganizationRepository _organizations;
+        private readonly FrameworkQueries _frameworks;
+        private readonly ProjectQueries _projects;
+        private readonly OrganizationQueries _organizations;
 
         public FrameworksController(
             FrameworkService service,
-            IFrameworkRepository frameworks,
-            IProjectRepository projects,
-            IOrganizationRepository organizations)
+            FrameworkQueries frameworks,
+            ProjectQueries projects,
+            OrganizationQueries organizations)
         {
             _service = service;
             _frameworks = frameworks;
@@ -39,13 +40,16 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> Index(CancellationToken cancellationToken)
         {
             // Users without an organisation must create one first
-            var organization = await MyOrganizationAsync(cancellationToken);
+            var organization = await _organizations.MineAsync(cancellationToken);
             if (organization is null)
             {
                 return RedirectToAction("Create", "Organizations");
             }
 
-            return View(await PageAsync(organization, cancellationToken));
+            return View(new FrameworksPageViewModel(
+                organization,
+                await _frameworks.ListAsync(cancellationToken),
+                await _projects.ListAsync(cancellationToken)));
         }
 
         // POST /Frameworks/Add: a new framework with its first PDF (R1)
@@ -53,11 +57,12 @@ namespace ComplianceTracker.Web.Controllers
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(MaxRequestSize)]
         [RequestFormLimits(MultipartBodyLengthLimit = MaxRequestSize)]
+        [OnDomainError(nameof(Index))]
         public async Task<IActionResult> Add(string? name, IFormFile? file, CancellationToken cancellationToken)
         {
-            return await UploadAsync(async content =>
-                await _service.AddAsync(User.ExternalId(), name ?? "", file!.FileName, content, cancellationToken),
-                file, cancellationToken);
+            var content = await ReadPdfAsync(file, cancellationToken); // first, so a missing file gives "Choose a PDF file"
+            await _service.AddAsync(name ?? "", file!.FileName, content, cancellationToken);
+            return RedirectToAction(nameof(Index)); // Post/Redirect/Get: a reload does not upload the file again
         }
 
         // POST /Frameworks/UploadVersion: a new version of an existing framework (R3).
@@ -66,33 +71,33 @@ namespace ComplianceTracker.Web.Controllers
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(MaxRequestSize)]
         [RequestFormLimits(MultipartBodyLengthLimit = MaxRequestSize)]
+        [OnDomainError(nameof(Index))]
         public async Task<IActionResult> UploadVersion(Guid frameworkId, IFormFile? file, List<Guid>? projectIds, CancellationToken cancellationToken)
         {
-            return await UploadAsync(async content =>
-                await _service.UploadVersionAsync(User.ExternalId(), frameworkId, file!.FileName, content, projectIds, cancellationToken),
-                file, cancellationToken);
+            var content = await ReadPdfAsync(file, cancellationToken);
+            await _service.UploadVersionAsync(frameworkId, file!.FileName, content, projectIds, cancellationToken);
+            return RedirectToAction(nameof(Index));
         }
 
         // GET /Frameworks/Versions/{id}: all versions of one framework
         [HttpGet]
         public async Task<IActionResult> Versions(Guid id, CancellationToken cancellationToken)
         {
-            var organization = await MyOrganizationAsync(cancellationToken);
-            var framework = organization is null ? null : await _frameworks.GetAsync(organization.Id, id, cancellationToken);
-            if (framework is null)
+            var framework = await _frameworks.GetOwnAsync(id, cancellationToken);
+            var organization = await _organizations.MineAsync(cancellationToken);
+            if (framework is null || organization is null)
             {
                 return NotFound(); // R7: also when the framework belongs to another organisation
             }
 
-            return View(new FrameworkVersionsViewModel(framework, organization!));
+            return View(new FrameworkVersionsViewModel(framework, organization));
         }
 
         // GET /Frameworks/Document/{versionId}: opens the PDF of one version
         [HttpGet]
         public async Task<IActionResult> Document(Guid id, CancellationToken cancellationToken)
         {
-            var organization = await MyOrganizationAsync(cancellationToken);
-            var document = organization is null ? null : await _frameworks.GetDocumentAsync(organization.Id, id, cancellationToken);
+            var document = await _frameworks.GetDocumentAsync(id, cancellationToken);
             if (document is null)
             {
                 return NotFound(); // R7: also when the PDF belongs to another organisation
@@ -110,86 +115,46 @@ namespace ComplianceTracker.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> BuiltIn(CancellationToken cancellationToken)
         {
-            var organization = await MyOrganizationAsync(cancellationToken);
-            if (organization is null)
+            if (await _organizations.MineAsync(cancellationToken) is null)
             {
                 return RedirectToAction("Create", "Organizations");
             }
 
-            return View(await BuiltInPageAsync(organization, cancellationToken));
+            var (all, switchedOn) = await _frameworks.BuiltInAsync(cancellationToken);
+            return View(new BuiltInFrameworksViewModel(all, switchedOn));
         }
 
         // POST /Frameworks/Enable: switches a built-in framework on (R2)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public Task<IActionResult> Enable(Guid frameworkId, CancellationToken cancellationToken)
-            => SwitchAsync(() => _service.EnableBuiltInAsync(User.ExternalId(), frameworkId, cancellationToken), cancellationToken);
+        [OnDomainError(nameof(BuiltIn))]
+        public async Task<IActionResult> Enable(Guid frameworkId, CancellationToken cancellationToken)
+        {
+            await _service.EnableBuiltInAsync(frameworkId, cancellationToken);
+            return RedirectToAction(nameof(BuiltIn));
+        }
 
         // POST /Frameworks/Disable: switches it off again; the history is kept (R4)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public Task<IActionResult> Disable(Guid frameworkId, CancellationToken cancellationToken)
-            => SwitchAsync(() => _service.DisableBuiltInAsync(User.ExternalId(), frameworkId, cancellationToken), cancellationToken);
-
-        // Shared by "on" and "off": call the use case, then show the page again (with the error, if any)
-        private async Task<IActionResult> SwitchAsync(Func<Task> change, CancellationToken cancellationToken)
+        [OnDomainError(nameof(BuiltIn))]
+        public async Task<IActionResult> Disable(Guid frameworkId, CancellationToken cancellationToken)
         {
-            try
-            {
-                await change();
-                return RedirectToAction(nameof(BuiltIn)); // Post/Redirect/Get
-            }
-            catch (DomainException ex)
-            {
-                ModelState.AddModelError(string.Empty, ex.Message);
-                var organization = await MyOrganizationAsync(cancellationToken);
-                return View(nameof(BuiltIn), await BuiltInPageAsync(organization!, cancellationToken));
-            }
+            await _service.DisableBuiltInAsync(frameworkId, cancellationToken);
+            return RedirectToAction(nameof(BuiltIn));
         }
 
-        // All built-in frameworks, and which of them the organisation has switched on
-        private async Task<BuiltInFrameworksViewModel> BuiltInPageAsync(Organization organization, CancellationToken cancellationToken)
+        // The uploaded file's bytes. At most 25 MB (MaxRequestSize), so it is fine to read it into memory.
+        private static async Task<byte[]> ReadPdfAsync(IFormFile? file, CancellationToken cancellationToken)
         {
-            var builtIn = await _frameworks.ListBuiltInAsync(cancellationToken);
-            var followed = await _frameworks.ListAsync(organization.Id, cancellationToken);
-            return new BuiltInFrameworksViewModel(builtIn, followed.Where(f => f.IsBuiltIn).Select(f => f.Id).ToHashSet());
-        }
-
-        // Shared by "add" and "new version": read the file, call the use case,
-        // then either go back to the list or show the error on the same page
-        private async Task<IActionResult> UploadAsync(Func<byte[], Task> upload, IFormFile? file, CancellationToken cancellationToken)
-        {
-            try
+            if (file is null || file.Length == 0)
             {
-                if (file is null || file.Length == 0)
-                {
-                    throw new DomainException("Choose a PDF file");
-                }
-
-                // The file is at most 25 MB (MaxRequestSize), so it is fine to read it into memory
-                using var buffer = new MemoryStream();
-                await file.CopyToAsync(buffer, cancellationToken);
-                await upload(buffer.ToArray());
-
-                // Post/Redirect/Get: reloading the page afterwards does not upload the file again
-                return RedirectToAction(nameof(Index));
+                throw new DomainException("Choose a PDF file");
             }
-            catch (DomainException ex)
-            {
-                // Show the rule that was broken, e.g. "Only PDF files are allowed"
-                ModelState.AddModelError(string.Empty, ex.Message);
-                var organization = await MyOrganizationAsync(cancellationToken);
-                return View(nameof(Index), await PageAsync(organization!, cancellationToken));
-            }
+
+            using var buffer = new MemoryStream();
+            await file.CopyToAsync(buffer, cancellationToken);
+            return buffer.ToArray();
         }
-
-        private async Task<FrameworksPageViewModel> PageAsync(Organization organization, CancellationToken cancellationToken)
-            => new(organization,
-                await _frameworks.ListAsync(organization.Id, cancellationToken),
-                await _projects.ListAsync(organization.Id, cancellationToken));
-
-        // The organisation the signed-in user belongs to (null if none yet)
-        private Task<Organization?> MyOrganizationAsync(CancellationToken cancellationToken)
-            => _organizations.GetByMemberAsync(User.ExternalId(), cancellationToken);
     }
 }

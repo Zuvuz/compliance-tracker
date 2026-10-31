@@ -6,54 +6,52 @@ using ComplianceTracker.Domain.ActivityLog;
 namespace ComplianceTracker.Application.Users
 {
     // Logs sign-in and sign-out (US-004 R6, ISO 27001 A.8.15).
-    // Called by the web app when Keycloak has confirmed a sign-in, and when the user signs out.
     // The first sign-in is not logged: the user has no organisation yet,
     // and creating the organisation is logged as OrganizationCreated instead.
     public class UserActivityService
     {
         private readonly IOrganizationRepository _organizations;
-        private readonly IActivityLogRepository _activityLog;
+        private readonly CurrentMember _member;
+        private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
-
-        // The clock. TimeProvider.System in the app; a fixed time in tests (US-016 R2)
-        private readonly TimeProvider _clock;
 
         public UserActivityService(
             IOrganizationRepository organizations,
-            IActivityLogRepository activityLog,
-            IUnitOfWork unitOfWork,
-            TimeProvider clock)
+            CurrentMember member,
+            IActivityLogger log,
+            IUnitOfWork unitOfWork)
         {
             _organizations = organizations;
-            _activityLog = activityLog;
+            _member = member;
+            _log = log;
             _unitOfWork = unitOfWork;
-            _clock = clock;
         }
 
-        public Task RecordSignInAsync(string externalId, CancellationToken cancellationToken = default)
-            => RecordAsync(externalId, ActivityAction.UserSignedIn, cancellationToken);
-
-        public Task RecordSignOutAsync(string externalId, CancellationToken cancellationToken = default)
-            => RecordAsync(externalId, ActivityAction.UserSignedOut, cancellationToken);
-
-        private async Task RecordAsync(string externalId, ActivityAction action, CancellationToken cancellationToken)
+        // Called the moment Keycloak has confirmed the sign-in. The sign-in cookie does not exist yet,
+        // so the user cannot come from ICurrentUser and is passed in by the web app.
+        public async Task RecordSignInAsync(string externalId, CancellationToken cancellationToken = default)
         {
-            // Without an organisation there is nowhere to log the entry (see the class comment)
             var organization = await _organizations.GetByMemberAsync(externalId, cancellationToken);
             if (organization is null)
             {
-                return;
+                return; // see the class comment
             }
 
             var user = organization.Users.Single(u => u.ExternalId == externalId);
-            await _activityLog.AppendAsync(
-                new ActivityLogEntry(organization.Id, user.Id, action, Now),
-                cancellationToken);
-
+            await _log.LogAsync(organization.Id, user.Id, ActivityAction.UserSignedIn, cancellationToken: cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
-        // The current time in UTC, from the clock
-        private DateTime Now => _clock.GetUtcNow().UtcDateTime;
+        // The signed-in user signs out
+        public async Task RecordSignOutAsync(CancellationToken cancellationToken = default)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is null)
+            {
+                return; // see the class comment
+            }
+
+            await _log.LogAsync(ActivityAction.UserSignedOut, cancellationToken: cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
     }
 }

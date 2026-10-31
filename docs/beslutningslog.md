@@ -163,6 +163,25 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** En regel, vi siger, vi overholder, skal have bevis (ISO 27001 A.8.29). Et fast tidspunkt gør det muligt at teste "logges med tid" uden tilfældige fejl. En scanning i CI er mere pålidelig end at huske ikke at committe `.env`.
 - **Fravalgt:** Automatiske tests af Docker-opsætningen og en arkitekturtest for "ingen forretningsregler i controllere" (US-003 R6). De kan tages op senere.
 
+### B23 – Dependency injection og faste mønstre i hele koden
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-029)
+  - Den indloggede bruger og organisation findes ét sted (`ICurrentUser`, `CurrentMember`) og injiceres i use cases og queries.
+  - Data ændres af use cases (`...Service`) og læses af queries (`...Queries`). Controllere bruger kun disse.
+  - Logposter skrives kun af `IActivityLogger`.
+  - Hvert lag registrerer sig selv (`AddApplication`, `AddInfrastructure`).
+  - Indstillinger er typede Options, der tjekkes ved opstart.
+  - Brudte domæneregler vises af ét fælles filter.
+- **Begrundelse:**
+  - Hver ting findes ét sted, så nye stories kan bygges uden at gentage opslag, logning og fejlhåndtering.
+  - Reglen "kun din egen organisations data" kan ikke glemmes i en ny controller.
+  - Fejl i opsætningen opdages ved opstart i stedet for hos brugeren.
+- **Fravalgt:**
+  - Domain events, fordi `IActivityLogger` dækker behovet nu. Det kan tages op, når flere ting skal ske ved samme hændelse.
+  - Fuld CQRS med separate læsemodeller.
+  - MediatR og lignende biblioteker, fordi almindelig DI er nok og nemmere at forklare.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

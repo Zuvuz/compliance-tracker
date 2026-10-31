@@ -25,7 +25,8 @@ namespace ComplianceTracker.Specs.Support
 
         // The web app with test sign-in instead of Keycloak (see TestAuthHandler)
         // The clock replaces TimeProvider.System, so "Given the time is ..." also applies inside the app (US-016)
-        public static TestApp WithTestSignIn(string connectionString, TimeProvider clock)
+        // overrides: settings to change, e.g. an empty ClientId to test the start-up check (US-029 R3)
+        public static TestApp WithTestSignIn(string connectionString, TimeProvider clock, IDictionary<string, string?>? overrides = null)
         {
             var settings = new Dictionary<string, string?>
             {
@@ -35,6 +36,10 @@ namespace ComplianceTracker.Specs.Support
                 ["Authentication:Keycloak:ClientId"] = "compliance-tracker-web",
                 ["Authentication:Keycloak:ClientSecret"] = "not-used-in-tests"
             };
+            foreach (var (key, value) in overrides ?? new Dictionary<string, string?>())
+            {
+                settings[key] = value;
+            }
 
             return Create(settings, services =>
             {

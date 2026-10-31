@@ -3,48 +3,48 @@ using ComplianceTracker.Application.Common;
 using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Domain.Organizations;
-using ComplianceTracker.Domain.Users;
 
 namespace ComplianceTracker.Application.Organizations
 {
     // Use case: create an organisation (US-001, US-002, US-004).
     // The domain checks the fields; this class checks the rules that need the database
     // and saves the organisation and its log entry together.
+    // The creator is always the signed-in user (ICurrentUser), never someone passed in.
     public class OrganizationService
     {
         private readonly IOrganizationRepository _organizations;
-        private readonly IActivityLogRepository _activityLog;
+        private readonly ICurrentUser _currentUser;
+        private readonly CurrentMember _member;
+        private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
-
-        // The clock. TimeProvider.System in the app; a fixed time in tests (US-016 R2)
-        private readonly TimeProvider _clock;
 
         public OrganizationService(
             IOrganizationRepository organizations,
-            IActivityLogRepository activityLog,
-            IUnitOfWork unitOfWork,
-            TimeProvider clock)
+            ICurrentUser currentUser,
+            CurrentMember member,
+            IActivityLogger log,
+            IUnitOfWork unitOfWork)
         {
             _organizations = organizations;
-            _activityLog = activityLog;
+            _currentUser = currentUser;
+            _member = member;
+            _log = log;
             _unitOfWork = unitOfWork;
-            _clock = clock;
         }
 
-        // Creates the organisation with the signed-in creator as its Admin
+        // Creates the organisation with the signed-in user as its Admin
         public async Task<Organization> CreateAsync(
             string name,
             string cvr,
             Sector? sector,
             OrganizationSize? size,
-            UserIdentity creator,
             CancellationToken cancellationToken = default)
         {
             // 1. Validate the fields (throws DomainException with a message for the user)
-            var organization = Organization.Create(name, cvr, sector, size, creator);
+            var organization = Organization.Create(name, cvr, sector, size, _currentUser.Identity);
 
             // 2. Check against existing organisations
-            if (await _organizations.GetByMemberAsync(creator.ExternalId, cancellationToken) is not null)
+            if (await _member.FindOrganizationAsync(cancellationToken) is not null)
             {
                 // US-004 R4: one organisation per user
                 throw new DomainException("User already has an organisation");
@@ -55,24 +55,18 @@ namespace ComplianceTracker.Application.Organizations
                 throw new DomainException("CVR already in use");
             }
 
-            // 3. Register the organisation
+            // 3. Register the organisation and its log entry. There is no member yet,
+            //    so the logger is told the organisation and the new Admin directly.
             await _organizations.AddAsync(organization, cancellationToken);
-
-            // 4. Register the log entry
             var admin = organization.Users.Single();
-            await _activityLog.AppendAsync(new ActivityLogEntry(
-                organization.Id,
-                admin.Id,
-                ActivityAction.OrganizationCreated,
-                Now), cancellationToken);
+            await _log.LogAsync(organization.Id, admin.Id, ActivityAction.OrganizationCreated, cancellationToken: cancellationToken);
 
-            // 5. Save both at once, so they are either saved together or not at all
+            // 4. Save both at once, so they are either saved together or not at all
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+            // The user now has an organisation; later lookups in this request must see it
+            _member.Reset();
             return organization;
         }
-
-        // The current time in UTC, from the clock
-        private DateTime Now => _clock.GetUtcNow().UtcDateTime;
     }
 }

@@ -1,10 +1,12 @@
-using ComplianceTracker.Application.Frameworks;
-using ComplianceTracker.Application.Organizations;
-using ComplianceTracker.Application.Projects;
+using ComplianceTracker.Application;
+using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Users;
 using ComplianceTracker.Infrastructure;
+using ComplianceTracker.Web.Filters;
+using ComplianceTracker.Web.Security;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.Security.Claims;
 
@@ -14,19 +16,41 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// MVC: controllers with Razor views
-builder.Services.AddControllersWithViews();
+// The DI container checks at start that every service, controller included, can be created (US-029 R5),
+// and that no scoped service is used from a singleton
+builder.Host.UseDefaultServiceProvider(options =>
+{
+    options.ValidateOnBuild = true;
+    options.ValidateScopes = true;
+});
 
-// Database, repositories and unit of work (Infrastructure) and the use cases (Application).
-// Scoped = one instance per HTTP request.
-builder.Services.AddInfrastructure();
-builder.Services.AddScoped<OrganizationService>();
-builder.Services.AddScoped<UserActivityService>();
-builder.Services.AddScoped<FrameworkService>();
-builder.Services.AddScoped<ProjectService>();
+// MVC: controllers with Razor views.
+// The filters turn a broken domain rule into an error on the page (US-029 R4).
+// AddControllersAsServices lets the container check the controllers too.
+builder.Services
+    .AddControllersWithViews(options =>
+    {
+        options.Filters.Add<DomainExceptionFilter>();
+        options.Filters.Add<DomainErrorFromTempDataFilter>();
+    })
+    .AddControllersAsServices();
 
-// The clock the services read the time from (US-016). The tests replace it with a fixed time.
-builder.Services.AddSingleton(TimeProvider.System);
+// Each layer registers its own services (US-029 R2):
+// Application = use cases, queries, activity logger and clock; Infrastructure = database and repositories
+builder.Services
+    .AddApplication()
+    .AddInfrastructure();
+
+// Who is signed in: read from the sign-in cookie of the current request (US-029 R1)
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
+
+// The Keycloak settings, checked when the app starts (US-029 R3)
+builder.Services
+    .AddOptions<KeycloakOptions>()
+    .BindConfiguration(KeycloakOptions.Section)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 // Sign-in with Keycloak via OpenID Connect (US-004)
 builder.Services
@@ -39,19 +63,17 @@ builder.Services
     .AddCookie()
     .AddOpenIdConnect();
 
-// The OpenID Connect settings are read from configuration the first time sign-in is used.
+// OpenID Connect is set up from the checked KeycloakOptions.
 // That way the integration tests can supply their own Keycloak address and secret.
 builder.Services
     .AddOptions<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme)
-    .Configure<IConfiguration>((options, configuration) =>
+    .Configure<IOptions<KeycloakOptions>>((options, keycloakOptions) =>
     {
         // Authority and ClientId are in appsettings.Development.json; the secret only in an environment variable
-        var keycloak = configuration.GetSection("Authentication:Keycloak");
-        options.Authority = keycloak["Authority"];
-        options.ClientId = keycloak["ClientId"];
-        options.ClientSecret = keycloak["ClientSecret"]
-            ?? throw new InvalidOperationException(
-                "Set the environment variable Authentication__Keycloak__ClientSecret.");
+        var keycloak = keycloakOptions.Value;
+        options.Authority = keycloak.Authority;
+        options.ClientId = keycloak.ClientId;
+        options.ClientSecret = keycloak.ClientSecret;
 
         options.ResponseType = "code";    // authorization code flow
         options.UsePkce = true;           // ASVS V10.2.1
