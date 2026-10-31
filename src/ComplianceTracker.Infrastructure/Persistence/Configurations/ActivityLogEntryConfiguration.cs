@@ -26,6 +26,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(e => e.OccurredAt);
             builder.Property(e => e.SubjectId);
 
+            // US-024: old and new values; long enough for a changed intended purpose
+            builder.Property(e => e.Details).HasMaxLength(4000);
+
             // Restrict: an organisation or user cannot be deleted while log entries point at it
             builder.HasOne<Organization>()
                 .WithMany()

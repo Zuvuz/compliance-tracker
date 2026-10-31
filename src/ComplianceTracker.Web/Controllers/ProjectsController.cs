@@ -1,13 +1,14 @@
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Application.Projects;
+using ComplianceTracker.Domain.Projects;
 using ComplianceTracker.Web.Filters;
 using ComplianceTracker.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ComplianceTracker.Web.Controllers
 {
-    // US-008 and US-011: the organisation's projects and their frameworks. Requires sign-in (FallbackPolicy in Program.cs).
+    // US-008, US-011 and US-024: the organisation's projects, their frameworks, editing and lifecycle phase. Requires sign-in (FallbackPolicy in Program.cs).
     // Thin controller: use cases (ProjectService) change data, queries read it. A broken rule is shown
     // by DomainExceptionFilter: forms are shown again, other actions go back to the project page.
     public class ProjectsController : Controller
@@ -77,6 +78,48 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             return View(new ProjectDetailsViewModel(project, await _frameworks.ListAsync(cancellationToken)));
+        }
+
+        // ---------------------------------------------------------- Editing (US-024)
+
+        // GET /Projects/Edit/{id}: the form, filled in with the project's details
+        [HttpGet]
+        public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
+        {
+            var project = await _projects.GetAsync(id, cancellationToken);
+            if (project is null)
+            {
+                return NotFound();
+            }
+
+            // R4: a project at end of support is only shown, so the user goes back to its page with the reason
+            if (project.IsClosed)
+            {
+                TempData[DomainExceptionFilter.TempDataKey] = "A project at end of support cannot be changed";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            return View(EditProjectViewModel.From(project));
+        }
+
+        // POST /Projects/Edit: R1, R3. A broken rule shows the form again with what was typed (IFormModel).
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(EditProjectViewModel model, CancellationToken cancellationToken)
+        {
+            await _service.UpdateAsync(
+                model.Id, model.Name ?? "", model.Description, model.IntendedPurpose ?? "", model.Scope, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = model.Id }); // Post/Redirect/Get
+        }
+
+        // POST /Projects/ChangePhase: R2, R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId")]
+        public async Task<IActionResult> ChangePhase(Guid projectId, LifecyclePhase phase, CancellationToken cancellationToken)
+        {
+            await _service.ChangePhaseAsync(projectId, phase, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId });
         }
 
         // ---------------------------------------------------------- Frameworks (US-011)

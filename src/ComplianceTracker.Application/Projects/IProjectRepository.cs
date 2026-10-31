@@ -10,7 +10,8 @@ namespace ComplianceTracker.Application.Projects
     public interface IProjectRepository
     {
         // True if the organisation already has a project with this name (upper/lower case ignored)
-        Task<bool> NameExistsAsync(Guid organizationId, string name, CancellationToken cancellationToken = default);
+        // exceptProjectId: the project being renamed, which may keep its own name (US-024 R1)
+        Task<bool> NameExistsAsync(Guid organizationId, string name, Guid? exceptProjectId = null, CancellationToken cancellationToken = default);
 
         Task AddAsync(Project project, CancellationToken cancellationToken = default);
 

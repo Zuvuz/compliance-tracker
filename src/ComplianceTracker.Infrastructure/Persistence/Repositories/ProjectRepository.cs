@@ -17,9 +17,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         }
 
         // R3: "Acme Portal" and "acme portal" count as the same name
-        public Task<bool> NameExistsAsync(Guid organizationId, string name, CancellationToken cancellationToken = default)
+        public Task<bool> NameExistsAsync(Guid organizationId, string name, Guid? exceptProjectId = null, CancellationToken cancellationToken = default)
             => _db.Projects.AnyAsync(
-                p => p.OrganizationId == organizationId && p.Name.ToLower() == name.ToLower(),
+                p => p.OrganizationId == organizationId && p.Name.ToLower() == name.ToLower()
+                    && (exceptProjectId == null || p.Id != exceptProjectId),
                 cancellationToken);
 
         // Only registers the project. Saved by IUnitOfWork, together with the log entry.

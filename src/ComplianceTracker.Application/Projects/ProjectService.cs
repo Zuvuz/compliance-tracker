@@ -8,7 +8,8 @@ using ComplianceTracker.Domain.Projects;
 
 namespace ComplianceTracker.Application.Projects
 {
-    // Use cases that change projects: create a project (US-008) and choose its frameworks (US-011).
+    // Use cases that change projects: create a project (US-008), choose its frameworks (US-011),
+    // and edit it or change its lifecycle phase (US-024).
     // The domain checks the fields and the rules about one project; this class checks the rules
     // that need the database and saves the changes and their log entries together.
     // Always acts for the signed-in member (CurrentMember); reading is done by ProjectQueries.
@@ -53,7 +54,7 @@ namespace ComplianceTracker.Application.Projects
             var project = Project.Create(organization.Id, name, description, intendedPurpose, scope, phase);
 
             // 2. R3: the name is unique within the organisation
-            if (await _projects.NameExistsAsync(organization.Id, project.Name, cancellationToken))
+            if (await _projects.NameExistsAsync(organization.Id, project.Name, cancellationToken: cancellationToken))
             {
                 throw new DomainException("Project name already in use");
             }
@@ -74,6 +75,50 @@ namespace ComplianceTracker.Application.Projects
             // 5. Save it all at once
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return project;
+        }
+
+        // US-024 R1, R3: edits the details. The name stays unique; every change is logged with old and new value.
+        // Nothing is saved or logged when nothing changed.
+        public async Task UpdateAsync(
+            Guid projectId,
+            string name,
+            string? description,
+            string intendedPurpose,
+            string? scope,
+            CancellationToken cancellationToken = default)
+        {
+            var project = await ProjectAsync(projectId, cancellationToken);
+
+            var changes = project.Update(name, description, intendedPurpose, scope);
+            if (changes.Count == 0)
+            {
+                return;
+            }
+
+            if (changes.Any(c => c.Field == "Name")
+                && await _projects.NameExistsAsync(project.OrganizationId, project.Name, project.Id, cancellationToken))
+            {
+                // The change is not saved, because SaveChanges is never reached
+                throw new DomainException("Project name already in use");
+            }
+
+            await _log.LogAsync(ActivityAction.ProjectUpdated, project.Id, string.Join("; ", changes), cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-024 R2, R3, R4: moves the project to another phase; EndOfSupport is final
+        public async Task ChangePhaseAsync(Guid projectId, LifecyclePhase phase, CancellationToken cancellationToken = default)
+        {
+            var project = await ProjectAsync(projectId, cancellationToken);
+
+            var change = project.ChangePhase(phase);
+            if (change is null)
+            {
+                return;
+            }
+
+            await _log.LogAsync(ActivityAction.ProjectPhaseChanged, project.Id, change.ToString(), cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         // US-011 R2, R3: adds a framework to an existing project.
@@ -114,6 +159,14 @@ namespace ComplianceTracker.Application.Projects
             project.RemoveFramework(framework, userId, Now);
             await _log.LogAsync(ActivityAction.ProjectFrameworkRemoved, project.Id, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // The user's own project; other organisations' projects are "not found"
+        private async Task<Project> ProjectAsync(Guid projectId, CancellationToken cancellationToken)
+        {
+            var (organization, _) = await _member.RequireAsync(cancellationToken);
+            return await _projects.GetAsync(organization.Id, projectId, cancellationToken)
+                ?? throw new DomainException("Project not found");
         }
 
         // The user, the project and the framework; all must belong to (or be followed by) the user's organisation

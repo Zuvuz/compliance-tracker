@@ -66,6 +66,7 @@ classDiagram
   class IActivityLogger {
     <<interface>>
     +LogAsync(action: ActivityAction, subjectId: Guid?) Task
+    +LogAsync(action: ActivityAction, subjectId: Guid?, details: string?) Task
     +LogAsync(organizationId: Guid, userId: Guid, action: ActivityAction, subjectId: Guid?) Task
   }
   class ActivityLogger {
@@ -145,10 +146,12 @@ classDiagram
     +AddFrameworkAsync(projectId: Guid, frameworkId: Guid, frameworkVersionId: Guid?) Task
     +UseNewestVersionAsync(projectId: Guid, frameworkId: Guid) Task
     +RemoveFrameworkAsync(projectId: Guid, frameworkId: Guid) Task
+    +UpdateAsync(projectId: Guid, name: string, description: string?, intendedPurpose: string, scope: string?) Task
+    +ChangePhaseAsync(projectId: Guid, phase: LifecyclePhase) Task
   }
   class IProjectRepository {
     <<interface>>
-    +NameExistsAsync(organizationId: Guid, name: string) Task~bool~
+    +NameExistsAsync(organizationId: Guid, name: string, exceptProjectId: Guid?) Task~bool~
     +AddAsync(project: Project) Task
     +GetAsync(organizationId: Guid, projectId: Guid) Task~Project?~
     +ListAsync(organizationId: Guid) Task~IReadOnlyList~Project~~
@@ -184,11 +187,20 @@ classDiagram
     -workItems: List~WorkItem~
     -frameworks: List~ProjectFramework~
     +Frameworks: IEnumerable~ProjectFramework~
+    +IsClosed: bool
     +Create(organizationId: Guid, name: string, description: string?, intendedPurpose: string, scope: string?, phase: LifecyclePhase)$ Project
     +FrameworkInUse(frameworkId: Guid) ProjectFramework?
     +UseFramework(framework: Framework, version: FrameworkVersion, userId: Guid, at: DateTime) ProjectFramework
     +ChangeFrameworkVersion(framework: Framework, version: FrameworkVersion, userId: Guid, at: DateTime) bool
     +RemoveFramework(framework: Framework, userId: Guid, at: DateTime)
+    +Update(name: string, description: string?, intendedPurpose: string, scope: string?) IReadOnlyList~ProjectChange~
+    +ChangePhase(phase: LifecyclePhase) ProjectChange?
+  }
+  class ProjectChange {
+    <<record>>
+    +Field: string
+    +OldValue: string
+    +NewValue: string
   }
   class Release {
     -id: Guid
@@ -346,6 +358,7 @@ classDiagram
     -userId: Guid
     -action: ActivityAction
     -subjectId: Guid?
+    -details: string?
     -occurredAt: DateTime
   }
 
@@ -429,6 +442,8 @@ classDiagram
     ProjectFrameworkAdded
     ProjectFrameworkRemoved
     ProjectFrameworkVersionChanged
+    ProjectUpdated
+    ProjectPhaseChanged
   }
   class MappingSource {
     <<enumeration>>
@@ -498,6 +513,7 @@ classDiagram
   Framework "*" --> "0..1" Organization : owner
   OrganizationFramework "*" --> "1" FrameworkVersion
   Project "1" --> "*" ProjectFramework : frameworks
+  Project ..> ProjectChange : returns
   ProjectFramework "*" --> "1" FrameworkVersion
   Project "1" --> "*" Release : releases
   Project "1" --> "*" WorkItem : workItems
@@ -610,6 +626,7 @@ classDiagram
 - **Logposter skrives kun af `IActivityLogger`**, der udfylder bruger, organisation og tidspunkt. Domain events er fravalgt indtil videre (B23). (US-029)
 - **Hvert lag registrerer sig selv** med `AddApplication()` og `AddInfrastructure()`. Containeren tjekker ved opstart, at alle services og controllere kan oprettes. Keycloak-indstillingerne er en `KeycloakOptions`-klasse, der tjekkes ved opstart. (US-029)
 - **Ét fælles filter viser brudte regler.** `DomainExceptionFilter` viser en formular igen med det indtastede (`IFormModel`) eller sender brugeren tilbage til siden med fejlen (`[OnDomainError]`, Post/Redirect/Get via TempData). Controllerne har ingen `try/catch`. (US-029)
+- **Et projekt kan rettes og skifte fase.** `Update` og `ChangePhase` har samme regler som `Create` og returnerer, hvad der ændrede sig (`ProjectChange`). Logposten gemmer gammel og ny værdi i `Details`, fx "Phase: Planning → Development". Faserne kan skiftes frit, også baglæns, men EndOfSupport er endelig: projektet kan så hverken rettes, skifte fase eller ændre frameworks (`IsClosed`). (US-024)
 - **Projekter følger samme adgangsregel som frameworks**: `IProjectRepository` tager altid `organizationId`, og andre organisationers projekter giver 404. Oprettelse logges som `ProjectCreated` med projektet som `subjectId`. (US-008)
 
 ## Ordliste

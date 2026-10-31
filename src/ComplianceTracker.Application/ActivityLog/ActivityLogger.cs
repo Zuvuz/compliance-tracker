@@ -11,6 +11,9 @@ namespace ComplianceTracker.Application.ActivityLog
         // For the signed-in member: user and organisation come from CurrentMember
         Task LogAsync(ActivityAction action, Guid? subjectId = null, CancellationToken cancellationToken = default);
 
+        // As above, with a text saying what changed, e.g. "Phase: Planning → Development" (US-024 R3)
+        Task LogAsync(ActivityAction action, Guid? subjectId, string? details, CancellationToken cancellationToken = default);
+
         // When there is no signed-in member yet (creating the organisation) or the user is not the
         // current request's user (signing in, before the cookie exists)
         Task LogAsync(Guid organizationId, Guid userId, ActivityAction action, Guid? subjectId = null, CancellationToken cancellationToken = default);
@@ -29,10 +32,15 @@ namespace ComplianceTracker.Application.ActivityLog
             _clock = clock;
         }
 
-        public async Task LogAsync(ActivityAction action, Guid? subjectId = null, CancellationToken cancellationToken = default)
+        public Task LogAsync(ActivityAction action, Guid? subjectId = null, CancellationToken cancellationToken = default)
+            => LogAsync(action, subjectId, null, cancellationToken);
+
+        public async Task LogAsync(ActivityAction action, Guid? subjectId, string? details, CancellationToken cancellationToken = default)
         {
             var (organization, user) = await _member.RequireAsync(cancellationToken);
-            await LogAsync(organization.Id, user.Id, action, subjectId, cancellationToken);
+            await _log.AppendAsync(
+                new ActivityLogEntry(organization.Id, user.Id, action, _clock.GetUtcNow().UtcDateTime, subjectId, details),
+                cancellationToken);
         }
 
         public Task LogAsync(Guid organizationId, Guid userId, ActivityAction action, Guid? subjectId = null, CancellationToken cancellationToken = default)
