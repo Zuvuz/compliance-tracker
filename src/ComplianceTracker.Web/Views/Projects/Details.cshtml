@@ -1,7 +1,7 @@
 @* US-008: the project's own page. US-011: the frameworks the project follows.
    The ids and classes (#project-name, #project-frameworks, data-framework-id, framework-name,
    framework-version, framework-newer ...) are used by the tests.
-   The project's user stories (US-018) will be added here later. *@
+   US-018: the user stories read from GitHub (Views/Projects/_WorkItems.cshtml), updated live with SignalR. *@
 @using ComplianceTracker.Domain.Projects
 @model ProjectDetailsViewModel
 @{
@@ -141,3 +141,38 @@
         </form>
     }
 </section>
+
+@* US-018: the project's user stories from GitHub. The section is fetched again when SignalR says it changed (R7). *@
+<section id="project-work-items" class="mt-5" data-project-id="@project.Id">
+    <h2 class="h4">User stories (GitHub)</h2>
+
+    @if (!project.IsClosed)
+    {
+        @* R1: a public repository as owner/name, and the label that marks user stories *@
+        <form asp-action="LinkGitHub" method="post" class="row g-2 mb-3" id="link-github">
+            <input type="hidden" name="projectId" value="@project.Id" />
+            <div class="col-md-5">
+                <input name="repository" class="form-control" placeholder="owner/name, e.g. Zuvuz/compliance-tracker"
+                       value="@project.GitHub?.Repository" aria-label="GitHub repository" />
+            </div>
+            <div class="col-md-3">
+                <input name="label" class="form-control" value="@(project.GitHub?.Label ?? ComplianceTracker.Domain.Projects.GitHubLink.DefaultLabel)" aria-label="Label" />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100">@(project.GitHub is null ? "Link" : "Save")</button>
+            </div>
+        </form>
+    }
+
+    <div id="work-items-live">
+        <partial name="_WorkItems" model="Model.WorkItemsSection" />
+    </div>
+</section>
+
+@section Scripts {
+    @if (project.GitHub is not null)
+    {
+        <script src="~/lib/microsoft-signalr/signalr.min.js"></script>
+        <script src="~/js/work-items.js" asp-append-version="true"></script>
+    }
+}

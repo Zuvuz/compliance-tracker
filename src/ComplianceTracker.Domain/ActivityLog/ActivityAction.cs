@@ -41,6 +41,12 @@ namespace ComplianceTracker.Domain.ActivityLog
         // A project's details were edited, or it moved to another lifecycle phase (US-024).
         // The log entry's SubjectId points at the project; Details holds the old and new values.
         ProjectUpdated,
-        ProjectPhaseChanged
+        ProjectPhaseChanged,
+
+        // A project was linked to a GitHub repository, or its user stories were read from it (US-018).
+        // The log entry's SubjectId points at the project; Details holds the repository or the sync's result.
+        // A scheduled sync has no user (UserId is null: the system did it).
+        RepositoryConnected,
+        WorkItemsSynced
     }
 }

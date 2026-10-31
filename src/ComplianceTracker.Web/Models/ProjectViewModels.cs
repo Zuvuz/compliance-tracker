@@ -1,6 +1,7 @@
 using ComplianceTracker.Domain.Frameworks;
 using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Domain.Projects;
+using ComplianceTracker.Domain.WorkItems;
 using ComplianceTracker.Web.Filters;
 using System.ComponentModel.DataAnnotations;
 
@@ -71,9 +72,14 @@ namespace ComplianceTracker.Web.Models
             && current.Number > Version.Number;
     }
 
+    // The project's user stories from GitHub and how the last sync went (Views/Projects/_WorkItems.cshtml, US-018)
+    public record WorkItemsViewModel(Project Project, IReadOnlyList<WorkItem> WorkItems);
+
     // Data for the project page (Views/Projects/Details.cshtml)
-    public record ProjectDetailsViewModel(Project Project, IReadOnlyList<Framework> AvailableFrameworks)
+    public record ProjectDetailsViewModel(Project Project, IReadOnlyList<Framework> AvailableFrameworks, IReadOnlyList<WorkItem> WorkItems)
     {
+        public WorkItemsViewModel WorkItemsSection => new(Project, WorkItems);
+
         // The project's frameworks, in alphabetical order
         public IReadOnlyList<ProjectFrameworkRow> Frameworks { get; } = Project.Frameworks
             .Select(link =>

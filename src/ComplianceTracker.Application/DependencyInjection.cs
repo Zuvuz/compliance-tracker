@@ -4,6 +4,7 @@ using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Application.Projects;
 using ComplianceTracker.Application.Users;
+using ComplianceTracker.Application.WorkItems;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -28,11 +29,13 @@ namespace ComplianceTracker.Application
             services.AddScoped<UserActivityService>();
             services.AddScoped<FrameworkService>();
             services.AddScoped<ProjectService>();
+            services.AddScoped<WorkItemSyncService>();
 
             // Queries (read data for the pages)
             services.AddScoped<OrganizationQueries>();
             services.AddScoped<FrameworkQueries>();
             services.AddScoped<ProjectQueries>();
+            services.AddScoped<WorkItemQueries>();
 
             return services;
         }

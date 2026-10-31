@@ -344,12 +344,54 @@ classDiagram
     -projectId: Guid
     -releaseId: Guid?
     -type: WorkItemType
-    -title: string
-    -acceptanceCriteria: string
-    -sourceSystem: SourceSystem
+    -source: WorkItemSource
     -externalReference: string
+    -url: string
+    -title: string
+    -rules: string
+    -examples: string
+    -gherkin: string
+    -labels: string
+    -state: WorkItemState
+    -firstSyncedAt: DateTime
     -lastSyncedAt: DateTime
     -requirements: List~RequirementWorkItem~
+    +Create(projectId: Guid, source: WorkItemSource, item: ExternalWorkItem, at: DateTime)$ WorkItem
+    +Update(item: ExternalWorkItem, at: DateTime) bool
+    +MarkRemoved() bool
+  }
+  class GitHubLink {
+    <<owned by Project>>
+    -repository: string
+    -label: string
+    -connectedAt: DateTime
+    -connectedById: Guid
+    -lastSyncedAt: DateTime?
+    -lastSyncError: string?
+    -skipped: List~SkippedIssue~
+    +RecordSuccess(at: DateTime, skipped: SkippedIssue[])
+    +RecordFailure(message: string)
+  }
+  class IWorkItemSource {
+    <<interface>>
+    +Source: WorkItemSource
+    +ReadAsync(query: WorkItemQuery) Task~WorkItemReadResult~
+  }
+  class GitHubWorkItemSource
+  class WorkItemSyncService {
+    -projects: IProjectRepository
+    -workItems: IWorkItemRepository
+    -github: IWorkItemSource
+    -notifier: IWorkItemNotifier
+    -member: CurrentMember
+    -log: IActivityLogger
+    +LinkGitHubAsync(projectId: Guid, repository: string, label: string?) Task
+    +SyncNowAsync(projectId: Guid) Task~SyncResult~
+    +SyncAllAsync() Task
+  }
+  class IWorkItemNotifier {
+    <<interface>>
+    +WorkItemsChangedAsync(projectId: Guid) Task
   }
   class RequirementWorkItem {
     -requirementId: Guid
@@ -376,7 +418,7 @@ classDiagram
   class ActivityLogEntry {
     -id: Guid
     -organizationId: Guid
-    -userId: Guid
+    -userId: Guid?
     -action: ActivityAction
     -subjectId: Guid?
     -details: string?
@@ -503,10 +545,15 @@ classDiagram
     Bug
     Epic
   }
-  class SourceSystem {
+  class WorkItemSource {
     <<enumeration>>
-    Manual
     GitHub
+  }
+  class WorkItemState {
+    <<enumeration>>
+    Open
+    Closed
+    Removed
   }
   class SuggestionStatus {
     <<enumeration>>
@@ -537,6 +584,10 @@ classDiagram
   ProjectFramework "*" --> "1" FrameworkVersion
   Project "1" --> "*" Release : releases
   Project "1" --> "*" WorkItem : workItems
+  Project "1" *-- "0..1" GitHubLink : gitHub
+  GitHubWorkItemSource ..|> IWorkItemSource
+  WorkItemSyncService --> IWorkItemSource : github
+  WorkItemSyncService --> IWorkItemNotifier : notifier
   WorkItem "*" --> "0..1" Release
   Framework "1" --> "*" FrameworkVersion : versions
   FrameworkVersion "1" --> "*" Requirement : requirements
@@ -603,6 +654,7 @@ classDiagram
 
 ## Designvalg
 
+- **User stories læses fra teamets eget værktøj.** `IWorkItemSource` er adapteren (B11); `GitHubWorkItemSource` læser issues med projektets label via GitHubs REST API uden nøgle og forstår BDD-skabelonen (`### Rules`, `### Examples`, `### Gherkin`). `WorkItemSyncService` tilføjer, opdaterer og markerer (`Closed`, `Removed`) og sletter aldrig. "Sync now" og en baggrundsjob (`ScheduledWorkItemSync`, hvert 15. minut) kører den samme sync, og åbne projektsider får besked via SignalR (`IWorkItemNotifier`). En planlagt sync logges uden bruger (`userId` er null = systemet) (B25). (US-018)
 - **Koblingsklasser med data.** `RequirementControl` og `RequirementWorkItem` registrerer via `MappingSource`, om koblingen er lavet manuelt eller via et godkendt AI-forslag.
 - **Vurderinger ændres ikke.** En ny `RequirementAssessment` oprettes i stedet, og den seneste er gældende. Det giver historik til en auditor.
 - **Frameworkversioner låses ved aktivering.** Når `status` er `Active`, kan `requirements` ikke ændres. Så kan en mapping nøjes med at pege på et `Requirement`, fordi teksten bag aldrig ændrer sig. En rettelse er en ny `FrameworkVersion`.
