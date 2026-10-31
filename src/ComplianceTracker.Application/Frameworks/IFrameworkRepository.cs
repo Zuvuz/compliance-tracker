@@ -1,4 +1,4 @@
-﻿using ComplianceTracker.Domain.Frameworks;
+using ComplianceTracker.Domain.Frameworks;
 
 namespace ComplianceTracker.Application.Frameworks
 {
@@ -18,6 +18,10 @@ namespace ComplianceTracker.Application.Frameworks
 
         // Only the organisation's own (uploaded) frameworks. Others, and built-in ones, return null.
         Task<Framework?> GetAsync(Guid organizationId, Guid frameworkId, CancellationToken cancellationToken = default);
+
+        // US-007: like GetAsync, but with every version's requirements loaded.
+        // Found by the id of one of its versions; only the organisation's own frameworks.
+        Task<Framework?> GetByVersionWithRequirementsAsync(Guid organizationId, Guid frameworkVersionId, CancellationToken cancellationToken = default);
 
         // The frameworks the organisation follows: its own uploaded ones and the built-in ones it has switched on (US-006 R3)
         Task<IReadOnlyList<Framework>> ListAsync(Guid organizationId, CancellationToken cancellationToken = default);

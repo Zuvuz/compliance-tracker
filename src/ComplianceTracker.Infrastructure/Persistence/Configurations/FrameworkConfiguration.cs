@@ -1,4 +1,4 @@
-﻿using ComplianceTracker.Domain.Frameworks;
+using ComplianceTracker.Domain.Frameworks;
 using ComplianceTracker.Domain.Organizations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -51,6 +51,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
 
             // CurrentVersion is calculated from Versions and not stored
             builder.Ignore(f => f.CurrentVersion);
+            builder.Ignore(f => f.LatestVersion);
         }
     }
 }

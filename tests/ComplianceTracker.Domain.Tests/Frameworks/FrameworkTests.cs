@@ -82,7 +82,7 @@ public class FrameworkTests
         // Assert
         var version = Assert.Single(framework.Versions);
         Assert.Equal(1, version.Number);
-        Assert.Same(version, framework.CurrentVersion);
+        Assert.Same(version, framework.LatestVersion);
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public class FrameworkTests
         var framework = CreateFramework(file: file);
 
         // Assert
-        var version = framework.CurrentVersion;
+        var version = framework.LatestVersion;
         Assert.Equal(framework.Id, version.FrameworkId);
         Assert.Equal("iso27001.pdf", version.FileName);
         Assert.Equal(file.Content.Length, version.SizeInBytes);
@@ -123,7 +123,7 @@ public class FrameworkTests
     }
 
     [Fact]
-    public void The_newest_version_is_the_current_one()
+    public void The_newest_upload_is_the_latest_version()
     {
         // Arrange
         var framework = CreateFramework();
@@ -132,7 +132,7 @@ public class FrameworkTests
         var newest = framework.AddVersion(PdfFile("policy-v2.pdf", marker: 2), AnnaId, Monday.AddDays(1));
 
         // Assert
-        Assert.Same(newest, framework.CurrentVersion);
+        Assert.Same(newest, framework.LatestVersion);
     }
 
     [Fact]
@@ -140,7 +140,7 @@ public class FrameworkTests
     {
         // Arrange
         var framework = CreateFramework(file: PdfFile("policy-v1.pdf", marker: 1));
-        var first = framework.CurrentVersion;
+        var first = framework.LatestVersion;
         var firstFingerprint = first.Sha256;
 
         // Act

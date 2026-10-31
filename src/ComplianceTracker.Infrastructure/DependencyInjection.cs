@@ -3,6 +3,7 @@ using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Application.Projects;
+using ComplianceTracker.Infrastructure.Frameworks;
 using ComplianceTracker.Infrastructure.Persistence;
 using ComplianceTracker.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -41,6 +42,9 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IFrameworkRepository, FrameworkRepository>();
             services.AddScoped<IProjectRepository, ProjectRepository>();
+
+            // US-007: reads requirements from PDF text. Holds no state, so one instance is enough.
+            services.AddSingleton<IRequirementExtractor, PdfRequirementExtractor>();
 
             return services;
         }

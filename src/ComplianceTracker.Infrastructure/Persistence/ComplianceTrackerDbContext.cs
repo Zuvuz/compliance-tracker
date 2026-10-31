@@ -19,6 +19,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<ActivityLogEntry> ActivityLog => Set<ActivityLogEntry>();
         public DbSet<Framework> Frameworks => Set <Framework>();
         public DbSet<FrameworkVersion> FrameworkVersions => Set<FrameworkVersion>();
+        public DbSet<Requirement> Requirements => Set<Requirement>();
         public DbSet<CatalogDocument> CatalogDocuments => Set<CatalogDocument>();
         public DbSet<Project> Projects => Set<Project>();
         public DbSet<OrganizationFramework> OrganizationFrameworks => Set<OrganizationFramework>();

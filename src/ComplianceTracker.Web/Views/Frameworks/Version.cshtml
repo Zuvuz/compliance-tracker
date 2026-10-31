@@ -1,0 +1,112 @@
+@* US-007: one framework version and its requirements.
+   A draft can be corrected (change, delete, add by hand) and then activated, which locks it.
+   The ids and classes (#version-status, #requirements, data-requirement-code, requirement-code,
+   requirement-title, #add-requirement, #activate-version, #no-requirements) are used by the tests. *@
+@model FrameworkVersionPageViewModel
+@{
+    var framework = Model.Framework;
+    var version = Model.Version;
+    ViewData["Title"] = $"{framework.Name} version {version.Number}";
+}
+
+<p class="mb-1"><a asp-action="Versions" asp-route-id="@framework.Id">← All versions of @framework.Name</a></p>
+<h1 class="mb-0">@framework.Name <small class="text-muted">version @version.Number</small></h1>
+<p class="small mb-3">
+    Status: <span id="version-status">@version.Status</span>
+    @if (Model.IsCurrent)
+    {
+        <span class="badge text-bg-success ms-1" id="version-current">current</span>
+    }
+    · Uploaded @version.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm") by @Model.NameOf(version.UploadedById)
+    @if (version.ActivatedAt is { } activatedAt)
+    {
+        <text>· Activated @activatedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm") by @Model.NameOf(version.ActivatedById)</text>
+    }
+    · <a class="open-pdf" asp-action="Document" asp-route-id="@version.Id">Open PDF</a>
+</p>
+
+@* Shows the domain's error messages, e.g. "Requirement A.5.15 is already in the list" *@
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+@if (!version.IsActive)
+{
+    <div class="alert alert-warning">
+        This version is a draft. Check the requirements found in the PDF, correct them, and activate the version.
+        Projects can only use active versions, and an active version can no longer be changed.
+    </div>
+}
+
+@if (version.Requirements.Count == 0)
+{
+    @* R5: e.g. a scanned PDF without text *@
+    <p class="text-muted" id="no-requirements">No requirements found.@(version.IsActive ? "" : " Add them by hand below.")</p>
+}
+else
+{
+    <table class="table table-sm align-middle" id="requirements">
+        <thead>
+            <tr>
+                <th style="width: 10rem">Code</th>
+                <th>Title</th>
+                <th>Description</th>
+                @if (!version.IsActive)
+                {
+                    <th></th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var requirement in version.Requirements)
+            {
+                <tr data-requirement-code="@requirement.Code" data-requirement-id="@requirement.Id">
+                    @if (version.IsActive)
+                    {
+                        @* R3: locked, so only shown *@
+                        <td class="requirement-code">@requirement.Code</td>
+                        <td class="requirement-title">@requirement.Title</td>
+                        <td class="requirement-description small">@requirement.Description</td>
+                    }
+                    else
+                    {
+                        @* R2: one small form per row. The inputs use the form attribute, so the table stays valid HTML. *@
+                        var formId = $"change-{requirement.Id}";
+                        <td><input form="@formId" name="code" value="@requirement.Code" class="form-control form-control-sm requirement-code" aria-label="Code" /></td>
+                        <td><input form="@formId" name="title" value="@requirement.Title" class="form-control form-control-sm requirement-title" aria-label="Title" /></td>
+                        <td><textarea form="@formId" name="description" rows="1" class="form-control form-control-sm" aria-label="Description">@requirement.Description</textarea></td>
+                        <td class="text-nowrap">
+                            <form id="@formId" asp-action="ChangeRequirement" method="post" class="d-inline">
+                                <input type="hidden" name="versionId" value="@version.Id" />
+                                <input type="hidden" name="requirementId" value="@requirement.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                            </form>
+                            <form asp-action="RemoveRequirement" method="post" class="d-inline">
+                                <input type="hidden" name="versionId" value="@version.Id" />
+                                <input type="hidden" name="requirementId" value="@requirement.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                            </form>
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (!version.IsActive)
+{
+    @* R2, R5: add a requirement by hand *@
+    <form asp-action="AddRequirement" method="post" class="row g-2 mb-4" id="add-requirement">
+        <input type="hidden" name="versionId" value="@version.Id" />
+        <div class="col-md-2"><input name="code" class="form-control" placeholder="Code, e.g. A.5.15" aria-label="Code" /></div>
+        <div class="col-md-4"><input name="title" class="form-control" placeholder="Title" aria-label="Title" /></div>
+        <div class="col-md-4"><input name="description" class="form-control" placeholder="Description (optional)" aria-label="Description" /></div>
+        <div class="col-md-2"><button type="submit" class="btn btn-outline-primary w-100">Add requirement</button></div>
+    </form>
+
+    @* R3, R4: locks the version; it then becomes the current version *@
+    <form asp-action="Activate" method="post" id="activate-version">
+        <input type="hidden" name="versionId" value="@version.Id" />
+        <button type="submit" class="btn btn-success">Activate version @version.Number</button>
+        <span class="text-muted small ms-2">The requirements can no longer be changed afterwards.</span>
+    </form>
+}

@@ -60,12 +60,15 @@ namespace ComplianceTracker.Web.Models
     }
 
     // The framework checkboxes on the create-project form (Views/Shared/Components/FrameworkChoices)
+    // US-007: only frameworks with an active version are offered
     public record FrameworkChoicesViewModel(IReadOnlyList<Framework> Frameworks, IReadOnlyCollection<Guid> Selected);
 
     // One framework a project follows, with the version it uses (US-011 R6)
     public record ProjectFrameworkRow(Framework Framework, FrameworkVersion Version)
     {
-        public bool NewerVersionExists => Version.Number < Framework.CurrentVersion.Number;
+        // US-007: only an activated version counts as newer; drafts cannot be used yet
+        public bool NewerVersionExists => Framework.CurrentVersion is { } current && current.Id != Version.Id
+            && current.Number > Version.Number;
     }
 
     // Data for the project page (Views/Projects/Details.cshtml)
@@ -83,15 +86,16 @@ namespace ComplianceTracker.Web.Models
             .OrderBy(r => r.Framework.Name)
             .ToList();
 
-        // The frameworks that can still be added (the project uses each framework at most once, R3)
+        // The frameworks that can still be added (the project uses each framework at most once, R3),
+        // and that have an active version (US-007)
         public IEnumerable<Framework> CanBeAdded
-            => AvailableFrameworks.Where(f => Project.FrameworkInUse(f.Id) is null);
+            => AvailableFrameworks.Where(f => Project.FrameworkInUse(f.Id) is null && f.CurrentVersion is not null);
     }
 
     // One line in the organisation overview: a framework version and the projects using it (US-011 R5)
     public record FrameworkUsageRow(Framework Framework, FrameworkVersion Version, IReadOnlyList<Project> Projects)
     {
-        public bool IsNewest => Version.Id == Framework.CurrentVersion.Id;
+        public bool IsNewest => Version.Id == Framework.CurrentVersion?.Id;
     }
 
     // Data for the organisation's Overview tab: the organisation, its projects and which frameworks they use
