@@ -52,32 +52,73 @@ classDiagram
   }
 
   %% ================= Services og repositories =================
+  class ICurrentUser {
+    <<interface>>
+    +Identity: UserIdentity
+  }
+  class CurrentMember {
+    -currentUser: ICurrentUser
+    -organizations: IOrganizationRepository
+    +FindOrganizationAsync() Task~Organization?~
+    +RequireAsync() Task~(Organization, User)~
+    +Reset()
+  }
+  class IActivityLogger {
+    <<interface>>
+    +LogAsync(action: ActivityAction, subjectId: Guid?) Task
+    +LogAsync(organizationId: Guid, userId: Guid, action: ActivityAction, subjectId: Guid?) Task
+  }
+  class ActivityLogger {
+    -log: IActivityLogRepository
+    -member: CurrentMember
+    -clock: TimeProvider
+  }
   class OrganizationService {
     -organizations: IOrganizationRepository
-    -activityLog: IActivityLogRepository
+    -currentUser: ICurrentUser
+    -member: CurrentMember
+    -log: IActivityLogger
     -unitOfWork: IUnitOfWork
-    -clock: TimeProvider
-    +CreateAsync(name: string, cvr: string, sector: Sector?, size: OrganizationSize?, creator: UserIdentity) Task~Organization~
+    +CreateAsync(name: string, cvr: string, sector: Sector?, size: OrganizationSize?) Task~Organization~
   }
   class UserActivityService {
     -organizations: IOrganizationRepository
-    -activityLog: IActivityLogRepository
+    -member: CurrentMember
+    -log: IActivityLogger
     -unitOfWork: IUnitOfWork
-    -clock: TimeProvider
     +RecordSignInAsync(externalId: string) Task
-    +RecordSignOutAsync(externalId: string) Task
+    +RecordSignOutAsync() Task
   }
   class FrameworkService {
     -frameworks: IFrameworkRepository
-    -organizations: IOrganizationRepository
-    -activityLog: IActivityLogRepository
+    -projects: IProjectRepository
+    -member: CurrentMember
+    -log: IActivityLogger
     -unitOfWork: IUnitOfWork
     -clock: TimeProvider
-    +AddAsync(userExternalId: string, name: string, fileName: string, content: byte[]) Task~Framework~
+    +AddAsync(name: string, fileName: string, content: byte[]) Task~Framework~
+    +UploadVersionAsync(frameworkId: Guid, fileName: string, content: byte[], moveProjectIds: Guid[]?) Task~FrameworkVersion~
+    +EnableBuiltInAsync(frameworkId: Guid) Task
+    +DisableBuiltInAsync(frameworkId: Guid) Task
+  }
+  class OrganizationQueries {
+    -member: CurrentMember
+    +MineAsync() Task~Organization?~
+    +GetAsync(id: Guid) Task~Organization?~
+  }
+  class FrameworkQueries {
+    -frameworks: IFrameworkRepository
+    -member: CurrentMember
+    +ListAsync() Task~IReadOnlyList~Framework~~
+    +GetOwnAsync(frameworkId: Guid) Task~Framework?~
+    +GetDocumentAsync(frameworkVersionId: Guid) Task
+    +BuiltInAsync() Task
+  }
+  class ProjectQueries {
     -projects: IProjectRepository
-    +UploadVersionAsync(userExternalId: string, frameworkId: Guid, fileName: string, content: byte[], moveProjectIds: Guid[]?) Task~FrameworkVersion~
-    +EnableBuiltInAsync(userExternalId: string, frameworkId: Guid) Task
-    +DisableBuiltInAsync(userExternalId: string, frameworkId: Guid) Task
+    -member: CurrentMember
+    +ListAsync() Task~IReadOnlyList~Project~~
+    +GetAsync(projectId: Guid) Task~Project?~
   }
   class IFrameworkRepository {
     <<interface>>
@@ -96,14 +137,14 @@ classDiagram
   class ProjectService {
     -projects: IProjectRepository
     -frameworks: IFrameworkRepository
-    -organizations: IOrganizationRepository
-    -activityLog: IActivityLogRepository
+    -member: CurrentMember
+    -log: IActivityLogger
     -unitOfWork: IUnitOfWork
     -clock: TimeProvider
-    +CreateAsync(userExternalId: string, name: string, description: string?, intendedPurpose: string, scope: string?, phase: LifecyclePhase, frameworkIds: Guid[]?) Task~Project~
-    +AddFrameworkAsync(userExternalId: string, projectId: Guid, frameworkId: Guid, frameworkVersionId: Guid?) Task
-    +UseNewestVersionAsync(userExternalId: string, projectId: Guid, frameworkId: Guid) Task
-    +RemoveFrameworkAsync(userExternalId: string, projectId: Guid, frameworkId: Guid) Task
+    +CreateAsync(name: string, description: string?, intendedPurpose: string, scope: string?, phase: LifecyclePhase, frameworkIds: Guid[]?) Task~Project~
+    +AddFrameworkAsync(projectId: Guid, frameworkId: Guid, frameworkVersionId: Guid?) Task
+    +UseNewestVersionAsync(projectId: Guid, frameworkId: Guid) Task
+    +RemoveFrameworkAsync(projectId: Guid, frameworkId: Guid) Task
   }
   class IProjectRepository {
     <<interface>>
@@ -478,21 +519,33 @@ classDiagram
   MappingSuggestion "*" --> "0..1" Control
   ActivityLogEntry "*" --> "1" Organization
   ActivityLogEntry "*" --> "1" User
+  CurrentMember --> ICurrentUser : currentUser
+  CurrentMember --> IOrganizationRepository : organizations
+  ActivityLogger ..|> IActivityLogger
+  ActivityLogger --> IActivityLogRepository : log
+  ActivityLogger --> CurrentMember : member
   OrganizationService --> IOrganizationRepository : organizations
-  OrganizationService --> IActivityLogRepository : activityLog
+  OrganizationService --> ICurrentUser : currentUser
+  OrganizationService --> CurrentMember : member
+  OrganizationService --> IActivityLogger : log
   OrganizationService --> IUnitOfWork : unitOfWork
-  OrganizationService ..> UserIdentity : creator
   UserActivityService --> IOrganizationRepository : organizations
-  UserActivityService --> IActivityLogRepository : activityLog
+  UserActivityService --> CurrentMember : member
+  UserActivityService --> IActivityLogger : log
   UserActivityService --> IUnitOfWork : unitOfWork
   FrameworkService --> IFrameworkRepository : frameworks
-  FrameworkService --> IOrganizationRepository : organizations
-  FrameworkService --> IActivityLogRepository : activityLog
+  FrameworkService --> CurrentMember : member
+  FrameworkService --> IActivityLogger : log
   FrameworkService --> IUnitOfWork : unitOfWork
+  OrganizationQueries --> CurrentMember : member
+  FrameworkQueries --> IFrameworkRepository : frameworks
+  FrameworkQueries --> CurrentMember : member
+  ProjectQueries --> IProjectRepository : projects
+  ProjectQueries --> CurrentMember : member
   FrameworkService ..> CatalogFile : validerer
   ProjectService --> IProjectRepository : projects
-  ProjectService --> IOrganizationRepository : organizations
-  ProjectService --> IActivityLogRepository : activityLog
+  ProjectService --> CurrentMember : member
+  ProjectService --> IActivityLogger : log
   ProjectService --> IUnitOfWork : unitOfWork
   ProjectService ..> Project : opretter
   IProjectRepository ..> Project
@@ -552,6 +605,11 @@ classDiagram
 - **Logposter om projektets frameworks peger på projektet** (`subjectId`). Framework og versioner står i `ProjectFramework`-rækkerne med samme tidspunkt og bruger. (US-011)
 - **Services læser tiden fra `TimeProvider`**, ikke fra `DateTime.UtcNow`. Appen bruger systemets ur; testene sætter et fast tidspunkt, så de kan tjekke, at hver logpost har præcis det tidspunkt, handlingen skete (B22). (US-016)
 - **Størrelse er påkrævet ligesom sektor.** `Organization.Create` tager `OrganizationSize?` og afviser `null` med "Size is required"; formularen starter med "-- Choose size --". (US-016)
+- **Den indloggede bruger findes ét sted.** `ICurrentUser` er personen bag forespørgslen (Web læser den fra login-cookien). `CurrentMember` slår brugerens organisation op én gang pr. forespørgsel. Use cases og queries får dem via dependency injection og tager ikke længere brugeren som parameter, så ingen use case kan handle for en anden bruger ved en fejl. (US-029)
+- **Use cases ændrer, queries læser.** `...Service` ændrer data; `OrganizationQueries`, `FrameworkQueries` og `ProjectQueries` læser data til siderne og filtrerer altid på brugerens organisation. Controllere afhænger kun af disse og aldrig af repositories (testet i `ApplicationStructure.feature`). (US-029)
+- **Logposter skrives kun af `IActivityLogger`**, der udfylder bruger, organisation og tidspunkt. Domain events er fravalgt indtil videre (B23). (US-029)
+- **Hvert lag registrerer sig selv** med `AddApplication()` og `AddInfrastructure()`. Containeren tjekker ved opstart, at alle services og controllere kan oprettes. Keycloak-indstillingerne er en `KeycloakOptions`-klasse, der tjekkes ved opstart. (US-029)
+- **Ét fælles filter viser brudte regler.** `DomainExceptionFilter` viser en formular igen med det indtastede (`IFormModel`) eller sender brugeren tilbage til siden med fejlen (`[OnDomainError]`, Post/Redirect/Get via TempData). Controllerne har ingen `try/catch`. (US-029)
 - **Projekter følger samme adgangsregel som frameworks**: `IProjectRepository` tager altid `organizationId`, og andre organisationers projekter giver 404. Oprettelse logges som `ProjectCreated` med projektet som `subjectId`. (US-008)
 
 ## Ordliste
