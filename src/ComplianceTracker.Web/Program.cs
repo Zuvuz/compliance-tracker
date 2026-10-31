@@ -2,7 +2,10 @@ using ComplianceTracker.Application;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Users;
 using ComplianceTracker.Infrastructure;
+using ComplianceTracker.Application.WorkItems;
+using ComplianceTracker.Web.Background;
 using ComplianceTracker.Web.Filters;
+using ComplianceTracker.Web.Hubs;
 using ComplianceTracker.Web.Security;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -41,9 +44,21 @@ builder.Services
     .AddApplication()
     .AddInfrastructure();
 
-// Who is signed in: read from the sign-in cookie of the current request (US-029 R1)
+// Who is signed in: read from the sign-in cookie of the current request (US-029 R1),
+// or from the SignalR connection inside a hub call (US-018)
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<CurrentPrincipal>();
 builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
+
+// US-018: open project pages update themselves (R7), and GitHub is checked at a fixed interval (R6)
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IWorkItemNotifier, SignalRWorkItemNotifier>();
+builder.Services
+    .AddOptions<WorkItemSyncOptions>()
+    .BindConfiguration(WorkItemSyncOptions.Section)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddHostedService<ScheduledWorkItemSync>();
 
 // The Keycloak settings, checked when the app starts (US-029 R3)
 builder.Services
@@ -134,6 +149,9 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
+
+// US-018 R7: the live updates of the project page's work items
+app.MapHub<WorkItemsHub>(WorkItemsHub.Path);
 
 app.Run();
 

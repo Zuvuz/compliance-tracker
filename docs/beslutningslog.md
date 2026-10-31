@@ -198,6 +198,21 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - OCR af scannede PDF'er.
   - En "kategori" på kravet. Koden viser allerede kategorien (fx `A.5`).
 
+### B25 – User stories fra GitHub synkroniseres af systemet
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-018)
+  - Et projekt kan linkes til et offentligt GitHub-repository (`owner/name`) og en label (standard `user-story`). Trackeren læser kun.
+  - Issues med labelen, der ikke følger BDD-skabelonen (ingen "Rules"), springes over og vises med grunden.
+  - Work items slettes aldrig. Et lukket issue bliver `Closed`, og et issue, der ikke længere kommer med, bliver `Removed`.
+  - Ud over "Sync now" tjekker en baggrundsjob alle linkede repositories hvert 15. minut (`WorkItemSync:IntervalMinutes`). GitHub tillader 60 forespørgsler i timen uden nøgle.
+  - En planlagt sync logges kun, når den fandt ændringer. Den logges uden bruger: `ActivityLogEntry.UserId` er null og betyder "systemet". En sync startet af et medlem logges altid med medlemmet.
+  - Åbne projektsider opdateres med SignalR. Hubben tjekker, at brugeren hører til projektets organisation.
+- **Begrundelse:** En handling må ikke skrives på en person, der ikke udførte den (ISO 27001 A.8.15). Derfor er systemet sin egen "bruger" i loggen.
+- **Fravalgt:**
+  - Webhooks fra GitHub, fordi de kræver en offentlig adresse. De kan erstatte baggrundsjobbet, når trackeren hostes.
+  - At logge hver planlagt sync uden ændringer, fordi loggen så ville fyldes med ét indslag pr. kvarter pr. projekt.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

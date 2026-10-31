@@ -48,7 +48,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("SubjectId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("UserId")
+                    b.Property<Guid?>("UserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -396,6 +396,75 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.WorkItems.WorkItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Examples")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ExternalReference")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("FirstSyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Gherkin")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Labels")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("LastSyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Rules")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId", "Source", "ExternalReference")
+                        .IsUnique();
+
+                    b.ToTable("WorkItems", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.CatalogDocument", b =>
                 {
                     b.Property<Guid>("FrameworkVersionId")
@@ -421,8 +490,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasOne("ComplianceTracker.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.Framework", b =>
@@ -494,6 +562,82 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.OwnsOne("ComplianceTracker.Domain.Projects.GitHubLink", "GitHub", b1 =>
+                        {
+                            b1.Property<Guid>("ProjectId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<DateTime>("ConnectedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<Guid>("ConnectedById")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Label")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)");
+
+                            b1.Property<string>("LastSyncError")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)");
+
+                            b1.Property<DateTime?>("LastSyncedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<string>("Repository")
+                                .IsRequired()
+                                .HasMaxLength(140)
+                                .HasColumnType("character varying(140)");
+
+                            b1.HasKey("ProjectId");
+
+                            b1.ToTable("Projects");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProjectId");
+
+                            b1.OwnsMany("ComplianceTracker.Domain.Projects.SkippedIssue", "Skipped", b2 =>
+                                {
+                                    b2.Property<int>("Id")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("integer");
+
+                                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b2.Property<int>("Id"));
+
+                                    b2.Property<string>("ExternalReference")
+                                        .IsRequired()
+                                        .HasMaxLength(200)
+                                        .HasColumnType("character varying(200)");
+
+                                    b2.Property<Guid>("GitHubLinkProjectId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<string>("Reason")
+                                        .IsRequired()
+                                        .HasMaxLength(200)
+                                        .HasColumnType("character varying(200)");
+
+                                    b2.Property<string>("Title")
+                                        .IsRequired()
+                                        .HasMaxLength(500)
+                                        .HasColumnType("character varying(500)");
+
+                                    b2.HasKey("Id");
+
+                                    b2.HasIndex("GitHubLinkProjectId");
+
+                                    b2.ToTable("SkippedIssues", (string)null);
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("GitHubLinkProjectId");
+                                });
+
+                            b1.Navigation("Skipped");
+                        });
+
+                    b.Navigation("GitHub");
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Projects.ProjectFramework", b =>
@@ -534,6 +678,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .WithMany("Users")
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.WorkItems.WorkItem", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

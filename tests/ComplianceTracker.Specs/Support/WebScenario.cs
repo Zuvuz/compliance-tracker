@@ -15,16 +15,18 @@ namespace ComplianceTracker.Specs.Support
     {
         private readonly DatabaseScenario _database;
         private readonly ScenarioClock _clock;
+        private readonly FakeGitHub _github;
         private TestApp? _app;
         private HttpClient? _client;
 
         // CVR numbers for organisations created by the tests; each one is unique in the scenario
         private int _nextCvr = 10000000;
 
-        public WebScenario(DatabaseScenario database, ScenarioClock clock)
+        public WebScenario(DatabaseScenario database, ScenarioClock clock, FakeGitHub github)
         {
             _database = database;
             _clock = clock;
+            _github = github;
         }
 
         // The last response and its HTML, parsed so the tests can look for elements
@@ -32,7 +34,7 @@ namespace ComplianceTracker.Specs.Support
         public IDocument? Page { get; set; }
 
         // Started the first time it is used, after "Given an empty database" has set the connection string
-        public TestApp App => _app ??= TestApp.WithTestSignIn(_database.ConnectionString, _clock);
+        public TestApp App => _app ??= TestApp.WithTestSignIn(_database.ConnectionString, _clock, github: _github);
 
         // The client follows redirects and remembers cookies, like a browser
         public HttpClient Client => _client ??= App.Factory.CreateClient();

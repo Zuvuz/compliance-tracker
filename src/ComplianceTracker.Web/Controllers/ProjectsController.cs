@@ -1,6 +1,7 @@
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Application.Projects;
+using ComplianceTracker.Application.WorkItems;
 using ComplianceTracker.Domain.Projects;
 using ComplianceTracker.Web.Filters;
 using ComplianceTracker.Web.Models;
@@ -17,17 +18,23 @@ namespace ComplianceTracker.Web.Controllers
         private readonly ProjectQueries _projects;
         private readonly FrameworkQueries _frameworks;
         private readonly OrganizationQueries _organizations;
+        private readonly WorkItemSyncService _sync;
+        private readonly WorkItemQueries _workItems;
 
         public ProjectsController(
             ProjectService service,
             ProjectQueries projects,
             FrameworkQueries frameworks,
-            OrganizationQueries organizations)
+            OrganizationQueries organizations,
+            WorkItemSyncService sync,
+            WorkItemQueries workItems)
         {
             _service = service;
             _projects = projects;
             _frameworks = frameworks;
             _organizations = organizations;
+            _sync = sync;
+            _workItems = workItems;
         }
 
         // GET /Projects/Create: the empty form (the framework checkboxes come from the FrameworkChoices view component)
@@ -77,7 +84,46 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound(); // R5: also when the project belongs to another organisation
             }
 
-            return View(new ProjectDetailsViewModel(project, await _frameworks.ListAsync(cancellationToken)));
+            return View(new ProjectDetailsViewModel(
+                project,
+                await _frameworks.ListAsync(cancellationToken),
+                await _workItems.ListAsync(id, cancellationToken) ?? []));
+        }
+
+        // ---------------------------------------------------------- User stories from GitHub (US-018)
+
+        // GET /Projects/WorkItems/{id}: only the work items section, fetched again by the page when SignalR says it changed (R7)
+        [HttpGet]
+        public async Task<IActionResult> WorkItems(Guid id, CancellationToken cancellationToken)
+        {
+            var project = await _projects.GetAsync(id, cancellationToken);
+            var workItems = await _workItems.ListAsync(id, cancellationToken);
+            if (project is null || workItems is null)
+            {
+                return NotFound(); // R9
+            }
+
+            return PartialView("_WorkItems", new WorkItemsViewModel(project, workItems));
+        }
+
+        // POST /Projects/LinkGitHub: R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId")]
+        public async Task<IActionResult> LinkGitHub(Guid projectId, string? repository, string? label, CancellationToken cancellationToken)
+        {
+            await _sync.LinkGitHubAsync(projectId, repository ?? "", label, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId });
+        }
+
+        // POST /Projects/SyncNow: R5. A failed sync is shown on the page from the project's GitHub link.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId")]
+        public async Task<IActionResult> SyncNow(Guid projectId, CancellationToken cancellationToken)
+        {
+            await _sync.SyncNowAsync(projectId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId });
         }
 
         // ---------------------------------------------------------- Editing (US-024)

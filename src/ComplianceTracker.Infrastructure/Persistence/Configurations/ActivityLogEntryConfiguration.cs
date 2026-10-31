@@ -35,9 +35,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
                 .HasForeignKey(e => e.OrganizationId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Optional: null means the system did it (US-018)
             builder.HasOne<User>()
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

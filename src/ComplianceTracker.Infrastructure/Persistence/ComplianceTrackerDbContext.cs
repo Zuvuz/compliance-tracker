@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.WorkItems;
 using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Domain.Frameworks;
 using ComplianceTracker.Domain.Organizations;
@@ -22,6 +23,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<Requirement> Requirements => Set<Requirement>();
         public DbSet<CatalogDocument> CatalogDocuments => Set<CatalogDocument>();
         public DbSet<Project> Projects => Set<Project>();
+        public DbSet<WorkItem> WorkItems => Set<WorkItem>();
         public DbSet<OrganizationFramework> OrganizationFrameworks => Set<OrganizationFramework>();
         public DbSet<ProjectFramework> ProjectFrameworks => Set<ProjectFramework>();
 

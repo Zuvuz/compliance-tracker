@@ -10,8 +10,9 @@ namespace ComplianceTracker.Domain.ActivityLog
     {
         public Guid OrganizationId { get; }
 
-        // The user who performed the action
-        public Guid UserId { get; }
+        // The user who performed the action, or null when the system did it on its own,
+        // e.g. the scheduled check of GitHub (US-018 R6)
+        public Guid? UserId { get; }
 
         public ActivityAction Action { get; }
 
@@ -26,7 +27,7 @@ namespace ComplianceTracker.Domain.ActivityLog
         public string? Details { get; }
 
         // EF Core also uses this constructor when it reads entries from the database
-        public ActivityLogEntry(Guid organizationId, Guid userId, ActivityAction action, DateTime occurredAt, Guid? subjectId = null, string? details = null)
+        public ActivityLogEntry(Guid organizationId, Guid? userId, ActivityAction action, DateTime occurredAt, Guid? subjectId = null, string? details = null)
         {
             Details = details;
             OrganizationId = organizationId;

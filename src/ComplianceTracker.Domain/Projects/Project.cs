@@ -28,6 +28,9 @@ namespace ComplianceTracker.Domain.Projects
 
         public LifecyclePhase Phase { get; private set; }
 
+        // US-018: the GitHub repository the project reads its user stories from, or null
+        public GitHubLink? GitHub { get; private set; }
+
         // US-024 R4: a project at end of support is kept as it was and cannot be changed
         public bool IsClosed => Phase == LifecyclePhase.EndOfSupport;
 
@@ -136,6 +139,27 @@ namespace ComplianceTracker.Domain.Projects
             {
                 throw new DomainException("A project at end of support cannot be changed");
             }
+        }
+
+        // ---------------------------------------------------------- GitHub (US-018)
+
+        // R1: links the project to a public repository, or moves it to another one.
+        // Returns false when nothing changed. Work items from a previous repository are marked
+        // "Removed" by the next sync, because their references name the old repository.
+        public bool LinkGitHub(string repository, string? label, Guid userId, DateTime at)
+        {
+            EnsureOpen();
+            var link = new GitHubLink(repository, label, userId, at);
+
+            if (GitHub is not null
+                && string.Equals(GitHub.Repository, link.Repository, StringComparison.OrdinalIgnoreCase)
+                && GitHub.Label == link.Label)
+            {
+                return false;
+            }
+
+            GitHub = link;
+            return true;
         }
 
         // ---------------------------------------------------------- Frameworks (US-011)
