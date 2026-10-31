@@ -68,7 +68,7 @@ Feature: Read user stories from GitHub
   Scenario: A repository that does not exist
     Given "Acme Portal" is linked to "Zuvuz/does-not-exist"
     When I click "Sync now"
-    Then I see "Sync failed: Repository not found or private"
+    Then I see "Sync failed: Repository not found or private: add a token"
 
   @US-018 @integration
   Scenario: An open page updates when a sync finds changes

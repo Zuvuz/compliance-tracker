@@ -99,6 +99,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             });
         }
 
+        [Given("I click \"Sync now\"")]
         [When("I click \"Sync now\"")]
         public async Task WhenIClickSyncNow()
         {

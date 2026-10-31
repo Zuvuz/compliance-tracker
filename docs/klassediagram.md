@@ -369,6 +369,11 @@ classDiagram
     -lastSyncedAt: DateTime?
     -lastSyncError: string?
     -skipped: List~SkippedIssue~
+    -encryptedToken: string?
+    -tokenChangedAt: DateTime?
+    +HasToken: bool
+    +SetToken(encryptedToken: string, at: DateTime)
+    +RemoveToken(at: DateTime) bool
     +RecordSuccess(at: DateTime, skipped: SkippedIssue[])
     +RecordFailure(message: string)
   }
@@ -385,10 +390,19 @@ classDiagram
     -notifier: IWorkItemNotifier
     -member: CurrentMember
     -log: IActivityLogger
+    -secrets: ISecretProtector
     +LinkGitHubAsync(projectId: Guid, repository: string, label: string?) Task
+    +SetGitHubTokenAsync(projectId: Guid, token: string) Task
+    +RemoveGitHubTokenAsync(projectId: Guid) Task
     +SyncNowAsync(projectId: Guid) Task~SyncResult~
     +SyncAllAsync() Task
   }
+  class ISecretProtector {
+    <<interface>>
+    +Protect(secret: string) string
+    +Unprotect(protectedSecret: string) string
+  }
+  class DataProtectionSecretProtector
   class IWorkItemNotifier {
     <<interface>>
     +WorkItemsChangedAsync(projectId: Guid) Task
@@ -588,6 +602,8 @@ classDiagram
   GitHubWorkItemSource ..|> IWorkItemSource
   WorkItemSyncService --> IWorkItemSource : github
   WorkItemSyncService --> IWorkItemNotifier : notifier
+  WorkItemSyncService --> ISecretProtector : secrets
+  DataProtectionSecretProtector ..|> ISecretProtector
   WorkItem "*" --> "0..1" Release
   Framework "1" --> "*" FrameworkVersion : versions
   FrameworkVersion "1" --> "*" Requirement : requirements
@@ -655,6 +671,7 @@ classDiagram
 ## Designvalg
 
 - **User stories læses fra teamets eget værktøj.** `IWorkItemSource` er adapteren (B11); `GitHubWorkItemSource` læser issues med projektets label via GitHubs REST API uden nøgle og forstår BDD-skabelonen (`### Rules`, `### Examples`, `### Gherkin`). `WorkItemSyncService` tilføjer, opdaterer og markerer (`Closed`, `Removed`) og sletter aldrig. "Sync now" og en baggrundsjob (`ScheduledWorkItemSync`, hvert 15. minut) kører den samme sync, og åbne projektsider får besked via SignalR (`IWorkItemNotifier`). En planlagt sync logges uden bruger (`userId` er null = systemet) (B25). (US-018)
+- **Private repositories læses med en krypteret nøgle.** Domænet ser kun den krypterede tekst (`GitHubLink.EncryptedToken`). `ISecretProtector` krypterer med ASP.NET Core Data Protection, og nøglerne ligger i tabellen `DataProtectionKeys`. Nøglen tjekkes hos GitHub, før den gemmes, og den vises, logges og sendes aldrig tilbage til siden (B26). (US-031)
 - **Koblingsklasser med data.** `RequirementControl` og `RequirementWorkItem` registrerer via `MappingSource`, om koblingen er lavet manuelt eller via et godkendt AI-forslag.
 - **Vurderinger ændres ikke.** En ny `RequirementAssessment` oprettes i stedet, og den seneste er gældende. Det giver historik til en auditor.
 - **Frameworkversioner låses ved aktivering.** Når `status` er `Active`, kan `requirements` ikke ændres. Så kan en mapping nøjes med at pege på et `Requirement`, fordi teksten bag aldrig ændrer sig. En rettelse er en ny `FrameworkVersion`.

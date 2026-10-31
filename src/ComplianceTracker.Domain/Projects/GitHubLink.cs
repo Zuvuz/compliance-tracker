@@ -33,11 +33,25 @@ namespace ComplianceTracker.Domain.Projects
         // R3: issues with the label that were not read in the last sync, and why
         public IReadOnlyList<SkippedIssue> Skipped => _skipped;
 
+        // US-031: a read-only token for a private repository, already encrypted (ISecretProtector).
+        // The domain never sees the token itself. Null for public repositories.
+        public string? EncryptedToken { get; private set; }
+        public DateTime? TokenChangedAt { get; private set; }
+
+        public bool HasToken => EncryptedToken is not null;
+
         // For EF Core only
         private GitHubLink() { }
 
-        internal GitHubLink(string repository, string? label, Guid connectedById, DateTime at)
+        internal GitHubLink(string repository, string? label, Guid connectedById, DateTime at, GitHubLink? previous = null)
         {
+            // US-031: the token stays when only the label changes; a new repository needs its own token
+            if (previous is not null && string.Equals(previous.Repository, CleanRepository(repository), StringComparison.OrdinalIgnoreCase))
+            {
+                EncryptedToken = previous.EncryptedToken;
+                TokenChangedAt = previous.TokenChangedAt;
+            }
+
             Repository = CleanRepository(repository);
             Label = string.IsNullOrWhiteSpace(label) ? DefaultLabel : label.Trim();
             ConnectedById = connectedById;
@@ -60,6 +74,31 @@ namespace ComplianceTracker.Domain.Projects
             }
 
             return value;
+        }
+
+        // US-031 R1, R3: sets or replaces the token. The caller has checked it with GitHub and encrypted it.
+        public void SetToken(string encryptedToken, DateTime at)
+        {
+            if (string.IsNullOrWhiteSpace(encryptedToken))
+            {
+                throw new DomainException("Enter a token");
+            }
+
+            EncryptedToken = encryptedToken;
+            TokenChangedAt = at;
+        }
+
+        // US-031 R3: back to reading the repository as public. Returns false if there was no token.
+        public bool RemoveToken(DateTime at)
+        {
+            if (EncryptedToken is null)
+            {
+                return false;
+            }
+
+            EncryptedToken = null;
+            TokenChangedAt = at;
+            return true;
         }
 
         public void RecordSuccess(DateTime at, IEnumerable<SkippedIssue> skipped)

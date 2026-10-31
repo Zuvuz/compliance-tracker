@@ -47,6 +47,9 @@ namespace ComplianceTracker.Domain.ActivityLog
         // The log entry's SubjectId points at the project; Details holds the repository or the sync's result.
         // A scheduled sync has no user (UserId is null: the system did it).
         RepositoryConnected,
-        WorkItemsSynced
+        WorkItemsSynced,
+
+        // A project's GitHub token was set, replaced or removed (US-031). Details never holds the token.
+        AccessTokenChanged
     }
 }

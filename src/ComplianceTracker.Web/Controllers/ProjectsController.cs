@@ -116,6 +116,26 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId });
         }
 
+        // POST /Projects/SetGitHubToken: US-031 R1-R3. A refused token is shown as an error and never sent back to the page.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId")]
+        public async Task<IActionResult> SetGitHubToken(Guid projectId, string? token, CancellationToken cancellationToken)
+        {
+            await _sync.SetGitHubTokenAsync(projectId, token ?? "", cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId });
+        }
+
+        // POST /Projects/RemoveGitHubToken: US-031 R3
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId")]
+        public async Task<IActionResult> RemoveGitHubToken(Guid projectId, CancellationToken cancellationToken)
+        {
+            await _sync.RemoveGitHubTokenAsync(projectId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId });
+        }
+
         // POST /Projects/SyncNow: R5. A failed sync is shown on the page from the project's GitHub link.
         [HttpPost]
         [ValidateAntiForgeryToken]

@@ -479,6 +479,25 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("CatalogDocuments", (string)null);
                 });
 
+            modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FriendlyName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Xml")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DataProtectionKeys");
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.ActivityLog.ActivityLogEntry", b =>
                 {
                     b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
@@ -574,6 +593,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                             b1.Property<Guid>("ConnectedById")
                                 .HasColumnType("uuid");
 
+                            b1.Property<string>("EncryptedToken")
+                                .HasMaxLength(2000)
+                                .HasColumnType("character varying(2000)");
+
                             b1.Property<string>("Label")
                                 .IsRequired()
                                 .HasMaxLength(100)
@@ -590,6 +613,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                                 .IsRequired()
                                 .HasMaxLength(140)
                                 .HasColumnType("character varying(140)");
+
+                            b1.Property<DateTime?>("TokenChangedAt")
+                                .HasColumnType("timestamp with time zone");
 
                             b1.HasKey("ProjectId");
 

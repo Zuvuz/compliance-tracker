@@ -9,6 +9,7 @@ using ComplianceTracker.Domain.WorkItems;
 namespace ComplianceTracker.Application.WorkItems
 {
     // US-018: links a project to a GitHub repository and reads its user stories.
+    // US-031: a private repository is read with a read-only token, stored encrypted (ISecretProtector).
     // A sync adds new work items, updates changed ones and marks closed or removed ones; nothing is deleted (R8).
     // It runs when a member clicks "Sync now" (R5) and by itself at a fixed interval (R6, ScheduledSync).
     public class WorkItemSyncService
@@ -17,6 +18,7 @@ namespace ComplianceTracker.Application.WorkItems
         private readonly IWorkItemRepository _workItems;
         private readonly IWorkItemSource _github;
         private readonly IWorkItemNotifier _notifier;
+        private readonly ISecretProtector _secrets;
         private readonly CurrentMember _member;
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
@@ -27,6 +29,7 @@ namespace ComplianceTracker.Application.WorkItems
             IWorkItemRepository workItems,
             IEnumerable<IWorkItemSource> sources,
             IWorkItemNotifier notifier,
+            ISecretProtector secrets,
             CurrentMember member,
             IActivityLogger log,
             IUnitOfWork unitOfWork,
@@ -36,6 +39,7 @@ namespace ComplianceTracker.Application.WorkItems
             _workItems = workItems;
             _github = sources.Single(s => s.Source == WorkItemSource.GitHub);
             _notifier = notifier;
+            _secrets = secrets;
             _member = member;
             _log = log;
             _unitOfWork = unitOfWork;
@@ -57,10 +61,55 @@ namespace ComplianceTracker.Application.WorkItems
             }
         }
 
+        // US-031 R2, R3, R5: checks the token with GitHub, then stores it encrypted. Logged without the value.
+        public async Task SetGitHubTokenAsync(Guid projectId, string token, CancellationToken cancellationToken = default)
+        {
+            var project = await LinkedProjectAsync(projectId, cancellationToken);
+            var link = project.GitHub!;
+            var value = (token ?? "").Trim();
+            if (value.Length == 0)
+            {
+                throw new DomainException("Enter a token");
+            }
+
+            // R2: GitHub must accept the token for this repository; otherwise nothing is saved
+            try
+            {
+                await _github.ReadAsync(new WorkItemQuery(link.Repository, link.Label, value), cancellationToken);
+            }
+            catch (WorkItemSourceException error)
+            {
+                throw new DomainException(error.Message);
+            }
+
+            link.SetToken(_secrets.Protect(value), Now);
+            await _log.LogAsync(ActivityAction.AccessTokenChanged, project.Id, "GitHub token set", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-031 R3, R5
+        public async Task RemoveGitHubTokenAsync(Guid projectId, CancellationToken cancellationToken = default)
+        {
+            var project = await LinkedProjectAsync(projectId, cancellationToken);
+            if (project.GitHub!.RemoveToken(Now))
+            {
+                await _log.LogAsync(ActivityAction.AccessTokenChanged, project.Id, "GitHub token removed", cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+        }
+
         // R5: "Sync now" for the signed-in member's project
         public async Task<SyncResult> SyncNowAsync(Guid projectId, CancellationToken cancellationToken = default)
         {
-            var (organization, user) = await _member.RequireAsync(cancellationToken);
+            var (_, user) = await _member.RequireAsync(cancellationToken);
+            var project = await LinkedProjectAsync(projectId, cancellationToken);
+            return await SyncAsync(project, user.Id, cancellationToken);
+        }
+
+        // The member's own project, which must be linked to GitHub
+        private async Task<Project> LinkedProjectAsync(Guid projectId, CancellationToken cancellationToken)
+        {
+            var (organization, _) = await _member.RequireAsync(cancellationToken);
             var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
                 ?? throw new DomainException("Project not found");
 
@@ -69,7 +118,12 @@ namespace ComplianceTracker.Application.WorkItems
                 throw new DomainException("Link the project to a GitHub repository first");
             }
 
-            return await SyncAsync(project, user.Id, cancellationToken);
+            if (project.IsClosed)
+            {
+                throw new DomainException("A project at end of support cannot be changed");
+            }
+
+            return project;
         }
 
         // R6: the scheduled check. Reads every linked project of every organisation, without a user.
@@ -94,7 +148,7 @@ namespace ComplianceTracker.Application.WorkItems
             WorkItemReadResult read;
             try
             {
-                read = await _github.ReadAsync(new WorkItemQuery(link.Repository, link.Label), cancellationToken);
+                read = await _github.ReadAsync(new WorkItemQuery(link.Repository, link.Label, Token(link)), cancellationToken);
             }
             catch (WorkItemSourceException error)
             {
@@ -156,6 +210,24 @@ namespace ComplianceTracker.Application.WorkItems
             }
 
             return result;
+        }
+
+        // US-031: the decrypted token, only for the request to GitHub
+        private string? Token(GitHubLink link)
+        {
+            if (link.EncryptedToken is null)
+            {
+                return null;
+            }
+
+            try
+            {
+                return _secrets.Unprotect(link.EncryptedToken);
+            }
+            catch (SecretUnreadableException error)
+            {
+                throw new WorkItemSourceException("The stored token can no longer be read. Enter it again", error);
+            }
         }
 
         private DateTime Now => _clock.GetUtcNow().UtcDateTime;

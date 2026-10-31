@@ -7,7 +7,9 @@ using ComplianceTracker.Application.Projects;
 using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Application.WorkItems;
 using ComplianceTracker.Infrastructure.Frameworks;
+using ComplianceTracker.Infrastructure.Security;
 using ComplianceTracker.Infrastructure.WorkItems;
+using Microsoft.AspNetCore.DataProtection;
 using ComplianceTracker.Infrastructure.Persistence;
 using ComplianceTracker.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -49,6 +51,10 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<IWorkItemRepository, WorkItemRepository>();
                 services.AddSingleton<IWorkItemSource>(new GitHubWorkItemSource(new HttpClient { BaseAddress = new Uri("http://github.invalid/") }));
                 services.AddSingleton<IWorkItemNotifier, NoWorkItemNotifier>();
+
+                // US-031: real encryption, with keys that only live while the test runs
+                services.AddDataProtection().UseEphemeralDataProtectionProvider();
+                services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
             };
 
         private sealed class NoWorkItemNotifier : IWorkItemNotifier

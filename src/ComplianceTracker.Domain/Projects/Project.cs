@@ -149,7 +149,7 @@ namespace ComplianceTracker.Domain.Projects
         public bool LinkGitHub(string repository, string? label, Guid userId, DateTime at)
         {
             EnsureOpen();
-            var link = new GitHubLink(repository, label, userId, at);
+            var link = new GitHubLink(repository, label, userId, at, previous: GitHub);
 
             if (GitHub is not null
                 && string.Equals(GitHub.Repository, link.Repository, StringComparison.OrdinalIgnoreCase)
