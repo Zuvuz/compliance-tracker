@@ -1,0 +1,20 @@
+@* The framework checkboxes on the create-project form (US-011 R2); the newest version of each is used.
+   The class framework-option is used by the tests. *@
+@model FrameworkChoicesViewModel
+
+<fieldset class="mb-3" id="project-framework-options">
+    <legend class="form-label fs-6">Frameworks</legend>
+    @if (Model.Frameworks.Count == 0)
+    {
+        <p class="text-muted small mb-0">Your organisation has no frameworks yet. You can add them to the project later.</p>
+    }
+    @foreach (var framework in Model.Frameworks)
+    {
+        var id = $"framework-{framework.Id}";
+        <div class="form-check">
+            <input class="form-check-input framework-option" type="checkbox" name="FrameworkIds" id="@id"
+                   value="@framework.Id" checked="@Model.Selected.Contains(framework.Id)" />
+            <label class="form-check-label" for="@id">@framework.Name</label>
+        </div>
+    }
+</fieldset>

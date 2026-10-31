@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace ComplianceTracker.Web.Controllers
 {
@@ -33,11 +32,7 @@ namespace ComplianceTracker.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout(CancellationToken cancellationToken)
         {
-            var externalId = User.FindFirstValue("sub");
-            if (externalId is not null)
-            {
-                await _activity.RecordSignOutAsync(externalId, cancellationToken); // R6: log the sign-out
-            }
+            await _activity.RecordSignOutAsync(cancellationToken); // R6: log the sign-out
 
             // The built-in SignOut: first the cookie, then a redirect to Keycloak's sign-out page
             return SignOut(
