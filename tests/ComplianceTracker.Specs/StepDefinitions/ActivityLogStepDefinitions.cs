@@ -16,6 +16,25 @@ namespace ComplianceTracker.Specs.StepDefinitions
             _web = web;
         }
 
+        // US-016 R2: an entry of this kind exists with exactly the time the clock said
+        [Then("the activity log for {string} has {string} at {string}")]
+        public async Task ThenTheActivityLogHasAt(string organisationName, string action, string time)
+        {
+            await using var db = _web.CreateDbContext();
+
+            var organisation = await db.Organizations.SingleAsync(o => o.Name == organisationName);
+            var expectedAction = Enum.Parse<ActivityAction>(action);
+            var expectedTime = ClockStepDefinitions.Parse(time).UtcDateTime;
+
+            var times = await db.ActivityLog
+                .Where(e => e.OrganizationId == organisation.Id && e.Action == expectedAction)
+                .Select(e => e.OccurredAt)
+                .ToListAsync();
+
+            Assert.True(times.Count > 0, $"No '{action}' log entry for {organisationName}.");
+            Assert.Contains(expectedTime, times);
+        }
+
         [Then("the activity log for {string} has {string} for {string} concerning {string}")]
         public async Task ThenTheActivityLogHasConcerning(string organisationName, string action, string userName, string subjectName)
         {

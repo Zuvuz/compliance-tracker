@@ -20,13 +20,13 @@
     @if (!string.IsNullOrEmpty(project.Description))
     {
         <dt class="col-sm-3">Description</dt>
-        <dd class="col-sm-9">@project.Description</dd>
+        <dd class="col-sm-9" id="project-description">@project.Description</dd>
     }
 
     @if (!string.IsNullOrEmpty(project.Scope))
     {
         <dt class="col-sm-3">Scope</dt>
-        <dd class="col-sm-9">@project.Scope</dd>
+        <dd class="col-sm-9" id="project-scope">@project.Scope</dd>
     }
 </dl>
 

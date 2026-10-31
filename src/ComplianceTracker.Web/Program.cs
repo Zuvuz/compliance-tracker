@@ -25,6 +25,9 @@ builder.Services.AddScoped<UserActivityService>();
 builder.Services.AddScoped<FrameworkService>();
 builder.Services.AddScoped<ProjectService>();
 
+// The clock the services read the time from (US-016). The tests replace it with a fixed time.
+builder.Services.AddSingleton(TimeProvider.System);
+
 // Sign-in with Keycloak via OpenID Connect (US-004)
 builder.Services
     .AddAuthentication(options =>

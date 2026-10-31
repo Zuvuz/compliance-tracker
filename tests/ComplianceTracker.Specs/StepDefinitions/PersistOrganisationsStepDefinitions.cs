@@ -14,15 +14,21 @@ namespace ComplianceTracker.Specs.StepDefinitions
     public class PersistOrganisationsStepDefinitions
     {
         private readonly DatabaseScenario _database;
+        private readonly ScenarioClock _clock;
         private ComplianceTrackerDbContext? _db;
         private OrganizationService? _service;
 
         private Organization? _created;
         private Organization? _retrieved;
 
-        public PersistOrganisationsStepDefinitions(DatabaseScenario database)
+        // US-016 R3: set when the database should fail while writing the activity log, and the error it gave
+        private bool _activityLogFails;
+        private Exception? _failure;
+
+        public PersistOrganisationsStepDefinitions(DatabaseScenario database, ScenarioClock clock)
         {
             _database = database;
+            _clock = clock;
         }
 
         // ---------------------------------------------------------- Helpers
@@ -45,11 +51,14 @@ namespace ComplianceTracker.Specs.StepDefinitions
         private void StartApplication()
         {
             _db?.Dispose();
-            _db = TestDatabase.CreateContext(_database.ConnectionString);
+            _db = _activityLogFails
+                ? TestDatabase.CreateContext(_database.ConnectionString, new FailingActivityLogInterceptor())
+                : TestDatabase.CreateContext(_database.ConnectionString);
             _service = new OrganizationService(
                 new OrganizationRepository(_db),
                 new ActivityLogRepository(_db),
-                new UnitOfWork(_db));
+                new UnitOfWork(_db),
+                _clock);
         }
 
         private Task<Organization?> LoadCreatedOrganization()
@@ -73,7 +82,28 @@ namespace ComplianceTracker.Specs.StepDefinitions
             _created = await Service.CreateAsync(name, "87654321", Sector.Health, OrganizationSize.Medium, TestUsers.Identity("Bo"));
         }
 
+        [Given("saving the activity log will fail")]
+        public void GivenSavingTheActivityLogWillFail()
+        {
+            _activityLogFails = true;
+            StartApplication();
+        }
+
         // ---------------------------------------------------------- When
+
+        // Like creating, but a failure is kept for the "Then" steps instead of failing the test
+        [When("I try to create the organisation {string}")]
+        public async Task WhenITryToCreateTheOrganisation(string name)
+        {
+            try
+            {
+                await Service.CreateAsync(name, "12345678", Sector.Manufacturing, OrganizationSize.Small, TestUsers.Identity("Anna"));
+            }
+            catch (Exception ex)
+            {
+                _failure = ex;
+            }
+        }
 
         [When("the application restarts")]
         public void WhenTheApplicationRestarts()
@@ -98,6 +128,21 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
             Assert.NotNull(organization);
             Assert.Equal(name, organization.Name);
+        }
+
+        [Then("the creation fails")]
+        public void ThenTheCreationFails()
+        {
+            Assert.NotNull(_failure);
+        }
+
+        // R3: neither the organisation nor its log entry was stored (read with a fresh DbContext)
+        [Then("the organisation {string} does not exist")]
+        public async Task ThenTheOrganisationDoesNotExist(string name)
+        {
+            await using var db = TestDatabase.CreateContext(_database.ConnectionString);
+            Assert.False(await db.Organizations.AnyAsync(o => o.Name == name));
+            Assert.False(await db.ActivityLog.AnyAsync());
         }
 
         [Then("all its data matches what was created")]

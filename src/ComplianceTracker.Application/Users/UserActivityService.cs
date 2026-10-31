@@ -15,14 +15,19 @@ namespace ComplianceTracker.Application.Users
         private readonly IActivityLogRepository _activityLog;
         private readonly IUnitOfWork _unitOfWork;
 
+        // The clock. TimeProvider.System in the app; a fixed time in tests (US-016 R2)
+        private readonly TimeProvider _clock;
+
         public UserActivityService(
             IOrganizationRepository organizations,
             IActivityLogRepository activityLog,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            TimeProvider clock)
         {
             _organizations = organizations;
             _activityLog = activityLog;
             _unitOfWork = unitOfWork;
+            _clock = clock;
         }
 
         public Task RecordSignInAsync(string externalId, CancellationToken cancellationToken = default)
@@ -42,10 +47,13 @@ namespace ComplianceTracker.Application.Users
 
             var user = organization.Users.Single(u => u.ExternalId == externalId);
             await _activityLog.AppendAsync(
-                new ActivityLogEntry(organization.Id, user.Id, action, DateTime.UtcNow),
+                new ActivityLogEntry(organization.Id, user.Id, action, Now),
                 cancellationToken);
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
+
+        // The current time in UTC, from the clock
+        private DateTime Now => _clock.GetUtcNow().UtcDateTime;
     }
 }

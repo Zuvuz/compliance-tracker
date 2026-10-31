@@ -120,7 +120,7 @@ namespace ComplianceTracker.Specs.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/BuiltInFrameworks.feature.ndjson", 7);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/BuiltInFrameworks.feature.ndjson", 10);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -355,6 +355,137 @@ namespace ComplianceTracker.Specs.Features
 #line 36
     await testRunner.ThenAsync("the activity log for \"Acme ApS\" has \"FrameworkEnabled\" for \"Anna\" concerning \"CRA" +
                         " – Regulation (EU) 2024/2847\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="Switching off keeps the history")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Switch built-in frameworks on and off")]
+        [global::Xunit.TraitAttribute("Description", "Switching off keeps the history")]
+        [global::Xunit.TraitAttribute("Category", "US-006")]
+        [global::Xunit.TraitAttribute("Category", "US-016")]
+        [global::Xunit.TraitAttribute("Category", "iso27001-7.5.3")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task SwitchingOffKeepsTheHistory()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-006",
+                    "US-016",
+                    "iso27001-7.5.3",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "5";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Switching off keeps the history", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 39
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 3
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 40
+    await testRunner.GivenAsync("\"CRA – Regulation (EU) 2024/2847\" is switched on", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 41
+    await testRunner.WhenAsync("I switch \"CRA – Regulation (EU) 2024/2847\" off", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 42
+    await testRunner.ThenAsync("the history shows \"CRA – Regulation (EU) 2024/2847\" was switched on and then off", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="Built-in frameworks link to their official text")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Switch built-in frameworks on and off")]
+        [global::Xunit.TraitAttribute("Description", "Built-in frameworks link to their official text")]
+        [global::Xunit.TraitAttribute("Category", "US-006")]
+        [global::Xunit.TraitAttribute("Category", "US-016")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task Built_InFrameworksLinkToTheirOfficialText()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-006",
+                    "US-016",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "6";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Built-in frameworks link to their official text", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 45
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 3
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 46
+    await testRunner.WhenAsync("I open the built-in frameworks page", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 47
+    await testRunner.ThenAsync("\"CRA – Regulation (EU) 2024/2847\" links to \"https://eur-lex.europa.eu/eli/reg/202" +
+                        "4/2847/oj\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="Switching is logged with its time")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Switch built-in frameworks on and off")]
+        [global::Xunit.TraitAttribute("Description", "Switching is logged with its time")]
+        [global::Xunit.TraitAttribute("Category", "US-006")]
+        [global::Xunit.TraitAttribute("Category", "US-016")]
+        [global::Xunit.TraitAttribute("Category", "iso27001-A.8.15")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task SwitchingIsLoggedWithItsTime()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-006",
+                    "US-016",
+                    "iso27001-A.8.15",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "7";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Switching is logged with its time", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 50
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 3
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 51
+    await testRunner.GivenAsync("the time is \"2026-10-24T14:02:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 52
+    await testRunner.WhenAsync("I switch \"CRA – Regulation (EU) 2024/2847\" on", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 53
+    await testRunner.ThenAsync("the activity log for \"Acme ApS\" has \"FrameworkEnabled\" at \"2026-10-24T14:02:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

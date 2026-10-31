@@ -17,6 +17,13 @@ jobs:
     steps:
       - name: Hent koden
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # hele historikken, så hemmelighedsscanningen også ser gamle commits
+
+      - name: Scan for hemmeligheder (US-016 R12)
+        # Gitleaks fejler bygget, hvis et kodeord, en nøgle eller en secret er committet (US-002 R3, US-004 R7, US-013 R3).
+        # Kørt som Docker-image med fast version i stedet for en action, så der ikke kræves licens eller token.
+        run: docker run --rm -v "${{ github.workspace }}:/repo" ghcr.io/gitleaks/gitleaks:v8.21.2 detect --source /repo --redact --no-banner
 
       - name: Installer .NET
         uses: actions/setup-dotnet@v6

@@ -1,4 +1,4 @@
-﻿using ComplianceTracker.Domain.Common;
+using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Domain.Users;
 using System;
 using System.Collections.Generic;
@@ -29,7 +29,7 @@ namespace ComplianceTracker.Domain.Organizations
 
         // Validates the fields and makes the signed-in creator the first Admin (US-001, US-004).
         // The rule that a CVR is unique needs the database and lives in OrganizationService.
-        public static Organization Create(string name, string cvr, Sector? sector, OrganizationSize size, UserIdentity creator)
+        public static Organization Create(string name, string cvr, Sector? sector, OrganizationSize? size, UserIdentity creator)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -47,6 +47,12 @@ namespace ComplianceTracker.Domain.Organizations
                 throw new DomainException("Sector is required");
             }
 
+            // US-001 R3: size is required too (US-016)
+            if (size is null)
+            {
+                throw new DomainException("Size is required");
+            }
+
             if (string.IsNullOrWhiteSpace(creator.ExternalId))
             {
                 throw new DomainException("Creator must be signed in");
@@ -58,7 +64,7 @@ namespace ComplianceTracker.Domain.Organizations
                 Name = name,
                 Cvr = cvr,
                 Sector = sector.Value,
-                Size = size
+                Size = size.Value
             };
 
             organization._users.Add(new User(creator.ExternalId, creator.Name, creator.Email, UserRole.Admin));

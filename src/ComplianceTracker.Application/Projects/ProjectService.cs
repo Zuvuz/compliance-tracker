@@ -20,18 +20,23 @@ namespace ComplianceTracker.Application.Projects
         private readonly IActivityLogRepository _activityLog;
         private readonly IUnitOfWork _unitOfWork;
 
+        // The clock. TimeProvider.System in the app; a fixed time in tests (US-016 R2)
+        private readonly TimeProvider _clock;
+
         public ProjectService(
             IProjectRepository projects,
             IFrameworkRepository frameworks,
             IOrganizationRepository organizations,
             IActivityLogRepository activityLog,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            TimeProvider clock)
         {
             _projects = projects;
             _frameworks = frameworks;
             _organizations = organizations;
             _activityLog = activityLog;
             _unitOfWork = unitOfWork;
+            _clock = clock;
         }
 
         // US-008: creates a project. US-011 R2: the newest version of each chosen framework is added at once.
@@ -57,7 +62,7 @@ namespace ComplianceTracker.Application.Projects
             }
 
             // 3. Register the project and the log entry (R6)
-            var now = DateTime.UtcNow;
+            var now = Now;
             await _projects.AddAsync(project, cancellationToken);
             await LogAsync(organizationId, userId, ActivityAction.ProjectCreated, project, cancellationToken);
 
@@ -87,7 +92,7 @@ namespace ComplianceTracker.Application.Projects
                 : framework.Versions.FirstOrDefault(v => v.Id == frameworkVersionId)
                   ?? throw new DomainException("Framework version not found");
 
-            project.UseFramework(framework, version, userId, DateTime.UtcNow);
+            project.UseFramework(framework, version, userId, Now);
             await LogAsync(organizationId, userId, ActivityAction.ProjectFrameworkAdded, project, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
@@ -98,7 +103,7 @@ namespace ComplianceTracker.Application.Projects
         {
             var (organizationId, userId, project, framework) = await LoadAsync(userExternalId, projectId, frameworkId, cancellationToken);
 
-            if (project.ChangeFrameworkVersion(framework, framework.CurrentVersion, userId, DateTime.UtcNow))
+            if (project.ChangeFrameworkVersion(framework, framework.CurrentVersion, userId, Now))
             {
                 await LogAsync(organizationId, userId, ActivityAction.ProjectFrameworkVersionChanged, project, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -111,7 +116,7 @@ namespace ComplianceTracker.Application.Projects
         {
             var (organizationId, userId, project, framework) = await LoadAsync(userExternalId, projectId, frameworkId, cancellationToken);
 
-            project.RemoveFramework(framework, userId, DateTime.UtcNow);
+            project.RemoveFramework(framework, userId, Now);
             await LogAsync(organizationId, userId, ActivityAction.ProjectFrameworkRemoved, project, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
@@ -135,7 +140,7 @@ namespace ComplianceTracker.Application.Projects
         // R9: who did what to which project, and when. The ProjectFramework rows hold the framework and versions.
         private Task LogAsync(Guid organizationId, Guid userId, ActivityAction action, Project project, CancellationToken cancellationToken)
             => _activityLog.AppendAsync(
-                new ActivityLogEntry(organizationId, userId, action, DateTime.UtcNow, project.Id),
+                new ActivityLogEntry(organizationId, userId, action, Now, project.Id),
                 cancellationToken);
 
         // The signed-in user's organisation, and the user's id in it
@@ -146,5 +151,8 @@ namespace ComplianceTracker.Application.Projects
             var user = organization.Users.Single(u => u.ExternalId == userExternalId);
             return (organization.Id, user.Id);
         }
+
+        // The current time in UTC, from the clock
+        private DateTime Now => _clock.GetUtcNow().UtcDateTime;
     }
 }

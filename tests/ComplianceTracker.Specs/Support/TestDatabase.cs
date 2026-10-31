@@ -1,5 +1,6 @@
 using ComplianceTracker.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Testcontainers.PostgreSql;
 
 namespace ComplianceTracker.Specs.Support
@@ -38,10 +39,12 @@ namespace ComplianceTracker.Specs.Support
             }
         }
 
-        public static ComplianceTrackerDbContext CreateContext(string connectionString)
+        // Interceptors let a test change what happens in the database, e.g. make saving fail (US-016)
+        public static ComplianceTrackerDbContext CreateContext(string connectionString, params IInterceptor[] interceptors)
         {
             var options = new DbContextOptionsBuilder<ComplianceTrackerDbContext>()
                 .UseNpgsql(connectionString)
+                .AddInterceptors(interceptors)
                 .Options;
 
             return new ComplianceTrackerDbContext(options);

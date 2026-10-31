@@ -32,3 +32,19 @@ Feature: Create projects
   Scenario: Creating a project is logged
     When I create the project "Acme Portal" with intended purpose "Web portal where customers manage their orders"
     Then the activity log for "Acme ApS" has "ProjectCreated" for "Anna" concerning "Acme Portal"
+
+  @US-008 @US-016 @integration
+  Scenario: Project name is required
+    When I create the project "" with intended purpose "Web portal"
+    Then I see the error "Project name is required"
+
+  @US-008 @US-016 @integration
+  Scenario: All project fields are stored and shown
+    When I create the project "Acme Portal" with description "Customer portal", intended purpose "Orders", scope "Web shop only" and phase "Development"
+    Then the page of "Acme Portal" shows description "Customer portal", scope "Web shop only" and phase "Development"
+
+  @US-008 @US-016 @iso27001-A.8.15 @integration
+  Scenario: Creating a project is logged with its time
+    Given the time is "2026-10-24T14:02:00Z"
+    When I create the project "Acme Portal" with intended purpose "Web portal"
+    Then the activity log for "Acme ApS" has "ProjectCreated" at "2026-10-24T14:02:00Z"

@@ -18,7 +18,8 @@ namespace ComplianceTracker.Web.Models
         public Sector? Sector { get; set; }
 
         [Display(Name = "Size")]
-        public OrganizationSize Size { get; set; }
+        // Nullable like Sector: the form starts with no size chosen, and the domain says "Size is required"
+        public OrganizationSize? Size { get; set; }
 
         // No "Your name": the creator is the signed-in user (US-004 R3)
     }

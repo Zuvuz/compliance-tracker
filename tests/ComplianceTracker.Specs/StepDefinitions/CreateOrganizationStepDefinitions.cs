@@ -26,9 +26,9 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // ... or when a rule rejects it, so a "Then" step can check the reason
         private DomainException? _error;
 
-        public CreateOrganizationStepDefinitions()
+        public CreateOrganizationStepDefinitions(ScenarioClock clock)
         {
-            _service = new OrganizationService(new InMemoryOrganizationRepository(), _activityLog, new InMemoryUnitOfWork());
+            _service = new OrganizationService(new InMemoryOrganizationRepository(), _activityLog, new InMemoryUnitOfWork(), clock);
         }
 
         // ---------------------------------------------------------- Given
@@ -94,6 +94,20 @@ namespace ComplianceTracker.Specs.StepDefinitions
             }
         }
 
+        // US-016 R1: size left out
+        [When("I create the organization {string} with CVR {string}, sector {string} and no size")]
+        public async Task WhenICreateTheOrganizationWithNoSize(string name, string cvr, string sector)
+        {
+            try
+            {
+                _organization = await _service.CreateAsync(name, cvr, Enum.Parse<Sector>(sector), null, TestUsers.Identity(_currentUser));
+            }
+            catch (DomainException ex)
+            {
+                _error = ex;
+            }
+        }
+
         // ---------------------------------------------------------- Then
 
         [Then("the organization {string} exists")]
@@ -119,6 +133,17 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             Assert.NotNull(_error);
             Assert.Equal(reason, _error.Message);
+        }
+
+        // US-016 R2: the entry has exactly the time the clock said
+        [Then("the activity log entry for {string} has the time {string}")]
+        public void ThenTheActivityLogEntryHasTheTime(string organizationName, string time)
+        {
+            Assert.NotNull(_organization);
+            Assert.Equal(organizationName, _organization.Name);
+
+            var entry = Assert.Single(_activityLog.Entries, e => e.OrganizationId == _organization.Id);
+            Assert.Equal(ClockStepDefinitions.Parse(time).UtcDateTime, entry.OccurredAt);
         }
 
         // US-001 R5: the creation is logged with the right user, action and organisation

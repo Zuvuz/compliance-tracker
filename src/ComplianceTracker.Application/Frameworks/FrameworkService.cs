@@ -1,4 +1,4 @@
-﻿using ComplianceTracker.Application.ActivityLog;
+using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Application.Projects;
@@ -19,18 +19,23 @@ namespace ComplianceTracker.Application.Frameworks
         private readonly IActivityLogRepository _activityLog;
         private readonly IUnitOfWork _unitOfWork;
 
+        // The clock. TimeProvider.System in the app; a fixed time in tests (US-016 R2)
+        private readonly TimeProvider _clock;
+
         public FrameworkService(
             IFrameworkRepository frameworks,
             IProjectRepository projects,
             IOrganizationRepository organizations,
             IActivityLogRepository activityLog,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            TimeProvider clock)
         {
             _frameworks = frameworks;
             _projects = projects;
             _organizations = organizations;
             _activityLog = activityLog;
             _unitOfWork = unitOfWork;
+            _clock = clock;
         }
 
         // Adds a new framework to the signed-in user's organisation, with the PDF as version 1
@@ -45,7 +50,7 @@ namespace ComplianceTracker.Application.Frameworks
                 throw new DomainException("Framework already exists. Upload a new version instead");
             }
 
-            var framework = Framework.Create(organization.Id, name, file, userId, DateTime.UtcNow);
+            var framework = Framework.Create(organization.Id, name, file, userId, Now);
             await _frameworks.AddAsync(framework, cancellationToken);
             await SaveVersionAsync(organization.Id, userId, framework.CurrentVersion, file, cancellationToken);
             return framework;
@@ -65,7 +70,7 @@ namespace ComplianceTracker.Application.Frameworks
             var framework = await _frameworks.GetAsync(organization.Id, frameworkId, cancellationToken)
                 ?? throw new DomainException("Framework not found");
 
-            var now = DateTime.UtcNow;
+            var now = Now;
             var version = framework.AddVersion(file, userId, now);
 
             // US-011 R4: only projects that already use the framework can move; saved together with the version
@@ -100,10 +105,10 @@ namespace ComplianceTracker.Application.Frameworks
             }
 
             await _frameworks.AddSelectionAsync(
-                OrganizationFramework.Enable(organization.Id, version.Id, userId, DateTime.UtcNow),
+                OrganizationFramework.Enable(organization.Id, version.Id, userId, Now),
                 cancellationToken);
             await _activityLog.AppendAsync(
-                new ActivityLogEntry(organization.Id, userId, ActivityAction.FrameworkEnabled, DateTime.UtcNow, version.Id),
+                new ActivityLogEntry(organization.Id, userId, ActivityAction.FrameworkEnabled, Now, version.Id),
                 cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
@@ -130,9 +135,9 @@ namespace ComplianceTracker.Application.Frameworks
                 throw new DomainException("Used by projects: " + string.Join(", ", users.Select(p => p.Name)));
             }
 
-            selection.Disable(userId, DateTime.UtcNow);
+            selection.Disable(userId, Now);
             await _activityLog.AppendAsync(
-                new ActivityLogEntry(organization.Id, userId, ActivityAction.FrameworkDisabled, DateTime.UtcNow, version.Id),
+                new ActivityLogEntry(organization.Id, userId, ActivityAction.FrameworkDisabled, Now, version.Id),
                 cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
@@ -143,7 +148,7 @@ namespace ComplianceTracker.Application.Frameworks
         {
             await _frameworks.AddDocumentAsync(version.Id, file.Content, cancellationToken);
             await _activityLog.AppendAsync(
-                new ActivityLogEntry(organizationId, userId, ActivityAction.CatalogImported, DateTime.UtcNow, version.Id),
+                new ActivityLogEntry(organizationId, userId, ActivityAction.CatalogImported, Now, version.Id),
                 cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
@@ -156,5 +161,8 @@ namespace ComplianceTracker.Application.Frameworks
             var user = organization.Users.Single(u => u.ExternalId == userExternalId);
             return (organization, user.Id);
         }
+
+        // The current time in UTC, from the clock
+        private DateTime Now => _clock.GetUtcNow().UtcDateTime;
     }
 }

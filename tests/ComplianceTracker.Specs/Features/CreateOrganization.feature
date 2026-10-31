@@ -1,4 +1,4 @@
-﻿Feature: Create organization
+Feature: Create organization
 
   @US-001 @iso27001-A.5.2
   Scenario: Create an organization and become its administrator
@@ -43,3 +43,16 @@
     Given I am "Anna"
     When I create the organization "Acme" with CVR "12345678", sector "Manufacturing" and size "Small"
     Then an activity log entry exists with user "Anna", action "OrganizationCreated" and organization "Acme"
+
+  @US-001 @US-016
+  Scenario: Size is required
+    Given I am "Anna"
+    When I create the organization "Acme" with CVR "12345678", sector "Manufacturing" and no size
+    Then the creation is rejected with the reason "Size is required"
+
+  @US-001 @US-016 @iso27001-A.8.15
+  Scenario: The log entry has the creation time
+    Given the time is "2026-10-24T14:02:00Z"
+    And I am "Anna"
+    When I create the organization "Acme" with CVR "12345678", sector "Manufacturing" and size "Small"
+    Then the activity log entry for "Acme" has the time "2026-10-24T14:02:00Z"
