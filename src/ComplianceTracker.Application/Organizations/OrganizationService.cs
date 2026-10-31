@@ -1,4 +1,4 @@
-﻿using ComplianceTracker.Application.ActivityLog;
+using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Domain.Common;
@@ -16,14 +16,19 @@ namespace ComplianceTracker.Application.Organizations
         private readonly IActivityLogRepository _activityLog;
         private readonly IUnitOfWork _unitOfWork;
 
+        // The clock. TimeProvider.System in the app; a fixed time in tests (US-016 R2)
+        private readonly TimeProvider _clock;
+
         public OrganizationService(
             IOrganizationRepository organizations,
             IActivityLogRepository activityLog,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            TimeProvider clock)
         {
             _organizations = organizations;
             _activityLog = activityLog;
             _unitOfWork = unitOfWork;
+            _clock = clock;
         }
 
         // Creates the organisation with the signed-in creator as its Admin
@@ -31,7 +36,7 @@ namespace ComplianceTracker.Application.Organizations
             string name,
             string cvr,
             Sector? sector,
-            OrganizationSize size,
+            OrganizationSize? size,
             UserIdentity creator,
             CancellationToken cancellationToken = default)
         {
@@ -59,12 +64,15 @@ namespace ComplianceTracker.Application.Organizations
                 organization.Id,
                 admin.Id,
                 ActivityAction.OrganizationCreated,
-                DateTime.UtcNow), cancellationToken);
+                Now), cancellationToken);
 
             // 5. Save both at once, so they are either saved together or not at all
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return organization;
         }
+
+        // The current time in UTC, from the clock
+        private DateTime Now => _clock.GetUtcNow().UtcDateTime;
     }
 }

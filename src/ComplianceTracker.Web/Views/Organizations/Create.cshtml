@@ -38,7 +38,9 @@
 
             <div class="mb-3">
                 <label asp-for="Size" class="form-label"></label>
-                <select asp-for="Size" asp-items="sizes" class="form-select"></select>
+                <select asp-for="Size" asp-items="sizes" class="form-select">
+                    <option value="">-- Choose size --</option>
+                </select>
             </div>
 
             <button type="submit" class="btn btn-primary">Create</button>

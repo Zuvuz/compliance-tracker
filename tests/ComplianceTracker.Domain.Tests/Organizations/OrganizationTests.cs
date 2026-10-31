@@ -16,7 +16,7 @@ public class OrganizationTests
         string name = "Acme ApS",
         string cvr = "12345678",
         Sector? sector = Sector.Manufacturing,
-        OrganizationSize size = OrganizationSize.Small,
+        OrganizationSize? size = OrganizationSize.Small,
         UserIdentity? creator = null)
         => Organization.Create(name, cvr, sector, size, creator ?? Anna);
 
@@ -156,6 +156,20 @@ public class OrganizationTests
         // Assert
         var domainError = Assert.IsType<DomainException>(error);
         Assert.Equal("Sector is required", domainError.Message);
+    }
+
+    [Fact]
+    public void Rejects_a_missing_size()
+    {
+        // Arrange (US-016 R1)
+        OrganizationSize? noSize = null;
+
+        // Act
+        var error = Record.Exception(() => Create(size: noSize));
+
+        // Assert
+        var domainError = Assert.IsType<DomainException>(error);
+        Assert.Equal("Size is required", domainError.Message);
     }
 
     // ---------------------------------------------------------- Creator (US-004 R3)

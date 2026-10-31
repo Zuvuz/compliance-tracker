@@ -30,3 +30,21 @@ Feature: Create organisation via web UI
     When I post the form without an antiforgery token
     Then the request is rejected with status 400
     And no organisation is saved
+
+  @US-001 @US-016 @integration
+  Scenario: Size is required on the form
+    When I submit the form with name "Acme ApS", CVR "12345678", sector "Manufacturing" and no size
+    Then I see the error "Size is required"
+
+  @US-003 @US-016 @integration
+  Scenario Outline: Unknown sector or size is rejected
+    When I submit the form with name "Acme ApS", CVR "12345678", sector "<sector>" and size "<size>"
+    Then the form is shown again with an error
+    And no organisation is saved
+
+    Examples:
+      | sector        | size  |
+      | Mining        | Small |
+      | 99            | Small |
+      | Manufacturing | Huge  |
+      | Manufacturing | 7     |

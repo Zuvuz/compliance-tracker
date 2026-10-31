@@ -50,6 +50,21 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public Task WhenICreateTheProjectWithNoIntendedPurpose(string name)
             => CreateProject(name, "");
 
+        // US-016 R7: every field of the form
+        [When("I create the project {string} with description {string}, intended purpose {string}, scope {string} and phase {string}")]
+        public async Task WhenICreateTheProjectWithAllFields(string name, string description, string intendedPurpose, string scope, string phase)
+        {
+            await _web.OpenAsync(CreatePath);
+            await _web.PostFormAsync(CreatePath, new Dictionary<string, string>
+            {
+                ["Name"] = name,
+                ["Description"] = description,
+                ["IntendedPurpose"] = intendedPurpose,
+                ["Scope"] = scope,
+                ["LifecyclePhase"] = phase
+            });
+        }
+
         // Another user opens the project's address in their own "browser"
         [When("{string} opens the page of {string}")]
         public async Task WhenOpensThePageOf(string userName, string projectName)
@@ -65,6 +80,17 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             // Finding the link proves the project is listed (R4)
             await ProjectLinkAsync(name);
+        }
+
+        // US-016 R7: read back from the project's own page
+        [Then("the page of {string} shows description {string}, scope {string} and phase {string}")]
+        public async Task ThenThePageShows(string projectName, string description, string scope, string phase)
+        {
+            await _web.OpenAsync(await ProjectLinkAsync(projectName));
+
+            Assert.Equal(description, _web.Page!.QuerySelector("#project-description")?.TextContent.Trim());
+            Assert.Equal(scope, _web.Page!.QuerySelector("#project-scope")?.TextContent.Trim());
+            Assert.Equal(phase, _web.Page!.QuerySelector("#project-phase")?.TextContent.Trim());
         }
 
         // R6 (logging) uses the shared step in ActivityLogStepDefinitions

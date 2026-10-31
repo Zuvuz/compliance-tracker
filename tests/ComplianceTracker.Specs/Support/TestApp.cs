@@ -24,7 +24,8 @@ namespace ComplianceTracker.Specs.Support
         }
 
         // The web app with test sign-in instead of Keycloak (see TestAuthHandler)
-        public static TestApp WithTestSignIn(string connectionString)
+        // The clock replaces TimeProvider.System, so "Given the time is ..." also applies inside the app (US-016)
+        public static TestApp WithTestSignIn(string connectionString, TimeProvider clock)
         {
             var settings = new Dictionary<string, string?>
             {
@@ -37,6 +38,8 @@ namespace ComplianceTracker.Specs.Support
 
             return Create(settings, services =>
             {
+                services.AddSingleton(clock);
+
                 // Make the test sign-in the default, replacing the cookie + Keycloak setup from Program.cs
                 services
                     .AddAuthentication(options =>

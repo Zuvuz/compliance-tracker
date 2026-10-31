@@ -34,3 +34,20 @@ Feature: Switch built-in frameworks on and off
   Scenario: Switching is logged
     When I switch "CRA – Regulation (EU) 2024/2847" on
     Then the activity log for "Acme ApS" has "FrameworkEnabled" for "Anna" concerning "CRA – Regulation (EU) 2024/2847"
+
+  @US-006 @US-016 @iso27001-7.5.3 @integration
+  Scenario: Switching off keeps the history
+    Given "CRA – Regulation (EU) 2024/2847" is switched on
+    When I switch "CRA – Regulation (EU) 2024/2847" off
+    Then the history shows "CRA – Regulation (EU) 2024/2847" was switched on and then off
+
+  @US-006 @US-016 @integration
+  Scenario: Built-in frameworks link to their official text
+    When I open the built-in frameworks page
+    Then "CRA – Regulation (EU) 2024/2847" links to "https://eur-lex.europa.eu/eli/reg/2024/2847/oj"
+
+  @US-006 @US-016 @iso27001-A.8.15 @integration
+  Scenario: Switching is logged with its time
+    Given the time is "2026-10-24T14:02:00Z"
+    When I switch "CRA – Regulation (EU) 2024/2847" on
+    Then the activity log for "Acme ApS" has "FrameworkEnabled" at "2026-10-24T14:02:00Z"

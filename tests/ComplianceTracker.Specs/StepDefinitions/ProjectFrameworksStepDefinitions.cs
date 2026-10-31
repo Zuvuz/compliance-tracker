@@ -166,6 +166,34 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.Null(row.QuerySelector(".framework-outdated"));
         }
 
+        // US-016 R9
+        [Then("the page of {string} says {string} has a newer version")]
+        public async Task ThenThePageSaysHasANewerVersion(string projectName, string frameworkName)
+        {
+            await OpenProjectAsync(projectName);
+            var row = FrameworkRow(frameworkName)
+                ?? throw new Xunit.Sdk.XunitException($"The page of '{projectName}' does not list '{frameworkName}'.");
+
+            Assert.Equal("newer version available", row.QuerySelector(".framework-newer")?.TextContent.Trim());
+        }
+
+        // US-016 R10: the link is still in the database, with the time it was removed
+        [Then("the history of {string} shows {string} version {int} was added and then removed")]
+        public async Task ThenTheHistoryShowsAddedAndThenRemoved(string projectName, string frameworkName, int version)
+        {
+            var (frameworkId, versionId) = await IdsAsync(frameworkName, version);
+            await using var db = _web.CreateDbContext();
+            var projectId = await db.Projects.Where(p => p.Name == projectName).Select(p => p.Id).SingleAsync();
+
+            var link = Assert.Single(await db.ProjectFrameworks
+                .Where(f => f.ProjectId == projectId && f.FrameworkId == frameworkId)
+                .ToListAsync());
+            Assert.Equal(versionId, link.FrameworkVersionId);
+            Assert.NotNull(link.RemovedAt);
+            Assert.NotNull(link.RemovedById);
+            Assert.True(link.AddedAt <= link.RemovedAt);
+        }
+
         // ---------------------------------------------------------- Helpers
 
         // Opens the project page and returns the project's id

@@ -14,15 +14,17 @@ namespace ComplianceTracker.Specs.Support
     public sealed class WebScenario : IDisposable
     {
         private readonly DatabaseScenario _database;
+        private readonly ScenarioClock _clock;
         private TestApp? _app;
         private HttpClient? _client;
 
         // CVR numbers for organisations created by the tests; each one is unique in the scenario
         private int _nextCvr = 10000000;
 
-        public WebScenario(DatabaseScenario database)
+        public WebScenario(DatabaseScenario database, ScenarioClock clock)
         {
             _database = database;
+            _clock = clock;
         }
 
         // The last response and its HTML, parsed so the tests can look for elements
@@ -30,7 +32,7 @@ namespace ComplianceTracker.Specs.Support
         public IDocument? Page { get; set; }
 
         // Started the first time it is used, after "Given an empty database" has set the connection string
-        public TestApp App => _app ??= TestApp.WithTestSignIn(_database.ConnectionString);
+        public TestApp App => _app ??= TestApp.WithTestSignIn(_database.ConnectionString, _clock);
 
         // The client follows redirects and remembers cookies, like a browser
         public HttpClient Client => _client ??= App.Factory.CreateClient();
@@ -105,7 +107,8 @@ namespace ComplianceTracker.Specs.Support
             var service = new OrganizationService(
                 new OrganizationRepository(db),
                 new ActivityLogRepository(db),
-                new UnitOfWork(db));
+                new UnitOfWork(db),
+                _clock);
 
             return await service.CreateAsync(
                 organisationName,

@@ -95,6 +95,32 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.Equal(2, builtInVersions); // CRA and the AI Act, one version each
         }
 
+        // US-016 R5: the "switched on" record is still there, now with the time it was switched off
+        [Then("the history shows {string} was switched on and then off")]
+        public async Task ThenTheHistoryShowsSwitchedOnAndThenOff(string frameworkName)
+        {
+            await using var db = _web.CreateDbContext();
+            var versionIds = await db.FrameworkVersions
+                .Where(v => db.Frameworks.Any(f => f.Id == v.FrameworkId && f.Name == frameworkName && f.OwnerOrganizationId == null))
+                .Select(v => v.Id)
+                .ToListAsync();
+
+            var record = Assert.Single(await db.OrganizationFrameworks
+                .Where(s => versionIds.Contains(s.FrameworkVersionId))
+                .ToListAsync());
+            Assert.NotNull(record.DisabledAt);
+            Assert.NotNull(record.DisabledById);
+            Assert.True(record.EnabledAt <= record.DisabledAt);
+        }
+
+        // US-016 R6: the row links to the official text
+        [Then("{string} links to {string}")]
+        public void ThenLinksTo(string frameworkName, string url)
+        {
+            var links = BuiltInRow(frameworkName).QuerySelectorAll("a[href]").Select(a => a.GetAttribute("href"));
+            Assert.Contains(url, links);
+        }
+
         // ---------------------------------------------------------- Helpers
 
         // Uses the On/Off form on the built-in frameworks page, like a user would

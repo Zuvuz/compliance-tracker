@@ -64,3 +64,23 @@ Feature: Use the organisation's frameworks in projects
     And a new version of "Security policy" has been uploaded
     When I move "Acme App" to the newest version of "Security policy"
     Then the activity log for "Acme ApS" has "ProjectFrameworkVersionChanged" for "Anna" concerning "Acme App"
+
+  @US-011 @US-016 @iso27001-7.5.3 @integration
+  Scenario: The project page says when a newer version exists
+    Given "Acme App" uses "Security policy" version 1
+    And a new version of "Security policy" has been uploaded
+    Then the page of "Acme App" says "Security policy" has a newer version
+
+  @US-011 @US-016 @iso27001-7.5.3 @integration
+  Scenario: Removing a framework keeps the history
+    Given "Acme App" uses "Security policy" version 1
+    When I remove "Security policy" from the project "Acme App"
+    Then the history of "Acme App" shows "Security policy" version 1 was added and then removed
+
+  @US-011 @US-016 @iso27001-A.8.15 @integration
+  Scenario: Adding and removing are logged with their time
+    Given the time is "2026-10-24T14:02:00Z"
+    When I add "Security policy" to the project "Acme App"
+    And I remove "Security policy" from the project "Acme App"
+    Then the activity log for "Acme ApS" has "ProjectFrameworkAdded" at "2026-10-24T14:02:00Z"
+    And the activity log for "Acme ApS" has "ProjectFrameworkRemoved" at "2026-10-24T14:02:00Z"

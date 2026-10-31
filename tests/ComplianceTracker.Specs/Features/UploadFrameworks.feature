@@ -1,4 +1,4 @@
-﻿Feature: Upload frameworks as PDF
+Feature: Upload frameworks as PDF
 
   Background:
     Given an empty database
@@ -55,3 +55,9 @@
   Scenario: Uploads are logged
     When I add the framework "ISO/IEC 27001" with the file "iso27001.pdf"
     Then the activity log for "Acme ApS" has "CatalogImported" for "Anna" concerning "ISO/IEC 27001" version 1
+
+  @US-005 @US-016 @iso27001-A.8.15 @integration
+  Scenario: Uploads are logged with their time
+    Given the time is "2026-10-24T14:02:00Z"
+    When I add the framework "ISO/IEC 27001" with the file "iso27001.pdf"
+    Then the activity log for "Acme ApS" has "CatalogImported" at "2026-10-24T14:02:00Z"
