@@ -34,7 +34,7 @@ classDiagram
     -projects: List~Project~
     -controls: List~Control~
     -frameworks: List~OrganizationFramework~
-    +Create(name: string, cvr: string, sector: Sector?, size: OrganizationSize, creator: UserIdentity)$ Organization
+    +Create(name: string, cvr: string, sector: Sector?, size: OrganizationSize?, creator: UserIdentity)$ Organization
   }
   class User {
     -id: Guid
@@ -56,12 +56,14 @@ classDiagram
     -organizations: IOrganizationRepository
     -activityLog: IActivityLogRepository
     -unitOfWork: IUnitOfWork
-    +CreateAsync(name: string, cvr: string, sector: Sector?, size: OrganizationSize, creator: UserIdentity) Task~Organization~
+    -clock: TimeProvider
+    +CreateAsync(name: string, cvr: string, sector: Sector?, size: OrganizationSize?, creator: UserIdentity) Task~Organization~
   }
   class UserActivityService {
     -organizations: IOrganizationRepository
     -activityLog: IActivityLogRepository
     -unitOfWork: IUnitOfWork
+    -clock: TimeProvider
     +RecordSignInAsync(externalId: string) Task
     +RecordSignOutAsync(externalId: string) Task
   }
@@ -70,6 +72,7 @@ classDiagram
     -organizations: IOrganizationRepository
     -activityLog: IActivityLogRepository
     -unitOfWork: IUnitOfWork
+    -clock: TimeProvider
     +AddAsync(userExternalId: string, name: string, fileName: string, content: byte[]) Task~Framework~
     -projects: IProjectRepository
     +UploadVersionAsync(userExternalId: string, frameworkId: Guid, fileName: string, content: byte[], moveProjectIds: Guid[]?) Task~FrameworkVersion~
@@ -96,6 +99,7 @@ classDiagram
     -organizations: IOrganizationRepository
     -activityLog: IActivityLogRepository
     -unitOfWork: IUnitOfWork
+    -clock: TimeProvider
     +CreateAsync(userExternalId: string, name: string, description: string?, intendedPurpose: string, scope: string?, phase: LifecyclePhase, frameworkIds: Guid[]?) Task~Project~
     +AddFrameworkAsync(userExternalId: string, projectId: Guid, frameworkId: Guid, frameworkVersionId: Guid?) Task
     +UseNewestVersionAsync(userExternalId: string, projectId: Guid, frameworkId: Guid) Task
@@ -546,6 +550,8 @@ classDiagram
 - **Projektet vælger blandt organisationens frameworks**: de uploadede og de indbyggede, der er slået til (`IFrameworkRepository.GetAvailableAsync`). Et indbygget framework kan ikke slås fra, mens projekter bruger det. (US-011)
 - **En ny version flytter kun de valgte projekter.** `FrameworkService.UploadVersionAsync` tager de projekter, brugeren har krydset af, og gemmer versionen og versionsskiftene i én transaktion. De andre projekter beholder deres version. (US-011)
 - **Logposter om projektets frameworks peger på projektet** (`subjectId`). Framework og versioner står i `ProjectFramework`-rækkerne med samme tidspunkt og bruger. (US-011)
+- **Services læser tiden fra `TimeProvider`**, ikke fra `DateTime.UtcNow`. Appen bruger systemets ur; testene sætter et fast tidspunkt, så de kan tjekke, at hver logpost har præcis det tidspunkt, handlingen skete (B22). (US-016)
+- **Størrelse er påkrævet ligesom sektor.** `Organization.Create` tager `OrganizationSize?` og afviser `null` med "Size is required"; formularen starter med "-- Choose size --". (US-016)
 - **Projekter følger samme adgangsregel som frameworks**: `IProjectRepository` tager altid `organizationId`, og andre organisationers projekter giver 404. Oprettelse logges som `ProjectCreated` med projektet som `subjectId`. (US-008)
 
 ## Ordliste
