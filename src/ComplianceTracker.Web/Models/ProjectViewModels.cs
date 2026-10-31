@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Domain.Frameworks;
 using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Domain.Projects;
@@ -64,21 +65,74 @@ namespace ComplianceTracker.Web.Models
     // US-007: only frameworks with an active version are offered
     public record FrameworkChoicesViewModel(IReadOnlyList<Framework> Frameworks, IReadOnlyCollection<Guid> Selected);
 
-    // One framework a project follows, with the version it uses (US-011 R6)
-    public record ProjectFrameworkRow(Framework Framework, FrameworkVersion Version)
+    // The tabs of the project page and their addresses (US-022 R2, R6): /Projects/Details/{id}/{slug}
+    public static class ProjectTabs
+    {
+        public const string Overview = "overview";
+        public const string Frameworks = "frameworks";
+        public const string UserStories = "user-stories";
+        public const string Activity = "activity";
+
+        // In the order they are shown, with the text on the tab
+        public static readonly IReadOnlyList<(string Slug, string Title)> All =
+        [
+            (Overview, "Overview"),
+            (Frameworks, "Frameworks"),
+            (UserStories, "User stories"),
+            (Activity, "Activity")
+        ];
+
+        // The tab for an address, Overview when there is none, or null for an unknown one
+        public static string? Find(string? slug)
+            => string.IsNullOrEmpty(slug) ? Overview : All.Select(t => t.Slug).FirstOrDefault(t => t == slug.ToLowerInvariant());
+    }
+
+    // One framework a project follows, with the version it uses (US-011 R6) and who added it (US-022 R4)
+    public record ProjectFrameworkRow(Framework Framework, FrameworkVersion Version, ProjectFramework Link)
     {
         // US-007: only an activated version counts as newer; drafts cannot be used yet
         public bool NewerVersionExists => Framework.CurrentVersion is { } current && current.Id != Version.Id
             && current.Number > Version.Number;
+
+        public string Status => NewerVersionExists ? "Newer version available" : "Newest";
     }
 
     // The project's user stories from GitHub and how the last sync went (Views/Projects/_WorkItems.cshtml, US-018)
     public record WorkItemsViewModel(Project Project, IReadOnlyList<WorkItem> WorkItems);
 
-    // Data for the project page (Views/Projects/Details.cshtml)
+    // Data for the project page (Views/Projects/Details.cshtml and its tabs)
     public record ProjectDetailsViewModel(Project Project, IReadOnlyList<Framework> AvailableFrameworks, IReadOnlyList<WorkItem> WorkItems)
     {
+        // US-022: the tab being shown (ProjectTabs), the organisation (for names) and the Activity tab's log entries
+        public string Tab { get; init; } = ProjectTabs.Overview;
+        public Organization? Organization { get; init; }
+        public IReadOnlyList<ActivityLogEntry> Activity { get; init; } = [];
+
         public WorkItemsViewModel WorkItemsSection => new(Project, WorkItems);
+
+        // The name of a member, or "System" for what the tracker did by itself (US-018 R6)
+        public string NameOf(Guid? userId)
+            => userId is null ? "System" : Organization?.Users.FirstOrDefault(u => u.Id == userId)?.Name ?? "Unknown";
+
+        // US-022 R3, e.g. "2 frameworks, 1 not on newest version"
+        public string FrameworkSummary
+        {
+            get
+            {
+                if (Frameworks.Count == 0)
+                {
+                    return "No frameworks yet";
+                }
+
+                var outdated = Frameworks.Count(f => f.NewerVersionExists);
+                return $"{Frameworks.Count} framework{(Frameworks.Count == 1 ? "" : "s")}, {outdated} not on newest version";
+            }
+        }
+
+        public string WorkItemSummary
+            => WorkItems.Count == 0
+                ? "No user stories yet"
+                : $"{WorkItems.Count} user stor{(WorkItems.Count == 1 ? "y" : "ies")}, {WorkItems.Count(w => w.State == WorkItemState.Open)} open";
 
         // The project's frameworks, in alphabetical order
         public IReadOnlyList<ProjectFrameworkRow> Frameworks { get; } = Project.Frameworks
@@ -86,7 +140,7 @@ namespace ComplianceTracker.Web.Models
             {
                 var framework = AvailableFrameworks.FirstOrDefault(f => f.Id == link.FrameworkId);
                 var version = framework?.Versions.FirstOrDefault(v => v.Id == link.FrameworkVersionId);
-                return framework is null || version is null ? null : new ProjectFrameworkRow(framework, version);
+                return framework is null || version is null ? null : new ProjectFrameworkRow(framework, version, link);
             })
             .OfType<ProjectFrameworkRow>()
             .OrderBy(r => r.Framework.Name)

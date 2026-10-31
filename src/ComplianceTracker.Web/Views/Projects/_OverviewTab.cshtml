@@ -1,0 +1,53 @@
+@* US-022 R3: description, scope, phase and a summary. US-024: the phase can be changed here.
+   Ids used by the tests: #project-description, #project-scope, #framework-summary, #work-item-summary, #change-phase. *@
+@using ComplianceTracker.Domain.Projects
+@model ProjectDetailsViewModel
+@{
+    var project = Model.Project;
+    var otherPhases = Enum.GetValues<LifecyclePhase>().Where(p => p != project.Phase);
+}
+
+<div class="row g-4">
+    <div class="col-md-8">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Description</dt>
+            <dd class="col-sm-9" id="project-description">@(string.IsNullOrEmpty(project.Description) ? "–" : project.Description)</dd>
+
+            <dt class="col-sm-3">Scope</dt>
+            <dd class="col-sm-9" id="project-scope">@(string.IsNullOrEmpty(project.Scope) ? "–" : project.Scope)</dd>
+
+            <dt class="col-sm-3">Lifecycle phase</dt>
+            <dd class="col-sm-9">
+                @project.Phase
+                @* US-024 R2: EndOfSupport is final, so the form is not shown then *@
+                @if (!project.IsClosed)
+                {
+                    <form asp-action="ChangePhase" method="post" class="d-inline-flex gap-1 ms-2" id="change-phase">
+                        <input type="hidden" name="projectId" value="@project.Id" />
+                        <select name="phase" class="form-select form-select-sm" aria-label="New lifecycle phase">
+                            @foreach (var phase in otherPhases)
+                            {
+                                <option value="@phase">@phase</option>
+                            }
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">Change phase</button>
+                    </form>
+                }
+            </dd>
+        </dl>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h6 card-title">Summary</h2>
+                <p class="mb-1">
+                    <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Frameworks" id="framework-summary">@Model.FrameworkSummary</a>
+                </p>
+                <p class="mb-0">
+                    <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.UserStories" id="work-item-summary">@Model.WorkItemSummary</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

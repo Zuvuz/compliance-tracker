@@ -104,6 +104,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         // R7: the "Remove" button on the project page
+        [Given("I remove {string} from the project {string}")]
         [When("I remove {string} from the project {string}")]
         public async Task WhenIRemoveFromTheProject(string frameworkName, string projectName)
         {
@@ -170,7 +171,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             var row = FrameworkRow(frameworkName)
                 ?? throw new Xunit.Sdk.XunitException($"The page of '{projectName}' does not list '{frameworkName}'.");
 
-            Assert.Equal("newer version available", row.QuerySelector(".framework-newer")?.TextContent.Trim());
+            Assert.Equal("Newer version available", row.QuerySelector(".framework-newer")?.TextContent.Trim());
         }
 
         // US-016 R10: the link is still in the database, with the time it was removed
@@ -197,7 +198,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             await using var db = _web.CreateDbContext();
             var id = await db.Projects.Where(p => p.Name == projectName).Select(p => p.Id).SingleAsync();
-            await _web.OpenAsync($"/Projects/Details/{id}");
+            await _web.OpenAsync($"/Projects/Details/{id}/frameworks");
             return id;
         }
 
