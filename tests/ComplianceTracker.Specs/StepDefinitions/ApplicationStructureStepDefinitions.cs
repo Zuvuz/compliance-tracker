@@ -15,14 +15,17 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         private readonly WebScenario _web;
         private readonly ScenarioClock _clock;
+        private readonly DatabaseScenario _database;
+        private string _appDatabase = UnusedDatabase;
         private readonly Dictionary<string, string?> _settings = new();
         private TestApp? _app;
         private Exception? _startError;
 
-        public ApplicationStructureStepDefinitions(WebScenario web, ScenarioClock clock)
+        public ApplicationStructureStepDefinitions(WebScenario web, ScenarioClock clock, DatabaseScenario database)
         {
             _web = web;
             _clock = clock;
+            _database = database;
         }
 
         public void Dispose() => _app?.Dispose();
@@ -34,13 +37,24 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public void GivenTheKeycloakSettingIsMissing(string name)
             => _settings[$"Authentication:Keycloak:{name}"] = "";
 
+        // A database that does not exist yet, on the same PostgreSQL server as the test database
+        [Given("the setting {string} is on for a new database")]
+        public void GivenTheSettingIsOnForANewDatabase(string setting)
+        {
+            _settings[setting] = "true";
+            _appDatabase = new Npgsql.NpgsqlConnectionStringBuilder(_database.ConnectionString)
+            {
+                Database = "migrate_on_startup_" + Guid.NewGuid().ToString("N")[..8]
+            }.ConnectionString;
+        }
+
         // ---------------------------------------------------------- When
 
         // Building the app runs the start-up checks: DI validation (R5) and the Keycloak options (R3)
         [When("the application starts")]
         public void WhenTheApplicationStarts()
         {
-            _app = TestApp.WithTestSignIn(UnusedDatabase, _clock, _settings);
+            _app = TestApp.WithTestSignIn(_appDatabase, _clock, _settings);
             try
             {
                 _ = _app.Factory.Services;
@@ -97,6 +111,18 @@ namespace ComplianceTracker.Specs.StepDefinitions
             var project = await db.Projects.SingleAsync(p => p.Name == projectName);
 
             Assert.Equal(organisationId, project.OrganizationId);
+        }
+
+        [Then("the new database has every migration")]
+        public async Task ThenTheNewDatabaseHasEveryMigration()
+        {
+            Assert.Null(_startError);
+            await using var db = TestDatabase.CreateContext(_appDatabase);
+
+            Assert.Empty(await db.Database.GetPendingMigrationsAsync());
+            Assert.NotEmpty(await db.Database.GetAppliedMigrationsAsync());
+
+            await db.Database.EnsureDeletedAsync(); // clean up the extra database
         }
 
         // ---------------------------------------------------------- Helpers

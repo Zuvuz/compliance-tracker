@@ -53,6 +53,11 @@ setx Authentication__Keycloak__ClientSecret "<client secret>"
 
 ### 4. Create the database tables
 
+Nothing to do: when the app runs locally (Development), it creates the tables and runs new migrations
+by itself at start-up (`Database:MigrateOnStartup` in `appsettings.Development.json`).
+
+To run them by hand instead, e.g. outside Development:
+
 ```bash
 dotnet tool install --global dotnet-ef
 ```
