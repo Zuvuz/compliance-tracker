@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -32,6 +32,11 @@ namespace ComplianceTracker.Domain.ActivityLog
         // The log entry's SubjectId points at the project; the ProjectFramework rows hold the versions.
         ProjectFrameworkAdded,
         ProjectFrameworkRemoved,
-        ProjectFrameworkVersionChanged
+        ProjectFrameworkVersionChanged,
+
+        // A project's details were edited, or it moved to another lifecycle phase (US-024).
+        // The log entry's SubjectId points at the project; Details holds the old and new values.
+        ProjectUpdated,
+        ProjectPhaseChanged
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -22,9 +22,13 @@ namespace ComplianceTracker.Domain.ActivityLog
         // Null when the action is not about anything in particular (e.g. signing in).
         public Guid? SubjectId { get; }
 
+        // What changed, in plain text, e.g. "Phase: Planning → Development" (US-024 R3). Null for most actions.
+        public string? Details { get; }
+
         // EF Core also uses this constructor when it reads entries from the database
-        public ActivityLogEntry(Guid organizationId, Guid userId, ActivityAction action, DateTime occurredAt, Guid? subjectId = null)
+        public ActivityLogEntry(Guid organizationId, Guid userId, ActivityAction action, DateTime occurredAt, Guid? subjectId = null, string? details = null)
         {
+            Details = details;
             OrganizationId = organizationId;
             UserId = userId;
             Action = action;

@@ -28,6 +28,9 @@ namespace ComplianceTracker.Domain.Projects
 
         public LifecyclePhase Phase { get; private set; }
 
+        // US-024 R4: a project at end of support is kept as it was and cannot be changed
+        public bool IsClosed => Phase == LifecyclePhase.EndOfSupport;
+
         public IReadOnlyList<ProjectFramework> FrameworkHistory => _frameworks;
 
         // The framework versions the project follows now, one per framework (US-011 R3)
@@ -44,16 +47,8 @@ namespace ComplianceTracker.Domain.Projects
             string? scope,
             LifecyclePhase phase)
         {
-            // R2: name and intended purpose are required
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new DomainException("Project name is required");
-            }
-
-            if (string.IsNullOrWhiteSpace(intendedPurpose))
-            {
-                throw new DomainException("Intended purpose is required");
-            }
+            EnsureRequired(name, intendedPurpose);
+            EnsureKnown(phase);
 
             return new Project
             {
@@ -66,6 +61,83 @@ namespace ComplianceTracker.Domain.Projects
             };
         }
 
+        // ---------------------------------------------------------- Editing (US-024)
+
+        // R1: the details, with the same rules as Create. Returns what changed (empty if nothing did),
+        // so the caller can log the old and new values (R3).
+        // The rule that names are unique needs the database and lives in ProjectService.
+        public IReadOnlyList<ProjectChange> Update(string name, string? description, string intendedPurpose, string? scope)
+        {
+            EnsureOpen();
+            EnsureRequired(name, intendedPurpose);
+
+            var changes = new List<ProjectChange>();
+            Name = Changed("Name", Name, name.Trim(), changes);
+            Description = Changed("Description", Description, description?.Trim() ?? "", changes);
+            IntendedPurpose = Changed("Intended purpose", IntendedPurpose, intendedPurpose.Trim(), changes);
+            Scope = Changed("Scope", Scope, scope?.Trim() ?? "", changes);
+            return changes;
+        }
+
+        // R2: any of the four phases, also backwards. EndOfSupport is final (R4).
+        // Returns the change, or null if the project is already in that phase.
+        public ProjectChange? ChangePhase(LifecyclePhase phase)
+        {
+            EnsureOpen();
+            EnsureKnown(phase);
+
+            if (phase == Phase)
+            {
+                return null;
+            }
+
+            var change = new ProjectChange("Phase", Phase.ToString(), phase.ToString());
+            Phase = phase;
+            return change;
+        }
+
+        private static string Changed(string field, string oldValue, string newValue, List<ProjectChange> changes)
+        {
+            if (oldValue != newValue)
+            {
+                changes.Add(new ProjectChange(field, oldValue, newValue));
+            }
+
+            return newValue;
+        }
+
+        // US-008 R2: name and intended purpose are required
+        private static void EnsureRequired(string name, string intendedPurpose)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new DomainException("Project name is required");
+            }
+
+            if (string.IsNullOrWhiteSpace(intendedPurpose))
+            {
+                throw new DomainException("Intended purpose is required");
+            }
+        }
+
+        // Only the four phases the system knows, also if someone sends a number
+        private static void EnsureKnown(LifecyclePhase phase)
+        {
+            if (!Enum.IsDefined(phase))
+            {
+                throw new DomainException("Unknown lifecycle phase");
+            }
+        }
+
+        // US-024 R4: nothing about a project at end of support changes, also not its frameworks
+        private void EnsureOpen()
+        {
+            if (IsClosed)
+            {
+                throw new DomainException("A project at end of support cannot be changed");
+            }
+        }
+
         // ---------------------------------------------------------- Frameworks (US-011)
 
         // The version of this framework the project follows now, or null
@@ -76,6 +148,7 @@ namespace ComplianceTracker.Domain.Projects
         // The caller makes sure the organisation may use the framework.
         public ProjectFramework UseFramework(Framework framework, FrameworkVersion version, Guid userId, DateTime at)
         {
+            EnsureOpen();
             EnsureVersionOf(framework, version);
 
             // R3: never two versions of the same framework
@@ -93,6 +166,7 @@ namespace ComplianceTracker.Domain.Projects
         // The old link is kept as history. Returns false if the project already uses that version.
         public bool ChangeFrameworkVersion(Framework framework, FrameworkVersion version, Guid userId, DateTime at)
         {
+            EnsureOpen();
             EnsureVersionOf(framework, version);
 
             var current = FrameworkInUse(framework.Id)
@@ -111,6 +185,7 @@ namespace ComplianceTracker.Domain.Projects
         // R7: the project stops following a framework; the link is kept as history
         public void RemoveFramework(Framework framework, Guid userId, DateTime at)
         {
+            EnsureOpen();
             var current = FrameworkInUse(framework.Id)
                 ?? throw new DomainException($"The project does not use {framework.Name}");
 

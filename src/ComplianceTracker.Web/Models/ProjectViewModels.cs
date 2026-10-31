@@ -32,6 +32,33 @@ namespace ComplianceTracker.Web.Models
         public List<Guid> FrameworkIds { get; set; } = new();
     }
 
+    // The fields of the edit-project form (US-024 R1). Like the create form, the domain checks the values.
+    public class EditProjectViewModel : IFormModel
+    {
+        public Guid Id { get; set; }
+
+        [Display(Name = "Name")]
+        public string? Name { get; set; }
+
+        [Display(Name = "Description")]
+        public string? Description { get; set; }
+
+        [Display(Name = "Intended purpose")]
+        public string? IntendedPurpose { get; set; }
+
+        [Display(Name = "Scope")]
+        public string? Scope { get; set; }
+
+        public static EditProjectViewModel From(Project project) => new()
+        {
+            Id = project.Id,
+            Name = project.Name,
+            Description = project.Description,
+            IntendedPurpose = project.IntendedPurpose,
+            Scope = project.Scope
+        };
+    }
+
     // The framework checkboxes on the create-project form (Views/Shared/Components/FrameworkChoices)
     public record FrameworkChoicesViewModel(IReadOnlyList<Framework> Frameworks, IReadOnlyCollection<Guid> Selected);
 
