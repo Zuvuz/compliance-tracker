@@ -1,0 +1,49 @@
+@* US-022 R1: the top of every tab: name, phase badge, intended purpose, the tabs and the page's error messages.
+   Ids used by the tests: #project-name, #project-phase, #project-intended-purpose, #project-tabs (links with data-tab),
+   #edit-project-link, #project-closed. *@
+@model ProjectDetailsViewModel
+@{
+    var project = Model.Project;
+    var phaseBadge = project.Phase switch
+    {
+        ComplianceTracker.Domain.Projects.LifecyclePhase.Planning => "text-bg-info",
+        ComplianceTracker.Domain.Projects.LifecyclePhase.Development => "text-bg-primary",
+        ComplianceTracker.Domain.Projects.LifecyclePhase.Released => "text-bg-success",
+        _ => "text-bg-secondary"
+    };
+}
+
+<p class="mb-1"><a asp-controller="Organizations" asp-action="Mine">← Back to the organisation</a></p>
+<div class="d-flex align-items-start justify-content-between gap-3">
+    <div>
+        <h1 class="mb-1">
+            <span id="project-name">@project.Name</span>
+            <span id="project-phase" class="badge @phaseBadge fs-6 align-middle">@project.Phase</span>
+        </h1>
+        <p class="text-muted mb-3" id="project-intended-purpose">@project.IntendedPurpose</p>
+    </div>
+    @* US-024 R4: a project at end of support can only be viewed *@
+    @if (!project.IsClosed)
+    {
+        <a asp-action="Edit" asp-route-id="@project.Id" class="btn btn-outline-primary" id="edit-project-link">Edit</a>
+    }
+</div>
+
+<ul class="nav nav-tabs mb-3" id="project-tabs">
+    @foreach (var (slug, title) in ProjectTabs.All)
+    {
+        <li class="nav-item">
+            <a class="nav-link @(Model.Tab == slug ? "active" : "")" data-tab="@slug"
+               aria-current="@(Model.Tab == slug ? "page" : null)"
+               asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@(slug == ProjectTabs.Overview ? null : slug)">@title</a>
+        </li>
+    }
+</ul>
+
+@* The domain's error messages from every action on the page, e.g. "The project already uses Security policy" *@
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+@if (project.IsClosed)
+{
+    <div class="alert alert-secondary" id="project-closed">This project is at end of support and can no longer be changed.</div>
+}

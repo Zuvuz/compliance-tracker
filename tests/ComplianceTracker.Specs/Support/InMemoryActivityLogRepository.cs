@@ -1,4 +1,4 @@
-﻿using ComplianceTracker.Application.ActivityLog;
+using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Domain.ActivityLog;
 
 namespace ComplianceTracker.Specs.Support
@@ -16,5 +16,11 @@ namespace ComplianceTracker.Specs.Support
             _entries.Add(entry);
             return Task.CompletedTask;
         }
+
+        public Task<IReadOnlyList<ActivityLogEntry>> ListAboutAsync(Guid organizationId, Guid subjectId, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<ActivityLogEntry>>(_entries
+                .Where(e => e.OrganizationId == organizationId && e.SubjectId == subjectId)
+                .Reverse()
+                .ToList());
     }
 }

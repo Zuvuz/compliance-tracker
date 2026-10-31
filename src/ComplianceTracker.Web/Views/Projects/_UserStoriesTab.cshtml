@@ -1,0 +1,57 @@
+@* US-018, US-031: the user stories read from GitHub, the link to the repository and its token.
+   The list (_WorkItems) is fetched again when SignalR says it changed (US-018 R7).
+   Ids used by the tests: #project-work-items, #link-github, #github-token, #token-status, #set-github-token. *@
+@model ProjectDetailsViewModel
+@{
+    var project = Model.Project;
+}
+
+<section id="project-work-items" data-project-id="@project.Id">
+    @if (!project.IsClosed)
+    {
+        @* US-018 R1: a repository as owner/name, and the label that marks user stories *@
+        <form asp-action="LinkGitHub" method="post" class="row g-2 mb-3" id="link-github">
+            <input type="hidden" name="projectId" value="@project.Id" />
+            <div class="col-md-5">
+                <input name="repository" class="form-control" placeholder="owner/name, e.g. Zuvuz/compliance-tracker"
+                       value="@project.GitHub?.Repository" aria-label="GitHub repository" />
+            </div>
+            <div class="col-md-3">
+                <input name="label" class="form-control" value="@(project.GitHub?.Label ?? ComplianceTracker.Domain.Projects.GitHubLink.DefaultLabel)" aria-label="Label" />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100">@(project.GitHub is null ? "Link" : "Save")</button>
+            </div>
+        </form>
+    }
+
+    @if (project.GitHub is { } github && !project.IsClosed)
+    {
+        @* US-031: a read-only token for a private repository. The stored token is never shown again (R3). *@
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3" id="github-token">
+            @if (github.HasToken)
+            {
+                <span class="small" id="token-status">Token set (changed @github.TokenChangedAt?.ToLocalTime().ToString("dd-MM-yyyy"))</span>
+                <form asp-action="RemoveGitHubToken" method="post" class="d-inline">
+                    <input type="hidden" name="projectId" value="@project.Id" />
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Remove token</button>
+                </form>
+            }
+            else
+            {
+                <span class="small text-muted" id="token-status">No token: only public repositories can be read.</span>
+            }
+            <form asp-action="SetGitHubToken" method="post" class="d-flex gap-1" id="set-github-token">
+                <input type="hidden" name="projectId" value="@project.Id" />
+                @* type=password and autocomplete=off: the browser neither shows nor remembers it *@
+                <input name="token" type="password" autocomplete="off" class="form-control form-control-sm"
+                       placeholder="Read-only token (Issues: read)" aria-label="GitHub token" />
+                <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">@(github.HasToken ? "Replace token" : "Add token")</button>
+            </form>
+        </div>
+    }
+
+    <div id="work-items-live">
+        <partial name="_WorkItems" model="Model.WorkItemsSection" />
+    </div>
+</section>

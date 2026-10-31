@@ -109,7 +109,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             await using var db = _web.CreateDbContext();
             var id = await db.Projects.Where(p => p.Name == projectName).Select(p => p.Id).SingleAsync();
-            await _web.OpenAsync($"/Projects/Details/{id}");
+            await _web.OpenAsync($"/Projects/Details/{id}/user-stories");
             return id;
         }
     }

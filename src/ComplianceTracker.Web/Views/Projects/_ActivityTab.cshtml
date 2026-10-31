@@ -1,0 +1,37 @@
+@* US-022 R5: the project's log entries, newest first, with what changed (Details, US-024 R3).
+   Ids and classes used by the tests: #project-activity, rows activity-row, cells activity-time, activity-user,
+   activity-action, activity-details, and #no-activity. *@
+@model ProjectDetailsViewModel
+
+<section id="project-activity">
+    @if (Model.Activity.Count == 0)
+    {
+        @* R7 *@
+        <p class="text-muted" id="no-activity">No activity yet</p>
+    }
+    else
+    {
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var entry in Model.Activity)
+                {
+                    <tr class="activity-row">
+                        @* R8: the time matters here, so HH:mm is shown too. Stored in UTC, shown in local time. *@
+                        <td class="activity-time text-nowrap">@entry.OccurredAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
+                        <td class="activity-user">@Model.NameOf(entry.UserId)</td>
+                        <td class="activity-action">@entry.Action</td>
+                        <td class="activity-details small">@entry.Details</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>

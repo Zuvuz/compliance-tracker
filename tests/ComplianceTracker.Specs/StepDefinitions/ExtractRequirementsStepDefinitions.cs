@@ -147,7 +147,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
             await using var db = _web.CreateDbContext();
             var projectId = await db.Projects.Select(p => p.Id).FirstAsync();
-            await _web.OpenAsync($"/Projects/Details/{projectId}");
+            await _web.OpenAsync($"/Projects/Details/{projectId}/frameworks");
             Assert.DoesNotContain(frameworkName, _web.Page!.QuerySelectorAll("#add-framework option").Select(o => o.TextContent.Trim()));
         }
 

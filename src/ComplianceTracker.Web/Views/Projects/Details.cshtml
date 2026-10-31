@@ -1,202 +1,32 @@
-@* US-008: the project's own page. US-011: the frameworks the project follows.
-   The ids and classes (#project-name, #project-frameworks, data-framework-id, framework-name,
-   framework-version, framework-newer ...) are used by the tests.
-   US-018: the user stories read from GitHub (Views/Projects/_WorkItems.cshtml), updated live with SignalR. *@
-@using ComplianceTracker.Domain.Projects
+@* US-008: the project's own page. US-022: split into tabs, each with its own address (/Projects/Details/{id}/{tab}).
+   The header (_ProjectHeader) is the same on every tab; each tab is a partial of its own.
+   The ids and classes used by the tests are listed in each partial. *@
 @model ProjectDetailsViewModel
 @{
-    var project = Model.Project;
-    ViewData["Title"] = project.Name;
-
-    // US-024 R2: the phases to move to (all except the current one)
-    var otherPhases = Enum.GetValues<LifecyclePhase>().Where(p => p != project.Phase);
+    ViewData["Title"] = Model.Project.Name;
 }
 
-<p class="mb-1"><a asp-controller="Organizations" asp-action="Mine">← Back to the organisation</a></p>
-<div class="d-flex align-items-start justify-content-between">
-    <h1 id="project-name" class="mb-0">@project.Name</h1>
-    @* US-024 R4: a project at end of support can only be viewed *@
-    @if (!project.IsClosed)
-    {
-        <a asp-action="Edit" asp-route-id="@project.Id" class="btn btn-outline-primary" id="edit-project-link">Edit</a>
-    }
-</div>
-<p class="text-muted small mb-4">Lifecycle phase: <span id="project-phase">@project.Phase</span></p>
+<partial name="_ProjectHeader" model="Model" />
 
-@* Shows the domain's error messages from every action on this page,
-   e.g. "The project already uses Security policy" or "A project at end of support cannot be changed" *@
-<div asp-validation-summary="All" class="text-danger" role="alert"></div>
-
-@if (project.IsClosed)
+@switch (Model.Tab)
 {
-    <div class="alert alert-secondary" id="project-closed">This project is at end of support and can no longer be changed.</div>
+    case ProjectTabs.Frameworks:
+        <partial name="_FrameworksTab" model="Model" />
+        break;
+    case ProjectTabs.UserStories:
+        <partial name="_UserStoriesTab" model="Model" />
+        break;
+    case ProjectTabs.Activity:
+        <partial name="_ActivityTab" model="Model" />
+        break;
+    default:
+        <partial name="_OverviewTab" model="Model" />
+        break;
 }
-
-<dl class="row">
-    <dt class="col-sm-3">Intended purpose</dt>
-    <dd class="col-sm-9" id="project-intended-purpose">@project.IntendedPurpose</dd>
-
-    @* Optional fields are only shown when they have a value *@
-    @if (!string.IsNullOrEmpty(project.Description))
-    {
-        <dt class="col-sm-3">Description</dt>
-        <dd class="col-sm-9" id="project-description">@project.Description</dd>
-    }
-
-    @if (!string.IsNullOrEmpty(project.Scope))
-    {
-        <dt class="col-sm-3">Scope</dt>
-        <dd class="col-sm-9" id="project-scope">@project.Scope</dd>
-    }
-</dl>
-
-@* US-024 R2: move to another phase; EndOfSupport is final, so the form is not shown then *@
-@if (!project.IsClosed)
-{
-    <form asp-action="ChangePhase" method="post" class="row g-2 mb-4" id="change-phase">
-        <input type="hidden" name="projectId" value="@project.Id" />
-        <div class="col-auto">
-            <select name="phase" class="form-select" aria-label="New lifecycle phase">
-                @foreach (var phase in otherPhases)
-                {
-                    <option value="@phase">@phase</option>
-                }
-            </select>
-        </div>
-        <div class="col-auto">
-            <button type="submit" class="btn btn-outline-secondary">Change phase</button>
-        </div>
-    </form>
-}
-
-<section id="project-frameworks" class="mt-4">
-    <h2 class="h4">Frameworks</h2>
-
-    @if (Model.Frameworks.Count == 0)
-    {
-        <p class="text-muted">The project does not follow any frameworks yet.</p>
-    }
-    else
-    {
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Framework</th>
-                    <th>Version</th>
-                    <th></th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var row in Model.Frameworks)
-                {
-                    <tr data-framework-id="@row.Framework.Id">
-                        <td class="framework-name">@row.Framework.Name</td>
-                        <td class="framework-version">@row.Version.Number</td>
-                        <td>
-                            @* R6: a newer version exists; one click moves the project to it *@
-                            @if (row.NewerVersionExists && !project.IsClosed)
-                            {
-                                <span class="framework-newer badge text-bg-warning">newer version available</span>
-                                <form asp-action="UseNewest" method="post" class="d-inline">
-                                    <input type="hidden" name="projectId" value="@project.Id" />
-                                    <input type="hidden" name="frameworkId" value="@row.Framework.Id" />
-                                    <button type="submit" class="btn btn-sm btn-outline-primary">Use newest</button>
-                                </form>
-                            }
-                        </td>
-                        <td class="text-end">
-                            @* R7: removing keeps the history. US-024 R4: not at end of support. *@
-                            @if (!project.IsClosed)
-                            {
-                                <form asp-action="RemoveFramework" method="post">
-                                    <input type="hidden" name="projectId" value="@project.Id" />
-                                    <input type="hidden" name="frameworkId" value="@row.Framework.Id" />
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
-                                </form>
-                            }
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
-
-    @* R2: add one of the organisation's frameworks; the newest version is used *@
-    @if (Model.CanBeAdded.Any() && !project.IsClosed)
-    {
-        <form asp-action="AddFramework" method="post" class="row g-2" id="add-framework">
-            <input type="hidden" name="projectId" value="@project.Id" />
-            <div class="col-md-6">
-                <select name="frameworkId" class="form-select" aria-label="Framework">
-                    @foreach (var framework in Model.CanBeAdded)
-                    {
-                        <option value="@framework.Id">@framework.Name</option>
-                    }
-                </select>
-            </div>
-            <div class="col-md-3">
-                <button type="submit" class="btn btn-primary">Add framework</button>
-            </div>
-        </form>
-    }
-</section>
-
-@* US-018: the project's user stories from GitHub. The section is fetched again when SignalR says it changed (R7). *@
-<section id="project-work-items" class="mt-5" data-project-id="@project.Id">
-    <h2 class="h4">User stories (GitHub)</h2>
-
-    @if (!project.IsClosed)
-    {
-        @* R1: a public repository as owner/name, and the label that marks user stories *@
-        <form asp-action="LinkGitHub" method="post" class="row g-2 mb-3" id="link-github">
-            <input type="hidden" name="projectId" value="@project.Id" />
-            <div class="col-md-5">
-                <input name="repository" class="form-control" placeholder="owner/name, e.g. Zuvuz/compliance-tracker"
-                       value="@project.GitHub?.Repository" aria-label="GitHub repository" />
-            </div>
-            <div class="col-md-3">
-                <input name="label" class="form-control" value="@(project.GitHub?.Label ?? ComplianceTracker.Domain.Projects.GitHubLink.DefaultLabel)" aria-label="Label" />
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-outline-primary w-100">@(project.GitHub is null ? "Link" : "Save")</button>
-            </div>
-        </form>
-    }
-
-    @if (project.GitHub is { } github && !project.IsClosed)
-    {
-        @* US-031: a read-only token for a private repository. The stored token is never shown again (R3). *@
-        <div class="d-flex flex-wrap align-items-center gap-2 mb-3" id="github-token">
-            @if (github.HasToken)
-            {
-                <span class="small" id="token-status">Token set (changed @github.TokenChangedAt?.ToLocalTime().ToString("dd-MM-yyyy"))</span>
-                <form asp-action="RemoveGitHubToken" method="post" class="d-inline">
-                    <input type="hidden" name="projectId" value="@project.Id" />
-                    <button type="submit" class="btn btn-sm btn-outline-danger">Remove token</button>
-                </form>
-            }
-            else
-            {
-                <span class="small text-muted" id="token-status">No token: only public repositories can be read.</span>
-            }
-            <form asp-action="SetGitHubToken" method="post" class="d-flex gap-1" id="set-github-token">
-                <input type="hidden" name="projectId" value="@project.Id" />
-                @* type=password and autocomplete=off: the browser neither shows nor remembers it *@
-                <input name="token" type="password" autocomplete="off" class="form-control form-control-sm"
-                       placeholder="Read-only token (Issues: read)" aria-label="GitHub token" />
-                <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">@(github.HasToken ? "Replace token" : "Add token")</button>
-            </form>
-        </div>
-    }
-
-    <div id="work-items-live">
-        <partial name="_WorkItems" model="Model.WorkItemsSection" />
-    </div>
-</section>
 
 @section Scripts {
-    @if (project.GitHub is not null)
+    @* US-018 R7: live updates, only on the tab that shows the user stories *@
+    @if (Model.Tab == ProjectTabs.UserStories && Model.Project.GitHub is not null)
     {
         <script src="~/lib/microsoft-signalr/signalr.min.js"></script>
         <script src="~/js/work-items.js" asp-append-version="true"></script>

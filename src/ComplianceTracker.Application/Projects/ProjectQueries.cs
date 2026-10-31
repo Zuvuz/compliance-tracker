@@ -1,4 +1,6 @@
+using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
+using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Domain.Projects;
 
 namespace ComplianceTracker.Application.Projects
@@ -8,11 +10,13 @@ namespace ComplianceTracker.Application.Projects
     public class ProjectQueries
     {
         private readonly IProjectRepository _projects;
+        private readonly IActivityLogRepository _log;
         private readonly CurrentMember _member;
 
-        public ProjectQueries(IProjectRepository projects, CurrentMember member)
+        public ProjectQueries(IProjectRepository projects, IActivityLogRepository log, CurrentMember member)
         {
             _projects = projects;
+            _log = log;
             _member = member;
         }
 
@@ -27,5 +31,11 @@ namespace ComplianceTracker.Application.Projects
             => await _member.FindOrganizationAsync(cancellationToken) is { } organization
                 ? await _projects.GetAsync(organization.Id, projectId, cancellationToken)
                 : null;
+
+        // US-022 R5: the log entries about one of the organisation's projects, newest first (empty for others)
+        public async Task<IReadOnlyList<ActivityLogEntry>> ActivityAsync(Guid projectId, CancellationToken cancellationToken = default)
+            => await _member.FindOrganizationAsync(cancellationToken) is { } organization
+                ? await _log.ListAboutAsync(organization.Id, projectId, cancellationToken)
+                : [];
     }
 }
