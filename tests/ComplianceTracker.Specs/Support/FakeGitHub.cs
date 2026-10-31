@@ -17,6 +17,9 @@ namespace ComplianceTracker.Specs.Support
         // Makes every request fail with this status, e.g. 403 for the rate limit
         public HttpStatusCode? FailWith { get; set; }
 
+        // US-031: private repositories and the one token each accepts. Like GitHub: without a token 404, a wrong one 401.
+        public Dictionary<string, string> PrivateRepositories { get; } = new(StringComparer.OrdinalIgnoreCase);
+
         public List<FakeIssue> Repository(string name)
         {
             if (!_repositories.TryGetValue(name, out var issues))
@@ -73,6 +76,20 @@ namespace ComplianceTracker.Specs.Support
                     || !_repositories.TryGetValue($"{path[1]}/{path[2]}", out var issues))
                 {
                     return new HttpResponseMessage(HttpStatusCode.NotFound);
+                }
+
+                if (PrivateRepositories.TryGetValue($"{path[1]}/{path[2]}", out var acceptedToken))
+                {
+                    var auth = request.Headers.Authorization;
+                    if (auth is null)
+                    {
+                        return new HttpResponseMessage(HttpStatusCode.NotFound);
+                    }
+
+                    if (auth.Scheme != "Bearer" || auth.Parameter != acceptedToken)
+                    {
+                        return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+                    }
                 }
 
                 var query = System.Web.HttpUtility.ParseQueryString(request.RequestUri.Query);

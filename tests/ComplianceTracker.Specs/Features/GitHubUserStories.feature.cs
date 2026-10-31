@@ -526,7 +526,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I click \"Sync now\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 71
-    await testRunner.ThenAsync("I see \"Sync failed: Repository not found or private\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("I see \"Sync failed: Repository not found or private: add a token\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

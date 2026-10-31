@@ -70,10 +70,17 @@ namespace ComplianceTracker.Infrastructure.WorkItems
             // The repository was checked by GitHubLink (owner/name), and the label is escaped
             var path = $"repos/{query.Location}/issues?labels={Uri.EscapeDataString(query.Label)}&state=all&per_page={PageSize}&page={page}";
 
+            // US-031: a private repository is read with the token. Set per request, never on the shared client.
+            using var request = new HttpRequestMessage(HttpMethod.Get, path);
+            if (query.Token is not null)
+            {
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", query.Token);
+            }
+
             HttpResponseMessage response;
             try
             {
-                response = await _http.GetAsync(path, cancellationToken);
+                response = await _http.SendAsync(request, cancellationToken);
             }
             catch (Exception error) when (error is HttpRequestException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
             {
@@ -82,9 +89,17 @@ namespace ComplianceTracker.Infrastructure.WorkItems
 
             using (response)
             {
+                // GitHub answers 404, not 401, for a private repository read without a token
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {
-                    throw new WorkItemSourceException("Repository not found or private");
+                    throw new WorkItemSourceException(query.Token is null
+                        ? "Repository not found or private: add a token"
+                        : "Repository not found, or the token cannot read it");
+                }
+
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    throw new WorkItemSourceException("The token was refused by GitHub");
                 }
 
                 // Without a key GitHub allows 60 requests per hour per address

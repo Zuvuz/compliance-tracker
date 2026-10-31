@@ -15,8 +15,13 @@ namespace ComplianceTracker.Application.WorkItems
         Task<WorkItemReadResult> ReadAsync(WorkItemQuery query, CancellationToken cancellationToken = default);
     }
 
-    // Where to read: for GitHub the repository ("owner/name") and the label
-    public record WorkItemQuery(string Location, string Label);
+    // Where to read: for GitHub the repository ("owner/name") and the label.
+    // Token: the decrypted read-only token for a private repository (US-031), or null. Never logged or shown.
+    public record WorkItemQuery(string Location, string Label, string? Token = null)
+    {
+        // A record prints all its values; this one must never print the token
+        public override string ToString() => $"{Location} (label {Label})";
+    }
 
     public record WorkItemReadResult(IReadOnlyList<ExternalWorkItem> Items, IReadOnlyList<SkippedIssue> Skipped);
 

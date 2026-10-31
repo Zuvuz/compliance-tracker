@@ -147,6 +147,58 @@ public class WorkItemTests
         Assert.Equal("A project at end of support cannot be changed", error.Message);
     }
 
+    // ---------------------------------------------------------- Token (US-031)
+
+    [Fact]
+    public void A_token_is_kept_when_only_the_label_changes()
+    {
+        // Arrange
+        var project = CreateProject();
+        project.LinkGitHub("acme/portal", "user-story", Guid.NewGuid(), Monday);
+        project.GitHub!.SetToken("encrypted", Monday);
+
+        // Act
+        project.LinkGitHub("acme/portal", "story", Guid.NewGuid(), Monday.AddDays(1));
+
+        // Assert
+        Assert.True(project.GitHub.HasToken);
+        Assert.Equal("story", project.GitHub.Label);
+    }
+
+    [Fact]
+    public void A_new_repository_needs_its_own_token()
+    {
+        // Arrange
+        var project = CreateProject();
+        project.LinkGitHub("acme/portal", null, Guid.NewGuid(), Monday);
+        project.GitHub!.SetToken("encrypted", Monday);
+
+        // Act
+        project.LinkGitHub("acme/other", null, Guid.NewGuid(), Monday.AddDays(1));
+
+        // Assert
+        Assert.False(project.GitHub.HasToken);
+    }
+
+    [Fact]
+    public void Removing_a_token_reports_whether_there_was_one()
+    {
+        // Arrange
+        var project = CreateProject();
+        project.LinkGitHub("acme/portal", null, Guid.NewGuid(), Monday);
+        project.GitHub!.SetToken("encrypted", Monday);
+
+        // Act
+        var first = project.GitHub.RemoveToken(Monday.AddDays(1));
+        var second = project.GitHub.RemoveToken(Monday.AddDays(2));
+
+        // Assert
+        Assert.True(first);
+        Assert.False(second);
+        Assert.Null(project.GitHub.EncryptedToken);
+        Assert.Equal(Monday.AddDays(1), project.GitHub.TokenChangedAt);
+    }
+
     [Fact]
     public void A_failed_sync_keeps_the_last_good_time()
     {

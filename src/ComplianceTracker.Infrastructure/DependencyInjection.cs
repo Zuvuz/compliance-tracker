@@ -7,6 +7,8 @@ using ComplianceTracker.Application.WorkItems;
 using ComplianceTracker.Infrastructure.Frameworks;
 using ComplianceTracker.Infrastructure.Persistence;
 using ComplianceTracker.Infrastructure.Persistence.Repositories;
+using ComplianceTracker.Infrastructure.Security;
+using Microsoft.AspNetCore.DataProtection;
 using ComplianceTracker.Infrastructure.WorkItems;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -63,6 +65,13 @@ namespace ComplianceTracker.Infrastructure
                 client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
             });
             services.AddTransient<IWorkItemSource>(provider => provider.GetRequiredService<GitHubWorkItemSource>());
+
+            // US-031: encryption of stored tokens. The keys are kept in the database (DataProtectionKeys).
+            // The same keys protect the sign-in cookie and antiforgery tokens, so they also survive restarts.
+            services.AddDataProtection()
+                .SetApplicationName("compliance-tracker")
+                .PersistKeysToDbContext<ComplianceTrackerDbContext>();
+            services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
 
             return services;
         }
