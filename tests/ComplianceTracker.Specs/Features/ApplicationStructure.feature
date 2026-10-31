@@ -26,3 +26,10 @@ Feature: Application structure
     And I am signed in as "Bo"
     When I create the project "Beta Portal" with intended purpose "Web portal"
     Then the project "Beta Portal" belongs to "Beta ApS"
+
+  @US-029 @integration
+  Scenario: Locally the app brings an empty database up to date when it starts
+    Given an empty database
+    And the setting "Database:MigrateOnStartup" is on for a new database
+    When the application starts
+    Then the new database has every migration

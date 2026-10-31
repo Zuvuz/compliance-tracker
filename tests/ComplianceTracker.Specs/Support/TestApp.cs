@@ -38,6 +38,8 @@ namespace ComplianceTracker.Specs.Support
                 ["Authentication:Keycloak:Authority"] = FakeKeycloak.Issuer,
                 ["Authentication:Keycloak:ClientId"] = "compliance-tracker-web",
                 ["Authentication:Keycloak:ClientSecret"] = "not-used-in-tests",
+                // The tests migrate their own database (TestDatabase); some start the app without one
+                ["Database:MigrateOnStartup"] = "false",
                 // The tests run the scheduled GitHub check themselves ("the scheduled check runs"), never on a timer
                 ["WorkItemSync:Enabled"] = "false"
             };
@@ -81,7 +83,8 @@ namespace ComplianceTracker.Specs.Support
                 ["ConnectionStrings:ComplianceTracker"] = connectionString,
                 ["Authentication:Keycloak:Authority"] = authority,
                 ["Authentication:Keycloak:ClientId"] = TestKeycloak.ClientId,
-                ["Authentication:Keycloak:ClientSecret"] = clientSecret
+                ["Authentication:Keycloak:ClientSecret"] = clientSecret,
+                ["Database:MigrateOnStartup"] = "false"
             };
 
             return Create(settings, _ => { });

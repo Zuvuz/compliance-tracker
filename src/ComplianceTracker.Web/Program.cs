@@ -2,6 +2,7 @@ using ComplianceTracker.Application;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Users;
 using ComplianceTracker.Infrastructure;
+using ComplianceTracker.Infrastructure.Persistence;
 using ComplianceTracker.Application.WorkItems;
 using ComplianceTracker.Web.Background;
 using ComplianceTracker.Web.Filters;
@@ -128,6 +129,10 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
+// Locally the database is migrated when the app starts (Database:MigrateOnStartup in appsettings.Development.json),
+// so new tables from a pull exist before the first request
+await DatabaseMigrator.MigrateIfEnabledAsync(app.Services, app.Configuration);
+
 // Outside Development: a friendly error page instead of technical details, and HSTS (always https)
 if (!app.Environment.IsDevelopment())
 {
@@ -153,7 +158,7 @@ app.MapControllerRoute(
 // US-018 R7: the live updates of the project page's work items
 app.MapHub<WorkItemsHub>(WorkItemsHub.Path);
 
-app.Run();
+await app.RunAsync();
 
 // Makes Program visible to the integration tests (WebApplicationFactory<Program>)
 public partial class Program { }
