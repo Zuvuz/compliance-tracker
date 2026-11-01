@@ -1,3 +1,4 @@
+using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Domain.Common;
@@ -22,14 +23,18 @@ namespace ComplianceTracker.Web.Controllers
         private readonly FrameworkQueries _frameworks;
         private readonly OrganizationQueries _organizations;
 
+        private readonly TimeProvider _clock;
+
         public FrameworksController(
             FrameworkService service,
             FrameworkQueries frameworks,
-            OrganizationQueries organizations)
+            OrganizationQueries organizations,
+            TimeProvider clock)
         {
             _service = service;
             _frameworks = frameworks;
             _organizations = organizations;
+            _clock = clock;
         }
 
         // GET /Frameworks: the list of the organisation's frameworks and the "add" form
@@ -43,7 +48,7 @@ namespace ComplianceTracker.Web.Controllers
                 return RedirectToAction("Create", "Organizations");
             }
 
-            return View(new FrameworksPageViewModel(organization, await _frameworks.ListAsync(cancellationToken)));
+            return View(new FrameworksPageViewModel(organization, await _frameworks.ListAsync(cancellationToken), _clock.Today()));
         }
 
         // POST /Frameworks/Add: a new framework with its first PDF (R1)
@@ -52,10 +57,10 @@ namespace ComplianceTracker.Web.Controllers
         [RequestSizeLimit(MaxRequestSize)]
         [RequestFormLimits(MultipartBodyLengthLimit = MaxRequestSize)]
         [OnDomainError(nameof(Index))]
-        public async Task<IActionResult> Add(string? name, IFormFile? file, CancellationToken cancellationToken)
+        public async Task<IActionResult> Add(string? name, IFormFile? file, DateOnly? appliesFrom, CancellationToken cancellationToken)
         {
             var content = await ReadPdfAsync(file, cancellationToken); // first, so a missing file gives "Choose a PDF file"
-            var framework = await _service.AddAsync(name ?? "", file!.FileName, content, cancellationToken);
+            var framework = await _service.AddAsync(name ?? "", file!.FileName, content, appliesFrom, cancellationToken);
 
             // US-007 R1: straight to the draft, so the member can check the requirements that were found.
             // Post/Redirect/Get: a reload does not upload the file again.
@@ -69,10 +74,10 @@ namespace ComplianceTracker.Web.Controllers
         [RequestSizeLimit(MaxRequestSize)]
         [RequestFormLimits(MultipartBodyLengthLimit = MaxRequestSize)]
         [OnDomainError(nameof(Index))]
-        public async Task<IActionResult> UploadVersion(Guid frameworkId, IFormFile? file, CancellationToken cancellationToken)
+        public async Task<IActionResult> UploadVersion(Guid frameworkId, IFormFile? file, DateOnly? appliesFrom, CancellationToken cancellationToken)
         {
             var content = await ReadPdfAsync(file, cancellationToken);
-            var version = await _service.UploadVersionAsync(frameworkId, file!.FileName, content, cancellationToken);
+            var version = await _service.UploadVersionAsync(frameworkId, file!.FileName, content, appliesFrom, cancellationToken);
             return RedirectToAction(nameof(Version), new { id = version.Id });
         }
 
@@ -89,7 +94,7 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound(); // US-005 R7: also when the version belongs to another organisation
             }
 
-            return View(new FrameworkVersionPageViewModel(found.Value.Framework, found.Value.Version, organization));
+            return View(new FrameworkVersionPageViewModel(found.Value.Framework, found.Value.Version, organization, _clock.Today()));
         }
 
         // POST /Frameworks/AddRequirement: R2, R5
@@ -122,6 +127,16 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Version), new { id = versionId });
         }
 
+        // POST /Frameworks/SetAppliesFrom: US-035 R2. An empty date clears it.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Version), IdFrom = "versionId")]
+        public async Task<IActionResult> SetAppliesFrom(Guid versionId, DateOnly? appliesFrom, CancellationToken cancellationToken)
+        {
+            await _service.SetAppliesFromAsync(versionId, appliesFrom, cancellationToken);
+            return RedirectToAction(nameof(Version), new { id = versionId });
+        }
+
         // POST /Frameworks/Activate: R3, R4, R6
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -143,7 +158,7 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound(); // R7: also when the framework belongs to another organisation
             }
 
-            return View(new FrameworkVersionsViewModel(framework, organization));
+            return View(new FrameworkVersionsViewModel(framework, organization, _clock.Today()));
         }
 
         // GET /Frameworks/Document/{versionId}: opens the PDF of one version

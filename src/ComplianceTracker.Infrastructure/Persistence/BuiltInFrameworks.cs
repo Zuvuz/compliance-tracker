@@ -4,6 +4,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
     // They are added to every database by a migration (seed data), with fixed ids so they are
     // the same everywhere. Their requirements are added later with the requirement model (US-007 / US-019).
     // To add another regulation: add it here and in the configurations' HasData, then create a migration.
+    // US-035 R7: a new version of a built-in regulation is added the same way, with its start date.
     public static class BuiltInFrameworks
     {
         public static class Cra
@@ -15,6 +16,9 @@ namespace ComplianceTracker.Infrastructure.Persistence
 
             // Published in the Official Journal of the EU
             public static readonly DateTime PublishedAt = new(2024, 11, 20, 0, 0, 0, DateTimeKind.Utc);
+
+            // US-035: Article 71(2), the day the regulation applies from (some articles apply earlier)
+            public static readonly DateOnly AppliesFrom = new(2027, 12, 11);
         }
 
         public static class AiAct
@@ -26,6 +30,9 @@ namespace ComplianceTracker.Infrastructure.Persistence
 
             // Published in the Official Journal of the EU
             public static readonly DateTime PublishedAt = new(2024, 7, 12, 0, 0, 0, DateTimeKind.Utc);
+
+            // US-035: Article 113, the day the regulation applies from (some articles apply earlier or later)
+            public static readonly DateOnly AppliesFrom = new(2026, 8, 2);
         }
     }
 }

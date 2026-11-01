@@ -1,3 +1,4 @@
+using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Application.Projects;
@@ -17,12 +18,16 @@ namespace ComplianceTracker.Web.Controllers
         private readonly ProjectQueries _projects;
         private readonly FrameworkQueries _frameworks;
 
+        private readonly TimeProvider _clock;
+
         public OrganizationsController(
             OrganizationService service,
             OrganizationQueries organizations,
             ProjectQueries projects,
-            FrameworkQueries frameworks)
+            FrameworkQueries frameworks,
+            TimeProvider clock)
         {
+            _clock = clock;
             _service = service;
             _organizations = organizations;
             _projects = projects;
@@ -89,7 +94,8 @@ namespace ComplianceTracker.Web.Controllers
             return View(new OrganizationOverviewViewModel(
                 organization,
                 await _projects.ListAsync(cancellationToken),
-                await _frameworks.ListAsync(cancellationToken)));
+                await _frameworks.ListAsync(cancellationToken),
+                _clock.Today()));
         }
 
         // The Users tab: the members and their roles

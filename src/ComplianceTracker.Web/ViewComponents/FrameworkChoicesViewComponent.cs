@@ -1,3 +1,4 @@
+using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Web.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -10,17 +11,19 @@ namespace ComplianceTracker.Web.ViewComponents
     public class FrameworkChoicesViewComponent : ViewComponent
     {
         private readonly FrameworkQueries _frameworks;
+        private readonly TimeProvider _clock;
 
-        public FrameworkChoicesViewComponent(FrameworkQueries frameworks)
+        public FrameworkChoicesViewComponent(FrameworkQueries frameworks, TimeProvider clock)
         {
             _frameworks = frameworks;
+            _clock = clock;
         }
 
         // US-007: frameworks that only have a draft cannot be used by projects yet, so they are not offered
         public async Task<IViewComponentResult> InvokeAsync(IReadOnlyCollection<Guid> selected)
         {
             var usable = (await _frameworks.ListAsync(HttpContext.RequestAborted))
-                .Where(f => f.CurrentVersion is not null)
+                .Where(f => f.CurrentVersion(_clock.Today()) is not null)
                 .ToList();
             return View(new FrameworkChoicesViewModel(usable, selected));
         }

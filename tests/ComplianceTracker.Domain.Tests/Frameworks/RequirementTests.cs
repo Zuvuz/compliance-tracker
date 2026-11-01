@@ -11,6 +11,7 @@ public class RequirementTests
     private static readonly Guid OrganizationId = Guid.NewGuid();
     private static readonly Guid AnnaId = Guid.NewGuid();
     private static readonly DateTime Monday = new(2026, 10, 26, 9, 0, 0, DateTimeKind.Utc);
+    private static readonly DateOnly Today = new(2026, 11, 1);
 
     private static CatalogFile PdfFile(byte marker = 0)
     {
@@ -43,9 +44,9 @@ public class RequirementTests
 
         // Assert
         Assert.Equal(FrameworkVersionStatus.Draft, framework.LatestVersion.Status);
-        Assert.Null(framework.CurrentVersion);
+        Assert.Null(framework.CurrentVersion(Today));
         Assert.Equal("ISO/IEC 27001 has no active version yet",
-            Assert.Throws<DomainException>(() => framework.RequireCurrentVersion()).Message);
+            Assert.Throws<DomainException>(() => framework.RequireCurrentVersion(Today)).Message);
     }
 
     [Fact]
@@ -139,7 +140,7 @@ public class RequirementTests
         Assert.True(version.IsActive);
         Assert.Equal(Monday, version.ActivatedAt);
         Assert.Equal(AnnaId, version.ActivatedById);
-        Assert.Same(version, framework.CurrentVersion);
+        Assert.Same(version, framework.CurrentVersion(Today));
     }
 
     [Fact]
@@ -190,12 +191,12 @@ public class RequirementTests
         second.AddRequirement("A.5.15", "Access control", null);
 
         // Act
-        var beforeActivation = framework.CurrentVersion;
+        var beforeActivation = framework.CurrentVersion(Today);
         second.Activate(AnnaId, Monday.AddDays(2));
 
         // Assert
         Assert.Same(first, beforeActivation);
-        Assert.Same(second, framework.CurrentVersion);
+        Assert.Same(second, framework.CurrentVersion(Today));
         Assert.True(first.IsActive);
     }
 }

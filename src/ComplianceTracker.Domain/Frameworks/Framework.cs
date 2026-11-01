@@ -26,17 +26,33 @@ namespace ComplianceTracker.Domain.Frameworks
         // The newest upload, whether it is a draft or active. Never null, because a framework always has a version.
         public FrameworkVersion LatestVersion => _versions.MaxBy(v => v.Number)!;
 
-        // US-007 R4: the version that applies is the one activated last. Null while the framework only has a draft.
-        // Calculated, not stored.
-        public FrameworkVersion? CurrentVersion => _versions
-            .Where(v => v.IsActive)
-            .OrderBy(v => v.ActivatedAt ?? v.UploadedAt)
-            .ThenBy(v => v.Number)
-            .LastOrDefault();
+        // The version that applies on a day (US-007 R4, US-035 R3, R4): of the active versions whose start date
+        // has come, the one that started applying last. If none has started yet, the first upcoming one (US-035 R6).
+        // Null while the framework only has drafts. Calculated, not stored.
+        public FrameworkVersion? CurrentVersion(DateOnly today)
+        {
+            var applying = _versions.Where(v => v.AppliesOn(today)).ToList();
+            if (applying.Count > 0)
+            {
+                return applying.OrderBy(v => v.StartsApplyingAt).ThenBy(v => v.Number).Last();
+            }
+
+            return _versions.Where(v => v.IsActive).OrderBy(v => v.AppliesFrom).ThenBy(v => v.Number).FirstOrDefault();
+        }
+
+        // US-035 R3: an active version that has not started yet and is not the current one, or null
+        public FrameworkVersion? UpcomingVersion(DateOnly today)
+        {
+            var current = CurrentVersion(today);
+            return _versions
+                .Where(v => v.IsUpcomingOn(today) && v != current)
+                .OrderBy(v => v.AppliesFrom)
+                .FirstOrDefault();
+        }
 
         // The current version, or a clear error when there is none yet (e.g. a project tries to use the framework)
-        public FrameworkVersion RequireCurrentVersion()
-            => CurrentVersion ?? throw new DomainException($"{Name} has no active version yet");
+        public FrameworkVersion RequireCurrentVersion(DateOnly today)
+            => CurrentVersion(today) ?? throw new DomainException($"{Name} has no active version yet");
 
         // A version of this framework, or an error
         public FrameworkVersion Version(Guid versionId)

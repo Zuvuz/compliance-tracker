@@ -103,6 +103,7 @@ classDiagram
     +AddRequirementAsync(frameworkVersionId: Guid, code: string, title: string, description: string?) Task
     +ChangeRequirementAsync(frameworkVersionId: Guid, requirementId: Guid, code: string, title: string, description: string?) Task
     +RemoveRequirementAsync(frameworkVersionId: Guid, requirementId: Guid) Task
+    +SetAppliesFromAsync(frameworkVersionId: Guid, appliesFrom: DateOnly?) Task
     +ActivateAsync(frameworkVersionId: Guid) Task
     +EnableBuiltInAsync(frameworkId: Guid) Task
     +DisableBuiltInAsync(frameworkId: Guid) Task
@@ -233,9 +234,10 @@ classDiagram
     -scope: FrameworkScope
     -versions: List~FrameworkVersion~
     +LatestVersion: FrameworkVersion
-    +CurrentVersion: FrameworkVersion?
+    +CurrentVersion(today: DateOnly) FrameworkVersion?
+    +UpcomingVersion(today: DateOnly) FrameworkVersion?
     +IsBuiltIn: bool
-    +RequireCurrentVersion() FrameworkVersion
+    +RequireCurrentVersion(today: DateOnly) FrameworkVersion
     +Version(versionId: Guid) FrameworkVersion
     +Create(organizationId: Guid, name: string, file: CatalogFile, uploadedById: Guid, uploadedAt: DateTime)$ Framework
     +AddVersion(file: CatalogFile, uploadedById: Guid, uploadedAt: DateTime) FrameworkVersion
@@ -254,8 +256,12 @@ classDiagram
     -status: FrameworkVersionStatus
     -activatedAt: DateTime?
     -activatedById: Guid?
+    -appliesFrom: DateOnly?
     -requirements: List~Requirement~
     +IsActive: bool
+    +AppliesOn(today: DateOnly) bool
+    +IsUpcomingOn(today: DateOnly) bool
+    +SetAppliesFrom(appliesFrom: DateOnly?)
     +AddRequirement(code: string, title: string, description: string?) Requirement
     +ChangeRequirement(requirementId: Guid, code: string, title: string, description: string?)
     +RemoveRequirement(requirementId: Guid)
@@ -676,6 +682,7 @@ classDiagram
 - **User stories læses fra teamets eget værktøj.** `IWorkItemSource` er adapteren (B11); `GitHubWorkItemSource` læser issues med projektets label via GitHubs REST API uden nøgle og forstår BDD-skabelonen (`### Rules`, `### Examples`, `### Gherkin`). `WorkItemSyncService` tilføjer, opdaterer og markerer (`Closed`, `Removed`) og sletter aldrig. "Sync now" og en baggrundsjob (`ScheduledWorkItemSync`, hvert 15. minut) kører den samme sync, og åbne projektsider får besked via SignalR (`IWorkItemNotifier`). En planlagt sync logges uden bruger (`userId` er null = systemet) (B25). (US-018)
 - **Private repositories læses med en krypteret nøgle.** Domænet ser kun den krypterede tekst (`GitHubLink.EncryptedToken`). `ISecretProtector` krypterer med ASP.NET Core Data Protection, og nøglerne ligger i tabellen `DataProtectionKeys`. Nøglen tjekkes hos GitHub, før den gemmes, og den vises, logges og sendes aldrig tilbage til siden (B26). (US-031)
 - **Projektsiden har faner.** Overview, Frameworks, User stories og Activity har hver sin adresse (`/Projects/Details/{id}/{tab}`) og samme header. Activity viser projektets logposter (alle med projektet som `subjectId`), nyeste først, med `details`. En handling, der fejler, sender brugeren tilbage til sin egen fane (`[OnDomainError(Tab = ...)]`). (US-022)
+- **En version kan gælde fra en dato.** `AppliesFrom` sættes på kladden og låses ved aktivering. `CurrentVersion(today)` er den aktive version, der senest begyndte at gælde. Har ingen version startet endnu, bruges den første kommende. "I dag" kommer fra appens ur (`TimeProvider.Today()`), så testene kan styre datoen. Projekter flyttes ikke automatisk, men kan forberede sig ved at vælge en kommende version (B27). (US-035)
 - **Koblingsklasser med data.** `RequirementControl` og `RequirementWorkItem` registrerer via `MappingSource`, om koblingen er lavet manuelt eller via et godkendt AI-forslag.
 - **Vurderinger ændres ikke.** En ny `RequirementAssessment` oprettes i stedet, og den seneste er gældende. Det giver historik til en auditor.
 - **Frameworkversioner låses ved aktivering.** Når `status` er `Active`, kan `requirements` ikke ændres. Så kan en mapping nøjes med at pege på et `Requirement`, fordi teksten bag aldrig ændrer sig. En rettelse er en ny `FrameworkVersion`.
