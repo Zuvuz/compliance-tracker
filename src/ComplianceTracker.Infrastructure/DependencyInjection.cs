@@ -1,3 +1,4 @@
+using ComplianceTracker.Application.Compliance;
 using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
@@ -56,6 +57,7 @@ namespace ComplianceTracker.Infrastructure
             // US-018: the GitHub adapter (B11). A typed HttpClient, so connections are reused safely.
             // GitHub requires a User-Agent; the API version header keeps the JSON format stable.
             services.AddScoped<IWorkItemRepository, WorkItemRepository>();
+            services.AddScoped<IRequirementLinkRepository, RequirementLinkRepository>();
             services.AddHttpClient<GitHubWorkItemSource>(client =>
             {
                 client.BaseAddress = new Uri(GitHubApiAddress);

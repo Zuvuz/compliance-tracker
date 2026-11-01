@@ -1,3 +1,4 @@
+using ComplianceTracker.Application.Compliance;
 using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
@@ -30,12 +31,14 @@ namespace ComplianceTracker.Application
             services.AddScoped<FrameworkService>();
             services.AddScoped<ProjectService>();
             services.AddScoped<WorkItemSyncService>();
+            services.AddScoped<ComplianceService>();
 
             // Queries (read data for the pages)
             services.AddScoped<OrganizationQueries>();
             services.AddScoped<FrameworkQueries>();
             services.AddScoped<ProjectQueries>();
             services.AddScoped<WorkItemQueries>();
+            services.AddScoped<ComplianceQueries>();
 
             return services;
         }

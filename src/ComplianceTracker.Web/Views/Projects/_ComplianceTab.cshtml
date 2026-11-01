@@ -1,0 +1,170 @@
+@* US-019, US-021, US-041: the project's requirements per regulation, what covers them, and the coverage.
+   One sub-tab per framework the project follows, each with its own address (/Projects/Details/{id}/compliance/{slug}).
+   Ids and classes used by the tests: #compliance-tabs (links data-sub), #coverage, #requirement-search,
+   #requirements-table rows requirement-row (data-code) with requirement-status and linked-story, link-requirement forms,
+   unlink-requirement forms, #no-requirements, #no-frameworks-compliance. *@
+@model ProjectDetailsViewModel
+@{
+    var project = Model.Project;
+    var compliance = Model.Compliance;
+    var active = Model.ActiveCompliance;
+    var activeSlug = active is null ? null : FrameworkNames.Slug(active.Framework.Name);
+}
+
+<section id="project-compliance">
+    @if (compliance is null || compliance.Frameworks.Count == 0)
+    {
+        @* US-041 R8 *@
+        <p class="text-muted" id="no-frameworks-compliance">
+            No frameworks yet. <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Frameworks">Add one on the Frameworks tab</a>.
+        </p>
+        return;
+    }
+
+    @* US-041 R2: one sub-tab per framework, alphabetical *@
+    <ul class="nav nav-pills mb-3" id="compliance-tabs">
+        @foreach (var tab in compliance.Frameworks)
+        {
+            var slug = FrameworkNames.Slug(tab.Framework.Name);
+            <li class="nav-item">
+                <a class="nav-link @(slug == activeSlug ? "active" : "")" data-sub="@slug"
+                   asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Compliance" asp-route-sub="@slug">@FrameworkNames.Short(tab.Framework.Name)</a>
+            </li>
+        }
+    </ul>
+
+    @{
+        var framework = active!;
+        var current = framework.Framework.CurrentVersion(Model.Today);
+        var rows = framework.Requirements.AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(Model.Search))
+        {
+            var term = Model.Search.Trim();
+            rows = rows.Where(r => r.Requirement.Code.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || r.Requirement.Title.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || r.Requirement.Description.Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+        if (Model.OnlyNotCovered)
+        {
+            rows = rows.Where(r => !r.IsCovered);
+        }
+        var shown = rows.ToList();
+        var openStories = compliance.WorkItems
+            .Where(w => w.State != ComplianceTracker.Domain.WorkItems.WorkItemState.Removed)
+            .OrderBy(w => w.Title, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    @* US-041 R4, R7 / US-021 R4 *@
+    <p class="mb-3">
+        <span class="fw-semibold">@framework.Framework.Name</span>, version @framework.Version.Number:
+        <span id="coverage">@framework.Covered of @framework.Total requirements covered (@framework.Percent %)</span>
+        @if (current is not null && current.Id != framework.Version.Id && current.Number > framework.Version.Number)
+        {
+            <span class="badge text-bg-warning ms-2" id="compliance-newer">Newer version available</span>
+        }
+    </p>
+
+    @if (framework.Total == 0)
+    {
+        @* US-041 R9 *@
+        <p class="text-muted" id="no-requirements">This framework has no requirements in the tracker yet</p>
+        return;
+    }
+
+    @* US-019 R3, US-021 R6: a GET form, so a search or filter can be linked to *@
+    <form method="get" class="row g-2 mb-3" id="requirement-search"
+          action="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Compliance, sub = activeSlug })">
+        <div class="col-md-5">
+            <input name="q" value="@Model.Search" class="form-control" placeholder="Search code or text" aria-label="Search requirements" />
+        </div>
+        <div class="col-auto form-check d-flex align-items-center gap-2 ms-2">
+            <input class="form-check-input" type="checkbox" name="show" value="not-covered" id="only-not-covered" @(Model.OnlyNotCovered ? "checked" : "") />
+            <label class="form-check-label" for="only-not-covered">Only not covered</label>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-outline-secondary">Show</button>
+        </div>
+    </form>
+
+    @if (shown.Count == 0)
+    {
+        <p class="text-muted" id="no-matching-requirements">No requirements match</p>
+    }
+    else
+    {
+        <table class="table align-middle" id="requirements-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Title</th>
+                    <th>Covered by</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in shown)
+                {
+                    var requirement = row.Requirement;
+                    <tr class="requirement-row" data-code="@requirement.Code">
+                        <td class="requirement-code text-nowrap">@requirement.Code</td>
+                        <td class="requirement-title">
+                            @requirement.Title
+                            @if (!string.IsNullOrEmpty(requirement.Description))
+                            {
+                                <div class="small text-muted">@requirement.Description</div>
+                            }
+                        </td>
+                        <td>
+                            @foreach (var link in row.Links)
+                            {
+                                @* US-021 R7: each story links to its issue *@
+                                <div class="d-flex align-items-center gap-1 mb-1">
+                                    <a class="linked-story" href="@link.WorkItem.Url" target="_blank" rel="noopener noreferrer">@link.WorkItem.Title</a>
+                                    <span class="badge text-bg-light">@link.WorkItem.State</span>
+                                    @if (!project.IsClosed)
+                                    {
+                                        <form asp-action="UnlinkRequirement" method="post" class="d-inline unlink-requirement">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="linkId" value="@link.LinkId" />
+                                            <input type="hidden" name="sub" value="@activeSlug" />
+                                            <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Remove link" aria-label="Remove link to @link.WorkItem.Title">×</button>
+                                        </form>
+                                    }
+                                </div>
+                            }
+                            @{
+                                var linkable = openStories.Where(w => row.Links.All(l => l.WorkItem.Id != w.Id)).ToList();
+                            }
+                            @if (!project.IsClosed && linkable.Count > 0)
+                            {
+                                <form asp-action="LinkRequirement" method="post" class="d-flex gap-1 link-requirement">
+                                    <input type="hidden" name="projectId" value="@project.Id" />
+                                    <input type="hidden" name="requirementId" value="@requirement.Id" />
+                                    <input type="hidden" name="sub" value="@activeSlug" />
+                                    <select name="workItemId" class="form-select form-select-sm" aria-label="User story for @requirement.Code">
+                                        @foreach (var story in linkable)
+                                        {
+                                            <option value="@story.Id">@story.Title</option>
+                                        }
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Link</button>
+                                </form>
+                            }
+                        </td>
+                        <td>
+                            @if (row.IsCovered)
+                            {
+                                <span class="requirement-status badge text-bg-success">Covered</span>
+                            }
+                            else
+                            {
+                                <span class="requirement-status badge text-bg-danger">Not covered</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>

@@ -252,6 +252,54 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("Requirements", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Mappings.RequirementLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("LinkedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("LinkedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("RemovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RemovedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RequirementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<Guid>("WorkItemId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LinkedById");
+
+                    b.HasIndex("RemovedById");
+
+                    b.HasIndex("RequirementId");
+
+                    b.HasIndex("WorkItemId");
+
+                    b.HasIndex("ProjectId", "RequirementId", "WorkItemId")
+                        .IsUnique()
+                        .HasFilter("\"RemovedAt\" IS NULL");
+
+                    b.ToTable("RequirementLinks", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Organization", b =>
                 {
                     b.Property<Guid>("Id")
@@ -576,6 +624,38 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .WithMany("Requirements")
                         .HasForeignKey("FrameworkVersionId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Mappings.RequirementLink", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("LinkedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("RemovedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ComplianceTracker.Domain.Frameworks.Requirement", null)
+                        .WithMany()
+                        .HasForeignKey("RequirementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.WorkItems.WorkItem", null)
+                        .WithMany()
+                        .HasForeignKey("WorkItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

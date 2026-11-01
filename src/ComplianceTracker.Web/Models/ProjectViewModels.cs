@@ -1,3 +1,4 @@
+using ComplianceTracker.Application.Compliance;
 using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Domain.Frameworks;
 using ComplianceTracker.Domain.Organizations;
@@ -70,6 +71,7 @@ namespace ComplianceTracker.Web.Models
     {
         public const string Overview = "overview";
         public const string Frameworks = "frameworks";
+        public const string Compliance = "compliance";
         public const string UserStories = "user-stories";
         public const string Activity = "activity";
 
@@ -78,6 +80,7 @@ namespace ComplianceTracker.Web.Models
         [
             (Overview, "Overview"),
             (Frameworks, "Frameworks"),
+            (Compliance, "Compliance"),
             (UserStories, "User stories"),
             (Activity, "Activity")
         ];
@@ -85,6 +88,26 @@ namespace ComplianceTracker.Web.Models
         // The tab for an address, Overview when there is none, or null for an unknown one
         public static string? Find(string? slug)
             => string.IsNullOrEmpty(slug) ? Overview : All.Select(t => t.Slug).FirstOrDefault(t => t == slug.ToLowerInvariant());
+    }
+
+    // US-041: short names and addresses for the Compliance tab's sub-tabs.
+    // The built-in frameworks are called e.g. "CRA – Regulation (EU) 2024/2847": the part before " – " is the short name.
+    public static class FrameworkNames
+    {
+        public static string Short(string name) => name.Split(" – ")[0].Trim();
+
+        // "Security policy" -> "security-policy"
+        public static string Slug(string name)
+        {
+            var chars = Short(name).ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray();
+            var slug = new string(chars);
+            while (slug.Contains("--"))
+            {
+                slug = slug.Replace("--", "-");
+            }
+
+            return slug.Trim('-');
+        }
     }
 
     // One framework a project follows, with the version it uses (US-011 R6) and who added it (US-022 R4)
@@ -116,7 +139,8 @@ namespace ComplianceTracker.Web.Models
     }
 
     // The project's user stories from GitHub and how the last sync went (Views/Projects/_WorkItems.cshtml, US-018)
-    public record WorkItemsViewModel(Project Project, IReadOnlyList<WorkItem> WorkItems);
+    // Compliance: when given, each user story shows the requirements it is linked to (US-021 R3)
+    public record WorkItemsViewModel(Project Project, IReadOnlyList<WorkItem> WorkItems, ProjectCompliance? Compliance = null);
 
     // Data for the project page (Views/Projects/Details.cshtml and its tabs)
     public record ProjectDetailsViewModel(Project Project, IReadOnlyList<Framework> AvailableFrameworks, IReadOnlyList<WorkItem> WorkItems, DateOnly Today)
@@ -126,7 +150,18 @@ namespace ComplianceTracker.Web.Models
         public Organization? Organization { get; init; }
         public IReadOnlyList<ActivityLogEntry> Activity { get; init; } = [];
 
-        public WorkItemsViewModel WorkItemsSection => new(Project, WorkItems);
+        // US-019, US-021, US-041: the Compliance tab's data, the chosen sub-tab (slug), the search and the filter
+        public ProjectCompliance? Compliance { get; init; }
+        public string? Sub { get; init; }
+        public string? Search { get; init; }
+        public bool OnlyNotCovered { get; init; }
+
+        // The framework of the chosen sub-tab, or the first one (R3)
+        public FrameworkCompliance? ActiveCompliance
+            => Compliance?.Frameworks.FirstOrDefault(f => FrameworkNames.Slug(f.Framework.Name) == Sub)
+               ?? Compliance?.Frameworks.FirstOrDefault();
+
+        public WorkItemsViewModel WorkItemsSection => new(Project, WorkItems, Compliance);
 
         // The name of a member, or "System" for what the tracker did by itself (US-018 R6)
         public string NameOf(Guid? userId)

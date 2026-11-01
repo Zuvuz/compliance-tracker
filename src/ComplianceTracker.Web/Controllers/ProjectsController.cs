@@ -1,3 +1,4 @@
+using ComplianceTracker.Application.Compliance;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
@@ -22,6 +23,8 @@ namespace ComplianceTracker.Web.Controllers
         private readonly WorkItemSyncService _sync;
         private readonly WorkItemQueries _workItems;
         private readonly TimeProvider _clock;
+        private readonly ComplianceService _compliance;
+        private readonly ComplianceQueries _complianceQueries;
 
         public ProjectsController(
             ProjectService service,
@@ -30,8 +33,12 @@ namespace ComplianceTracker.Web.Controllers
             OrganizationQueries organizations,
             WorkItemSyncService sync,
             WorkItemQueries workItems,
+            ComplianceService compliance,
+            ComplianceQueries complianceQueries,
             TimeProvider clock)
         {
+            _compliance = compliance;
+            _complianceQueries = complianceQueries;
             _clock = clock;
             _service = service;
             _projects = projects;
@@ -80,8 +87,10 @@ namespace ComplianceTracker.Web.Controllers
 
         // GET /Projects/Details/{id}/{tab?}: the project's own page (US-008), split into tabs (US-022).
         // Each tab has its own address (R6), e.g. /Projects/Details/{id}/frameworks. Without a tab: Overview.
-        [HttpGet("Projects/Details/{id:guid}/{tab?}")]
-        public async Task<IActionResult> Details(Guid id, string? tab, CancellationToken cancellationToken)
+        // US-041: the Compliance tab has one sub-tab per framework, e.g. /Projects/Details/{id}/compliance/cra.
+        // q searches the requirements (US-019 R3); show=not-covered filters them (US-021 R6).
+        [HttpGet("Projects/Details/{id:guid}/{tab?}/{sub?}")]
+        public async Task<IActionResult> Details(Guid id, string? tab, string? sub, string? q, string? show, CancellationToken cancellationToken)
         {
             var activeTab = ProjectTabs.Find(tab);
             var project = await _projects.GetAsync(id, cancellationToken);
@@ -96,6 +105,18 @@ namespace ComplianceTracker.Web.Controllers
                 ? await _projects.ActivityAsync(id, cancellationToken)
                 : [];
 
+            // Requirements and links: for the Compliance tab, the overview's summary and the user stories' requirements
+            var compliance = activeTab is ProjectTabs.Compliance or ProjectTabs.Overview or ProjectTabs.UserStories
+                ? await _complianceQueries.ForProjectAsync(id, cancellationToken)
+                : null;
+
+            // An unknown sub-tab is "not found", like an unknown tab
+            if (activeTab == ProjectTabs.Compliance && sub is not null
+                && compliance?.Frameworks.Any(f => FrameworkNames.Slug(f.Framework.Name) == sub) != true)
+            {
+                return NotFound();
+            }
+
             return View(new ProjectDetailsViewModel(
                 project,
                 await _frameworks.ListAsync(cancellationToken),
@@ -104,7 +125,11 @@ namespace ComplianceTracker.Web.Controllers
             {
                 Tab = activeTab,
                 Organization = organization,
-                Activity = activity
+                Activity = activity,
+                Compliance = compliance,
+                Sub = sub,
+                Search = q,
+                OnlyNotCovered = show == "not-covered"
             });
         }
 
@@ -121,7 +146,7 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound(); // R9
             }
 
-            return PartialView("_WorkItems", new WorkItemsViewModel(project, workItems));
+            return PartialView("_WorkItems", new WorkItemsViewModel(project, workItems, await _complianceQueries.ForProjectAsync(id, cancellationToken)));
         }
 
         // POST /Projects/LinkGitHub: R1
@@ -162,6 +187,28 @@ namespace ComplianceTracker.Web.Controllers
         {
             await _sync.SyncNowAsync(projectId, cancellationToken);
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+        }
+
+        // ---------------------------------------------------------- Requirements and user stories (US-021)
+
+        // POST /Projects/LinkRequirement: links one of the project's user stories to a requirement, by hand
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> LinkRequirement(Guid projectId, Guid requirementId, Guid workItemId, string? sub, CancellationToken cancellationToken)
+        {
+            await _compliance.LinkAsync(projectId, requirementId, workItemId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // POST /Projects/UnlinkRequirement: the link is kept as history
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> UnlinkRequirement(Guid projectId, Guid linkId, string? sub, CancellationToken cancellationToken)
+        {
+            await _compliance.UnlinkAsync(projectId, linkId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
         }
 
         // ---------------------------------------------------------- Editing (US-024)

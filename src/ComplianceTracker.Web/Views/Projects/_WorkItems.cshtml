@@ -71,6 +71,15 @@ else
                         <text> · @item.Labels</text>
                     }
                 </p>
+                @if (Model.Compliance is { } compliance)
+                {
+                    @* US-021 R3: the requirements the story is linked to *@
+                    var codes = compliance.RequirementCodesOf(item.Id);
+                    <p class="small mb-2">
+                        Requirements:
+                        <span class="work-item-requirements">@(codes.Count == 0 ? "none yet" : string.Join(", ", codes))</span>
+                    </p>
+                }
                 <h3 class="h6">Rules</h3>
                 <pre class="work-item-rules small">@item.Rules</pre>
                 @if (!string.IsNullOrEmpty(item.Examples))
