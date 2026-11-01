@@ -19,10 +19,15 @@
         <label for="name" class="form-label">Framework</label>
         <input id="name" name="name" class="form-control" placeholder="e.g. ISO/IEC 27001 or Security policy" />
     </div>
-    <div class="col-md-5">
+    <div class="col-md-3">
         <label for="file" class="form-label">PDF file</label>
         @* accept only filters the file picker; the server still checks the file *@
         <input id="file" name="file" type="file" accept=".pdf,application/pdf" class="form-control" />
+    </div>
+    <div class="col-md-2">
+        @* US-035: optional; without a date the version applies as soon as it is activated *@
+        <label for="appliesFrom" class="form-label">Applies from</label>
+        <input id="appliesFrom" name="appliesFrom" type="date" class="form-control" />
     </div>
     <div class="col-md-2 d-flex align-items-end">
         <button type="submit" class="btn btn-primary w-100">Add</button>
@@ -51,7 +56,12 @@
                 <td class="framework-source">@(framework.IsBuiltIn ? "Built-in" : "Uploaded")</td>
                 <td>
                     <span class="framework-version">@current.Number</span>
-                    @if (current.IsActive)
+                    @if (current.IsUpcomingOn(Model.Today) && framework.CurrentVersion(Model.Today) != current)
+                    {
+                        @* US-035 R3 *@
+                        <span class="framework-status badge text-bg-info">Upcoming (applies from @current.AppliesFrom!.Value.ToString("dd-MM-yyyy"))</span>
+                    }
+                    else if (current.IsActive)
                     {
                         <span class="framework-status badge text-bg-success">Active</span>
                     }
@@ -86,6 +96,8 @@
                             <input type="hidden" name="frameworkId" value="@framework.Id" />
                             <div class="d-flex gap-1">
                                 <input name="file" type="file" accept=".pdf,application/pdf" class="form-control form-control-sm" />
+                                <input name="appliesFrom" type="date" class="form-control form-control-sm" style="max-width: 10rem"
+                                       title="Applies from (optional)" aria-label="Applies from" />
                                 <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Upload new version</button>
                             </div>
                         </form>

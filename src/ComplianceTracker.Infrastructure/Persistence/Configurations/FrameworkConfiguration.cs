@@ -49,8 +49,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
                 .UsePropertyAccessMode(PropertyAccessMode.Field)
                 .AutoInclude();
 
-            // CurrentVersion is calculated from Versions and not stored
-            builder.Ignore(f => f.CurrentVersion);
+            // LatestVersion is calculated from Versions and not stored (CurrentVersion is a method, US-035)
             builder.Ignore(f => f.LatestVersion);
         }
     }

@@ -17,6 +17,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         // The time is written as ISO 8601 in UTC, e.g. "2026-10-24T14:02:00Z"
         [Given("the time is {string}")]
+        [When("the time is {string}")]
         public void GivenTheTimeIs(string time)
             => _clock.SetUtcNow(Parse(time));
 

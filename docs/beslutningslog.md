@@ -227,6 +227,21 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Én fælles nøgle til hele trackeren i serverens konfiguration, fordi alle organisationer så ville dele adgang.
   - En GitHub App eller OAuth, fordi det kræver en offentlig adresse og en app-registrering.
 
+### B27 – Versioner gælder fra en dato
+
+- **Status:** Vedtaget (afløser B24's regel om, at den senest aktiverede version er den gældende)
+- **Beslutning:** (US-035)
+  - En version kan få en dato, den gælder fra. Den sættes på kladden og låses ved aktivering.
+  - Den gældende version er den aktive version, der senest begyndte at gælde. Indtil datoen er den nye version "Upcoming".
+  - Har et framework kun versioner, der ikke er startet endnu, bruges den første af dem (fx CRA, der gælder fra 11-12-2027).
+  - Projekter flyttes ikke på datoen. De får "Newer version available" og flytter med "Use newest". De kan også vælge en kommende version tidligt for at forberede sig.
+  - Nye versioner af de indbyggede regulativer kommer med en opdatering af trackeren (en migration) med deres startdato.
+  - "I dag" er datoen i serverens lokale tidszone, fra appens ur.
+- **Begrundelse:** Regulativer bliver vedtaget længe før, de gælder. Organisationen skal kunne forberede sig uden, at den gældende version skifter for tidligt.
+- **Fravalgt:**
+  - Regulativer, der gælder i etaper (fx AI Act's artikler fra forskellige datoer). Én dato pr. version indtil videre.
+  - Automatisk flytning af projekter på datoen.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

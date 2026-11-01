@@ -103,6 +103,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("ActivatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<DateOnly?>("AppliesFrom")
+                        .HasColumnType("date");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -153,6 +156,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
                             ActivatedAt = new DateTime(2024, 11, 20, 0, 0, 0, 0, DateTimeKind.Utc),
+                            AppliesFrom = new DateOnly(2027, 12, 11),
                             FileName = "",
                             FrameworkId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c01"),
                             Number = 1,
@@ -166,6 +170,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
                             ActivatedAt = new DateTime(2024, 7, 12, 0, 0, 0, 0, DateTimeKind.Utc),
+                            AppliesFrom = new DateOnly(2026, 8, 2),
                             FileName = "",
                             FrameworkId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c03"),
                             Number = 1,

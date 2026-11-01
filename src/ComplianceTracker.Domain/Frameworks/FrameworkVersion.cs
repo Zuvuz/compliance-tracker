@@ -44,6 +44,27 @@ namespace ComplianceTracker.Domain.Frameworks
         public DateTime? ActivatedAt { get; private set; }
         public Guid? ActivatedById { get; private set; }
 
+        // US-035: the day the version starts to apply. Null: it applies as soon as it is activated.
+        public DateOnly? AppliesFrom { get; private set; }
+
+        // US-035 R3: active, but its start date has not come yet on this day
+        public bool IsUpcomingOn(DateOnly today) => IsActive && AppliesFrom > today;
+
+        // US-035: active and its start date (if any) has come
+        public bool AppliesOn(DateOnly today) => IsActive && (AppliesFrom is null || AppliesFrom <= today);
+
+        // When the version started (or starts) to apply: the later of activation and its start date.
+        // Used to find the version that applies last (Framework.CurrentVersion).
+        internal DateTime StartsApplyingAt
+        {
+            get
+            {
+                var activated = ActivatedAt ?? UploadedAt;
+                var from = AppliesFrom?.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+                return from > activated ? from.Value : activated;
+            }
+        }
+
         // In the order of the document. Only loaded when asked for (IFrameworkRepository).
         public IReadOnlyList<Requirement> Requirements => _requirements.OrderBy(r => r.Position).ToList();
 
@@ -90,6 +111,13 @@ namespace ComplianceTracker.Domain.Frameworks
         {
             EnsureDraft();
             _requirements.Remove(Find(requirementId));
+        }
+
+        // US-035 R1, R2: sets or clears the start date. Only while the version is a draft.
+        public void SetAppliesFrom(DateOnly? appliesFrom)
+        {
+            EnsureDraft();
+            AppliesFrom = appliesFrom;
         }
 
         // R3: locks the version and its requirements. It needs at least one requirement,

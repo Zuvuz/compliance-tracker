@@ -24,7 +24,7 @@
         {
             <tr>
                 <td class="framework-version">@version.Number</td>
-                <td class="framework-status">@version.Status@(Model.Framework.CurrentVersion?.Id == version.Id ? " (current)" : "")</td>
+                <td class="framework-status">@Model.StatusOf(version)</td>
                 <td>@version.FileName</td>
                 <td>@version.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
                 <td>@Model.UploadedBy(version)</td>

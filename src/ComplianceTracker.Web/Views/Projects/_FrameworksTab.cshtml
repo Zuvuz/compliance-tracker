@@ -35,7 +35,12 @@
                         <td class="framework-source">@(row.Framework.IsBuiltIn ? "Built-in" : "Uploaded")</td>
                         <td class="framework-version">@row.Version.Number</td>
                         <td>
-                            @if (row.NewerVersionExists)
+                            @if (row.Version.IsUpcomingOn(Model.Today))
+                            {
+                                @* US-035 R5, R6 *@
+                                <span class="framework-status framework-upcoming badge text-bg-info">@row.Status</span>
+                            }
+                            else if (row.NewerVersionExists)
                             {
                                 <span class="framework-status framework-newer badge text-bg-warning">@row.Status</span>
                             }
@@ -57,6 +62,16 @@
                                         <input type="hidden" name="projectId" value="@project.Id" />
                                         <input type="hidden" name="frameworkId" value="@row.Framework.Id" />
                                         <button type="submit" class="btn btn-sm btn-outline-primary">Use newest</button>
+                                    </form>
+                                }
+                                @* US-035 R5: move early to a version that does not apply yet, to prepare for it *@
+                                @if (row.UpcomingToPrepareFor is { } upcoming)
+                                {
+                                    <form asp-action="UseNewest" method="post" class="d-inline prepare-upcoming">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="frameworkId" value="@row.Framework.Id" />
+                                        <input type="hidden" name="frameworkVersionId" value="@upcoming.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-info">Prepare for version @upcoming.Number</button>
                                     </form>
                                 }
                                 @* US-011 R7: removing keeps the history *@

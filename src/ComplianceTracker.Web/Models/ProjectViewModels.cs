@@ -88,20 +88,38 @@ namespace ComplianceTracker.Web.Models
     }
 
     // One framework a project follows, with the version it uses (US-011 R6) and who added it (US-022 R4)
-    public record ProjectFrameworkRow(Framework Framework, FrameworkVersion Version, ProjectFramework Link)
+    // Today: the day the page is shown for, from the app's clock (US-035)
+    public record ProjectFrameworkRow(Framework Framework, FrameworkVersion Version, ProjectFramework Link, DateOnly Today)
     {
         // US-007: only an activated version counts as newer; drafts cannot be used yet
-        public bool NewerVersionExists => Framework.CurrentVersion is { } current && current.Id != Version.Id
+        public bool NewerVersionExists => Framework.CurrentVersion(Today) is { } current && current.Id != Version.Id
             && current.Number > Version.Number;
 
-        public string Status => NewerVersionExists ? "Newer version available" : "Newest";
+        // US-035 R5: a newer version that does not apply yet, which the project can move to early to prepare
+        public FrameworkVersion? UpcomingToPrepareFor
+            => Framework.UpcomingVersion(Today) is { } upcoming && upcoming.Number > Version.Number ? upcoming : null;
+
+        // US-022 R4, US-035 R3, R6
+        public string Status
+        {
+            get
+            {
+                if (Version.IsUpcomingOn(Today))
+                {
+                    var from = Version.AppliesFrom!.Value.ToString("dd-MM-yyyy");
+                    return Framework.CurrentVersion(Today) == Version ? $"Applies from {from}" : $"Upcoming (applies from {from})";
+                }
+
+                return NewerVersionExists ? "Newer version available" : "Newest";
+            }
+        }
     }
 
     // The project's user stories from GitHub and how the last sync went (Views/Projects/_WorkItems.cshtml, US-018)
     public record WorkItemsViewModel(Project Project, IReadOnlyList<WorkItem> WorkItems);
 
     // Data for the project page (Views/Projects/Details.cshtml and its tabs)
-    public record ProjectDetailsViewModel(Project Project, IReadOnlyList<Framework> AvailableFrameworks, IReadOnlyList<WorkItem> WorkItems)
+    public record ProjectDetailsViewModel(Project Project, IReadOnlyList<Framework> AvailableFrameworks, IReadOnlyList<WorkItem> WorkItems, DateOnly Today)
     {
         // US-022: the tab being shown (ProjectTabs), the organisation (for names) and the Activity tab's log entries
         public string Tab { get; init; } = ProjectTabs.Overview;
@@ -140,7 +158,7 @@ namespace ComplianceTracker.Web.Models
             {
                 var framework = AvailableFrameworks.FirstOrDefault(f => f.Id == link.FrameworkId);
                 var version = framework?.Versions.FirstOrDefault(v => v.Id == link.FrameworkVersionId);
-                return framework is null || version is null ? null : new ProjectFrameworkRow(framework, version, link);
+                return framework is null || version is null ? null : new ProjectFrameworkRow(framework, version, link, Today);
             })
             .OfType<ProjectFrameworkRow>()
             .OrderBy(r => r.Framework.Name)
@@ -149,20 +167,21 @@ namespace ComplianceTracker.Web.Models
         // The frameworks that can still be added (the project uses each framework at most once, R3),
         // and that have an active version (US-007)
         public IEnumerable<Framework> CanBeAdded
-            => AvailableFrameworks.Where(f => Project.FrameworkInUse(f.Id) is null && f.CurrentVersion is not null);
+            => AvailableFrameworks.Where(f => Project.FrameworkInUse(f.Id) is null && f.CurrentVersion(Today) is not null);
     }
 
     // One line in the organisation overview: a framework version and the projects using it (US-011 R5)
-    public record FrameworkUsageRow(Framework Framework, FrameworkVersion Version, IReadOnlyList<Project> Projects)
+    public record FrameworkUsageRow(Framework Framework, FrameworkVersion Version, IReadOnlyList<Project> Projects, DateOnly Today)
     {
-        public bool IsNewest => Version.Id == Framework.CurrentVersion?.Id;
+        public bool IsNewest => Version.Id == Framework.CurrentVersion(Today)?.Id;
     }
 
     // Data for the organisation's Overview tab: the organisation, its projects and which frameworks they use
     public record OrganizationOverviewViewModel(
         Organization Organization,
         IReadOnlyList<Project> Projects,
-        IReadOnlyList<Framework> Frameworks)
+        IReadOnlyList<Framework> Frameworks,
+        DateOnly Today)
     {
         // Per framework: the newest version (even with no projects yet), then every older version in use
         public IReadOnlyList<FrameworkUsageRow> FrameworkUsage { get; } = Frameworks
@@ -171,7 +190,8 @@ namespace ComplianceTracker.Web.Models
                 .Select(version => new FrameworkUsageRow(
                     framework,
                     version,
-                    Projects.Where(p => p.Frameworks.Any(f => f.FrameworkVersionId == version.Id)).ToList()))
+                    Projects.Where(p => p.Frameworks.Any(f => f.FrameworkVersionId == version.Id)).ToList(),
+                    Today))
                 .Where(row => row.IsNewest || row.Projects.Count > 0))
             .ToList();
     }

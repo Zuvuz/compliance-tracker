@@ -1,3 +1,4 @@
+using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Application.Projects;
@@ -20,6 +21,7 @@ namespace ComplianceTracker.Web.Controllers
         private readonly OrganizationQueries _organizations;
         private readonly WorkItemSyncService _sync;
         private readonly WorkItemQueries _workItems;
+        private readonly TimeProvider _clock;
 
         public ProjectsController(
             ProjectService service,
@@ -27,8 +29,10 @@ namespace ComplianceTracker.Web.Controllers
             FrameworkQueries frameworks,
             OrganizationQueries organizations,
             WorkItemSyncService sync,
-            WorkItemQueries workItems)
+            WorkItemQueries workItems,
+            TimeProvider clock)
         {
+            _clock = clock;
             _service = service;
             _projects = projects;
             _frameworks = frameworks;
@@ -95,7 +99,8 @@ namespace ComplianceTracker.Web.Controllers
             return View(new ProjectDetailsViewModel(
                 project,
                 await _frameworks.ListAsync(cancellationToken),
-                await _workItems.ListAsync(id, cancellationToken) ?? [])
+                await _workItems.ListAsync(id, cancellationToken) ?? [],
+                _clock.Today())
             {
                 Tab = activeTab,
                 Organization = organization,
@@ -217,9 +222,10 @@ namespace ComplianceTracker.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Frameworks)]
-        public async Task<IActionResult> UseNewest(Guid projectId, Guid frameworkId, CancellationToken cancellationToken)
+        // US-035 R5: with frameworkVersionId, the project moves to that (e.g. upcoming) version instead
+        public async Task<IActionResult> UseNewest(Guid projectId, Guid frameworkId, Guid? frameworkVersionId, CancellationToken cancellationToken)
         {
-            await _service.UseNewestVersionAsync(projectId, frameworkId, cancellationToken);
+            await _service.UseNewestVersionAsync(projectId, frameworkId, frameworkVersionId, cancellationToken);
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Frameworks });
         }
 

@@ -59,13 +59,13 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             // The one version of each built-in framework (US-006)
             builder.HasData(
                 BuiltInVersion(BuiltInFrameworks.Cra.VersionId, BuiltInFrameworks.Cra.FrameworkId,
-                    BuiltInFrameworks.Cra.PublishedAt, BuiltInFrameworks.Cra.SourceReference),
+                    BuiltInFrameworks.Cra.PublishedAt, BuiltInFrameworks.Cra.SourceReference, BuiltInFrameworks.Cra.AppliesFrom),
                 BuiltInVersion(BuiltInFrameworks.AiAct.VersionId, BuiltInFrameworks.AiAct.FrameworkId,
-                    BuiltInFrameworks.AiAct.PublishedAt, BuiltInFrameworks.AiAct.SourceReference));
+                    BuiltInFrameworks.AiAct.PublishedAt, BuiltInFrameworks.AiAct.SourceReference, BuiltInFrameworks.AiAct.AppliesFrom));
         }
 
         // Seed data for a built-in version: no file, no uploader, a link to the official text
-        private static object BuiltInVersion(Guid id, Guid frameworkId, DateTime publishedAt, string sourceReference)
+        private static object BuiltInVersion(Guid id, Guid frameworkId, DateTime publishedAt, string sourceReference, DateOnly appliesFrom)
             => new
             {
                 Id = id,
@@ -80,7 +80,8 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
                 // Built-in versions follow the published regulation and are always active (US-007)
                 Status = FrameworkVersionStatus.Active,
                 ActivatedAt = (DateTime?)publishedAt,
-                ActivatedById = (Guid?)null
+                ActivatedById = (Guid?)null,
+                AppliesFrom = (DateOnly?)appliesFrom
             };
     }
 }
