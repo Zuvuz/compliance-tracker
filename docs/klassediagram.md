@@ -364,7 +364,6 @@ classDiagram
     -state: WorkItemState
     -firstSyncedAt: DateTime
     -lastSyncedAt: DateTime
-    -requirements: List~RequirementWorkItem~
     +Create(projectId: Guid, source: WorkItemSource, item: ExternalWorkItem, at: DateTime)$ WorkItem
     +Update(item: ExternalWorkItem, at: DateTime) bool
     +MarkRemoved() bool
@@ -416,11 +415,26 @@ classDiagram
     <<interface>>
     +WorkItemsChangedAsync(projectId: Guid) Task
   }
-  class RequirementWorkItem {
+  class RequirementLink {
+    -id: Guid
+    -projectId: Guid
     -requirementId: Guid
     -workItemId: Guid
-    -source: MappingSource
-    -createdAt: DateTime
+    -source: LinkSource
+    -linkedById: Guid
+    -linkedAt: DateTime
+    -removedById: Guid?
+    -removedAt: DateTime?
+    +IsActive: bool
+    +Create(projectId: Guid, requirementId: Guid, workItemId: Guid, linkedById: Guid, at: DateTime)$ RequirementLink
+    +Remove(userId: Guid, at: DateTime)
+  }
+  class ComplianceService {
+    +LinkAsync(projectId: Guid, requirementId: Guid, workItemId: Guid) Task
+    +UnlinkAsync(projectId: Guid, linkId: Guid) Task
+  }
+  class ComplianceQueries {
+    +ForProjectAsync(projectId: Guid) Task~ProjectCompliance?~
   }
   class MappingSuggestion {
     -id: Guid
@@ -621,8 +635,9 @@ classDiagram
   Control "*" --> "1" User : owner
   Control "1" --> "*" Evidence : evidence
   Evidence "*" --> "0..1" Release
-  WorkItem "1" --> "*" RequirementWorkItem : requirements
-  RequirementWorkItem "*" --> "1" Requirement
+  RequirementLink "*" --> "1" WorkItem
+  RequirementLink "*" --> "1" Requirement
+  RequirementLink "*" --> "1" Project
   RequirementAssessment "*" --> "1" Requirement
   RequirementAssessment "*" --> "0..1" Release
   RequirementAssessment "*" --> "0..1" Organization
@@ -683,7 +698,8 @@ classDiagram
 - **Private repositories læses med en krypteret nøgle.** Domænet ser kun den krypterede tekst (`GitHubLink.EncryptedToken`). `ISecretProtector` krypterer med ASP.NET Core Data Protection, og nøglerne ligger i tabellen `DataProtectionKeys`. Nøglen tjekkes hos GitHub, før den gemmes, og den vises, logges og sendes aldrig tilbage til siden (B26). (US-031)
 - **Projektsiden har faner.** Overview, Frameworks, User stories og Activity har hver sin adresse (`/Projects/Details/{id}/{tab}`) og samme header. Activity viser projektets logposter (alle med projektet som `subjectId`), nyeste først, med `details`. En handling, der fejler, sender brugeren tilbage til sin egen fane (`[OnDomainError(Tab = ...)]`). (US-022)
 - **En version kan gælde fra en dato.** `AppliesFrom` sættes på kladden og låses ved aktivering. `CurrentVersion(today)` er den aktive version, der senest begyndte at gælde. Har ingen version startet endnu, bruges den første kommende. "I dag" kommer fra appens ur (`TimeProvider.Today()`), så testene kan styre datoen. Projekter flyttes ikke automatisk, men kan forberede sig ved at vælge en kommende version (B27). (US-035)
-- **Koblingsklasser med data.** `RequirementControl` og `RequirementWorkItem` registrerer via `MappingSource`, om koblingen er lavet manuelt eller via et godkendt AI-forslag.
+- **Krav og user stories kobles pr. projekt.** `RequirementLink` er sit eget aggregat og laves i hånden indtil videre. Senere skal godkendte AI-forslag lave samme slags kobling (US-020). En kobling slettes aldrig, den får `removedAt`. Kun aktive koblinger tæller som dækning. Compliance-fanen har én under-fane pr. framework (`/Projects/Details/{id}/compliance/{slug}`) med krav, koblede stories og dækning. (US-019, US-021, US-041)
+- **Koblingsklasser med data.** `RequirementControl` og `RequirementLink` registrerer via `MappingSource`, om koblingen er lavet manuelt eller via et godkendt AI-forslag.
 - **Vurderinger ændres ikke.** En ny `RequirementAssessment` oprettes i stedet, og den seneste er gældende. Det giver historik til en auditor.
 - **Frameworkversioner låses ved aktivering.** Når `status` er `Active`, kan `requirements` ikke ændres. Så kan en mapping nøjes med at pege på et `Requirement`, fordi teksten bag aldrig ændrer sig. En rettelse er en ny `FrameworkVersion`.
 - **En ny upload er en kladde.** `IRequirementExtractor` (PdfPig, ingen AI) finder linjer, der starter med en nummereret kode som `A.5.15`, og lægger dem i kladden. Medlemmet retter, sletter og tilføjer krav og aktiverer så versionen (mindst ét krav). `CurrentVersion` er den senest aktiverede version og er `null`, mens frameworket kun har en kladde; `LatestVersion` er den nyeste upload. Projekter kan kun bruge aktive versioner, og en upload flytter ingen projekter (B24). (US-007)

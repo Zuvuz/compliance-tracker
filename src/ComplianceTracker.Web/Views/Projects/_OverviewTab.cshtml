@@ -44,9 +44,23 @@
                 <p class="mb-1">
                     <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Frameworks" id="framework-summary">@Model.FrameworkSummary</a>
                 </p>
-                <p class="mb-0">
+                <p class="mb-2">
                     <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.UserStories" id="work-item-summary">@Model.WorkItemSummary</a>
                 </p>
+                @* US-041 R10: coverage per framework, each linking to its sub-tab *@
+                @if (Model.Compliance is { Frameworks.Count: > 0 } compliance)
+                {
+                    <ul class="list-unstyled small mb-0" id="coverage-summary">
+                        @foreach (var framework in compliance.Frameworks)
+                        {
+                            <li>
+                                <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Compliance"
+                                   asp-route-sub="@FrameworkNames.Slug(framework.Framework.Name)">@FrameworkNames.Short(framework.Framework.Name)</a>:
+                                @framework.Covered of @framework.Total covered
+                            </li>
+                        }
+                    </ul>
+                }
             </div>
         </div>
     </div>

@@ -50,6 +50,11 @@ namespace ComplianceTracker.Domain.ActivityLog
         WorkItemsSynced,
 
         // A project's GitHub token was set, replaced or removed (US-031). Details never holds the token.
-        AccessTokenChanged
+        AccessTokenChanged,
+
+        // A user story was linked to a requirement, or the link was removed (US-021).
+        // SubjectId points at the project; Details holds e.g. "SP-1 ↔ [US-004] Sign in".
+        RequirementLinked,
+        RequirementUnlinked
     }
 }
