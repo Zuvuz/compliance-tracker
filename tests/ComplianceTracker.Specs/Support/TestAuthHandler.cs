@@ -15,6 +15,9 @@ namespace ComplianceTracker.Specs.Support
         public const string SchemeName = "Test";
         public const string UserHeader = "X-Test-User";
         public const string EmailHeader = "X-Test-Email";
+
+        // US-010: Keycloak realm roles, comma separated, e.g. "system-admin"
+        public const string RolesHeader = "X-Test-Roles";
         public const string SignInPath = "/test-sign-in";
 
         public TestAuthHandler(
@@ -38,12 +41,18 @@ namespace ComplianceTracker.Specs.Support
             var identity = TestUsers.Identity(name);
             var email = Request.Headers[EmailHeader].ToString();
 
-            var claims = new[]
+            var claims = new List<Claim>
             {
                 new Claim("sub", identity.ExternalId),
                 new Claim("name", identity.Name),
                 new Claim("email", string.IsNullOrEmpty(email) ? identity.Email : email)
             };
+
+            // Like Keycloak's realm role mapper: one "roles" claim per realm role
+            foreach (var role in Request.Headers[RolesHeader].ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                claims.Add(new Claim("roles", role));
+            }
 
             // "name" is the claim User.Identity.Name reads, like in Program.cs
             var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, SchemeName, "name", "role"));

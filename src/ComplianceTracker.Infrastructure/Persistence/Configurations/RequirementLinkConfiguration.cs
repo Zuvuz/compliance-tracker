@@ -15,6 +15,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
         {
             builder.ToTable("RequirementLinks");
 
+            // US-010: the role when the decision was made; never changed afterwards
+            builder.Property(l => l.LinkedRole).HasConversion<string>().HasMaxLength(50);
+
             builder.HasKey(l => l.Id);
             builder.Property(l => l.Id).ValueGeneratedNever();
             builder.Property(l => l.Source).HasConversion<string>().HasMaxLength(30);

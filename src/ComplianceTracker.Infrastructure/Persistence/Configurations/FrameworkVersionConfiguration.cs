@@ -12,6 +12,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
         {
             builder.ToTable("FrameworkVersions");
 
+            // US-010: the role when the decision was made; never changed afterwards
+            builder.Property(v => v.ActivatedRole).HasConversion<string>().HasMaxLength(50);
+
             // The id is set by the domain, not by the database
             builder.HasKey(v => v.Id);
             builder.Property(v => v.Id).ValueGeneratedNever();

@@ -71,7 +71,7 @@ else
                         <text> · @item.Labels</text>
                     }
                 </p>
-                @if (Model.Compliance is { } suggestionData && !project.IsClosed)
+                @if (Model.Compliance is { } suggestionData && !project.IsClosed && await Permissions.CanAsync(Permission.LinkWork))
                 {
                     @* US-020, US-036: the AI's pending suggestions for this story, best first *@
                     var pending = suggestionData.SuggestionsFor(item.Id).ToList();
@@ -84,6 +84,8 @@ else
                                 <strong class="suggestion-code">@entry.Requirement.Code</strong> @entry.Requirement.Title
                                 <span class="small text-muted">score <span class="suggestion-score">@suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span></span>
                                 <div class="small suggestion-rationale">@(suggestion.Rationale ?? "Writing rationale…")</div>
+                                @if (await Permissions.CanAsync(Permission.DecideCompliance))
+                                {
                                 <div class="d-flex flex-wrap gap-1 mt-1">
                                     <form asp-controller="Projects" asp-action="ApproveSuggestion" method="post" class="approve-suggestion">
                                         <input type="hidden" name="projectId" value="@project.Id" />
@@ -104,6 +106,7 @@ else
                                         <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
                                     </form>
                                 </div>
+                                }
                             </div>
                         }
                         @* US-036 R2: the next suggestions for this story *@

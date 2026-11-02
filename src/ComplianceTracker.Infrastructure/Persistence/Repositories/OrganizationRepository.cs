@@ -25,6 +25,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
             => _db.Organizations.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
 
         // The organisation that has a member with this sign-in id (Keycloak "sub")
+        public async Task<IReadOnlyList<Organization>> ListAllAsync(CancellationToken cancellationToken = default)
+            => await _db.Organizations.OrderBy(o => o.Name).ToListAsync(cancellationToken);
+
         public Task<Organization?> GetByMemberAsync(string externalId, CancellationToken cancellationToken = default)
             => _db.Organizations.FirstOrDefaultAsync(o => o.Users.Any(u => u.ExternalId == externalId), cancellationToken);
     }

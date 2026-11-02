@@ -58,6 +58,7 @@ namespace ComplianceTracker.Specs.Support
                 // US-020: not used by these tests, but the use cases must be creatable
                 services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();
                 services.AddScoped<IRiskRepository, RiskRepository>(); // US-042
+                services.AddScoped<IInvitationRepository, InvitationRepository>(); // US-009
                 services.AddSingleton<FakeAi>();
                 services.AddSingleton<IEmbeddingModel>(provider => provider.GetRequiredService<FakeAi>());
                 services.AddSingleton<IRationaleWriter>(provider => provider.GetRequiredService<FakeAi>());
@@ -92,5 +93,7 @@ namespace ComplianceTracker.Specs.Support
         }
 
         public UserIdentity Identity { get; set; }
+
+        public bool IsSystemAdmin { get; set; }
     }
 }

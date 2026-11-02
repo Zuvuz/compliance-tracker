@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Domain.Common;
 
 namespace ComplianceTracker.Domain.Mappings
@@ -15,6 +16,9 @@ namespace ComplianceTracker.Domain.Mappings
         public string Reason { get; private set; } = "";
 
         public Guid DecidedById { get; private set; }
+
+        // US-010: the role of the person when they decided
+        public UserRole? DecidedRole { get; private set; }
         public DateTime DecidedAt { get; private set; }
 
         public Guid? RevokedById { get; private set; }
@@ -26,7 +30,7 @@ namespace ComplianceTracker.Domain.Mappings
         // For EF Core only
         private RequirementApplicability() { }
 
-        public static RequirementApplicability NotApplicable(Guid projectId, Guid requirementId, string reason, Guid userId, DateTime at)
+        public static RequirementApplicability NotApplicable(Guid projectId, Guid requirementId, string reason, Guid userId, DateTime at, UserRole? role = null)
         {
             if (string.IsNullOrWhiteSpace(reason))
             {
@@ -39,6 +43,7 @@ namespace ComplianceTracker.Domain.Mappings
                 RequirementId = requirementId,
                 Reason = reason.Trim(),
                 DecidedById = userId,
+                DecidedRole = role,
                 DecidedAt = at
             };
         }

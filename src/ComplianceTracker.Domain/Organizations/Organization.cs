@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.Projects;
 using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Domain.Users;
 using System;
@@ -92,5 +93,64 @@ namespace ComplianceTracker.Domain.Organizations
             ShareAiFeedback = share;
             return true;
         }
+
+        // ---------------------------------------------------------- Members and roles (US-009, US-010)
+
+        // US-009 R2, R5: a person joins through an invitation. A person is a member of one organisation only (B16);
+        // the caller checks the other organisations.
+        public User AddMember(UserIdentity identity, UserRole role)
+        {
+            if (_users.Any(u => u.ExternalId == identity.ExternalId))
+            {
+                throw new DomainException("You are already a member of this organisation");
+            }
+
+            var user = new User(identity.ExternalId, identity.Name, identity.Email, role);
+            _users.Add(user);
+            return user;
+        }
+
+        // US-010 R2, R3: an Admin changes a member's role. Returns the change, or null if the role is the same.
+        // Only what the member may do from now on changes; their earlier decisions keep the role they had then.
+        public ProjectChange? ChangeRole(Guid memberId, UserRole role, Guid changedById)
+        {
+            if (_users.FirstOrDefault(u => u.Id == changedById)?.Can(Permission.ManageMembers) != true)
+            {
+                throw new DomainException("Your role does not allow this");
+            }
+
+            return SetRole(memberId, role);
+        }
+
+        // US-010: the system admin (the tracker's owner) changes a role, e.g. when an organisation has locked itself out.
+        // The caller checks that the person is the system admin.
+        public ProjectChange? ChangeRoleAsSystemAdmin(Guid memberId, UserRole role) => SetRole(memberId, role);
+
+        private ProjectChange? SetRole(Guid memberId, UserRole role)
+        {
+            if (!Enum.IsDefined(role))
+            {
+                throw new DomainException("Choose a role");
+            }
+
+            var member = _users.FirstOrDefault(u => u.Id == memberId)
+                ?? throw new DomainException("Member not found");
+
+            if (member.Role == role)
+            {
+                return null;
+            }
+
+            // R3: the organisation always keeps at least one Admin
+            if (member.Role == UserRole.Admin && _users.Count(u => u.Role == UserRole.Admin) == 1)
+            {
+                throw new DomainException("The organisation must keep at least one organisation admin");
+            }
+
+            var change = new ProjectChange(member.Name, RolePermissions.Title(member.Role), RolePermissions.Title(role));
+            member.Role = role;
+            return change;
+        }
+
     }
 }

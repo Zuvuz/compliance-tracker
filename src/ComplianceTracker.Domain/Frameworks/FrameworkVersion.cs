@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Domain.Common;
 
 namespace ComplianceTracker.Domain.Frameworks
@@ -43,6 +44,9 @@ namespace ComplianceTracker.Domain.Frameworks
         // When and by whom it was activated (R3, R6). Null for drafts and built-in versions' uploader.
         public DateTime? ActivatedAt { get; private set; }
         public Guid? ActivatedById { get; private set; }
+
+        // US-010: the role of the person when they activated it
+        public UserRole? ActivatedRole { get; private set; }
 
         // US-035: the day the version starts to apply. Null: it applies as soon as it is activated.
         public DateOnly? AppliesFrom { get; private set; }
@@ -122,7 +126,7 @@ namespace ComplianceTracker.Domain.Frameworks
 
         // R3: locks the version and its requirements. It needs at least one requirement,
         // so a project never follows a version with nothing to assess.
-        public void Activate(Guid userId, DateTime at)
+        public void Activate(Guid userId, DateTime at, UserRole? role = null)
         {
             EnsureDraft();
 
@@ -134,6 +138,7 @@ namespace ComplianceTracker.Domain.Frameworks
             Status = FrameworkVersionStatus.Active;
             ActivatedAt = at;
             ActivatedById = userId;
+            ActivatedRole = role;
         }
 
         private void EnsureDraft()

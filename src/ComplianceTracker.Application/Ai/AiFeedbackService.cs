@@ -40,7 +40,7 @@ namespace ComplianceTracker.Application.Ai
         // R5, R6: only an Admin; every change is logged
         public async Task SetSharingAsync(bool share, CancellationToken cancellationToken = default)
         {
-            var (organization, user) = await _member.RequireAsync(cancellationToken);
+            var (organization, user) = await _member.RequireAsync(Permission.ManageAiSharing, cancellationToken);
             if (organization.SetShareAiFeedback(share, user.Id))
             {
                 await _log.LogAsync(ActivityAction.AiFeedbackSharingChanged, organization.Id, share ? "Sharing on" : "Sharing off", cancellationToken);
@@ -51,7 +51,7 @@ namespace ComplianceTracker.Application.Ai
         // R7–R9: the decided suggestions as JSON Lines, without names or e-mails. Only for an Admin, only while sharing is on.
         public async Task<string> ExportAsync(CancellationToken cancellationToken = default)
         {
-            var (organization, user) = await _member.RequireAsync(cancellationToken);
+            var (organization, user) = await _member.RequireAsync(Permission.ManageAiSharing, cancellationToken);
             if (user.Role != UserRole.Admin)
             {
                 throw new DomainException("Only an Admin can export AI feedback");

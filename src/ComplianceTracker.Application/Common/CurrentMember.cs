@@ -43,6 +43,23 @@ namespace ComplianceTracker.Application.Common
             return (organization, user);
         }
 
+        // US-010 R5: the organisation and the user, if the user's role allows this. Checked on the server in every use case.
+        public async Task<(Organization Organization, User User)> RequireAsync(Permission permission, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await RequireAsync(cancellationToken);
+            if (!user.Can(permission))
+            {
+                throw new DomainException("Your role does not allow this");
+            }
+
+            return (organization, user);
+        }
+
+        // For pages: whether the signed-in member may do this (false without an organisation)
+        public async Task<bool> CanAsync(Permission permission, CancellationToken cancellationToken = default)
+            => await FindOrganizationAsync(cancellationToken) is { } organization
+               && organization.Users.FirstOrDefault(u => u.ExternalId == _currentUser.Identity.ExternalId)?.Can(permission) == true;
+
         // Forget the lookup, e.g. right after the user has created their organisation
         public void Reset()
         {

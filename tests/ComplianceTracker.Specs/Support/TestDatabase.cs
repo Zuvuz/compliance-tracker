@@ -58,6 +58,7 @@ namespace ComplianceTracker.Specs.Support
             await using var db = CreateContext(connectionString);
             await db.Database.ExecuteSqlRawAsync(
                 """
+                DELETE FROM "Invitations";
                 DELETE FROM "RiskMeasures";
                 DELETE FROM "Risks";
                 DELETE FROM "MappingSuggestions";

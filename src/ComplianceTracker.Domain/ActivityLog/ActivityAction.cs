@@ -76,6 +76,12 @@ namespace ComplianceTracker.Domain.ActivityLog
         // SubjectId points at the project; Details holds the risk's title and what changed.
         RiskAdded,
         RiskUpdated,
-        RiskReviewed
+        RiskReviewed,
+
+        // Members and roles (US-009, US-010). SubjectId points at the member or the invitation.
+        MemberRoleChanged,
+        InvitationCreated,
+        InvitationRevoked,
+        InvitationAccepted
     }
 }

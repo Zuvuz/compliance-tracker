@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Domain.Common;
 
 namespace ComplianceTracker.Domain.Mappings
@@ -15,6 +16,9 @@ namespace ComplianceTracker.Domain.Mappings
         public LinkSource Source { get; private set; }
 
         public Guid LinkedById { get; private set; }
+
+        // US-010: the role of the person when they linked it
+        public UserRole? LinkedRole { get; private set; }
         public DateTime LinkedAt { get; private set; }
 
         public Guid? RemovedById { get; private set; }
@@ -30,9 +34,11 @@ namespace ComplianceTracker.Domain.Mappings
         // that the work item belongs to the project, and that the pair is not linked already
         // source: Manual, or AiApproved when a person approved an AI suggestion (US-020 R6)
         public static RequirementLink Create(
-            Guid projectId, Guid requirementId, Guid workItemId, Guid linkedById, DateTime at, LinkSource source = LinkSource.Manual)
+            Guid projectId, Guid requirementId, Guid workItemId, Guid linkedById, DateTime at, LinkSource source = LinkSource.Manual,
+            UserRole? role = null)
             => new()
             {
+                LinkedRole = role,
                 ProjectId = projectId,
                 RequirementId = requirementId,
                 WorkItemId = workItemId,

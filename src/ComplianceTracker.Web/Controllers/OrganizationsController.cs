@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Web.Filters;
 using ComplianceTracker.Application.Ai;
 using ComplianceTracker.Application.Common;
@@ -23,10 +24,14 @@ namespace ComplianceTracker.Web.Controllers
         private readonly TimeProvider _clock;
 
         private readonly AiFeedbackService _aiFeedback;
+        private readonly MemberService _members;
+        private readonly MemberQueries _memberQueries;
 
         public OrganizationsController(
             OrganizationService service,
             AiFeedbackService aiFeedback,
+            MemberService members,
+            MemberQueries memberQueries,
             OrganizationQueries organizations,
             ProjectQueries projects,
             FrameworkQueries frameworks,
@@ -34,6 +39,8 @@ namespace ComplianceTracker.Web.Controllers
         {
             _clock = clock;
             _aiFeedback = aiFeedback;
+            _members = members;
+            _memberQueries = memberQueries;
             _service = service;
             _organizations = organizations;
             _projects = projects;
@@ -109,7 +116,42 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> Users(Guid id, CancellationToken cancellationToken)
         {
             var organization = await _organizations.GetAsync(id, cancellationToken);
-            return organization is null ? NotFound() : View(organization);
+            return organization is null
+                ? NotFound()
+                : View(new MembersViewModel(organization, await _memberQueries.OpenInvitationsAsync(cancellationToken)));
+        }
+
+        // ---------------------------------------------------------- Roles and invitations (US-009, US-010)
+
+        // POST /Organizations/ChangeRole: R2, R3, R6
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Users), IdFrom = "id")]
+        public async Task<IActionResult> ChangeRole(Guid id, Guid memberId, UserRole role, CancellationToken cancellationToken)
+        {
+            await _members.ChangeRoleAsync(memberId, role, cancellationToken);
+            return RedirectToAction(nameof(Users), new { id });
+        }
+
+        // POST /Organizations/CreateInvitation: US-009 R1. The link is shown once (only its hash is stored).
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Users), IdFrom = "id")]
+        public async Task<IActionResult> CreateInvitation(Guid id, UserRole role, CancellationToken cancellationToken)
+        {
+            var token = await _members.CreateInvitationAsync(role, cancellationToken);
+            TempData["InvitationLink"] = Url.Action("Accept", "Invitations", new { token }, Request.Scheme);
+            return RedirectToAction(nameof(Users), new { id });
+        }
+
+        // POST /Organizations/RevokeInvitation: US-009 R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Users), IdFrom = "id")]
+        public async Task<IActionResult> RevokeInvitation(Guid id, Guid invitationId, CancellationToken cancellationToken)
+        {
+            await _members.RevokeInvitationAsync(invitationId, cancellationToken);
+            return RedirectToAction(nameof(Users), new { id });
         }
 
         // ---------------------------------------------------------- AI feedback (US-036)

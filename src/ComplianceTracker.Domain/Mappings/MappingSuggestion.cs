@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Domain.Common;
 
 namespace ComplianceTracker.Domain.Mappings
@@ -30,6 +31,9 @@ namespace ComplianceTracker.Domain.Mappings
 
         public SuggestionStatus Status { get; private set; } = SuggestionStatus.Pending;
         public Guid? DecidedById { get; private set; }
+
+        // US-010: the role of the person when they decided
+        public UserRole? DecidedRole { get; private set; }
         public DateTime? DecidedAt { get; private set; }
         public RejectionReason? RejectionReason { get; private set; }
         public string? Comment { get; private set; }
@@ -67,16 +71,17 @@ namespace ComplianceTracker.Domain.Mappings
         }
 
         // US-020 R6: the caller creates the link
-        public void Approve(Guid userId, DateTime at)
+        public void Approve(Guid userId, DateTime at, UserRole? role = null)
         {
             EnsurePending();
+            DecidedRole = role;
             Status = SuggestionStatus.Approved;
             DecidedById = userId;
             DecidedAt = at;
         }
 
         // US-020 R7: a reason from the fixed list is required; "Other" also needs a comment
-        public void Reject(RejectionReason? reason, string? comment, Guid userId, DateTime at)
+        public void Reject(RejectionReason? reason, string? comment, Guid userId, DateTime at, UserRole? role = null)
         {
             EnsurePending();
             if (reason is null || !Enum.IsDefined(reason.Value))
@@ -90,6 +95,7 @@ namespace ComplianceTracker.Domain.Mappings
             }
 
             Status = SuggestionStatus.Rejected;
+            DecidedRole = role;
             RejectionReason = reason;
             Comment = string.IsNullOrWhiteSpace(comment) ? null : Cut(comment.Trim(), 1000);
             DecidedById = userId;

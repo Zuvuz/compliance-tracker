@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Domain.ActivityLog;
 
@@ -42,7 +43,7 @@ namespace ComplianceTracker.Application.ActivityLog
         {
             var (organization, user) = await _member.RequireAsync(cancellationToken);
             await _log.AppendAsync(
-                new ActivityLogEntry(organization.Id, user.Id, action, _clock.GetUtcNow().UtcDateTime, subjectId, details),
+                new ActivityLogEntry(organization.Id, user.Id, action, _clock.GetUtcNow().UtcDateTime, subjectId, details, user.Role),
                 cancellationToken);
         }
 

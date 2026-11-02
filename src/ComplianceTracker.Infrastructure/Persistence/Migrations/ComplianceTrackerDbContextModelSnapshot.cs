@@ -45,6 +45,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Role")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<Guid?>("SubjectId")
                         .HasColumnType("uuid");
 
@@ -102,6 +106,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid?>("ActivatedById")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("ActivatedRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<DateOnly?>("AppliesFrom")
                         .HasColumnType("date");
@@ -522,6 +530,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("DecidedById")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("DecidedRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<string>("EmbeddingModel")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -590,6 +602,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("DecidedById")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("DecidedRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
 
@@ -633,6 +649,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("LinkedById")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("LinkedRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
 
@@ -668,6 +688,56 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasFilter("\"RemovedAt\" IS NULL");
 
                     b.ToTable("RequirementLinks", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Invitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("AcceptedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("AcceptedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AcceptedById");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("Invitations", (string)null);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Organization", b =>
@@ -799,6 +869,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<string>("AcceptedReason")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("AcceptedRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<DateTime?>("ClosedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1192,6 +1266,26 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasOne("ComplianceTracker.Domain.WorkItems.WorkItem", null)
                         .WithMany()
                         .HasForeignKey("WorkItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Invitation", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("AcceptedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

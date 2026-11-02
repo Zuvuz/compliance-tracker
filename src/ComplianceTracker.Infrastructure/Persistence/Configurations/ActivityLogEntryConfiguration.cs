@@ -13,6 +13,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
         {
             builder.ToTable("ActivityLog");
 
+            // US-010: the role when the decision was made; never changed afterwards
+            builder.Property(e => e.Role).HasConversion<string>().HasMaxLength(50);
+
             // ActivityLogEntry has no Id in the domain. The database gives each entry
             // a running number that only exists in the database (a "shadow key").
             builder.Property<long>("Id").UseIdentityAlwaysColumn();

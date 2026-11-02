@@ -14,25 +14,28 @@
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
 
 @* enctype="multipart/form-data" is required to send a file. The form tag helper adds the antiforgery token. *@
-<form asp-action="Add" method="post" enctype="multipart/form-data" class="row g-2 mb-4">
-    <div class="col-md-5">
-        <label for="name" class="form-label">Framework</label>
-        <input id="name" name="name" class="form-control" placeholder="e.g. ISO/IEC 27001 or Security policy" />
-    </div>
-    <div class="col-md-3">
-        <label for="file" class="form-label">PDF file</label>
-        @* accept only filters the file picker; the server still checks the file *@
-        <input id="file" name="file" type="file" accept=".pdf,application/pdf" class="form-control" />
-    </div>
-    <div class="col-md-2">
-        @* US-035: optional; without a date the version applies as soon as it is activated *@
-        <label for="appliesFrom" class="form-label">Applies from</label>
-        <input id="appliesFrom" name="appliesFrom" type="date" class="form-control" />
-    </div>
-    <div class="col-md-2 d-flex align-items-end">
-        <button type="submit" class="btn btn-primary w-100">Add</button>
-    </div>
-</form>
+@if (await Permissions.CanAsync(Permission.ManageFrameworks))
+{
+    <form asp-action="Add" method="post" enctype="multipart/form-data" class="row g-2 mb-4">
+        <div class="col-md-5">
+            <label for="name" class="form-label">Framework</label>
+            <input id="name" name="name" class="form-control" placeholder="e.g. ISO/IEC 27001 or Security policy" />
+        </div>
+        <div class="col-md-3">
+            <label for="file" class="form-label">PDF file</label>
+            @* accept only filters the file picker; the server still checks the file *@
+            <input id="file" name="file" type="file" accept=".pdf,application/pdf" class="form-control" />
+        </div>
+        <div class="col-md-2">
+            @* US-035: optional; without a date the version applies as soon as it is activated *@
+            <label for="appliesFrom" class="form-label">Applies from</label>
+            <input id="appliesFrom" name="appliesFrom" type="date" class="form-control" />
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">Add</button>
+        </div>
+    </form>
+}
 
 <table class="table" id="frameworks">
     <thead>

@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Projects;
@@ -49,7 +50,7 @@ namespace ComplianceTracker.Application.WorkItems
         // R1, R10: links the project to a public repository (or another one). Logged with the repository.
         public async Task LinkGitHubAsync(Guid projectId, string repository, string? label, CancellationToken cancellationToken = default)
         {
-            var (organization, user) = await _member.RequireAsync(cancellationToken);
+            var (organization, user) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
             var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
                 ?? throw new DomainException("Project not found");
 
@@ -101,15 +102,15 @@ namespace ComplianceTracker.Application.WorkItems
         // R5: "Sync now" for the signed-in member's project
         public async Task<SyncResult> SyncNowAsync(Guid projectId, CancellationToken cancellationToken = default)
         {
-            var (_, user) = await _member.RequireAsync(cancellationToken);
-            var project = await LinkedProjectAsync(projectId, cancellationToken);
+            var (_, user) = await _member.RequireAsync(Permission.LinkWork, cancellationToken);
+            var project = await LinkedProjectAsync(projectId, cancellationToken, Permission.LinkWork);
             return await SyncAsync(project, user.Id, cancellationToken);
         }
 
         // The member's own project, which must be linked to GitHub
-        private async Task<Project> LinkedProjectAsync(Guid projectId, CancellationToken cancellationToken)
+        private async Task<Project> LinkedProjectAsync(Guid projectId, CancellationToken cancellationToken, Permission permission = Permission.EditProjects)
         {
-            var (organization, _) = await _member.RequireAsync(cancellationToken);
+            var (organization, _) = await _member.RequireAsync(permission, cancellationToken);
             var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
                 ?? throw new DomainException("Project not found");
 

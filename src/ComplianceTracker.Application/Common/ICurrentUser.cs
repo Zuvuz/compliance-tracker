@@ -10,5 +10,8 @@ namespace ComplianceTracker.Application.Common
     {
         // Id, name and e-mail from the sign-in (Keycloak). Throws if nobody is signed in.
         UserIdentity Identity { get; }
+
+        // US-010: the tracker's owner (the Keycloak realm role "system-admin"); not a role in any organisation
+        bool IsSystemAdmin { get; }
     }
 }

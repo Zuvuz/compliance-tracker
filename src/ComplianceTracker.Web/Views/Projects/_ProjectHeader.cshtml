@@ -23,7 +23,7 @@
         <p class="text-muted mb-3" id="project-intended-purpose">@project.IntendedPurpose</p>
     </div>
     @* US-024 R4: a project at end of support can only be viewed *@
-    @if (!project.IsClosed)
+    @if (!project.IsClosed && await Permissions.CanAsync(Permission.EditProjects))
     {
         <a asp-action="Edit" asp-route-id="@project.Id" class="btn btn-outline-primary" id="edit-project-link">Edit</a>
     }

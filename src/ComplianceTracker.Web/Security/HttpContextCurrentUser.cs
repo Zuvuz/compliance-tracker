@@ -17,10 +17,23 @@ namespace ComplianceTracker.Web.Security
             _principal = principal;
         }
 
-        public UserIdentity Identity
-            => (_principal.User
-                ?? _httpContextAccessor.HttpContext?.User
-                ?? throw new InvalidOperationException("There is no current request.")).ToUserIdentity();
+        public UserIdentity Identity => Principal.ToUserIdentity();
+
+        // US-010: the Keycloak realm role "system-admin", sent in the "roles" claim (realm role mapper)
+        public bool IsSystemAdmin => Principal.HasClaim(SystemAdmin.ClaimType, SystemAdmin.Role);
+
+        private ClaimsPrincipal Principal
+            => _principal.User
+               ?? _httpContextAccessor.HttpContext?.User
+               ?? throw new InvalidOperationException("There is no current request.");
+    }
+
+    // US-010: how the tracker's owner is recognised. Given in Keycloak, never by the app.
+    public static class SystemAdmin
+    {
+        public const string ClaimType = "roles";
+        public const string Role = "system-admin";
+        public const string Policy = "SystemAdmin";
     }
 
     // The signed-in user when it does not come from an HTTP request, e.g. a SignalR hub call (US-018).

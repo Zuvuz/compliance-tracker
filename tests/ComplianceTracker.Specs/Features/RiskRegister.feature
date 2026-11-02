@@ -32,7 +32,7 @@ Feature: Risk register per project
     Given the risk "Old TLS on legacy API" exists in "Acme Portal"
     When I accept the risk "Old TLS on legacy API" with the reason "Retired in Q1"
     Then the risk "Old TLS on legacy API" has the status "Accepted"
-    And the risk "Old TLS on legacy API" says "Accepted by Anna: Retired in Q1"
+    And the risk "Old TLS on legacy API" says "Accepted by Anna (Organisation admin): Retired in Q1"
 
   @US-042 @iso27001-6.1.3 @integration
   Scenario: A risk is linked to what reduces it
