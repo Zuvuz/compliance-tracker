@@ -1,3 +1,4 @@
+using ComplianceTracker.Application.Ai;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Projects;
@@ -17,6 +18,7 @@ namespace ComplianceTracker.Application.Compliance
         private readonly IWorkItemRepository _workItems;
         private readonly IRequirementLinkRepository _links;
         private readonly IRequirementApplicabilityRepository _applicability;
+        private readonly IMappingSuggestionRepository _suggestions;
         private readonly CurrentMember _member;
 
         public ComplianceQueries(
@@ -25,6 +27,7 @@ namespace ComplianceTracker.Application.Compliance
             IWorkItemRepository workItems,
             IRequirementLinkRepository links,
             IRequirementApplicabilityRepository applicability,
+            IMappingSuggestionRepository suggestions,
             CurrentMember member)
         {
             _projects = projects;
@@ -32,6 +35,7 @@ namespace ComplianceTracker.Application.Compliance
             _workItems = workItems;
             _links = links;
             _applicability = applicability;
+            _suggestions = suggestions;
             _member = member;
         }
 
@@ -73,14 +77,30 @@ namespace ComplianceTracker.Application.Compliance
                 result.Add(new FrameworkCompliance(framework, version, rows));
             }
 
+            // US-020: the pending AI suggestions, best first per story
+            var requirements = result.SelectMany(f => f.Requirements).ToDictionary(r => r.Requirement.Id, r => r.Requirement);
+            var pending = (await _suggestions.ListAsync(project.Id, cancellationToken))
+                .Where(s => s.IsPending && requirements.ContainsKey(s.RequirementId))
+                .OrderBy(s => s.Rank)
+                .Select(s => new PendingSuggestion(s, requirements[s.RequirementId]))
+                .ToList();
+
             return new ProjectCompliance(
                 result.OrderBy(f => f.Framework.Name, StringComparer.OrdinalIgnoreCase).ToList(),
-                workItems.Values.ToList());
+                workItems.Values.ToList())
+            {
+                Suggestions = pending
+            };
         }
     }
 
     public record ProjectCompliance(IReadOnlyList<FrameworkCompliance> Frameworks, IReadOnlyList<WorkItem> WorkItems)
     {
+        // US-020: pending AI suggestions for the project's stories
+        public IReadOnlyList<PendingSuggestion> Suggestions { get; init; } = [];
+
+        public IEnumerable<PendingSuggestion> SuggestionsFor(Guid workItemId) => Suggestions.Where(s => s.Suggestion.WorkItemId == workItemId);
+
         // US-021 R3: per user story, the codes of the requirements it is linked to
         public IReadOnlyList<string> RequirementCodesOf(Guid workItemId)
             => Frameworks.SelectMany(f => f.Requirements)
@@ -116,4 +136,6 @@ namespace ComplianceTracker.Application.Compliance
     }
 
     public record LinkedWorkItem(Guid LinkId, WorkItem WorkItem);
+
+    public record PendingSuggestion(Domain.Mappings.MappingSuggestion Suggestion, Requirement Requirement);
 }

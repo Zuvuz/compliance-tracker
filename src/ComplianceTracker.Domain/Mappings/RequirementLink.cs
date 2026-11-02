@@ -28,13 +28,15 @@ namespace ComplianceTracker.Domain.Mappings
 
         // The caller checks that the requirement belongs to a framework version the project follows,
         // that the work item belongs to the project, and that the pair is not linked already
-        public static RequirementLink Create(Guid projectId, Guid requirementId, Guid workItemId, Guid linkedById, DateTime at)
+        // source: Manual, or AiApproved when a person approved an AI suggestion (US-020 R6)
+        public static RequirementLink Create(
+            Guid projectId, Guid requirementId, Guid workItemId, Guid linkedById, DateTime at, LinkSource source = LinkSource.Manual)
             => new()
             {
                 ProjectId = projectId,
                 RequirementId = requirementId,
                 WorkItemId = workItemId,
-                Source = LinkSource.Manual,
+                Source = source,
                 LinkedById = linkedById,
                 LinkedAt = at
             };
@@ -54,6 +56,9 @@ namespace ComplianceTracker.Domain.Mappings
     // How a link was made. Stored as text, so AI-approved links (US-020) can be added later.
     public enum LinkSource
     {
-        Manual
+        Manual,
+
+        // A person approved an AI suggestion (US-020)
+        AiApproved
     }
 }

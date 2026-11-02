@@ -1,3 +1,4 @@
+using ComplianceTracker.Application.Ai;
 using ComplianceTracker.Application;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Users;
@@ -60,6 +61,11 @@ builder.Services
     .ValidateDataAnnotations()
     .ValidateOnStart();
 builder.Services.AddHostedService<ScheduledWorkItemSync>();
+
+// US-020: writes the AI suggestions' rationales in the background
+builder.Services.AddSingleton<RationaleWorker>();
+builder.Services.AddSingleton<IRationaleQueue>(provider => provider.GetRequiredService<RationaleWorker>());
+builder.Services.AddHostedService(provider => provider.GetRequiredService<RationaleWorker>());
 
 // The Keycloak settings, checked when the app starts (US-029 R3)
 builder.Services

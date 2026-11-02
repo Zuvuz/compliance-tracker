@@ -30,6 +30,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<WorkItem> WorkItems => Set<WorkItem>();
         public DbSet<RequirementLink> RequirementLinks => Set<RequirementLink>();
         public DbSet<RequirementApplicability> RequirementApplicability => Set<RequirementApplicability>();
+        public DbSet<MappingSuggestion> MappingSuggestions => Set<MappingSuggestion>();
         public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
         public DbSet<OrganizationFramework> OrganizationFrameworks => Set<OrganizationFramework>();
         public DbSet<ProjectFramework> ProjectFrameworks => Set<ProjectFramework>();

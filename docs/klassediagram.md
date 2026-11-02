@@ -455,17 +455,48 @@ classDiagram
   }
   class MappingSuggestion {
     -id: Guid
+    -projectId: Guid
+    -workItemId: Guid
     -requirementId: Guid
-    -workItemId: Guid?
-    -controlId: Guid?
     -score: double
-    -aiRationale: string
-    -status: SuggestionStatus
-    -rejectionReason: RejectionReason?
-    -userComment: string?
+    -rank: int
+    -rationale: string?
+    -embeddingModel: string
+    -rationaleModel: string?
+    -promptVersion: string
     -createdAt: DateTime
+    -status: SuggestionStatus
     -decidedById: Guid?
     -decidedAt: DateTime?
+    -rejectionReason: RejectionReason?
+    -comment: string?
+    +Approve(userId: Guid, at: DateTime)
+    +Reject(reason: RejectionReason?, comment: string?, userId: Guid, at: DateTime)
+    +Replace()
+    +SetRationale(rationale: string, model: string)
+  }
+  class IEmbeddingModel {
+    <<interface>>
+    +Name: string
+    +EmbedAsync(texts: string[]) Task~float[][]~
+  }
+  class IRationaleWriter {
+    <<interface>>
+    +Name: string
+    +WriteAsync(prompt: string) Task~string~
+  }
+  class MappingSuggestionService {
+    +SuggestAsync(projectId: Guid) Task~int~
+    +ShowMoreAsync(projectId: Guid, workItemId: Guid) Task~int~
+    +ApproveAsync(projectId: Guid, suggestionId: Guid) Task
+    +RejectAsync(projectId: Guid, suggestionId: Guid, reason: RejectionReason?, comment: string?) Task
+  }
+  class RationaleService {
+    +WriteMissingAsync(take: int) Task~int~
+  }
+  class AiFeedbackService {
+    +SetSharingAsync(share: bool) Task
+    +ExportAsync() Task~string~
   }
 
   %% ================= Log =================
@@ -656,6 +687,14 @@ classDiagram
   RequirementLink "*" --> "1" Requirement
   RequirementLink "*" --> "1" Project
   RequirementApplicability "*" --> "1" Requirement
+  MappingSuggestion "*" --> "1" WorkItem
+  MappingSuggestion "*" --> "1" Requirement
+  MappingSuggestionService --> IEmbeddingModel : step 1
+  RationaleService --> IRationaleWriter : step 2
+  OllamaEmbeddingModel ..|> IEmbeddingModel
+  OpenAiCompatibleEmbeddingModel ..|> IEmbeddingModel
+  OllamaRationaleWriter ..|> IRationaleWriter
+  OpenAiCompatibleRationaleWriter ..|> IRationaleWriter
   RequirementApplicability "*" --> "1" Project
   RequirementAssessment "*" --> "1" Requirement
   RequirementAssessment "*" --> "0..1" Release
@@ -719,6 +758,7 @@ classDiagram
 - **En version kan gælde fra en dato.** `AppliesFrom` sættes på kladden og låses ved aktivering. `CurrentVersion(today)` er den aktive version, der senest begyndte at gælde. Har ingen version startet endnu, bruges den første kommende. "I dag" kommer fra appens ur (`TimeProvider.Today()`), så testene kan styre datoen. Projekter flyttes ikke automatisk, men kan forberede sig ved at vælge en kommende version (B27). (US-035)
 - **Krav og user stories kobles pr. projekt.** `RequirementLink` er sit eget aggregat og laves i hånden indtil videre. Senere skal godkendte AI-forslag lave samme slags kobling (US-020). En kobling slettes aldrig, den får `removedAt`. Kun aktive koblinger tæller som dækning. Compliance-fanen har én under-fane pr. framework (`/Projects/Details/{id}/compliance/{slug}`) med krav, koblede stories og dækning. (US-019, US-021, US-041)
 - **CRA's krav følger med trackeren.** Bilag I (del I og II, 22 krav) er seed-data på den indbyggede CRA-version 1, med faste id'er, den officielle tekst fra EUR-Lex, en `group` pr. del og en `reference` til bilaget. Et krav kan markeres "Not applicable" for et projekt med en begrundelse (`RequirementApplicability`) og tæller så ikke med i dækningen. (US-043)
+- **AI-forslag i to trin, og modellen kan skiftes.** Trin 1: en embedding-model (`IEmbeddingModel`) scorer hvert krav mod hver story, og de 4 bedste bliver `MappingSuggestion`. Trin 2: en lille chat-model (`IRationaleWriter`) skriver begrundelsen i baggrunden (`RationaleWorker`). Hvilken server og hvilke modeller der bruges, står i `Ai:*`, og der er adaptere til Ollama og til OpenAI-kompatible servere. Hvert forslag gemmer model og prompt-version, og en godkendelse bliver til et `RequirementLink` med kilden `AiApproved` (B29). (US-020, US-036)
 - **Koblingsklasser med data.** `RequirementControl` og `RequirementLink` registrerer via `MappingSource`, om koblingen er lavet manuelt eller via et godkendt AI-forslag.
 - **Vurderinger ændres ikke.** En ny `RequirementAssessment` oprettes i stedet, og den seneste er gældende. Det giver historik til en auditor.
 - **Frameworkversioner låses ved aktivering.** Når `status` er `Active`, kan `requirements` ikke ændres. Så kan en mapping nøjes med at pege på et `Requirement`, fordi teksten bag aldrig ændrer sig. En rettelse er en ny `FrameworkVersion`.

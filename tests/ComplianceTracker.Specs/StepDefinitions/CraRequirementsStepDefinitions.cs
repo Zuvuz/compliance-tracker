@@ -27,6 +27,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             => WhenIMarkNotApplicable(code, projectName, "Not relevant for this product");
 
         // The row's "Not applicable?" form
+        [Given("I mark {string} as not applicable for {string} with the reason {string}")]
         [When("I mark {string} as not applicable for {string} with the reason {string}")]
         public async Task WhenIMarkNotApplicable(string code, string projectName, string reason)
         {

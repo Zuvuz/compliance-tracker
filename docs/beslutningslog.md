@@ -254,6 +254,23 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** CRA's væsentlige krav gælder "where applicable" ud fra risikovurderingen (art. 13(2)–(3)), så en ærlig dækning skal kunne udelade krav med en begrundelse. Kravene lægges på version 1, fordi lovteksten ikke er ændret.
 - **Fravalgt:** AI Act's krav (egen story), en dansk oversættelse, og krav uden for Bilag I.
 
+### B29 – Lokal AI i to trin, som altid kan skiftes ud
+
+- **Status:** Vedtaget (uddyber B13 og B14)
+- **Beslutning:** (US-020, US-036)
+  - AI'en kører lokalt (Ollama som standard). Der sendes ingen tekst ud af organisationens egen infrastruktur.
+  - **Trin 1:** en embedding-model (standard `nomic-embed-text`) scorer alle relevante krav mod hver user story (cosine similarity). De 4 bedste pr. story bliver forslag, og "Show more" giver de næste 4.
+  - **Trin 2:** en lille chat-model (standard `qwen2.5:3b`) skriver en kort begrundelse i baggrunden. Siden opdateres via SignalR.
+  - **Modellen kan altid skiftes:** Application kender kun `IEmbeddingModel` og `IRationaleWriter`. Provider, adresse og modelnavne står i konfigurationen (`Ai:Provider`, `Ai:BaseUrl`, `Ai:EmbeddingModel`, `Ai:ChatModel`). Der er adaptere til Ollama og til OpenAI-kompatible servere (vLLM, LM Studio, llama.cpp). En ny slags server kræver kun en ny adapter.
+  - **Sporbarhed:** hvert forslag gemmer modellernes navne og prompt-versionen (`RationalePrompt.Version`), så resultater fra forskellige modeller kan sammenlignes. Embeddings gemmes ikke, men beregnes ved hver kørsel, så en ny model aldrig blandes med gamle vektorer.
+  - **Data:** alle forslag og beslutninger gemmes altid som revisionsspor. Eksport til forbedring af AI'en kræver, at en Admin har slået deling til (slået fra som standard). Eksporten indeholder ikke, hvem der besluttede.
+  - Krav markeret "Not applicable" (US-043) foreslås ikke.
+- **Begrundelse:** Udviklingsmaskinen har ingen GPU. En chat-model, der vurderede alle par, ville tage timer, mens embeddings tager sekunder. Når trackeren kører på en server med GPU, kan en større model indsættes uden kodeændringer, og de gemte beslutninger viser, om den er bedre.
+- **Fravalgt:**
+  - At gemme embeddings (pgvector), indtil der er så mange krav, at genberegning bliver langsom.
+  - At sende data til en sky-AI.
+  - En fast tærskel for score (B13's "under 0,5 vises ikke"), fordi de 4 bedste giver mere data at lære af.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

@@ -27,6 +27,10 @@ namespace ComplianceTracker.Application.Frameworks
         // For reading only (the version page); changes go through GetByVersionWithRequirementsAsync.
         Task<Framework?> GetAvailableByVersionWithRequirementsAsync(Guid organizationId, Guid frameworkVersionId, CancellationToken cancellationToken = default);
 
+        // US-020: one requirement by id, for reading its text. Requirements are not secret per organisation
+        // on their own; callers only ask for ids they got from the organisation's own data.
+        Task<Requirement?> GetRequirementAsync(Guid requirementId, CancellationToken cancellationToken = default);
+
         // US-019, US-021: these frameworks (if the organisation follows them), with every version's requirements
         Task<IReadOnlyList<Framework>> ListAvailableWithRequirementsAsync(Guid organizationId, IReadOnlyCollection<Guid> frameworkIds, CancellationToken cancellationToken = default);
 

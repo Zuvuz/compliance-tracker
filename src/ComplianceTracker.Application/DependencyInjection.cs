@@ -1,3 +1,4 @@
+using ComplianceTracker.Application.Ai;
 using ComplianceTracker.Application.Compliance;
 using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
@@ -32,6 +33,9 @@ namespace ComplianceTracker.Application
             services.AddScoped<ProjectService>();
             services.AddScoped<WorkItemSyncService>();
             services.AddScoped<ComplianceService>();
+            services.AddScoped<MappingSuggestionService>();
+            services.AddScoped<RationaleService>();
+            services.AddScoped<AiFeedbackService>();
 
             // Queries (read data for the pages)
             services.AddScoped<OrganizationQueries>();

@@ -1,3 +1,4 @@
+using ComplianceTracker.Application.Ai;
 using ComplianceTracker.Infrastructure.WorkItems;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -28,9 +29,11 @@ namespace ComplianceTracker.Specs.Support
         // The clock replaces TimeProvider.System, so "Given the time is ..." also applies inside the app (US-016)
         // overrides: settings to change, e.g. an empty ClientId to test the start-up check (US-029 R3)
         // github: the pretend GitHub the app reads user stories from (US-018); without one, an empty one
-        public static TestApp WithTestSignIn(string connectionString, TimeProvider clock, IDictionary<string, string?>? overrides = null, FakeGitHub? github = null)
+        // ai: the pretend local AI (US-020); without one, a new one
+        public static TestApp WithTestSignIn(string connectionString, TimeProvider clock, IDictionary<string, string?>? overrides = null, FakeGitHub? github = null, FakeAi? ai = null)
         {
             github ??= new FakeGitHub();
+            ai ??= new FakeAi();
             var settings = new Dictionary<string, string?>
             {
                 ["ConnectionStrings:ComplianceTracker"] = connectionString,
@@ -54,6 +57,10 @@ namespace ComplianceTracker.Specs.Support
 
                 // US-018: the GitHub adapter talks to the pretend GitHub instead of api.github.com
                 services.AddHttpClient<GitHubWorkItemSource>().ConfigurePrimaryHttpMessageHandler(github.CreateHandler);
+
+                // US-020: the pretend AI replaces the Ollama adapters (the last registration wins)
+                services.AddSingleton<IEmbeddingModel>(ai);
+                services.AddSingleton<IRationaleWriter>(ai);
 
                 // Make the test sign-in the default, replacing the cookie + Keycloak setup from Program.cs
                 services

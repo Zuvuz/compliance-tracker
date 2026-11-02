@@ -1,3 +1,5 @@
+using ComplianceTracker.Application.Ai;
+using ComplianceTracker.Domain.Mappings;
 using ComplianceTracker.Application.Compliance;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
@@ -25,6 +27,7 @@ namespace ComplianceTracker.Web.Controllers
         private readonly TimeProvider _clock;
         private readonly ComplianceService _compliance;
         private readonly ComplianceQueries _complianceQueries;
+        private readonly MappingSuggestionService _suggestions;
 
         public ProjectsController(
             ProjectService service,
@@ -35,8 +38,10 @@ namespace ComplianceTracker.Web.Controllers
             WorkItemQueries workItems,
             ComplianceService compliance,
             ComplianceQueries complianceQueries,
+            MappingSuggestionService suggestions,
             TimeProvider clock)
         {
+            _suggestions = suggestions;
             _compliance = compliance;
             _complianceQueries = complianceQueries;
             _clock = clock;
@@ -229,6 +234,48 @@ namespace ComplianceTracker.Web.Controllers
         {
             await _compliance.MarkApplicableAsync(projectId, requirementId, cancellationToken);
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // ---------------------------------------------------------- AI suggestions (US-020, US-036)
+
+        // POST /Projects/SuggestMappings: R1, R8
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        public async Task<IActionResult> SuggestMappings(Guid projectId, CancellationToken cancellationToken)
+        {
+            await _suggestions.SuggestAsync(projectId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+        }
+
+        // POST /Projects/ShowMoreSuggestions: US-036 R2
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        public async Task<IActionResult> ShowMoreSuggestions(Guid projectId, Guid workItemId, CancellationToken cancellationToken)
+        {
+            await _suggestions.ShowMoreAsync(projectId, workItemId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+        }
+
+        // POST /Projects/ApproveSuggestion: R6
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        public async Task<IActionResult> ApproveSuggestion(Guid projectId, Guid suggestionId, CancellationToken cancellationToken)
+        {
+            await _suggestions.ApproveAsync(projectId, suggestionId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+        }
+
+        // POST /Projects/RejectSuggestion: R7. An unknown reason binds as null and is refused by the domain.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        public async Task<IActionResult> RejectSuggestion(Guid projectId, Guid suggestionId, RejectionReason? reason, string? comment, CancellationToken cancellationToken)
+        {
+            await _suggestions.RejectAsync(projectId, suggestionId, reason, comment, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
         }
 
         // ---------------------------------------------------------- Editing (US-024)

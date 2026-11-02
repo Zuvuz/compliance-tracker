@@ -1,3 +1,4 @@
+using ComplianceTracker.Application.Ai;
 using ComplianceTracker.Application.Compliance;
 using ComplianceTracker.Application;
 using ComplianceTracker.Application.ActivityLog;
@@ -52,6 +53,13 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<IWorkItemRepository, WorkItemRepository>();
                 services.AddScoped<IRequirementLinkRepository, RequirementLinkRepository>(); // US-021
                 services.AddScoped<IRequirementApplicabilityRepository, RequirementApplicabilityRepository>(); // US-043
+
+                // US-020: not used by these tests, but the use cases must be creatable
+                services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();
+                services.AddSingleton<FakeAi>();
+                services.AddSingleton<IEmbeddingModel>(provider => provider.GetRequiredService<FakeAi>());
+                services.AddSingleton<IRationaleWriter>(provider => provider.GetRequiredService<FakeAi>());
+                services.AddSingleton<IRationaleQueue, NoRationaleQueue>();
                 services.AddSingleton<IWorkItemSource>(new GitHubWorkItemSource(new HttpClient { BaseAddress = new Uri("http://github.invalid/") }));
                 services.AddSingleton<IWorkItemNotifier, NoWorkItemNotifier>();
 
@@ -59,6 +67,13 @@ namespace ComplianceTracker.Specs.Support
                 services.AddDataProtection().UseEphemeralDataProtectionProvider();
                 services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
             };
+
+        private sealed class NoRationaleQueue : IRationaleQueue
+        {
+            public void Wake()
+            {
+            }
+        }
 
         private sealed class NoWorkItemNotifier : IWorkItemNotifier
         {
