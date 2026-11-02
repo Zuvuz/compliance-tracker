@@ -1,3 +1,5 @@
+using ComplianceTracker.Web.Filters;
+using ComplianceTracker.Application.Ai;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
@@ -20,14 +22,18 @@ namespace ComplianceTracker.Web.Controllers
 
         private readonly TimeProvider _clock;
 
+        private readonly AiFeedbackService _aiFeedback;
+
         public OrganizationsController(
             OrganizationService service,
+            AiFeedbackService aiFeedback,
             OrganizationQueries organizations,
             ProjectQueries projects,
             FrameworkQueries frameworks,
             TimeProvider clock)
         {
             _clock = clock;
+            _aiFeedback = aiFeedback;
             _service = service;
             _organizations = organizations;
             _projects = projects;
@@ -105,5 +111,28 @@ namespace ComplianceTracker.Web.Controllers
             var organization = await _organizations.GetAsync(id, cancellationToken);
             return organization is null ? NotFound() : View(organization);
         }
+
+        // ---------------------------------------------------------- AI feedback (US-036)
+
+        // POST /Organizations/SetAiSharing: R5, R6. Only an Admin (checked in the domain).
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "id")]
+        public async Task<IActionResult> SetAiSharing(Guid id, bool share, CancellationToken cancellationToken)
+        {
+            await _aiFeedback.SetSharingAsync(share, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // POST /Organizations/ExportAiFeedback: R7–R9. JSON Lines, one decision per line, without names.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "id")]
+        public async Task<IActionResult> ExportAiFeedback(Guid id, CancellationToken cancellationToken)
+        {
+            var lines = await _aiFeedback.ExportAsync(cancellationToken);
+            return File(System.Text.Encoding.UTF8.GetBytes(lines), "application/x-ndjson", "ai-feedback.jsonl");
+        }
+
     }
 }

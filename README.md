@@ -74,6 +74,37 @@ dotnet run --project src/ComplianceTracker.Web --launch-profile https
 
 Open `https://localhost:7068`, click **Sign in**, and choose **Register** to create a user in Keycloak. After the first sign-in you create your organisation.
 
+## The local AI (optional)
+
+AI suggestions (US-020) need a local model server. Without one, the app works, and "Suggest mappings" says the AI is not available.
+
+1. Install [Ollama](https://ollama.com/download).
+2. Download the two default models:
+
+```bash
+ollama pull nomic-embed-text
+```
+
+```bash
+ollama pull qwen2.5:3b
+```
+
+The models are set in the `Ai` section of `appsettings.json` and can be changed without code changes. For example, to use a bigger chat model, or another server with an OpenAI-compatible API (vLLM, LM Studio, llama.cpp):
+
+```bash
+setx Ai__ChatModel "qwen2.5:7b"
+```
+
+```bash
+setx Ai__Provider "OpenAICompatible"
+```
+
+```bash
+setx Ai__BaseUrl "http://my-gpu-server:8000"
+```
+
+Every suggestion stores which models and prompt version made it, so results from different models can be compared.
+
 ## Running the tests
 
 ```bash

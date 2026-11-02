@@ -51,6 +51,16 @@
         </div>
     }
 
+    @if (!project.IsClosed && Model.WorkItems.Count > 0)
+    {
+        @* US-020 R1: the local AI suggests requirements for every story; a person decides each one *@
+        <form asp-action="SuggestMappings" method="post" class="mb-3" id="suggest-mappings">
+            <input type="hidden" name="projectId" value="@project.Id" />
+            <button type="submit" class="btn btn-outline-primary">Suggest mappings</button>
+            <span class="small text-muted ms-2">The local AI suggests requirements for each user story. You approve or reject each suggestion.</span>
+        </form>
+    }
+
     <div id="work-items-live">
         <partial name="_WorkItems" model="Model.WorkItemsSection" />
     </div>

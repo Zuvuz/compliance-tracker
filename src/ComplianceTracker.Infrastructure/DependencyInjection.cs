@@ -5,6 +5,8 @@ using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Application.Projects;
 using ComplianceTracker.Application.WorkItems;
+using ComplianceTracker.Application.Ai;
+using ComplianceTracker.Infrastructure.Ai;
 using ComplianceTracker.Infrastructure.Frameworks;
 using ComplianceTracker.Infrastructure.Persistence;
 using ComplianceTracker.Infrastructure.Persistence.Repositories;
@@ -14,6 +16,7 @@ using ComplianceTracker.Infrastructure.WorkItems;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace ComplianceTracker.Infrastructure
 {
@@ -59,6 +62,7 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<IWorkItemRepository, WorkItemRepository>();
             services.AddScoped<IRequirementLinkRepository, RequirementLinkRepository>();
             services.AddScoped<IRequirementApplicabilityRepository, RequirementApplicabilityRepository>();
+            services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();
             services.AddHttpClient<GitHubWorkItemSource>(client =>
             {
                 client.BaseAddress = new Uri(GitHubApiAddress);
@@ -76,7 +80,42 @@ namespace ComplianceTracker.Infrastructure
                 .PersistKeysToDbContext<ComplianceTrackerDbContext>();
             services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
 
+            AddAi(services);
+
             return services;
         }
+
+        // US-020: the local AI. Ai:Provider picks the adapters, Ai:BaseUrl and the model names come from
+        // configuration (appsettings.json), so a better model or another server needs no code change.
+        private static void AddAi(IServiceCollection services)
+        {
+            services.AddOptions<AiOptions>().BindConfiguration(AiOptions.Section);
+
+            void Configure(IServiceProvider provider, HttpClient client)
+            {
+                var options = provider.GetRequiredService<IOptions<AiOptions>>().Value;
+                client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
+                client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+                if (!string.IsNullOrEmpty(options.ApiKey))
+                {
+                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", options.ApiKey);
+                }
+            }
+
+            services.AddHttpClient<OllamaEmbeddingModel>(Configure);
+            services.AddHttpClient<OllamaRationaleWriter>(Configure);
+            services.AddHttpClient<OpenAiCompatibleEmbeddingModel>(Configure);
+            services.AddHttpClient<OpenAiCompatibleRationaleWriter>(Configure);
+
+            services.AddTransient<IEmbeddingModel>(provider => IsOpenAiCompatible(provider)
+                ? provider.GetRequiredService<OpenAiCompatibleEmbeddingModel>()
+                : provider.GetRequiredService<OllamaEmbeddingModel>());
+            services.AddTransient<IRationaleWriter>(provider => IsOpenAiCompatible(provider)
+                ? provider.GetRequiredService<OpenAiCompatibleRationaleWriter>()
+                : provider.GetRequiredService<OllamaRationaleWriter>());
+        }
+
+        private static bool IsOpenAiCompatible(IServiceProvider provider)
+            => string.Equals(provider.GetRequiredService<IOptions<AiOptions>>().Value.Provider, "OpenAICompatible", StringComparison.OrdinalIgnoreCase);
     }
 }

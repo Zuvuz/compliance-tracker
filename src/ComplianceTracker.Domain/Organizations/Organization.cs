@@ -24,6 +24,10 @@ namespace ComplianceTracker.Domain.Organizations
 
         public IReadOnlyList<User> Users => _users;
 
+        // US-036 R5: whether the organisation's decisions on AI suggestions may be exported to improve the AI.
+        // Off until an Admin switches it on.
+        public bool ShareAiFeedback { get; private set; }
+
         // For EF Core only. Everyone else must use Create, so the rules always run.
         private Organization() { }
 
@@ -70,6 +74,23 @@ namespace ComplianceTracker.Domain.Organizations
             organization._users.Add(new User(creator.ExternalId, creator.Name, creator.Email, UserRole.Admin));
 
             return organization;
+        }
+
+        // US-036 R6: only an Admin may change it. Returns false when nothing changed.
+        public bool SetShareAiFeedback(bool share, Guid userId)
+        {
+            if (_users.FirstOrDefault(u => u.Id == userId)?.Role != UserRole.Admin)
+            {
+                throw new DomainException("Only an Admin can change this setting");
+            }
+
+            if (ShareAiFeedback == share)
+            {
+                return false;
+            }
+
+            ShareAiFeedback = share;
+            return true;
         }
     }
 }

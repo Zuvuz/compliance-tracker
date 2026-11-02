@@ -60,6 +60,16 @@ namespace ComplianceTracker.Domain.ActivityLog
         // A requirement was marked as not applicable to a project, or applicable again (US-043).
         // SubjectId points at the project; Details holds the code and the reason.
         RequirementMarkedNotApplicable,
-        RequirementMarkedApplicable
+        RequirementMarkedApplicable,
+
+        // The local AI made suggestions for a project, or a person decided one (US-020).
+        // SubjectId points at the project; Details holds e.g. "SP-1 ↔ [US-004] Sign in" or the number made.
+        MappingsSuggested,
+        MappingApproved,
+        MappingRejected,
+
+        // An Admin switched sharing of AI feedback on or off, or exported it (US-036). SubjectId is the organisation.
+        AiFeedbackSharingChanged,
+        AiFeedbackExported
     }
 }

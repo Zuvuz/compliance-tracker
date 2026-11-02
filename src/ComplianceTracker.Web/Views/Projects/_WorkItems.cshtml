@@ -71,6 +71,49 @@ else
                         <text> · @item.Labels</text>
                     }
                 </p>
+                @if (Model.Compliance is { } suggestionData && !project.IsClosed)
+                {
+                    @* US-020, US-036: the AI's pending suggestions for this story, best first *@
+                    var pending = suggestionData.SuggestionsFor(item.Id).ToList();
+                    <div class="ai-suggestions border-start border-3 border-info ps-2 mb-2" data-reference="@item.ExternalReference">
+                        @foreach (var entry in pending)
+                        {
+                            var suggestion = entry.Suggestion;
+                            <div class="ai-suggestion mb-2" data-code="@entry.Requirement.Code">
+                                <span class="badge text-bg-info">AI-generated</span>
+                                <strong class="suggestion-code">@entry.Requirement.Code</strong> @entry.Requirement.Title
+                                <span class="small text-muted">score <span class="suggestion-score">@suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span></span>
+                                <div class="small suggestion-rationale">@(suggestion.Rationale ?? "Writing rationale…")</div>
+                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                    <form asp-controller="Projects" asp-action="ApproveSuggestion" method="post" class="approve-suggestion">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                        <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                                    </form>
+                                    <form asp-controller="Projects" asp-action="RejectSuggestion" method="post" class="d-flex gap-1 reject-suggestion">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                        <select name="reason" class="form-select form-select-sm" aria-label="Reason">
+                                            <option value="">Reason…</option>
+                                            @foreach (var reason in Enum.GetValues<ComplianceTracker.Domain.Mappings.RejectionReason>())
+                                            {
+                                                <option value="@reason">@reason</option>
+                                            }
+                                        </select>
+                                        <input name="comment" class="form-control form-control-sm" placeholder="Comment (optional)" aria-label="Comment" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                        @* US-036 R2: the next suggestions for this story *@
+                        <form asp-controller="Projects" asp-action="ShowMoreSuggestions" method="post" class="show-more-suggestions">
+                            <input type="hidden" name="projectId" value="@project.Id" />
+                            <input type="hidden" name="workItemId" value="@item.Id" />
+                            <button type="submit" class="btn btn-sm btn-link p-0">@(pending.Count == 0 ? "Suggest requirements" : "Show more")</button>
+                        </form>
+                    </div>
+                }
                 @if (Model.Compliance is { } compliance)
                 {
                     @* US-021 R3: the requirements the story is linked to *@
