@@ -39,7 +39,8 @@ namespace ComplianceTracker.Application.Ai
         public string Provider { get; set; } = "Ollama";
 
         // Where the model server runs. US-020 R2: it must be inside the organisation's own infrastructure.
-        public string BaseUrl { get; set; } = "http://localhost:11434";
+        // 127.0.0.1, not localhost: on Windows localhost may resolve to ::1 first, where another Ollama (e.g. in Docker) can answer.
+        public string BaseUrl { get; set; } = "http://127.0.0.1:11434";
 
         public string EmbeddingModel { get; set; } = "nomic-embed-text";
         public string ChatModel { get; set; } = "qwen2.5:3b";
