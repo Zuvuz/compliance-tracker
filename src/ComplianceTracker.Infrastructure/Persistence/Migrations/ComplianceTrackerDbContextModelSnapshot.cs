@@ -236,8 +236,16 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("FrameworkVersionId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Group")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<int>("Position")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -250,6 +258,293 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Requirements", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0101"),
+                            Code = "I.1",
+                            Description = "Products with digital elements shall be designed, developed and produced in such a way that they ensure an appropriate level of cybersecurity based on the risks.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part I – Essential cybersecurity requirements",
+                            Position = 1,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Appropriate level of cybersecurity based on the risks"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0102"),
+                            Code = "I.2(a)",
+                            Description = "On the basis of the cybersecurity risk assessment referred to in Article 13(2) and where applicable, products with digital elements shall: be made available on the market without known exploitable vulnerabilities;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part I – Essential cybersecurity requirements",
+                            Position = 2,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "No known exploitable vulnerabilities"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0103"),
+                            Code = "I.2(b)",
+                            Description = "On the basis of the cybersecurity risk assessment referred to in Article 13(2) and where applicable, products with digital elements shall: be made available on the market with a secure by default configuration, unless otherwise agreed between manufacturer and business user in relation to a tailor-made product with digital elements, including the possibility to reset the product to its original state;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part I – Essential cybersecurity requirements",
+                            Position = 3,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Secure by default configuration"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0104"),
+                            Code = "I.2(c)",
+                            Description = "On the basis of the cybersecurity risk assessment referred to in Article 13(2) and where applicable, products with digital elements shall: ensure that vulnerabilities can be addressed through security updates, including, where applicable, through automatic security updates that are installed within an appropriate timeframe enabled as a default setting, with a clear and easy-to-use opt-out mechanism, through the notification of available updates to users, and the option to temporarily postpone them;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part I – Essential cybersecurity requirements",
+                            Position = 4,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Security updates"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0105"),
+                            Code = "I.2(d)",
+                            Description = "On the basis of the cybersecurity risk assessment referred to in Article 13(2) and where applicable, products with digital elements shall: ensure protection from unauthorised access by appropriate control mechanisms, including but not limited to authentication, identity or access management systems, and report on possible unauthorised access;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part I – Essential cybersecurity requirements",
+                            Position = 5,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Protection from unauthorised access"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0106"),
+                            Code = "I.2(e)",
+                            Description = "On the basis of the cybersecurity risk assessment referred to in Article 13(2) and where applicable, products with digital elements shall: protect the confidentiality of stored, transmitted or otherwise processed data, personal or other, such as by encrypting relevant data at rest or in transit by state of the art mechanisms, and by using other technical means;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part I – Essential cybersecurity requirements",
+                            Position = 6,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Confidentiality of data"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0107"),
+                            Code = "I.2(f)",
+                            Description = "On the basis of the cybersecurity risk assessment referred to in Article 13(2) and where applicable, products with digital elements shall: protect the integrity of stored, transmitted or otherwise processed data, personal or other, commands, programs and configuration against any manipulation or modification not authorised by the user, and report on corruptions;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part I – Essential cybersecurity requirements",
+                            Position = 7,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Integrity of data, programs and configuration"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0108"),
+                            Code = "I.2(g)",
+                            Description = "On the basis of the cybersecurity risk assessment referred to in Article 13(2) and where applicable, products with digital elements shall: process only data, personal or other, that are adequate, relevant and limited to what is necessary in relation to the intended purpose of the product with digital elements (data minimisation);",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part I – Essential cybersecurity requirements",
+                            Position = 8,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Data minimisation"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0109"),
+                            Code = "I.2(h)",
+                            Description = "On the basis of the cybersecurity risk assessment referred to in Article 13(2) and where applicable, products with digital elements shall: protect the availability of essential and basic functions, also after an incident, including through resilience and mitigation measures against denial-of-service attacks;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part I – Essential cybersecurity requirements",
+                            Position = 9,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Availability of essential functions"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0110"),
+                            Code = "I.2(i)",
+                            Description = "On the basis of the cybersecurity risk assessment referred to in Article 13(2) and where applicable, products with digital elements shall: minimise the negative impact by the products themselves or connected devices on the availability of services provided by other devices or networks;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part I – Essential cybersecurity requirements",
+                            Position = 10,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Limited impact on other devices and networks"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0111"),
+                            Code = "I.2(j)",
+                            Description = "On the basis of the cybersecurity risk assessment referred to in Article 13(2) and where applicable, products with digital elements shall: be designed, developed and produced to limit attack surfaces, including external interfaces;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part I – Essential cybersecurity requirements",
+                            Position = 11,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Limited attack surfaces"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0112"),
+                            Code = "I.2(k)",
+                            Description = "On the basis of the cybersecurity risk assessment referred to in Article 13(2) and where applicable, products with digital elements shall: be designed, developed and produced to reduce the impact of an incident using appropriate exploitation mitigation mechanisms and techniques;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part I – Essential cybersecurity requirements",
+                            Position = 12,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Reduced impact of incidents"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0113"),
+                            Code = "I.2(l)",
+                            Description = "On the basis of the cybersecurity risk assessment referred to in Article 13(2) and where applicable, products with digital elements shall: provide security related information by recording and monitoring relevant internal activity, including the access to or modification of data, services or functions, with an opt-out mechanism for the user;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part I – Essential cybersecurity requirements",
+                            Position = 13,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Security logging and monitoring"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0114"),
+                            Code = "I.2(m)",
+                            Description = "On the basis of the cybersecurity risk assessment referred to in Article 13(2) and where applicable, products with digital elements shall: provide the possibility for users to securely and easily remove on a permanent basis all data and settings and, where such data can be transferred to other products or systems, ensure that this is done in a secure manner.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part I – Essential cybersecurity requirements",
+                            Position = 14,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Secure removal of data and settings"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0115"),
+                            Code = "II.1",
+                            Description = "Manufacturers of products with digital elements shall: identify and document vulnerabilities and components contained in products with digital elements, including by drawing up a software bill of materials in a commonly used and machine-readable format covering at the very least the top-level dependencies of the products;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part II – Vulnerability handling",
+                            Position = 15,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Identify and document vulnerabilities and components (SBOM)"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0116"),
+                            Code = "II.2",
+                            Description = "Manufacturers of products with digital elements shall: in relation to the risks posed to products with digital elements, address and remediate vulnerabilities without delay, including by providing security updates; where technically feasible, new security updates shall be provided separately from functionality updates;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part II – Vulnerability handling",
+                            Position = 16,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Remediate vulnerabilities without delay"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0117"),
+                            Code = "II.3",
+                            Description = "Manufacturers of products with digital elements shall: apply effective and regular tests and reviews of the security of the product with digital elements;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part II – Vulnerability handling",
+                            Position = 17,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Regular security tests and reviews"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0118"),
+                            Code = "II.4",
+                            Description = "Manufacturers of products with digital elements shall: once a security update has been made available, share and publicly disclose information about fixed vulnerabilities, including a description of the vulnerabilities, information allowing users to identify the product with digital elements affected, the impacts of the vulnerabilities, their severity and clear and accessible information helping users to remediate the vulnerabilities; in duly justified cases, where manufacturers consider the security risks of publication to outweigh the security benefits, they may delay making public information regarding a fixed vulnerability until after users have been given the possibility to apply the relevant patch;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part II – Vulnerability handling",
+                            Position = 18,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Disclose fixed vulnerabilities"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0119"),
+                            Code = "II.5",
+                            Description = "Manufacturers of products with digital elements shall: put in place and enforce a policy on coordinated vulnerability disclosure;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part II – Vulnerability handling",
+                            Position = 19,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Coordinated vulnerability disclosure policy"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0120"),
+                            Code = "II.6",
+                            Description = "Manufacturers of products with digital elements shall: take measures to facilitate the sharing of information about potential vulnerabilities in their product with digital elements as well as in third-party components contained in that product, including by providing a contact address for the reporting of the vulnerabilities discovered in the product with digital elements;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part II – Vulnerability handling",
+                            Position = 20,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Sharing information about vulnerabilities, with a contact address"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0121"),
+                            Code = "II.7",
+                            Description = "Manufacturers of products with digital elements shall: provide for mechanisms to securely distribute updates for products with digital elements to ensure that vulnerabilities are fixed or mitigated in a timely manner and, where applicable for security updates, in an automatic manner;",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part II – Vulnerability handling",
+                            Position = 21,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Secure distribution of updates"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3c0122"),
+                            Code = "II.8",
+                            Description = "Manufacturers of products with digital elements shall: ensure that, where security updates are available to address identified security issues, they are disseminated without delay and, unless otherwise agreed between a manufacturer and a business user in relation to a tailor-made product with digital elements, free of charge, accompanied by advisory messages providing users with the relevant information, including on potential action to be taken.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c02"),
+                            Group = "Part II – Vulnerability handling",
+                            Position = 22,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_I",
+                            Title = "Security updates without delay and free of charge"
+                        });
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Mappings.RequirementApplicability", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("DecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("DecidedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid>("RequirementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RevokedById")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DecidedById");
+
+                    b.HasIndex("RequirementId");
+
+                    b.HasIndex("RevokedById");
+
+                    b.HasIndex("ProjectId", "RequirementId")
+                        .IsUnique()
+                        .HasFilter("\"RevokedAt\" IS NULL");
+
+                    b.ToTable("RequirementApplicability", (string)null);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Mappings.RequirementLink", b =>
@@ -625,6 +920,32 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasForeignKey("FrameworkVersionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Mappings.RequirementApplicability", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("DecidedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Frameworks.Requirement", null)
+                        .WithMany()
+                        .HasForeignKey("RequirementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("RevokedById")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Mappings.RequirementLink", b =>

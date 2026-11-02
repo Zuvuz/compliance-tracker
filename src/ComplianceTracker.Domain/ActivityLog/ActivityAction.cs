@@ -55,6 +55,11 @@ namespace ComplianceTracker.Domain.ActivityLog
         // A user story was linked to a requirement, or the link was removed (US-021).
         // SubjectId points at the project; Details holds e.g. "SP-1 ↔ [US-004] Sign in".
         RequirementLinked,
-        RequirementUnlinked
+        RequirementUnlinked,
+
+        // A requirement was marked as not applicable to a project, or applicable again (US-043).
+        // SubjectId points at the project; Details holds the code and the reason.
+        RequirementMarkedNotApplicable,
+        RequirementMarkedApplicable
     }
 }

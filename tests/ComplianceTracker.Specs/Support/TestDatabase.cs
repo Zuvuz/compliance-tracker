@@ -59,6 +59,7 @@ namespace ComplianceTracker.Specs.Support
             await db.Database.ExecuteSqlRawAsync(
                 """
                 DELETE FROM "RequirementLinks";
+                DELETE FROM "RequirementApplicability";
                 DELETE FROM "ActivityLog";
                 DELETE FROM "OrganizationFrameworks";
                 DELETE FROM "ProjectFrameworks";

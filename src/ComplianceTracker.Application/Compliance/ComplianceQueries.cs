@@ -16,6 +16,7 @@ namespace ComplianceTracker.Application.Compliance
         private readonly IFrameworkRepository _frameworks;
         private readonly IWorkItemRepository _workItems;
         private readonly IRequirementLinkRepository _links;
+        private readonly IRequirementApplicabilityRepository _applicability;
         private readonly CurrentMember _member;
 
         public ComplianceQueries(
@@ -23,12 +24,14 @@ namespace ComplianceTracker.Application.Compliance
             IFrameworkRepository frameworks,
             IWorkItemRepository workItems,
             IRequirementLinkRepository links,
+            IRequirementApplicabilityRepository applicability,
             CurrentMember member)
         {
             _projects = projects;
             _frameworks = frameworks;
             _workItems = workItems;
             _links = links;
+            _applicability = applicability;
             _member = member;
         }
 
@@ -44,6 +47,8 @@ namespace ComplianceTracker.Application.Compliance
                 organization.Id, project.Frameworks.Select(f => f.FrameworkId).ToList(), cancellationToken);
             var workItems = (await _workItems.ListAsync(project.Id, cancellationToken)).ToDictionary(w => w.Id);
             var links = await _links.ListActiveAsync(project.Id, cancellationToken);
+            var notApplicable = (await _applicability.ListActiveAsync(project.Id, cancellationToken))
+                .ToDictionary(a => a.RequirementId, a => a.Reason);
 
             var result = new List<FrameworkCompliance>();
             foreach (var used in project.Frameworks)
@@ -61,7 +66,8 @@ namespace ComplianceTracker.Application.Compliance
                         links.Where(l => l.RequirementId == requirement.Id && workItems.ContainsKey(l.WorkItemId))
                             .Select(l => new LinkedWorkItem(l.Id, workItems[l.WorkItemId]))
                             .OrderBy(l => l.WorkItem.Title, StringComparer.OrdinalIgnoreCase)
-                            .ToList()))
+                            .ToList(),
+                        notApplicable.GetValueOrDefault(requirement.Id)))
                     .ToList();
 
                 result.Add(new FrameworkCompliance(framework, version, rows));
@@ -87,15 +93,24 @@ namespace ComplianceTracker.Application.Compliance
     // One framework version the project follows, with its requirements in the document's order
     public record FrameworkCompliance(Framework Framework, FrameworkVersion Version, IReadOnlyList<RequirementCoverage> Requirements)
     {
-        public int Total => Requirements.Count;
-        public int Covered => Requirements.Count(r => r.IsCovered);
+        // US-043 R6: requirements that are not applicable do not count
+        public int Total => Requirements.Count(r => r.IsApplicable);
+        public int Covered => Requirements.Count(r => r.IsApplicable && r.IsCovered);
+        public int NotApplicable => Requirements.Count(r => !r.IsApplicable);
+
+        // e.g. "12 of 20 requirements covered (60 %), 2 not applicable"
+        public string CoverageText
+            => $"{Covered} of {Total} requirements covered ({Percent} %)" + (NotApplicable > 0 ? $", {NotApplicable} not applicable" : "");
 
         // US-021 R4: rounded to whole per cent; 0 when there are no requirements
         public int Percent => Total == 0 ? 0 : (int)Math.Round(100.0 * Covered / Total, MidpointRounding.AwayFromZero);
     }
 
-    public record RequirementCoverage(Requirement Requirement, IReadOnlyList<LinkedWorkItem> Links)
+    // NotApplicableReason: set when the requirement does not apply to the project (US-043)
+    public record RequirementCoverage(Requirement Requirement, IReadOnlyList<LinkedWorkItem> Links, string? NotApplicableReason = null)
     {
+        public bool IsApplicable => NotApplicableReason is null;
+
         // US-021 R2, R5: covered when at least one active link exists
         public bool IsCovered => Links.Count > 0;
     }

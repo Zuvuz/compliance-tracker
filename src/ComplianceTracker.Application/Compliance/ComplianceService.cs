@@ -22,7 +22,17 @@ namespace ComplianceTracker.Application.Compliance
         Task AddAsync(RequirementLink link, CancellationToken cancellationToken = default);
     }
 
+    // Storage for "not applicable" decisions (US-043)
+    public interface IRequirementApplicabilityRepository
+    {
+        // The project's requirements that are not applicable now
+        Task<IReadOnlyList<RequirementApplicability>> ListActiveAsync(Guid projectId, CancellationToken cancellationToken = default);
+
+        Task AddAsync(RequirementApplicability applicability, CancellationToken cancellationToken = default);
+    }
+
     // US-021: links a project's user story to one of its requirements by hand, or removes the link.
+    // US-043: marks a requirement as not applicable to the project, with a reason, or applicable again.
     // AI suggestions (US-020) will add links the same way after a person approves them.
     public class ComplianceService
     {
@@ -30,6 +40,7 @@ namespace ComplianceTracker.Application.Compliance
         private readonly IFrameworkRepository _frameworks;
         private readonly IWorkItemRepository _workItems;
         private readonly IRequirementLinkRepository _links;
+        private readonly IRequirementApplicabilityRepository _applicability;
         private readonly CurrentMember _member;
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
@@ -40,6 +51,7 @@ namespace ComplianceTracker.Application.Compliance
             IFrameworkRepository frameworks,
             IWorkItemRepository workItems,
             IRequirementLinkRepository links,
+            IRequirementApplicabilityRepository applicability,
             CurrentMember member,
             IActivityLogger log,
             IUnitOfWork unitOfWork,
@@ -49,6 +61,7 @@ namespace ComplianceTracker.Application.Compliance
             _frameworks = frameworks;
             _workItems = workItems;
             _links = links;
+            _applicability = applicability;
             _member = member;
             _log = log;
             _unitOfWork = unitOfWork;
@@ -91,6 +104,37 @@ namespace ComplianceTracker.Application.Compliance
             var workItem = (await _workItems.ListAsync(project.Id, cancellationToken)).FirstOrDefault(w => w.Id == link.WorkItemId);
             await _log.LogAsync(ActivityAction.RequirementUnlinked, project.Id,
                 $"{requirement?.Code ?? "?"} ↔ {workItem?.Title ?? "?"}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-043 R5: the requirement does not apply to the project; the reason is required
+        public async Task MarkNotApplicableAsync(Guid projectId, Guid requirementId, string reason, CancellationToken cancellationToken = default)
+        {
+            var (organizationId, userId, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var requirement = await RequirementOfProjectAsync(organizationId, project, requirementId, cancellationToken)
+                ?? throw new DomainException("The requirement is not in a framework version the project follows");
+
+            if ((await _applicability.ListActiveAsync(project.Id, cancellationToken)).Any(a => a.RequirementId == requirementId))
+            {
+                throw new DomainException($"{requirement.Code} is already marked as not applicable");
+            }
+
+            var decision = RequirementApplicability.NotApplicable(project.Id, requirementId, reason, userId, Now);
+            await _applicability.AddAsync(decision, cancellationToken);
+            await _log.LogAsync(ActivityAction.RequirementMarkedNotApplicable, project.Id, $"{requirement.Code}: {decision.Reason}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-043 R5: the requirement applies again; the decision is kept with the time it was revoked
+        public async Task MarkApplicableAsync(Guid projectId, Guid requirementId, CancellationToken cancellationToken = default)
+        {
+            var (organizationId, userId, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var decision = (await _applicability.ListActiveAsync(project.Id, cancellationToken)).FirstOrDefault(a => a.RequirementId == requirementId)
+                ?? throw new DomainException("The requirement already applies");
+
+            decision.Revoke(userId, Now);
+            var requirement = await RequirementOfProjectAsync(organizationId, project, requirementId, cancellationToken);
+            await _log.LogAsync(ActivityAction.RequirementMarkedApplicable, project.Id, requirement?.Code ?? "?", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 

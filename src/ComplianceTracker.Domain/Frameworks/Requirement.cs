@@ -21,6 +21,13 @@ namespace ComplianceTracker.Domain.Frameworks
         // The order in the document, so the list reads like the PDF
         public int Position { get; private set; }
 
+        // US-043: the part of the document it belongs to, e.g. "Part I – Essential cybersecurity requirements".
+        // Only set for built-in requirements, which come as seed data; null for requirements found in a PDF.
+        public string? Group { get; private set; }
+
+        // US-043: a link to the official text, e.g. the annex on EUR-Lex. Only for built-in requirements.
+        public string? Reference { get; private set; }
+
         // For EF Core only
         private Requirement() { }
 

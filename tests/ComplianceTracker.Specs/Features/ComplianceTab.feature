@@ -85,9 +85,9 @@ Feature: Compliance tab: requirements, links and coverage per regulation
 
   @US-041 @integration
   Scenario: A framework without requirements says so
-    Given "CRA – Regulation (EU) 2024/2847" is switched on
-    And "Acme Portal" uses "CRA – Regulation (EU) 2024/2847"
-    When I open the "CRA" sub-tab of "Acme Portal"
+    Given "AI Act – Regulation (EU) 2024/1689" is switched on
+    And "Acme Portal" uses "AI Act – Regulation (EU) 2024/1689"
+    When I open the "AI Act" sub-tab of "Acme Portal"
     Then I see "This framework has no requirements in the tracker yet"
 
   @US-041 @integration
