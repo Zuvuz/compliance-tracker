@@ -271,6 +271,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At sende data til en sky-AI.
   - En fast tærskel for score (B13's "under 0,5 vises ikke"), fordi de 4 bedste giver mere data at lære af.
 
+### B30 – Risikoregister pr. projekt
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-042)
+  - Hvert projekt har sit eget risikoregister. Det er produktets cybersikkerheds-risikovurdering (CRA art. 13(2), bilag VII punkt 3).
+  - Sandsynlighed og konsekvens går fra 1 til 5. Niveauet er produktet af dem: 1–4 Low, 5–9 Medium, 10–16 High, 20–25 Critical. Restrisiko er to valgfri felter.
+  - Behandlingerne er Reduce, Accept, Avoid og Transfer. En accept kræver en begrundelse og gemmer, hvem der accepterede. Indtil roller kommer (US-010), må alle medlemmer acceptere.
+  - En risiko, der skal mindskes, kobles til projektets krav og user stories. Uden koblinger vises "No measures yet", og med mindst én vises status "Treated".
+  - Review er påkrævet hver 12. måned ("Review due"). En risiko slettes aldrig, den lukkes med en begrundelse.
+  - Hver ændring logges med gammel og ny værdi.
+- **Begrundelse:** CRA kræver en risikovurdering, der holdes opdateret i hele produktets levetid, og ISO 27001 kræver faste kriterier og regelmæssig gentagelse (6.1.2, 8.2). Koblingen til krav og stories viser, hvorfor et tiltag findes.
+- **Fravalgt:** organisationens egne risici (kun produktets indtil videre), trusselsmodellering (STRIDE), AI-forslag til risici og påmindelser pr. e-mail.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

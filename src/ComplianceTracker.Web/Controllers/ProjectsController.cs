@@ -1,3 +1,5 @@
+using ComplianceTracker.Application.Risks;
+using ComplianceTracker.Domain.Risks;
 using ComplianceTracker.Application.Ai;
 using ComplianceTracker.Domain.Mappings;
 using ComplianceTracker.Application.Compliance;
@@ -28,6 +30,7 @@ namespace ComplianceTracker.Web.Controllers
         private readonly ComplianceService _compliance;
         private readonly ComplianceQueries _complianceQueries;
         private readonly MappingSuggestionService _suggestions;
+        private readonly RiskQueries _risks;
 
         public ProjectsController(
             ProjectService service,
@@ -39,8 +42,10 @@ namespace ComplianceTracker.Web.Controllers
             ComplianceService compliance,
             ComplianceQueries complianceQueries,
             MappingSuggestionService suggestions,
+            RiskQueries risks,
             TimeProvider clock)
         {
+            _risks = risks;
             _suggestions = suggestions;
             _compliance = compliance;
             _complianceQueries = complianceQueries;
@@ -95,7 +100,10 @@ namespace ComplianceTracker.Web.Controllers
         // US-041: the Compliance tab has one sub-tab per framework, e.g. /Projects/Details/{id}/compliance/cra.
         // q searches the requirements (US-019 R3); show=not-covered filters them (US-021 R6).
         [HttpGet("Projects/Details/{id:guid}/{tab?}/{sub?}")]
-        public async Task<IActionResult> Details(Guid id, string? tab, string? sub, string? q, string? show, CancellationToken cancellationToken)
+        // US-042: on the Risks tab, status, level and due=1 filter the register (R8)
+        public async Task<IActionResult> Details(
+            Guid id, string? tab, string? sub, string? q, string? show,
+            string? status, string? level, string? due, CancellationToken cancellationToken)
         {
             var activeTab = ProjectTabs.Find(tab);
             var project = await _projects.GetAsync(id, cancellationToken);
@@ -114,6 +122,15 @@ namespace ComplianceTracker.Web.Controllers
             var compliance = activeTab is ProjectTabs.Compliance or ProjectTabs.Overview or ProjectTabs.UserStories
                 ? await _complianceQueries.ForProjectAsync(id, cancellationToken)
                 : null;
+
+            // US-042: the register, sorted by level; closed risks only when asked for (R7)
+            var allRisks = activeTab == ProjectTabs.Risks ? await _risks.ForProjectAsync(id, cancellationToken) ?? [] : [];
+            var now = _clock.GetUtcNow().UtcDateTime;
+            var risks = allRisks
+                .Where(r => string.IsNullOrEmpty(status) ? r.Status != RiskStatus.Closed : r.DisplayStatus.Equals(status, StringComparison.OrdinalIgnoreCase))
+                .Where(r => string.IsNullOrEmpty(level) || r.Level.ToString().Equals(level, StringComparison.OrdinalIgnoreCase))
+                .Where(r => due != "1" || r.IsReviewDue(now))
+                .ToList();
 
             // An unknown sub-tab is "not found", like an unknown tab
             if (activeTab == ProjectTabs.Compliance && sub is not null
@@ -134,7 +151,13 @@ namespace ComplianceTracker.Web.Controllers
                 Compliance = compliance,
                 Sub = sub,
                 Search = q,
-                OnlyNotCovered = show == "not-covered"
+                OnlyNotCovered = show == "not-covered",
+                Risks = risks,
+                AllRisks = allRisks,
+                RiskStatusFilter = status,
+                RiskLevelFilter = level,
+                OnlyReviewDue = due == "1",
+                Now = now
             });
         }
 

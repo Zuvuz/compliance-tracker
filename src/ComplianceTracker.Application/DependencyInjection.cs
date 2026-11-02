@@ -1,3 +1,4 @@
+using ComplianceTracker.Application.Risks;
 using ComplianceTracker.Application.Ai;
 using ComplianceTracker.Application.Compliance;
 using ComplianceTracker.Application.ActivityLog;
@@ -36,6 +37,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<MappingSuggestionService>();
             services.AddScoped<RationaleService>();
             services.AddScoped<AiFeedbackService>();
+            services.AddScoped<RiskService>();
 
             // Queries (read data for the pages)
             services.AddScoped<OrganizationQueries>();
@@ -43,6 +45,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<ProjectQueries>();
             services.AddScoped<WorkItemQueries>();
             services.AddScoped<ComplianceQueries>();
+            services.AddScoped<RiskQueries>();
 
             return services;
         }

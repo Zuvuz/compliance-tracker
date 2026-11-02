@@ -70,6 +70,12 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // An Admin switched sharing of AI feedback on or off, or exported it (US-036). SubjectId is the organisation.
         AiFeedbackSharingChanged,
-        AiFeedbackExported
+        AiFeedbackExported,
+
+        // A risk was added to a project's register, changed (incl. accepted, closed, measures) or reviewed (US-042).
+        // SubjectId points at the project; Details holds the risk's title and what changed.
+        RiskAdded,
+        RiskUpdated,
+        RiskReviewed
     }
 }
