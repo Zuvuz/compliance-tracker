@@ -499,6 +499,40 @@ classDiagram
     +ExportAsync() Task~string~
   }
 
+  %% ================= Risici (US-042) =================
+  class Risk {
+    -id: Guid
+    -projectId: Guid
+    -title: string
+    -description: string
+    -likelihood: int
+    -impact: int
+    -residualLikelihood: int?
+    -residualImpact: int?
+    -ownerId: Guid
+    -treatment: RiskTreatment
+    -status: RiskStatus
+    -acceptedReason: string?
+    -acceptedById: Guid?
+    -closedReason: string?
+    -lastReviewedAt: DateTime?
+    -measures: List~RiskMeasure~
+    +Score: int
+    +Level: RiskLevel
+    +Update(...) IReadOnlyList~ProjectChange~
+    +Accept(reason: string, userId: Guid, at: DateTime) ProjectChange
+    +Close(reason: string, at: DateTime) ProjectChange
+    +MarkReviewed(userId: Guid, at: DateTime)
+    +IsReviewDue(now: DateTime) bool
+    +AddMeasure(requirementId: Guid?, workItemId: Guid?) RiskMeasure
+  }
+  class RiskMeasure {
+    -id: Guid
+    -riskId: Guid
+    -requirementId: Guid?
+    -workItemId: Guid?
+  }
+
   %% ================= Log =================
   class ActivityLogEntry {
     -id: Guid
@@ -687,6 +721,10 @@ classDiagram
   RequirementLink "*" --> "1" Requirement
   RequirementLink "*" --> "1" Project
   RequirementApplicability "*" --> "1" Requirement
+  Project "1" --> "*" Risk : risks
+  Risk "1" *-- "*" RiskMeasure : measures
+  RiskMeasure "*" --> "0..1" Requirement
+  RiskMeasure "*" --> "0..1" WorkItem
   MappingSuggestion "*" --> "1" WorkItem
   MappingSuggestion "*" --> "1" Requirement
   MappingSuggestionService --> IEmbeddingModel : step 1
@@ -759,6 +797,7 @@ classDiagram
 - **Krav og user stories kobles pr. projekt.** `RequirementLink` er sit eget aggregat og laves i hånden indtil videre. Senere skal godkendte AI-forslag lave samme slags kobling (US-020). En kobling slettes aldrig, den får `removedAt`. Kun aktive koblinger tæller som dækning. Compliance-fanen har én under-fane pr. framework (`/Projects/Details/{id}/compliance/{slug}`) med krav, koblede stories og dækning. (US-019, US-021, US-041)
 - **CRA's krav følger med trackeren.** Bilag I (del I og II, 22 krav) er seed-data på den indbyggede CRA-version 1, med faste id'er, den officielle tekst fra EUR-Lex, en `group` pr. del og en `reference` til bilaget. Et krav kan markeres "Not applicable" for et projekt med en begrundelse (`RequirementApplicability`) og tæller så ikke med i dækningen. (US-043)
 - **AI-forslag i to trin, og modellen kan skiftes.** Trin 1: en embedding-model (`IEmbeddingModel`) scorer hvert krav mod hver story, og de 4 bedste bliver `MappingSuggestion`. Trin 2: en lille chat-model (`IRationaleWriter`) skriver begrundelsen i baggrunden (`RationaleWorker`). Hvilken server og hvilke modeller der bruges, står i `Ai:*`, og der er adaptere til Ollama og til OpenAI-kompatible servere. Hvert forslag gemmer model og prompt-version, og en godkendelse bliver til et `RequirementLink` med kilden `AiApproved` (B29). (US-020, US-036)
+- **Hvert projekt har et risikoregister.** `Risk` har sandsynlighed og konsekvens fra 1 til 5. Niveauet beregnes: 1–4 Low, 5–9 Medium, 10–16 High, 20–25 Critical. En risiko har en ejer og en behandling og kan få en valgfri restrisiko. Den kobles til de krav og user stories, der mindsker den (`RiskMeasure`). En risiko slettes aldrig, den lukkes med en begrundelse. Efter 12 måneder uden review vises "Review due" (B30). (US-042)
 - **Koblingsklasser med data.** `RequirementControl` og `RequirementLink` registrerer via `MappingSource`, om koblingen er lavet manuelt eller via et godkendt AI-forslag.
 - **Vurderinger ændres ikke.** En ny `RequirementAssessment` oprettes i stedet, og den seneste er gældende. Det giver historik til en auditor.
 - **Frameworkversioner låses ved aktivering.** Når `status` er `Active`, kan `requirements` ikke ændres. Så kan en mapping nøjes med at pege på et `Requirement`, fordi teksten bag aldrig ændrer sig. En rettelse er en ny `FrameworkVersion`.

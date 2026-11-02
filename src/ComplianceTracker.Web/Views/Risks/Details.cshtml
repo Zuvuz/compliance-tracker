@@ -1,0 +1,127 @@
+@* US-042: one risk with its measures, and accept / close / review.
+   Ids used by the tests: #risk-title, #risk-level, #risk-status, #risk-accepted, #risk-measures (li.risk-measure),
+   #add-measure, #accept-risk, #close-risk, #review-risk, #edit-risk-link. *@
+@using ComplianceTracker.Domain.Risks
+@model RiskPageViewModel
+@{
+    var risk = Model.Risk;
+    var project = Model.Project;
+    var editable = !project.IsClosed && risk.Status != RiskStatus.Closed;
+    ViewData["Title"] = risk.Title;
+}
+
+<p class="mb-1"><a asp-controller="Projects" asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Risks">← Risks of @project.Name</a></p>
+<div class="d-flex justify-content-between align-items-start">
+    <h1 class="mb-1"><span id="risk-title">@risk.Title</span> <span class="badge text-bg-secondary fs-6 align-middle" id="risk-level">@risk.Level</span></h1>
+    @if (editable)
+    {
+        <a class="btn btn-outline-primary" id="edit-risk-link" asp-action="Edit" asp-route-id="@risk.Id">Edit</a>
+    }
+</div>
+<p class="text-muted">@risk.Description</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+<dl class="row">
+    <dt class="col-sm-3">Likelihood × impact</dt>
+    <dd class="col-sm-9">@risk.Likelihood × @risk.Impact = @risk.Score (@risk.Level)</dd>
+    @if (risk.ResidualLevel is { } residual)
+    {
+        <dt class="col-sm-3">Residual risk</dt>
+        <dd class="col-sm-9">@risk.ResidualLikelihood × @risk.ResidualImpact (@residual)</dd>
+    }
+    <dt class="col-sm-3">Owner</dt>
+    <dd class="col-sm-9">@Model.NameOf(risk.OwnerId)</dd>
+    <dt class="col-sm-3">Treatment</dt>
+    <dd class="col-sm-9">@risk.Treatment</dd>
+    <dt class="col-sm-3">Status</dt>
+    <dd class="col-sm-9"><span id="risk-status">@risk.DisplayStatus</span>
+        @if (risk.Status == RiskStatus.Accepted)
+        {
+            <span class="small" id="risk-accepted">· Accepted by @Model.NameOf(risk.AcceptedById): @risk.AcceptedReason</span>
+        }
+        @if (risk.Status == RiskStatus.Closed)
+        {
+            <span class="small">· @risk.ClosedReason</span>
+        }
+    </dd>
+    <dt class="col-sm-3">Last reviewed</dt>
+    <dd class="col-sm-9">@(risk.LastReviewedAt?.ToLocalTime().ToString("dd-MM-yyyy") ?? "never")
+        @if (risk.IsReviewDue(Model.Now))
+        {
+            <span class="badge text-bg-danger">Review due</span>
+        }
+    </dd>
+</dl>
+
+<section class="mb-4">
+    <h2 class="h5">Measures</h2>
+    @if (risk.Measures.Count == 0)
+    {
+        <p class="text-muted">@(risk.Treatment == RiskTreatment.Reduce ? "No measures yet" : "None")</p>
+    }
+    <ul id="risk-measures" class="list-unstyled">
+        @foreach (var measure in risk.Measures)
+        {
+            <li class="risk-measure d-flex gap-2 align-items-center">
+                <span>@Model.MeasureName(measure)</span>
+                @if (editable)
+                {
+                    <form asp-action="RemoveMeasure" method="post">
+                        <input type="hidden" name="id" value="@risk.Id" />
+                        <input type="hidden" name="measureId" value="@measure.Id" />
+                        <button type="submit" class="btn btn-sm btn-link text-danger p-0" aria-label="Remove measure">×</button>
+                    </form>
+                }
+            </li>
+        }
+    </ul>
+    @if (editable && Model.Compliance is { } compliance)
+    {
+        @* R5: a requirement of the project, or one of its user stories *@
+        <form asp-action="AddMeasure" method="post" class="d-flex gap-2" id="add-measure">
+            <input type="hidden" name="id" value="@risk.Id" />
+            <select name="measure" class="form-select form-select-sm" aria-label="Measure">
+                @foreach (var framework in compliance.Frameworks)
+                {
+                    <optgroup label="@FrameworkNames.Short(framework.Framework.Name)">
+                        @foreach (var row in framework.Requirements.Where(r => r.IsApplicable))
+                        {
+                            <option value="requirement:@row.Requirement.Id">@row.Requirement.Code @row.Requirement.Title</option>
+                        }
+                    </optgroup>
+                }
+                <optgroup label="User stories">
+                    @foreach (var story in compliance.WorkItems.Where(w => w.State != ComplianceTracker.Domain.WorkItems.WorkItemState.Removed))
+                    {
+                        <option value="story:@story.Id">@story.Title</option>
+                    }
+                </optgroup>
+            </select>
+            <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Link measure</button>
+        </form>
+    }
+</section>
+
+@if (editable)
+{
+    <section class="d-flex flex-wrap gap-4">
+        <form asp-action="Review" method="post" id="review-risk">
+            <input type="hidden" name="id" value="@risk.Id" />
+            <button type="submit" class="btn btn-outline-secondary btn-sm">Mark as reviewed</button>
+        </form>
+        @if (risk.Status != RiskStatus.Accepted)
+        {
+            <form asp-action="Accept" method="post" class="d-flex gap-1" id="accept-risk">
+                <input type="hidden" name="id" value="@risk.Id" />
+                <input name="reason" class="form-control form-control-sm" placeholder="Why the risk is accepted" aria-label="Reason for accepting" />
+                <button type="submit" class="btn btn-outline-warning btn-sm text-nowrap">Accept risk</button>
+            </form>
+        }
+        <form asp-action="Close" method="post" class="d-flex gap-1" id="close-risk">
+            <input type="hidden" name="id" value="@risk.Id" />
+            <input name="reason" class="form-control form-control-sm" placeholder="Why the risk no longer applies" aria-label="Reason for closing" />
+            <button type="submit" class="btn btn-outline-danger btn-sm text-nowrap">Close risk</button>
+        </form>
+    </section>
+}

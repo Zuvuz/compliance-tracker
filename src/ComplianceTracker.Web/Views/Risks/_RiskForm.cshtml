@@ -1,0 +1,61 @@
+@* US-042: add or edit a risk. Ids used by the tests: #risk-form. *@
+@using ComplianceTracker.Domain.Risks
+@model RiskFormModel
+@{
+    var adding = Model.RiskId is null;
+    ViewData["Title"] = adding ? "New risk" : "Edit risk";
+    var scale = Enumerable.Range(Risk.MinScale, Risk.MaxScale).Select(i => new SelectListItem(i.ToString(), i.ToString()));
+    var treatments = Enum.GetNames<RiskTreatment>().Select(t => new SelectListItem(t, t));
+}
+
+<p class="mb-1"><a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.ProjectId" asp-route-tab="@ProjectTabs.Risks">← Risks of @Model.ProjectName</a></p>
+<h1>@(adding ? "New risk" : "Edit risk")</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <form asp-action="@(adding ? "Add" : "Edit")" method="post" id="risk-form">
+            <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+            <input type="hidden" asp-for="ProjectId" />
+            <input type="hidden" asp-for="ProjectName" />
+            <input type="hidden" asp-for="RiskId" />
+
+            <div class="mb-3">
+                <label asp-for="Title" class="form-label"></label>
+                <input asp-for="Title" class="form-control" placeholder="e.g. Stolen session cookie" />
+            </div>
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label"></label>
+                <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-sm-3">
+                    <label asp-for="Likelihood" class="form-label"></label>
+                    <select asp-for="Likelihood" asp-items="scale" class="form-select"></select>
+                </div>
+                <div class="col-sm-3">
+                    <label asp-for="Impact" class="form-label"></label>
+                    <select asp-for="Impact" asp-items="scale" class="form-select"></select>
+                </div>
+                <div class="col-sm-3">
+                    <label asp-for="OwnerId" class="form-label"></label>
+                    @await Component.InvokeAsync("MemberChoices", new { name = "OwnerId", selected = Model.OwnerId })
+                </div>
+                <div class="col-sm-3">
+                    <label asp-for="Treatment" class="form-label"></label>
+                    <select asp-for="Treatment" asp-items="treatments" class="form-select"></select>
+                </div>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-sm-3">
+                    <label asp-for="ResidualLikelihood" class="form-label small"></label>
+                    <input asp-for="ResidualLikelihood" type="number" min="1" max="5" class="form-control" />
+                </div>
+                <div class="col-sm-3">
+                    <label asp-for="ResidualImpact" class="form-label small"></label>
+                    <input asp-for="ResidualImpact" type="number" min="1" max="5" class="form-control" />
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">@(adding ? "Add risk" : "Save changes")</button>
+        </form>
+    </div>
+</div>

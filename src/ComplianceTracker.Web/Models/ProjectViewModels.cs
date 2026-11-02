@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.Risks;
 using ComplianceTracker.Application.Compliance;
 using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Domain.Frameworks;
@@ -72,6 +73,7 @@ namespace ComplianceTracker.Web.Models
         public const string Overview = "overview";
         public const string Frameworks = "frameworks";
         public const string Compliance = "compliance";
+        public const string Risks = "risks";
         public const string UserStories = "user-stories";
         public const string Activity = "activity";
 
@@ -81,6 +83,7 @@ namespace ComplianceTracker.Web.Models
             (Overview, "Overview"),
             (Frameworks, "Frameworks"),
             (Compliance, "Compliance"),
+            (Risks, "Risks"),
             (UserStories, "User stories"),
             (Activity, "Activity")
         ];
@@ -155,6 +158,14 @@ namespace ComplianceTracker.Web.Models
         public string? Sub { get; init; }
         public string? Search { get; init; }
         public bool OnlyNotCovered { get; init; }
+
+        // US-042: the Risks tab's register (already filtered), the filters and the time for "Review due"
+        public IReadOnlyList<Risk> Risks { get; init; } = [];
+        public IReadOnlyList<Risk> AllRisks { get; init; } = [];
+        public string? RiskStatusFilter { get; init; }
+        public string? RiskLevelFilter { get; init; }
+        public bool OnlyReviewDue { get; init; }
+        public DateTime Now { get; init; }
 
         // The framework of the chosen sub-tab, or the first one (R3)
         public FrameworkCompliance? ActiveCompliance
