@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
@@ -48,7 +49,7 @@ namespace ComplianceTracker.Application.Projects
             IReadOnlyCollection<Guid>? frameworkIds = null,
             CancellationToken cancellationToken = default)
         {
-            var (organization, user) = await _member.RequireAsync(cancellationToken);
+            var (organization, user) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
 
             // 1. Validate the fields (R2)
             var project = Project.Create(organization.Id, name, description, intendedPurpose, scope, phase);
@@ -168,7 +169,7 @@ namespace ComplianceTracker.Application.Projects
         // The user's own project; other organisations' projects are "not found"
         private async Task<Project> ProjectAsync(Guid projectId, CancellationToken cancellationToken)
         {
-            var (organization, _) = await _member.RequireAsync(cancellationToken);
+            var (organization, _) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
             return await _projects.GetAsync(organization.Id, projectId, cancellationToken)
                 ?? throw new DomainException("Project not found");
         }
@@ -177,7 +178,7 @@ namespace ComplianceTracker.Application.Projects
         private async Task<(Guid UserId, Project Project, Framework Framework)> LoadAsync(
             Guid projectId, Guid frameworkId, CancellationToken cancellationToken)
         {
-            var (organization, user) = await _member.RequireAsync(cancellationToken);
+            var (organization, user) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
             var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
                 ?? throw new DomainException("Project not found");
             var framework = await AvailableFrameworkAsync(organization.Id, frameworkId, cancellationToken);

@@ -321,7 +321,8 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.ThenAsync("the risk \"Old TLS on legacy API\" has the status \"Accepted\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 35
-    await testRunner.AndAsync("the risk \"Old TLS on legacy API\" says \"Accepted by Anna: Retired in Q1\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the risk \"Old TLS on legacy API\" says \"Accepted by Anna (Organisation admin): Ret" +
+                        "ired in Q1\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

@@ -1,4 +1,4 @@
-﻿namespace ComplianceTracker.Domain.Users
+namespace ComplianceTracker.Domain.Users
 {
     // A person who is a member of an organisation and has a role in it
     public class User
@@ -11,7 +11,10 @@
 
         public string Name { get; set; }
         public string Email { get; private set; }
-        public UserRole Role { get; set; }
+        // Changed only through Organization.ChangeRole, so the "at least one Admin" rule always runs (US-010 R3)
+        public UserRole Role { get; internal set; }
+
+        public bool Can(Permission permission) => RolePermissions.Can(Role, permission);
 
         // Internal: users are only created through Organization, so they always belong to one.
         // EF Core also uses this constructor; the parameter names match the property names.

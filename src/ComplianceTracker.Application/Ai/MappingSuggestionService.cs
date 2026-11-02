@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Compliance;
@@ -133,13 +134,14 @@ namespace ComplianceTracker.Application.Ai
         public async Task ApproveAsync(Guid projectId, Guid suggestionId, CancellationToken cancellationToken = default)
         {
             var (project, userId, suggestion) = await SuggestionAsync(projectId, suggestionId, cancellationToken);
-            suggestion.Approve(userId, Now);
+            var role = (await _member.RequireAsync(cancellationToken)).User.Role;
+            suggestion.Approve(userId, Now, role);
 
             var active = await _links.ListActiveAsync(project.Id, cancellationToken);
             if (!active.Any(l => l.RequirementId == suggestion.RequirementId && l.WorkItemId == suggestion.WorkItemId))
             {
                 await _links.AddAsync(RequirementLink.Create(
-                    project.Id, suggestion.RequirementId, suggestion.WorkItemId, userId, Now, LinkSource.AiApproved), cancellationToken);
+                    project.Id, suggestion.RequirementId, suggestion.WorkItemId, userId, Now, LinkSource.AiApproved, role), cancellationToken);
             }
 
             await _log.LogAsync(ActivityAction.MappingApproved, project.Id, await PairAsync(project, suggestion, cancellationToken), cancellationToken);
@@ -150,7 +152,7 @@ namespace ComplianceTracker.Application.Ai
         public async Task RejectAsync(Guid projectId, Guid suggestionId, RejectionReason? reason, string? comment, CancellationToken cancellationToken = default)
         {
             var (project, userId, suggestion) = await SuggestionAsync(projectId, suggestionId, cancellationToken);
-            suggestion.Reject(reason, comment, userId, Now);
+            suggestion.Reject(reason, comment, userId, Now, (await _member.RequireAsync(cancellationToken)).User.Role);
 
             await _log.LogAsync(ActivityAction.MappingRejected, project.Id,
                 $"{await PairAsync(project, suggestion, cancellationToken)}: {reason}", cancellationToken);
@@ -169,7 +171,7 @@ namespace ComplianceTracker.Application.Ai
         // The project's stories (not removed) and the applicable requirements of the versions it follows (US-043)
         private async Task<Context> LoadAsync(Guid projectId, CancellationToken cancellationToken)
         {
-            var (organization, _) = await _member.RequireAsync(cancellationToken);
+            var (organization, _) = await _member.RequireAsync(Permission.LinkWork, cancellationToken);
             var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
                 ?? throw new DomainException("Project not found");
 
@@ -255,7 +257,7 @@ namespace ComplianceTracker.Application.Ai
         private async Task<(Project Project, Guid UserId, MappingSuggestion Suggestion)> SuggestionAsync(
             Guid projectId, Guid suggestionId, CancellationToken cancellationToken)
         {
-            var (organization, user) = await _member.RequireAsync(cancellationToken);
+            var (organization, user) = await _member.RequireAsync(Permission.DecideCompliance, cancellationToken);
             var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
                 ?? throw new DomainException("Project not found");
             var suggestion = await _suggestions.GetAsync(project.Id, suggestionId, cancellationToken)

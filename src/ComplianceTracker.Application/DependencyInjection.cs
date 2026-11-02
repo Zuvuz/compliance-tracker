@@ -38,6 +38,8 @@ namespace ComplianceTracker.Application
             services.AddScoped<RationaleService>();
             services.AddScoped<AiFeedbackService>();
             services.AddScoped<RiskService>();
+            services.AddScoped<MemberService>();
+            services.AddScoped<SystemAdminService>();
 
             // Queries (read data for the pages)
             services.AddScoped<OrganizationQueries>();
@@ -46,6 +48,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<WorkItemQueries>();
             services.AddScoped<ComplianceQueries>();
             services.AddScoped<RiskQueries>();
+            services.AddScoped<MemberQueries>();
 
             return services;
         }

@@ -1,4 +1,4 @@
-﻿using ComplianceTracker.Application.Organizations;
+using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Domain.Organizations;
 
 namespace ComplianceTracker.Specs.Support
@@ -23,5 +23,9 @@ namespace ComplianceTracker.Specs.Support
 
         public Task<Organization?> GetByMemberAsync(string externalId, CancellationToken cancellationToken = default)
             => Task.FromResult(_items.FirstOrDefault(o => o.Users.Any(u => u.ExternalId == externalId)));
+
+        public Task<IReadOnlyList<Organization>> ListAllAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<Organization>>(_items.ToList());
+
     }
 }

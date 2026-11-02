@@ -52,6 +52,9 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<CurrentPrincipal>();
 builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
 
+// US-010: lets pages hide what the member's role does not allow (the use cases check it anyway)
+builder.Services.AddScoped<PermissionView>();
+
 // US-018: open project pages update themselves (R7), and GitHub is checked at a fixed interval (R6)
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IWorkItemNotifier, SignalRWorkItemNotifier>();
@@ -131,6 +134,9 @@ builder.Services
 builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = options.DefaultPolicy;
+
+    // US-010: the tracker's owner, given as a Keycloak realm role
+    options.AddPolicy(SystemAdmin.Policy, policy => policy.RequireClaim(SystemAdmin.ClaimType, SystemAdmin.Role));
 });
 
 var app = builder.Build();

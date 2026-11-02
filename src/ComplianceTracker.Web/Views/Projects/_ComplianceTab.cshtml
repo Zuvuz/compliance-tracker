@@ -11,6 +11,8 @@
     var compliance = Model.Compliance;
     var active = Model.ActiveCompliance;
     var activeSlug = active is null ? null : FrameworkNames.Slug(active.Framework.Name);
+    var canLink = await Permissions.CanAsync(Permission.LinkWork);
+    var canDecide = await Permissions.CanAsync(Permission.DecideCompliance);
 }
 
 <section id="project-compliance">
@@ -137,7 +139,7 @@
                                 <div class="d-flex align-items-center gap-1 mb-1">
                                     <a class="linked-story" href="@link.WorkItem.Url" target="_blank" rel="noopener noreferrer">@link.WorkItem.Title</a>
                                     <span class="badge text-bg-light">@link.WorkItem.State</span>
-                                    @if (!project.IsClosed)
+                                    @if (!project.IsClosed && canLink)
                                     {
                                         <form asp-action="UnlinkRequirement" method="post" class="d-inline unlink-requirement">
                                             <input type="hidden" name="projectId" value="@project.Id" />
@@ -151,7 +153,7 @@
                             @{
                                 var linkable = openStories.Where(w => row.Links.All(l => l.WorkItem.Id != w.Id)).ToList();
                             }
-                            @if (!project.IsClosed && linkable.Count > 0 && row.IsApplicable)
+                            @if (!project.IsClosed && canLink && linkable.Count > 0 && row.IsApplicable)
                             {
                                 <form asp-action="LinkRequirement" method="post" class="d-flex gap-1 link-requirement">
                                     <input type="hidden" name="projectId" value="@project.Id" />
@@ -173,7 +175,7 @@
                                 @* US-043 R5, R6 *@
                                 <span class="requirement-status badge text-bg-secondary">Not applicable</span>
                                 <div class="small not-applicable-reason">@row.NotApplicableReason</div>
-                                @if (!project.IsClosed)
+                                @if (!project.IsClosed && canDecide)
                                 {
                                     <form asp-action="MarkApplicable" method="post" class="mark-applicable">
                                         <input type="hidden" name="projectId" value="@project.Id" />
@@ -193,7 +195,7 @@
                                 {
                                     <span class="requirement-status badge text-bg-danger">Not covered</span>
                                 }
-                                @if (!project.IsClosed)
+                                @if (!project.IsClosed && canDecide)
                                 {
                                     <details class="mt-1">
                                         <summary class="small">Not applicable?</summary>

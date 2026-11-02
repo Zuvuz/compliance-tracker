@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Domain.Projects;
 
@@ -41,6 +42,9 @@ namespace ComplianceTracker.Domain.Risks
         // R4: why the risk is accepted, and who accepted it
         public string? AcceptedReason { get; private set; }
         public Guid? AcceptedById { get; private set; }
+
+        // US-010: the role of the person when they accepted it
+        public UserRole? AcceptedRole { get; private set; }
         public DateTime? AcceptedAt { get; private set; }
 
         // R7: why the risk was closed
@@ -102,7 +106,7 @@ namespace ComplianceTracker.Domain.Risks
         }
 
         // R4: accepting needs a reason; the person and time are kept
-        public ProjectChange Accept(string? reason, Guid userId, DateTime at)
+        public ProjectChange Accept(string? reason, Guid userId, DateTime at, UserRole? role = null)
         {
             EnsureNotClosed();
             if (string.IsNullOrWhiteSpace(reason))
@@ -115,6 +119,7 @@ namespace ComplianceTracker.Domain.Risks
             Status = RiskStatus.Accepted;
             AcceptedReason = reason.Trim();
             AcceptedById = userId;
+            AcceptedRole = role;
             AcceptedAt = at;
             return change;
         }

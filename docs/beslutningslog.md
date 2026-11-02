@@ -112,6 +112,7 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Status:** Vedtaget
 - **Beslutning:** Første gang en bruger logger ind, opretter brugeren sin organisation og bliver Admin. En bruger kan kun være medlem af én organisation og kun se den. (US-004)
 - **Begrundelse:** Holder adgangsreglerne enkle, indtil invitationer (US-009) og roller (US-010) er bygget.
+- **Opdateret (US-009, US-010):** Flere personer kan nu blive medlem gennem en invitation. En person kan stadig kun være medlem af én organisation.
 
 ## Kataloger
 
@@ -283,6 +284,26 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Hver ændring logges med gammel og ny værdi.
 - **Begrundelse:** CRA kræver en risikovurdering, der holdes opdateret i hele produktets levetid, og ISO 27001 kræver faste kriterier og regelmæssig gentagelse (6.1.2, 8.2). Koblingen til krav og stories viser, hvorfor et tiltag findes.
 - **Fravalgt:** organisationens egne risici (kun produktets indtil videre), trusselsmodellering (STRIDE), AI-forslag til risici og påmindelser pr. e-mail.
+
+### B31 – Roller, invitationer og en system-admin, der ikke ser kundedata
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-009, US-010)
+  - **Fire roller i en organisation:**
+    - Organisation admin (den, der opretter organisationen): alt, også medlemmer, roller, invitationer og AI-deling.
+    - Compliance manager: frameworks, "not applicable", godkende/afvise AI-forslag, acceptere og lukke risici, plus alt, hvad en Developer må.
+    - Developer: projekter, GitHub, koblinger, AI-forslag og risici, men ikke at godkende dem.
+    - Auditor: kun læse, også loggen.
+  - Rettighederne står i én tabel (`RolePermissions`). De tjekkes på serveren i hvert brugsscenarie (`CurrentMember.RequireAsync(Permission)`), og knapper, rollen ikke må bruge, skjules.
+  - En organisation har altid mindst én organisation admin.
+  - **En rolleændring ændrer ikke fortiden.** Hver beslutning gemmer den rolle, personen havde, da beslutningen blev truffet: logposter, AI-beslutninger, koblinger, "not applicable", accepterede risici og aktiverede versioner. Eksisterende data fik ved migrationen den rolle, personen havde (alle var organisation admin).
+  - **Invitationer:** organisation admin laver et link med en rolle. Det kan bruges én gang, udløber efter 7 dage og kan trækkes tilbage. Kun SHA-256 af tokenet gemmes.
+  - **System-admin** er ejeren af trackeren og gives som realm-rollen `system-admin` i Keycloak, aldrig i appen. System-admin ser alle organisationer og deres medlemmer og kan ændre roller, fx når en organisation har låst sig ude. System-admin kan ikke åbne organisationernes compliance-data. Ændringerne logges i organisationens log som systemet, med system-admins navn.
+- **Begrundelse:** Adgang efter behov (ISO 27001 A.5.15, A.5.18). Et revisionsspor skal vise, med hvilken myndighed en beslutning blev truffet, også efter en rolle er ændret. Kunder skal kunne stole på, at ejeren af systemet ikke kigger i deres data.
+- **Fravalgt:**
+  - Invitation til et bestemt projekt, fordi der ikke findes projektmedlemskab.
+  - At fjerne medlemmer (egen story).
+  - At system-admin kan se data.
 
 ## Åbne spørgsmål til klassediagrammet
 

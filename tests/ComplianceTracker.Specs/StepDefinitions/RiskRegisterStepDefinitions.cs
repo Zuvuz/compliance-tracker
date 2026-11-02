@@ -36,6 +36,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public Task GivenTheRiskExists(string title, string projectName)
             => WhenIAddTheRisk(title, projectName, 3, 4);
 
+        [Given("I accept the risk {string} with the reason {string}")]
         [When("I accept the risk {string} with the reason {string}")]
         public Task WhenIAcceptTheRisk(string title, string reason)
             => PostOnRiskPageAsync(title, "#accept-risk", "/Risks/Accept", reason);

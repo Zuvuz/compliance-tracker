@@ -18,7 +18,7 @@
 <section id="project-risks">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <p class="mb-0 small text-muted">The product's cybersecurity risks (CRA Art. 13, ISO 27001 6.1.2). Likelihood and impact from 1 to 5.</p>
-        @if (!project.IsClosed)
+        @if (!project.IsClosed && await Permissions.CanAsync(Permission.ManageRisks))
         {
             <a class="btn btn-primary btn-sm" id="add-risk-link" asp-controller="Risks" asp-action="Add" asp-route-projectId="@project.Id">Add risk</a>
         }

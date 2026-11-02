@@ -54,12 +54,17 @@ namespace ComplianceTracker.Specs.Support
         }
 
         // An extra client, e.g. an attacker or a client that must not follow redirects
-        public HttpClient CreateClient(string? signedInAs = null, bool followRedirects = true)
+        public HttpClient CreateClient(string? signedInAs = null, bool followRedirects = true, string? realmRoles = null)
         {
             var client = App.Factory.CreateClient(new WebApplicationFactoryClientOptions
             {
                 AllowAutoRedirect = followRedirects
             });
+
+            if (realmRoles is not null)
+            {
+                client.DefaultRequestHeaders.Add(TestAuthHandler.RolesHeader, realmRoles);
+            }
 
             if (signedInAs is not null)
             {

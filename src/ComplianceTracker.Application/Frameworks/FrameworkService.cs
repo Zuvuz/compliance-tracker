@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Projects;
@@ -45,7 +46,7 @@ namespace ComplianceTracker.Application.Frameworks
         public async Task<Framework> AddAsync(
             string name, string fileName, byte[] content, DateOnly? appliesFrom = null, CancellationToken cancellationToken = default)
         {
-            var (organization, user) = await _member.RequireAsync(cancellationToken);
+            var (organization, user) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
             var file = CatalogFile.Create(fileName, content); // R5 + R6: valid PDF, safe file name
 
             // R4: a name can only be used once per organisation (the repository ignores upper/lower case)
@@ -68,7 +69,7 @@ namespace ComplianceTracker.Application.Frameworks
         public async Task<FrameworkVersion> UploadVersionAsync(
             Guid frameworkId, string fileName, byte[] content, DateOnly? appliesFrom = null, CancellationToken cancellationToken = default)
         {
-            var (organization, user) = await _member.RequireAsync(cancellationToken);
+            var (organization, user) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
             var file = CatalogFile.Create(fileName, content);
 
             // R7: the lookup only finds the organisation's own frameworks,
@@ -112,10 +113,10 @@ namespace ComplianceTracker.Application.Frameworks
         // R3, R4, R6: locks the version; it becomes the framework's current version. Logged.
         public async Task ActivateAsync(Guid frameworkVersionId, CancellationToken cancellationToken = default)
         {
-            var (_, user) = await _member.RequireAsync(cancellationToken);
+            var (_, user) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
             var version = await DraftAsync(frameworkVersionId, cancellationToken);
 
-            version.Activate(user.Id, Now);
+            version.Activate(user.Id, Now, user.Role);
 
             // US-035 R8: the start date is logged with the activation
             var details = version.AppliesFrom is { } from ? $"Applies from {from:dd-MM-yyyy}" : null;
@@ -135,7 +136,7 @@ namespace ComplianceTracker.Application.Frameworks
         // Whether it is still a draft is checked by the domain ("An active version cannot be changed").
         private async Task<FrameworkVersion> DraftAsync(Guid frameworkVersionId, CancellationToken cancellationToken)
         {
-            var (organization, _) = await _member.RequireAsync(cancellationToken);
+            var (organization, _) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
             var framework = await _frameworks.GetByVersionWithRequirementsAsync(organization.Id, frameworkVersionId, cancellationToken);
             if (framework is null)
             {
@@ -162,7 +163,7 @@ namespace ComplianceTracker.Application.Frameworks
         // Switching on a framework that is already on does nothing.
         public async Task EnableBuiltInAsync(Guid frameworkId, CancellationToken cancellationToken = default)
         {
-            var (organization, user) = await _member.RequireAsync(cancellationToken);
+            var (organization, user) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
             var version = (await BuiltInAsync(frameworkId, cancellationToken)).RequireCurrentVersion(_clock.Today());
 
             if (await _frameworks.GetActiveSelectionAsync(organization.Id, version.Id, cancellationToken) is not null)
@@ -181,7 +182,7 @@ namespace ComplianceTracker.Application.Frameworks
         // Switching off a framework that is already off does nothing.
         public async Task DisableBuiltInAsync(Guid frameworkId, CancellationToken cancellationToken = default)
         {
-            var (organization, user) = await _member.RequireAsync(cancellationToken);
+            var (organization, user) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
             var framework = await BuiltInAsync(frameworkId, cancellationToken);
 
             // The organisation switched on the version that was current then. US-035 R7: a newer built-in version

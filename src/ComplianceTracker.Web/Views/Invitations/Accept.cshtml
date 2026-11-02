@@ -1,0 +1,21 @@
+@* US-009: join an organisation through an invitation link. Ids used by the tests: #invitation, #invitation-problem, #accept-invitation. *@
+@model InvitationViewModel
+@{
+    ViewData["Title"] = "Invitation";
+}
+
+<section id="invitation" class="col-md-8">
+    <h1>Join @Model.Preview.OrganizationName</h1>
+    <p>You are invited as <strong>@RolePermissions.Title(Model.Preview.Role)</strong>.</p>
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    @if (Model.Preview.Problem is { } problem)
+    {
+        <div class="alert alert-warning" id="invitation-problem">@problem</div>
+    }
+    else
+    {
+        <form method="post" action="@Url.Action("AcceptPost", "Invitations", new { token = Model.Token })" id="accept-invitation" asp-antiforgery="true">
+            <button type="submit" class="btn btn-primary">Join @Model.Preview.OrganizationName</button>
+        </form>
+    }
+</section>

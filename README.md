@@ -74,6 +74,18 @@ dotnet run --project src/ComplianceTracker.Web --launch-profile https
 
 Open `https://localhost:7068`, click **Sign in**, and choose **Register** to create a user in Keycloak. After the first sign-in you create your organisation.
 
+## Roles and the system admin
+
+The person who creates an organisation is its **organisation admin**. They invite colleagues from the organisation's **Users** tab with a role (Organisation admin, Compliance manager, Developer or Auditor). The table "What may each role do?" on that tab shows the permissions.
+
+The **system admin** is the owner of the tracker. They see all organisations and their members under **System**, and can change roles, but cannot see the organisations' data. It is a Keycloak realm role, so the app can never give it:
+
+1. Open Keycloak's admin console (http://localhost:8180, user `admin`).
+2. Choose the realm `compliance-tracker`, then **Users**, then your user, then **Role mapping**, then **Assign role**, and choose `system-admin`.
+3. Sign out of the tracker and in again.
+
+A new Keycloak gets the role and the "realm roles" mapper from `keycloak/compliance-tracker-realm.json`. A Keycloak created before that has neither. Either add them by hand (**Realm roles**: create `system-admin`. **Clients**: open `compliance-tracker-web`, then **Client scopes**, then the dedicated scope, then **Add mapper**, **By configuration**, **User Realm Role**, with the token claim name `roles` and "Add to ID token" on), or delete the realm so it is imported again.
+
 ## The local AI (optional)
 
 AI suggestions (US-020) need a local model server. Without one, the app works, and "Suggest mappings" says the AI is not available.

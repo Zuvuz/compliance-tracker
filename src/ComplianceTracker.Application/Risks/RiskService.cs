@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Compliance;
@@ -94,15 +95,15 @@ namespace ComplianceTracker.Application.Risks
         // R4
         public async Task AcceptAsync(Guid projectId, Guid riskId, string? reason, CancellationToken cancellationToken = default)
         {
-            var (organization, userId, project, risk) = await RiskAsync(projectId, riskId, cancellationToken);
-            await LogChangeAsync(organization, project, risk, [risk.Accept(reason, userId, Now)], cancellationToken);
+            var (organization, userId, project, risk) = await RiskAsync(projectId, riskId, cancellationToken, Permission.DecideCompliance);
+            await LogChangeAsync(organization, project, risk, [risk.Accept(reason, userId, Now, organization.Users.First(u => u.Id == userId).Role)], cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         // R7
         public async Task CloseAsync(Guid projectId, Guid riskId, string? reason, CancellationToken cancellationToken = default)
         {
-            var (organization, _, project, risk) = await RiskAsync(projectId, riskId, cancellationToken);
+            var (organization, _, project, risk) = await RiskAsync(projectId, riskId, cancellationToken, Permission.DecideCompliance);
             await LogChangeAsync(organization, project, risk, [risk.Close(reason, Now)], cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
@@ -167,9 +168,10 @@ namespace ComplianceTracker.Application.Risks
         }
 
         // The member's own project; US-024 R4 (R10): nothing changes at end of support
-        private async Task<(Organization Organization, Guid UserId, Project Project)> OpenProjectAsync(Guid projectId, CancellationToken cancellationToken)
+        private async Task<(Organization Organization, Guid UserId, Project Project)> OpenProjectAsync(
+            Guid projectId, CancellationToken cancellationToken, Permission permission = Permission.ManageRisks)
         {
-            var (organization, user) = await _member.RequireAsync(cancellationToken);
+            var (organization, user) = await _member.RequireAsync(permission, cancellationToken);
             var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
                 ?? throw new DomainException("Project not found");
 
@@ -182,9 +184,9 @@ namespace ComplianceTracker.Application.Risks
         }
 
         private async Task<(Organization Organization, Guid UserId, Project Project, Risk Risk)> RiskAsync(
-            Guid projectId, Guid riskId, CancellationToken cancellationToken)
+            Guid projectId, Guid riskId, CancellationToken cancellationToken, Permission permission = Permission.ManageRisks)
         {
-            var (organization, userId, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var (organization, userId, project) = await OpenProjectAsync(projectId, cancellationToken, permission);
             var risk = await _risks.GetAsync(project.Id, riskId, cancellationToken)
                 ?? throw new DomainException("Risk not found");
             return (organization, userId, project, risk);

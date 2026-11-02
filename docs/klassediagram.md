@@ -533,6 +533,46 @@ classDiagram
     -workItemId: Guid?
   }
 
+  %% ================= Roller og invitationer (US-009, US-010) =================
+  class Permission {
+    <<enumeration>>
+    ManageMembers
+    ManageAiSharing
+    ManageFrameworks
+    DecideCompliance
+    EditProjects
+    LinkWork
+    ManageRisks
+  }
+  class RolePermissions {
+    <<static>>
+    +Can(role: UserRole, permission: Permission)$ bool
+  }
+  class Invitation {
+    -id: Guid
+    -organizationId: Guid
+    -role: UserRole
+    -tokenHash: string
+    -createdById: Guid
+    -expiresAt: DateTime
+    -acceptedById: Guid?
+    -acceptedAt: DateTime?
+    -revokedAt: DateTime?
+    +EnsureUsable(now: DateTime)
+    +MarkAccepted(userId: Guid, at: DateTime)
+    +Revoke(at: DateTime)
+  }
+  class MemberService {
+    +ChangeRoleAsync(memberId: Guid, role: UserRole) Task
+    +CreateInvitationAsync(role: UserRole) Task~string~
+    +RevokeInvitationAsync(invitationId: Guid) Task
+    +AcceptInvitationAsync(token: string) Task
+  }
+  class SystemAdminService {
+    +ListOrganizationsAsync() Task
+    +ChangeRoleAsync(organizationId: Guid, memberId: Guid, role: UserRole) Task
+  }
+
   %% ================= Log =================
   class ActivityLogEntry {
     -id: Guid
@@ -721,6 +761,7 @@ classDiagram
   RequirementLink "*" --> "1" Requirement
   RequirementLink "*" --> "1" Project
   RequirementApplicability "*" --> "1" Requirement
+  Organization "1" --> "*" Invitation : invitations
   Project "1" --> "*" Risk : risks
   Risk "1" *-- "*" RiskMeasure : measures
   RiskMeasure "*" --> "0..1" Requirement
@@ -798,6 +839,7 @@ classDiagram
 - **CRA's krav følger med trackeren.** Bilag I (del I og II, 22 krav) er seed-data på den indbyggede CRA-version 1, med faste id'er, den officielle tekst fra EUR-Lex, en `group` pr. del og en `reference` til bilaget. Et krav kan markeres "Not applicable" for et projekt med en begrundelse (`RequirementApplicability`) og tæller så ikke med i dækningen. (US-043)
 - **AI-forslag i to trin, og modellen kan skiftes.** Trin 1: en embedding-model (`IEmbeddingModel`) scorer hvert krav mod hver story, og de 4 bedste bliver `MappingSuggestion`. Trin 2: en lille chat-model (`IRationaleWriter`) skriver begrundelsen i baggrunden (`RationaleWorker`). Hvilken server og hvilke modeller der bruges, står i `Ai:*`, og der er adaptere til Ollama og til OpenAI-kompatible servere. Hvert forslag gemmer model og prompt-version, og en godkendelse bliver til et `RequirementLink` med kilden `AiApproved` (B29). (US-020, US-036)
 - **Hvert projekt har et risikoregister.** `Risk` har sandsynlighed og konsekvens fra 1 til 5. Niveauet beregnes: 1–4 Low, 5–9 Medium, 10–16 High, 20–25 Critical. En risiko har en ejer og en behandling og kan få en valgfri restrisiko. Den kobles til de krav og user stories, der mindsker den (`RiskMeasure`). En risiko slettes aldrig, den lukkes med en begrundelse. Efter 12 måneder uden review vises "Review due" (B30). (US-042)
+- **Roller styrer, hvad et medlem må, og en beslutning husker rollen.** `RolePermissions` er rettighedstabellen, og hvert brugsscenarie spørger `CurrentMember.RequireAsync(Permission)`. Logposter, AI-beslutninger, koblinger, "not applicable", accepterede risici og aktiverede versioner gemmer rollen på beslutningstidspunktet, så en senere op- eller nedgradering ikke ændrer fortiden. System-admin er en Keycloak-rolle (`ICurrentUser.IsSystemAdmin`) og har kun adgang til organisationer og medlemmer (B31). (US-009, US-010)
 - **Koblingsklasser med data.** `RequirementControl` og `RequirementLink` registrerer via `MappingSource`, om koblingen er lavet manuelt eller via et godkendt AI-forslag.
 - **Vurderinger ændres ikke.** En ny `RequirementAssessment` oprettes i stedet, og den seneste er gældende. Det giver historik til en auditor.
 - **Frameworkversioner låses ved aktivering.** Når `status` er `Active`, kan `requirements` ikke ændres. Så kan en mapping nøjes med at pege på et `Requirement`, fordi teksten bag aldrig ændrer sig. En rettelse er en ny `FrameworkVersion`.

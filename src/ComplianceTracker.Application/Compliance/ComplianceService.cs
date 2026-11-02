@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
@@ -86,7 +87,8 @@ namespace ComplianceTracker.Application.Compliance
                 throw new DomainException($"{workItem.Title} is already linked to {requirement.Code}");
             }
 
-            await _links.AddAsync(RequirementLink.Create(project.Id, requirementId, workItemId, userId, Now), cancellationToken);
+            var role = (await _member.RequireAsync(cancellationToken)).User.Role;
+            await _links.AddAsync(RequirementLink.Create(project.Id, requirementId, workItemId, userId, Now, LinkSource.Manual, role), cancellationToken);
             await _log.LogAsync(ActivityAction.RequirementLinked, project.Id, $"{requirement.Code} ↔ {workItem.Title}", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
@@ -110,7 +112,7 @@ namespace ComplianceTracker.Application.Compliance
         // US-043 R5: the requirement does not apply to the project; the reason is required
         public async Task MarkNotApplicableAsync(Guid projectId, Guid requirementId, string reason, CancellationToken cancellationToken = default)
         {
-            var (organizationId, userId, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var (organizationId, userId, project) = await OpenProjectAsync(projectId, cancellationToken, Permission.DecideCompliance);
             var requirement = await RequirementOfProjectAsync(organizationId, project, requirementId, cancellationToken)
                 ?? throw new DomainException("The requirement is not in a framework version the project follows");
 
@@ -119,7 +121,8 @@ namespace ComplianceTracker.Application.Compliance
                 throw new DomainException($"{requirement.Code} is already marked as not applicable");
             }
 
-            var decision = RequirementApplicability.NotApplicable(project.Id, requirementId, reason, userId, Now);
+            var decision = RequirementApplicability.NotApplicable(project.Id, requirementId, reason, userId, Now,
+                (await _member.RequireAsync(cancellationToken)).User.Role);
             await _applicability.AddAsync(decision, cancellationToken);
             await _log.LogAsync(ActivityAction.RequirementMarkedNotApplicable, project.Id, $"{requirement.Code}: {decision.Reason}", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -128,7 +131,7 @@ namespace ComplianceTracker.Application.Compliance
         // US-043 R5: the requirement applies again; the decision is kept with the time it was revoked
         public async Task MarkApplicableAsync(Guid projectId, Guid requirementId, CancellationToken cancellationToken = default)
         {
-            var (organizationId, userId, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var (organizationId, userId, project) = await OpenProjectAsync(projectId, cancellationToken, Permission.DecideCompliance);
             var decision = (await _applicability.ListActiveAsync(project.Id, cancellationToken)).FirstOrDefault(a => a.RequirementId == requirementId)
                 ?? throw new DomainException("The requirement already applies");
 
@@ -139,9 +142,10 @@ namespace ComplianceTracker.Application.Compliance
         }
 
         // The member's own project; US-024 R4: nothing changes at end of support
-        private async Task<(Guid OrganizationId, Guid UserId, Project Project)> OpenProjectAsync(Guid projectId, CancellationToken cancellationToken)
+        private async Task<(Guid OrganizationId, Guid UserId, Project Project)> OpenProjectAsync(
+            Guid projectId, CancellationToken cancellationToken, Permission permission = Permission.LinkWork)
         {
-            var (organization, user) = await _member.RequireAsync(cancellationToken);
+            var (organization, user) = await _member.RequireAsync(permission, cancellationToken);
             var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
                 ?? throw new DomainException("Project not found");
 
