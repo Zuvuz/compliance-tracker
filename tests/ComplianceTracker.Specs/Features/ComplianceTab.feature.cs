@@ -672,13 +672,13 @@ namespace ComplianceTracker.Specs.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 88
-    await testRunner.GivenAsync("\"CRA – Regulation (EU) 2024/2847\" is switched on", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+    await testRunner.GivenAsync("\"AI Act – Regulation (EU) 2024/1689\" is switched on", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 89
-    await testRunner.AndAsync("\"Acme Portal\" uses \"CRA – Regulation (EU) 2024/2847\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("\"Acme Portal\" uses \"AI Act – Regulation (EU) 2024/1689\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 90
-    await testRunner.WhenAsync("I open the \"CRA\" sub-tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.WhenAsync("I open the \"AI Act\" sub-tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 91
     await testRunner.ThenAsync("I see \"This framework has no requirements in the tracker yet\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");

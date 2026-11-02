@@ -51,6 +51,7 @@ namespace ComplianceTracker.Specs.Support
                 // US-018: not used by these tests, but the use cases must be creatable. Never reaches a network.
                 services.AddScoped<IWorkItemRepository, WorkItemRepository>();
                 services.AddScoped<IRequirementLinkRepository, RequirementLinkRepository>(); // US-021
+                services.AddScoped<IRequirementApplicabilityRepository, RequirementApplicabilityRepository>(); // US-043
                 services.AddSingleton<IWorkItemSource>(new GitHubWorkItemSource(new HttpClient { BaseAddress = new Uri("http://github.invalid/") }));
                 services.AddSingleton<IWorkItemNotifier, NoWorkItemNotifier>();
 

@@ -145,6 +145,7 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Beslutning:** CRA (forordning (EU) 2024/2847) og AI Act (forordning (EU) 2024/1689) seedes af en databasemigration som indbyggede frameworks uden ejer. Hver har én version med et link til den officielle tekst på EUR-Lex og ingen PDF. En organisation slår dem til og fra; historikken bevares. Kravene seedes ikke nu, men i en senere story. (US-006)
 - **Begrundelse:** EU-forordninger er frit tilgængelige, så alle organisationer kan bruge dem uden at uploade noget. En migration med faste id'er giver samme data i alle miljøer og i testene. At udskyde kravene holder US-006 lille, så US-011 (frameworks på projekter) kan bygges ovenpå.
 - **Bygger på:** B18, som skelner mellem fælles og organisationens egne frameworks.
+- **Opdateret (US-043):** CRA har nu sine krav. Bilag I (22 krav) seedes på version 1 med den officielle tekst. AI Act har stadig ingen krav.
 
 ### B21 – Projekter vælger selv deres frameworkversion
 
@@ -241,6 +242,17 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - Regulativer, der gælder i etaper (fx AI Act's artikler fra forskellige datoer). Én dato pr. version indtil videre.
   - Automatisk flytning af projekter på datoen.
+
+### B28 – CRA's krav som seed-data, og "Not applicable" pr. projekt
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-043)
+  - Bilag I i CRA (del I punkt 1 og 2(a)–(m), del II punkt 1–8) seedes på den eksisterende CRA-version 1 med faste id'er.
+  - Beskrivelsen er den officielle engelske tekst fra EUR-Lex, med kilden som link, og titlen er vores egne ord. EU-lovtekst må genbruges med kildeangivelse (Kommissionens afgørelse 2011/833/EU).
+  - Fælles indledninger ("... shall:") sættes foran hvert punkt, så hvert krav kan læses alene.
+  - Et krav kan markeres "Not applicable" for et projekt med en påkrævet begrundelse. Det tæller så ikke med i dækningen. Beslutningen kan trækkes tilbage, og historikken gemmes. Det gælder alle frameworks.
+- **Begrundelse:** CRA's væsentlige krav gælder "where applicable" ud fra risikovurderingen (art. 13(2)–(3)), så en ærlig dækning skal kunne udelade krav med en begrundelse. Kravene lægges på version 1, fordi lovteksten ikke er ændret.
+- **Fravalgt:** AI Act's krav (egen story), en dansk oversættelse, og krav uden for Bilag I.
 
 ## Åbne spørgsmål til klassediagrammet
 

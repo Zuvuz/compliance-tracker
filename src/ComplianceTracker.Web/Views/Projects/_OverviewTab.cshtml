@@ -56,7 +56,7 @@
                             <li>
                                 <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Compliance"
                                    asp-route-sub="@FrameworkNames.Slug(framework.Framework.Name)">@FrameworkNames.Short(framework.Framework.Name)</a>:
-                                @framework.Covered of @framework.Total covered
+                                @framework.Covered of @framework.Total covered@(framework.NotApplicable > 0 ? $", {framework.NotApplicable} not applicable" : "")
                             </li>
                         }
                     </ul>

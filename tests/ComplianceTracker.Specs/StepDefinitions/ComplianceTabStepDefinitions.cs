@@ -74,8 +74,24 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Given("the user story {string} is linked to the requirement {string}")]
         public async Task GivenTheUserStoryIsLinked(string story, string code)
         {
-            await WhenIOpenTheSubTab("Security policy", "Acme Portal");
+            await OpenSubTabWithAsync("Acme Portal", code);
             await WhenILinkToTheRequirement(story, code);
+        }
+
+        // Opens the sub-tab of the project's Compliance tab that lists the requirement (US-043 uses the CRA's)
+        public async Task OpenSubTabWithAsync(string projectName, string code)
+        {
+            await _web.OpenAsync($"/Projects/Details/{await ProjectIdAsync(projectName)}/compliance");
+            foreach (var href in SubTabs().Select(a => a.GetAttribute("href")!).ToList())
+            {
+                await _web.OpenAsync(href);
+                if (_web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']") is not null)
+                {
+                    return;
+                }
+            }
+
+            throw new Xunit.Sdk.XunitException($"No sub-tab of '{projectName}' lists the requirement '{code}'.");
         }
 
         // ---------------------------------------------------------- When

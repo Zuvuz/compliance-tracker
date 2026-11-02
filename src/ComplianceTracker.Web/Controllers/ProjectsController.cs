@@ -211,6 +211,26 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
         }
 
+        // POST /Projects/MarkNotApplicable: US-043 R5. The reason is required.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> MarkNotApplicable(Guid projectId, Guid requirementId, string? reason, string? sub, CancellationToken cancellationToken)
+        {
+            await _compliance.MarkNotApplicableAsync(projectId, requirementId, reason ?? "", cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // POST /Projects/MarkApplicable: US-043 R5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> MarkApplicable(Guid projectId, Guid requirementId, string? sub, CancellationToken cancellationToken)
+        {
+            await _compliance.MarkApplicableAsync(projectId, requirementId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
         // ---------------------------------------------------------- Editing (US-024)
 
         // GET /Projects/Edit/{id}: the form, filled in with the project's details

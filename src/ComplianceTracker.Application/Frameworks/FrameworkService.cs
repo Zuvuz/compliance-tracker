@@ -136,8 +136,16 @@ namespace ComplianceTracker.Application.Frameworks
         private async Task<FrameworkVersion> DraftAsync(Guid frameworkVersionId, CancellationToken cancellationToken)
         {
             var (organization, _) = await _member.RequireAsync(cancellationToken);
-            var framework = await _frameworks.GetByVersionWithRequirementsAsync(organization.Id, frameworkVersionId, cancellationToken)
-                ?? throw new DomainException("Framework version not found");
+            var framework = await _frameworks.GetByVersionWithRequirementsAsync(organization.Id, frameworkVersionId, cancellationToken);
+            if (framework is null)
+            {
+                // US-006 R5: a built-in version exists, but nobody may change it
+                var builtIn = await _frameworks.ListBuiltInAsync(cancellationToken);
+                throw new DomainException(builtIn.Any(f => f.Versions.Any(v => v.Id == frameworkVersionId))
+                    ? "Built-in frameworks cannot be changed"
+                    : "Framework version not found");
+            }
+
             return framework.Version(frameworkVersionId);
         }
 

@@ -281,6 +281,21 @@ classDiagram
     -title: string
     -description: string
     -position: int
+    -group: string?
+    -reference: string?
+  }
+  class RequirementApplicability {
+    -id: Guid
+    -projectId: Guid
+    -requirementId: Guid
+    -reason: string
+    -decidedById: Guid
+    -decidedAt: DateTime
+    -revokedById: Guid?
+    -revokedAt: DateTime?
+    +IsActive: bool
+    +NotApplicable(projectId: Guid, requirementId: Guid, reason: string, userId: Guid, at: DateTime)$ RequirementApplicability
+    +Revoke(userId: Guid, at: DateTime)
   }
   class OrganizationFramework {
     -id: Guid
@@ -432,6 +447,8 @@ classDiagram
   class ComplianceService {
     +LinkAsync(projectId: Guid, requirementId: Guid, workItemId: Guid) Task
     +UnlinkAsync(projectId: Guid, linkId: Guid) Task
+    +MarkNotApplicableAsync(projectId: Guid, requirementId: Guid, reason: string) Task
+    +MarkApplicableAsync(projectId: Guid, requirementId: Guid) Task
   }
   class ComplianceQueries {
     +ForProjectAsync(projectId: Guid) Task~ProjectCompliance?~
@@ -638,6 +655,8 @@ classDiagram
   RequirementLink "*" --> "1" WorkItem
   RequirementLink "*" --> "1" Requirement
   RequirementLink "*" --> "1" Project
+  RequirementApplicability "*" --> "1" Requirement
+  RequirementApplicability "*" --> "1" Project
   RequirementAssessment "*" --> "1" Requirement
   RequirementAssessment "*" --> "0..1" Release
   RequirementAssessment "*" --> "0..1" Organization
@@ -699,6 +718,7 @@ classDiagram
 - **Projektsiden har faner.** Overview, Frameworks, User stories og Activity har hver sin adresse (`/Projects/Details/{id}/{tab}`) og samme header. Activity viser projektets logposter (alle med projektet som `subjectId`), nyeste først, med `details`. En handling, der fejler, sender brugeren tilbage til sin egen fane (`[OnDomainError(Tab = ...)]`). (US-022)
 - **En version kan gælde fra en dato.** `AppliesFrom` sættes på kladden og låses ved aktivering. `CurrentVersion(today)` er den aktive version, der senest begyndte at gælde. Har ingen version startet endnu, bruges den første kommende. "I dag" kommer fra appens ur (`TimeProvider.Today()`), så testene kan styre datoen. Projekter flyttes ikke automatisk, men kan forberede sig ved at vælge en kommende version (B27). (US-035)
 - **Krav og user stories kobles pr. projekt.** `RequirementLink` er sit eget aggregat og laves i hånden indtil videre. Senere skal godkendte AI-forslag lave samme slags kobling (US-020). En kobling slettes aldrig, den får `removedAt`. Kun aktive koblinger tæller som dækning. Compliance-fanen har én under-fane pr. framework (`/Projects/Details/{id}/compliance/{slug}`) med krav, koblede stories og dækning. (US-019, US-021, US-041)
+- **CRA's krav følger med trackeren.** Bilag I (del I og II, 22 krav) er seed-data på den indbyggede CRA-version 1, med faste id'er, den officielle tekst fra EUR-Lex, en `group` pr. del og en `reference` til bilaget. Et krav kan markeres "Not applicable" for et projekt med en begrundelse (`RequirementApplicability`) og tæller så ikke med i dækningen. (US-043)
 - **Koblingsklasser med data.** `RequirementControl` og `RequirementLink` registrerer via `MappingSource`, om koblingen er lavet manuelt eller via et godkendt AI-forslag.
 - **Vurderinger ændres ikke.** En ny `RequirementAssessment` oprettes i stedet, og den seneste er gældende. Det giver historik til en auditor.
 - **Frameworkversioner låses ved aktivering.** Når `status` er `Active`, kan `requirements` ikke ændres. Så kan en mapping nøjes med at pege på et `Requirement`, fordi teksten bag aldrig ændrer sig. En rettelse er en ny `FrameworkVersion`.

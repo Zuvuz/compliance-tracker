@@ -58,6 +58,7 @@ namespace ComplianceTracker.Infrastructure
             // GitHub requires a User-Agent; the API version header keeps the JSON format stable.
             services.AddScoped<IWorkItemRepository, WorkItemRepository>();
             services.AddScoped<IRequirementLinkRepository, RequirementLinkRepository>();
+            services.AddScoped<IRequirementApplicabilityRepository, RequirementApplicabilityRepository>();
             services.AddHttpClient<GitHubWorkItemSource>(client =>
             {
                 client.BaseAddress = new Uri(GitHubApiAddress);

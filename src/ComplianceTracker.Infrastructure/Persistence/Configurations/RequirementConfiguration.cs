@@ -19,6 +19,23 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(r => r.Title).IsRequired().HasMaxLength(500);
             builder.Property(r => r.Description).IsRequired().HasMaxLength(4000);
 
+            // US-043: the part of the document and the link to the official text (built-in requirements only)
+            builder.Property(r => r.Group).HasMaxLength(200);
+            builder.Property(r => r.Reference).HasMaxLength(500);
+
+            // US-043: the CRA's Annex I comes with every database, on the built-in CRA version 1
+            builder.HasData(BuiltInCraRequirements.All.Select(item => new
+            {
+                item.Id,
+                FrameworkVersionId = BuiltInFrameworks.Cra.VersionId,
+                item.Code,
+                item.Title,
+                item.Description,
+                item.Position,
+                item.Group,
+                Reference = (string?)BuiltInCraRequirements.Reference
+            }));
+
             // A code is used once per version (the domain checks it first, the index is the safety net)
             builder.HasIndex(r => new { r.FrameworkVersionId, r.Code }).IsUnique();
         }

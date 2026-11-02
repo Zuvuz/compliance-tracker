@@ -53,6 +53,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
                 .OrderBy(f => f.Name)
                 .ToListAsync(cancellationToken);
 
+        public Task<Framework?> GetAvailableByVersionWithRequirementsAsync(Guid organizationId, Guid frameworkVersionId, CancellationToken cancellationToken = default)
+            => Available(organizationId)
+                .Include(f => f.Versions).ThenInclude(v => v.Requirements)
+                .FirstOrDefaultAsync(f => f.Versions.Any(v => v.Id == frameworkVersionId), cancellationToken);
+
         public async Task<IReadOnlyList<Framework>> ListAvailableWithRequirementsAsync(
             Guid organizationId, IReadOnlyCollection<Guid> frameworkIds, CancellationToken cancellationToken = default)
             => frameworkIds.Count == 0

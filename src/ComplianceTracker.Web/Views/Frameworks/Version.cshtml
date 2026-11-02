@@ -9,7 +9,15 @@
     ViewData["Title"] = $"{framework.Name} version {version.Number}";
 }
 
-<p class="mb-1"><a asp-action="Versions" asp-route-id="@framework.Id">← All versions of @framework.Name</a></p>
+@if (framework.IsBuiltIn)
+{
+    @* US-043: built-in regulations can be read here, but not changed *@
+    <p class="mb-1"><a asp-action="BuiltIn">← Built-in frameworks</a></p>
+}
+else
+{
+    <p class="mb-1"><a asp-action="Versions" asp-route-id="@framework.Id">← All versions of @framework.Name</a></p>
+}
 <h1 class="mb-0">@framework.Name <small class="text-muted">version @version.Number</small></h1>
 <p class="small mb-3">
     Status: <span id="version-status">@version.Status</span>
@@ -31,7 +39,14 @@
     {
         <text>· Activated @activatedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm") by @Model.NameOf(version.ActivatedById)</text>
     }
-    · <a class="open-pdf" asp-action="Document" asp-route-id="@version.Id">Open PDF</a>
+    @if (framework.IsBuiltIn)
+    {
+        <text>· <a href="@version.SourceReference" target="_blank" rel="noopener noreferrer">Official text (EUR-Lex)</a></text>
+    }
+    else
+    {
+        <text>· <a class="open-pdf" asp-action="Document" asp-route-id="@version.Id">Open PDF</a></text>
+    }
 </p>
 
 @* Shows the domain's error messages, e.g. "Requirement A.5.15 is already in the list" *@
