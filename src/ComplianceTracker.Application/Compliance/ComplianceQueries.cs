@@ -54,6 +54,11 @@ namespace ComplianceTracker.Application.Compliance
             var notApplicable = (await _applicability.ListActiveAsync(project.Id, cancellationToken))
                 .ToDictionary(a => a.RequirementId, a => a.Reason);
 
+            // US-020, US-044 R4: the pending AI suggestions, for stories that still exist
+            var pendingSuggestions = (await _suggestions.ListAsync(project.Id, cancellationToken))
+                .Where(s => s.IsPending && workItems.ContainsKey(s.WorkItemId))
+                .ToList();
+
             var result = new List<FrameworkCompliance>();
             foreach (var used in project.Frameworks)
             {
@@ -71,7 +76,14 @@ namespace ComplianceTracker.Application.Compliance
                             .Select(l => new LinkedWorkItem(l.Id, workItems[l.WorkItemId]))
                             .OrderBy(l => l.WorkItem.Title, StringComparer.OrdinalIgnoreCase)
                             .ToList(),
-                        notApplicable.GetValueOrDefault(requirement.Id)))
+                        notApplicable.GetValueOrDefault(requirement.Id))
+                    {
+                        // US-044 R4: best first
+                        Suggestions = pendingSuggestions.Where(s => s.RequirementId == requirement.Id)
+                            .OrderByDescending(s => s.Score)
+                            .Select(s => new SuggestedWorkItem(s, workItems[s.WorkItemId]))
+                            .ToList()
+                    })
                     .ToList();
 
                 result.Add(new FrameworkCompliance(framework, version, rows));
@@ -79,8 +91,8 @@ namespace ComplianceTracker.Application.Compliance
 
             // US-020: the pending AI suggestions, best first per story
             var requirements = result.SelectMany(f => f.Requirements).ToDictionary(r => r.Requirement.Id, r => r.Requirement);
-            var pending = (await _suggestions.ListAsync(project.Id, cancellationToken))
-                .Where(s => s.IsPending && requirements.ContainsKey(s.RequirementId))
+            var pending = pendingSuggestions
+                .Where(s => requirements.ContainsKey(s.RequirementId))
                 .OrderBy(s => s.Rank)
                 .Select(s => new PendingSuggestion(s, requirements[s.RequirementId]))
                 .ToList();
@@ -101,6 +113,10 @@ namespace ComplianceTracker.Application.Compliance
 
         public IEnumerable<PendingSuggestion> SuggestionsFor(Guid workItemId) => Suggestions.Where(s => s.Suggestion.WorkItemId == workItemId);
 
+        // US-044 R9: the framework (sub-tab) a requirement belongs to
+        public FrameworkCompliance? FrameworkOf(Requirement requirement)
+            => Frameworks.FirstOrDefault(f => f.Version.Id == requirement.FrameworkVersionId);
+
         // US-021 R3: per user story, the codes of the requirements it is linked to
         public IReadOnlyList<string> RequirementCodesOf(Guid workItemId)
             => Frameworks.SelectMany(f => f.Requirements)
@@ -118,6 +134,10 @@ namespace ComplianceTracker.Application.Compliance
         public int Covered => Requirements.Count(r => r.IsApplicable && r.IsCovered);
         public int NotApplicable => Requirements.Count(r => !r.IsApplicable);
 
+        // US-044 R1: the applicable requirements without a link, and the pending AI suggestions for applicable ones
+        public int NotCovered => Total - Covered;
+        public int SuggestionCount => Requirements.Where(r => r.IsApplicable).Sum(r => r.Suggestions.Count);
+
         // e.g. "12 of 20 requirements covered (60 %), 2 not applicable"
         public string CoverageText
             => $"{Covered} of {Total} requirements covered ({Percent} %)" + (NotApplicable > 0 ? $", {NotApplicable} not applicable" : "");
@@ -133,7 +153,14 @@ namespace ComplianceTracker.Application.Compliance
 
         // US-021 R2, R5: covered when at least one active link exists
         public bool IsCovered => Links.Count > 0;
+
+        // US-044 R4: the pending AI suggestions for this requirement, best first
+        public IReadOnlyList<SuggestedWorkItem> Suggestions { get; init; } = [];
+
+        public bool HasSuggestions => IsApplicable && Suggestions.Count > 0;
     }
+
+    public record SuggestedWorkItem(Domain.Mappings.MappingSuggestion Suggestion, WorkItem WorkItem);
 
     public record LinkedWorkItem(Guid LinkId, WorkItem WorkItem);
 

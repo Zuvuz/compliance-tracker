@@ -116,7 +116,7 @@ namespace ComplianceTracker.Web.Controllers
         // GET /Projects/Details/{id}/{tab?}: the project's own page (US-008), split into tabs (US-022).
         // Each tab has its own address (R6), e.g. /Projects/Details/{id}/frameworks. Without a tab: Overview.
         // US-041: the Compliance tab has one sub-tab per framework, e.g. /Projects/Details/{id}/compliance/cra.
-        // q searches the requirements (US-019 R3); show=not-covered filters them (US-021 R6).
+        // q searches the requirements (US-019 R3); show filters them (US-021 R6, US-044 R2: ComplianceFilters).
         [HttpGet("Projects/Details/{id:guid}/{tab?}/{sub?}")]
         // US-042: on the Risks tab, status, level and due=1 filter the register (R8)
         public async Task<IActionResult> Details(
@@ -169,7 +169,7 @@ namespace ComplianceTracker.Web.Controllers
                 Compliance = compliance,
                 Sub = sub,
                 Search = q,
-                OnlyNotCovered = show == "not-covered",
+                ComplianceFilter = ComplianceFilters.Find(show),
                 Risks = risks,
                 AllRisks = allRisks,
                 RiskStatusFilter = status,
@@ -299,24 +299,35 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
         }
 
-        // POST /Projects/ApproveSuggestion: R6
+        // POST /Projects/SuggestForNotCovered: US-044 R3, R8. Only the open framework's not-covered requirements.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
-        public async Task<IActionResult> ApproveSuggestion(Guid projectId, Guid suggestionId, CancellationToken cancellationToken)
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> SuggestForNotCovered(Guid projectId, Guid frameworkId, string? sub, CancellationToken cancellationToken)
         {
-            await _suggestions.ApproveAsync(projectId, suggestionId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+            await _suggestions.SuggestForNotCoveredAsync(projectId, frameworkId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
         }
 
-        // POST /Projects/RejectSuggestion: R7. An unknown reason binds as null and is refused by the domain.
+        // POST /Projects/ApproveSuggestion: US-020 R6. US-044 R5: decided on the Compliance tab, back to the same view.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
-        public async Task<IActionResult> RejectSuggestion(Guid projectId, Guid suggestionId, RejectionReason? reason, string? comment, CancellationToken cancellationToken)
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> ApproveSuggestion(Guid projectId, Guid suggestionId, string? sub, string? show, CancellationToken cancellationToken)
+        {
+            await _suggestions.ApproveAsync(projectId, suggestionId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub, show = string.IsNullOrEmpty(show) ? null : show });
+        }
+
+        // POST /Projects/RejectSuggestion: US-020 R7. An unknown reason binds as null and is refused by the domain.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> RejectSuggestion(
+            Guid projectId, Guid suggestionId, RejectionReason? reason, string? comment, string? sub, string? show, CancellationToken cancellationToken)
         {
             await _suggestions.RejectAsync(projectId, suggestionId, reason, comment, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub, show = string.IsNullOrEmpty(show) ? null : show });
         }
 
         // ---------------------------------------------------------- Editing (US-024)

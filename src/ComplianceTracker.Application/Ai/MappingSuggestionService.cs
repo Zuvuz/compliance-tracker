@@ -44,6 +44,9 @@ namespace ComplianceTracker.Application.Ai
         // US-036 R1, R2: suggestions per user story per batch
         public const int BatchSize = 4;
 
+        // US-044 R3: suggested stories per not-covered requirement
+        public const int StoriesPerRequirement = 3;
+
         private readonly IProjectRepository _projects;
         private readonly IFrameworkRepository _frameworks;
         private readonly IWorkItemRepository _workItems;
@@ -130,6 +133,67 @@ namespace ComplianceTracker.Application.Ai
             return made;
         }
 
+        // US-044 R3: suggestions for the not-covered, applicable requirements of one framework the project follows.
+        // For each such requirement the best stories become suggestions; pending ones for those requirements are replaced.
+        // Pairs that are linked, approved or rejected are never suggested again.
+        public async Task<int> SuggestForNotCoveredAsync(Guid projectId, Guid frameworkId, CancellationToken cancellationToken = default)
+        {
+            var context = await LoadAsync(projectId, cancellationToken);
+            var used = context.Project.Frameworks.FirstOrDefault(f => f.FrameworkId == frameworkId)
+                ?? throw new DomainException("The project does not follow this framework");
+
+            var covered = context.Linked.Select(l => l.RequirementId).ToHashSet();
+            var targets = context.Requirements
+                .Where(r => r.FrameworkVersionId == used.FrameworkVersionId && !covered.Contains(r.Id))
+                .ToList();
+            if (targets.Count == 0)
+            {
+                throw new DomainException("Every applicable requirement of this framework is covered");
+            }
+
+            var vectors = await EmbedAsync(context.Stories.Select(StoryText).Concat(targets.Select(RequirementText)).ToList(), cancellationToken);
+            var storyVectors = vectors.Take(context.Stories.Count).ToList();
+            var requirementVectors = vectors.Skip(context.Stories.Count).ToList();
+
+            var targetIds = targets.Select(r => r.Id).ToHashSet();
+            foreach (var pending in context.Existing.Where(s => s.IsPending && targetIds.Contains(s.RequirementId)))
+            {
+                pending.Replace();
+            }
+
+            var excluded = context.Existing.Where(s => s.Status is SuggestionStatus.Approved or SuggestionStatus.Rejected)
+                .Select(s => (s.WorkItemId, s.RequirementId))
+                .Concat(context.Linked)
+                .ToHashSet();
+            var nextRank = context.Stories.ToDictionary(
+                s => s.Id,
+                s => context.Existing.Where(e => e.WorkItemId == s.Id).Select(e => e.Rank).DefaultIfEmpty(0).Max() + 1);
+
+            var now = Now;
+            var made = new List<MappingSuggestion>();
+            for (var r = 0; r < targets.Count; r++)
+            {
+                var requirement = targets[r];
+                var best = context.Stories
+                    .Select((story, s) => (Story: story, Score: Similarity.Cosine(storyVectors[s], requirementVectors[r])))
+                    .Where(c => !excluded.Contains((c.Story.Id, requirement.Id)))
+                    .OrderByDescending(c => c.Score)
+                    .Take(StoriesPerRequirement);
+
+                foreach (var (story, score) in best)
+                {
+                    made.Add(MappingSuggestion.Create(context.Project.Id, story.Id, requirement.Id, score, nextRank[story.Id]++,
+                        _embeddings.Name, RationalePrompt.Version, now));
+                }
+            }
+
+            await _suggestions.AddRangeAsync(made, cancellationToken);
+            await _log.LogAsync(ActivityAction.MappingsSuggested, context.Project.Id,
+                $"{made.Count} suggestions for {targets.Count} not-covered requirements ({_embeddings.Name}, {RationalePrompt.Version})", cancellationToken);
+            await SaveAndNotifyAsync(context.Project.Id, cancellationToken);
+            return made.Count;
+        }
+
         // US-020 R6, R9: the suggestion becomes a link with the source "AI approved"
         public async Task ApproveAsync(Guid projectId, Guid suggestionId, CancellationToken cancellationToken = default)
         {
@@ -209,17 +273,8 @@ namespace ComplianceTracker.Application.Ai
             Context context, IReadOnlyList<WorkItem> stories, HashSet<(Guid, Guid)> excluded,
             Func<WorkItem, int> startRank, CancellationToken cancellationToken)
         {
-            IReadOnlyList<float[]> vectors;
-            try
-            {
-                vectors = await _embeddings.EmbedAsync(
-                    stories.Select(StoryText).Concat(context.Requirements.Select(RequirementText)).ToList(), cancellationToken);
-            }
-            catch (AiUnavailableException error)
-            {
-                // Shown on the page like a broken rule; nothing is saved
-                throw new DomainException(error.Message);
-            }
+            var vectors = await EmbedAsync(
+                stories.Select(StoryText).Concat(context.Requirements.Select(RequirementText)).ToList(), cancellationToken);
             var storyVectors = vectors.Take(stories.Count).ToList();
             var requirementVectors = vectors.Skip(stories.Count).ToList();
 
@@ -245,6 +300,19 @@ namespace ComplianceTracker.Application.Ai
 
             await _suggestions.AddRangeAsync(made, cancellationToken);
             return made.Count;
+        }
+
+        private async Task<IReadOnlyList<float[]>> EmbedAsync(IReadOnlyList<string> texts, CancellationToken cancellationToken)
+        {
+            try
+            {
+                return await _embeddings.EmbedAsync(texts, cancellationToken);
+            }
+            catch (AiUnavailableException error)
+            {
+                // Shown on the page like a broken rule; nothing is saved
+                throw new DomainException(error.Message);
+            }
         }
 
         // What the AI reads: the story's title, rules and examples, and the requirement's code, title and text (US-020 R3)

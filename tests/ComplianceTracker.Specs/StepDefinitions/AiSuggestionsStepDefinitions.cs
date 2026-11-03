@@ -8,10 +8,10 @@ using System.Text.Json;
 namespace ComplianceTracker.Specs.StepDefinitions
 {
     // US-020, US-036: AI suggestions through the web app with test sign-in and a pretend AI (FakeAi).
-    // UI contract (Views/Projects/_WorkItems.cshtml and _UserStoriesTab.cshtml): #suggest-mappings, per story
-    // .ai-suggestion with data-code, .suggestion-score and .suggestion-rationale, the forms .approve-suggestion,
-    // .reject-suggestion (reason, comment) and .show-more-suggestions; on the Settings page #set-ai-sharing
-    // and #export-ai-feedback.
+    // UI contract: on the User stories tab (_UserStoriesTab.cshtml, _WorkItems.cshtml) #suggest-mappings and per story
+    // .show-more-suggestions; on the Compliance tab (_ComplianceTab.cshtml, US-044) .ai-suggestion with data-story and
+    // data-code, .suggestion-score, .suggestion-rationale and the forms .approve-suggestion and .reject-suggestion
+    // (reason, comment); on the Settings page #set-ai-sharing and #export-ai-feedback.
     [Binding]
     public class AiSuggestionsStepDefinitions
     {
@@ -89,15 +89,16 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task WhenIAskForMoreSuggestions(string story)
         {
             await OpenUserStoriesAsync(Project);
-            var form = Story(story).QuerySelector("form.show-more-suggestions")!;
+            var form = Story(story).QuerySelector("form.show-more-suggestions")
+                ?? throw new Xunit.Sdk.XunitException($"'{story}' has no \"Show more\" button.");
             await _web.PostFormAsync("/Projects/ShowMoreSuggestions", HiddenFields(form));
         }
 
         [When("I approve the suggestion {string} for {string}")]
         public async Task WhenIApproveTheSuggestion(string code, string story)
         {
-            await OpenUserStoriesAsync(Project);
-            var form = Suggestion(story, code).QuerySelector("form.approve-suggestion")!;
+            var form = (await SuggestionAsync(story, code)).QuerySelector("form.approve-suggestion")
+                ?? throw new Xunit.Sdk.XunitException($"The suggestion '{code}' has no Approve button.");
             await _web.PostFormAsync("/Projects/ApproveSuggestion", HiddenFields(form));
         }
 
@@ -105,8 +106,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I reject the suggestion {string} for {string} with the reason {string} and the comment {string}")]
         public async Task WhenIRejectTheSuggestion(string code, string story, string reason, string comment)
         {
-            await OpenUserStoriesAsync(Project);
-            var form = Suggestion(story, code).QuerySelector("form.reject-suggestion")!;
+            var form = (await SuggestionAsync(story, code)).QuerySelector("form.reject-suggestion")
+                ?? throw new Xunit.Sdk.XunitException($"The suggestion '{code}' has no Reject form.");
             var fields = HiddenFields(form);
             fields["reason"] = reason;
             fields["comment"] = comment;
@@ -146,9 +147,9 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // ---------------------------------------------------------- Then
 
         [Then("I see the suggestion {string} for {string} with score {string} marked {string}")]
-        public void ThenISeeTheSuggestion(string code, string story, string score, string mark)
+        public async Task ThenISeeTheSuggestion(string code, string story, string score, string mark)
         {
-            var suggestion = Suggestion(story, code);
+            var suggestion = await SuggestionAsync(story, code);
             Assert.Equal(score, suggestion.QuerySelector(".suggestion-score")?.TextContent.Trim());
             Assert.Contains(mark, suggestion.QuerySelectorAll(".badge").Select(b => b.TextContent.Trim()));
         }
@@ -159,8 +160,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             for (var attempt = 0; attempt < 50; attempt++)
             {
-                await OpenUserStoriesAsync(Project);
-                if (Suggestion(story, code).QuerySelector(".suggestion-rationale")?.TextContent.Trim() == rationale)
+                if ((await SuggestionAsync(story, code)).QuerySelector(".suggestion-rationale")?.TextContent.Trim() == rationale)
                 {
                     return;
                 }
@@ -174,8 +174,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Then("{string} has {int} suggestions, best first")]
         public async Task ThenHasSuggestionsBestFirst(string story, int count)
         {
-            await OpenUserStoriesAsync(Project);
-            var scores = Suggestions(story).Select(s => double.Parse(s.QuerySelector(".suggestion-score")!.TextContent, CultureInfo.InvariantCulture)).ToList();
+            var scores = (await SuggestionsAsync(story)).Select(s => double.Parse(s.QuerySelector(".suggestion-score")!.TextContent, CultureInfo.InvariantCulture)).ToList();
             Assert.Equal(count, scores.Count);
             Assert.Equal(scores.OrderByDescending(s => s), scores);
         }
@@ -183,8 +182,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Then("{string} has {int} suggestions with no requirement twice")]
         public async Task ThenHasSuggestionsWithNoRequirementTwice(string story, int count)
         {
-            await OpenUserStoriesAsync(Project);
-            var codes = Suggestions(story).Select(s => s.GetAttribute("data-code")).ToList();
+            var codes = (await SuggestionsAsync(story)).Select(s => s.GetAttribute("data-code")).ToList();
             Assert.Equal(count, codes.Count);
             Assert.Equal(count, codes.Distinct().Count());
         }
@@ -192,8 +190,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Then("{string} has no suggestion {string}")]
         public async Task ThenHasNoSuggestion(string story, string code)
         {
-            await OpenUserStoriesAsync(Project);
-            Assert.DoesNotContain(code, Suggestions(story).Select(s => s.GetAttribute("data-code")));
+            Assert.DoesNotContain(code, (await SuggestionsAsync(story)).Select(s => s.GetAttribute("data-code")));
         }
 
         [Then("the suggestion {string} for {string} is no longer shown")]
@@ -282,10 +279,27 @@ namespace ComplianceTracker.Specs.StepDefinitions
             => _web.Page!.QuerySelectorAll(".work-item").FirstOrDefault(i => i.QuerySelector(".work-item-title")?.TextContent.Trim() == title)
                ?? throw new Xunit.Sdk.XunitException($"The User stories tab shows no story '{title}'.");
 
-        private IReadOnlyList<IElement> Suggestions(string story) => Story(story).QuerySelectorAll(".ai-suggestion").ToList();
+        // US-044: the story's pending suggestions on every sub-tab of the Compliance tab, in the order shown
+        private async Task<IReadOnlyList<IElement>> SuggestionsAsync(string story)
+        {
+            await using (var db = _web.CreateDbContext())
+            {
+                var id = await db.Projects.Where(p => p.Name == Project).Select(p => p.Id).SingleAsync();
+                await _web.OpenAsync($"/Projects/Details/{id}/compliance");
+            }
 
-        private IElement Suggestion(string story, string code)
-            => Suggestions(story).FirstOrDefault(s => s.GetAttribute("data-code") == code)
+            var found = new List<IElement>();
+            foreach (var href in _web.Page!.QuerySelectorAll("#compliance-tabs a[data-sub]").Select(a => a.GetAttribute("href")!).ToList())
+            {
+                await _web.OpenAsync(href);
+                found.AddRange(_web.Page!.QuerySelectorAll(".ai-suggestion").Where(s => s.GetAttribute("data-story") == story));
+            }
+
+            return found;
+        }
+
+        private async Task<IElement> SuggestionAsync(string story, string code)
+            => (await SuggestionsAsync(story)).FirstOrDefault(s => s.GetAttribute("data-code") == code)
                ?? throw new Xunit.Sdk.XunitException($"'{story}' has no suggestion '{code}'.");
 
         private static Dictionary<string, string> HiddenFields(IElement form)

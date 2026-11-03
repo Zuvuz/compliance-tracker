@@ -108,11 +108,16 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         [When("I search the requirements for {string}")]
         public Task WhenISearchTheRequirements(string text)
-            => SubmitSearchAsync(text, onlyNotCovered: false);
+            => SubmitSearchAsync(text);
 
+        // US-044 R2: the filter is a link
         [When("I show only \"Not covered\"")]
-        public Task WhenIShowOnlyNotCovered()
-            => SubmitSearchAsync("", onlyNotCovered: true);
+        public async Task WhenIShowOnlyNotCovered()
+        {
+            var link = _web.Page!.QuerySelector("#compliance-filters a[data-filter='not-covered']")
+                ?? throw new Xunit.Sdk.XunitException("The Compliance tab has no \"Not covered\" filter.");
+            await _web.OpenAsync(link.GetAttribute("href")!);
+        }
 
         // Chooses the story in the row's "Link" form and sends it
         [When("I link {string} to the requirement {string}")]
@@ -216,11 +221,10 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await FrameworkUi.ActivateAsync(_web, versionId);
         }
 
-        private async Task SubmitSearchAsync(string text, bool onlyNotCovered)
+        private async Task SubmitSearchAsync(string text)
         {
             var action = _web.Page!.QuerySelector("#requirement-search")!.GetAttribute("action")!;
-            var query = $"?q={Uri.EscapeDataString(text)}" + (onlyNotCovered ? "&show=not-covered" : "");
-            await _web.OpenAsync(action + query);
+            await _web.OpenAsync(action + $"?q={Uri.EscapeDataString(text)}");
         }
 
         private IEnumerable<IElement> SubTabs() => _web.Page!.QuerySelectorAll("#compliance-tabs a[data-sub]");
