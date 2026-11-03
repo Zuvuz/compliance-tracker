@@ -336,6 +336,37 @@ namespace ComplianceTracker.Web.Controllers
             return File(file.Value.Content, file.Value.Evidence.ContentType!, file.Value.Evidence.FileName);
         }
 
+        // ---------------------------------------------------------- Traceability matrix (US-052)
+
+        // GET /Projects/Traceability/{id}?sub=cra: the matrix as CSV, for one regulation or all of them.
+        // R5: for anyone in the organisation, also the Auditor; 404 for other organisations and unknown regulations.
+        [HttpGet]
+        public async Task<IActionResult> Traceability(Guid id, string? sub, CancellationToken cancellationToken)
+        {
+            var project = await _projects.GetAsync(id, cancellationToken);
+            var organization = await _organizations.MineAsync(cancellationToken);
+            var compliance = await _complianceQueries.ForProjectAsync(id, cancellationToken);
+            if (project is null || organization is null || compliance is null)
+            {
+                return NotFound();
+            }
+
+            var frameworks = compliance.Frameworks
+                .Where(f => sub is null || FrameworkNames.Slug(f.Framework.Name) == sub)
+                .ToList();
+            if (sub is not null && frameworks.Count == 0)
+            {
+                return NotFound();
+            }
+
+            var rows = TraceabilityMatrix.Rows(frameworks,
+                userId => organization.Users.FirstOrDefault(u => u.Id == userId)?.Name ?? "Unknown");
+            var name = $"traceability-{FrameworkNames.Slug(project.Name)}{(sub is null ? "" : "-" + sub)}-{_clock.Today():yyyy-MM-dd}.csv";
+
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+            return File(TraceabilityMatrix.ToCsv(rows), "text/csv; charset=utf-8", name);
+        }
+
         // ---------------------------------------------------------- AI suggestions (US-020, US-036)
 
         // POST /Projects/SuggestMappings: R1, R8
