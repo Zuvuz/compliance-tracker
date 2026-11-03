@@ -94,7 +94,7 @@ Feature: Compliance tab: requirements, links and coverage per regulation
   Scenario: The overview links to each regulation's coverage
     Given the user story "[US-004] Sign in with OpenID Connect" is linked to the requirement "SP-1"
     When I open the "Overview" tab of "Acme Portal"
-    Then the coverage summary shows "Security policy: 1 of 2 covered"
+    Then the coverage summary shows "Security policy 50 % (1 of 2 covered)"
 
   @US-041 @iso27001-A.5.15 @integration
   Scenario: Other organisations cannot see it
