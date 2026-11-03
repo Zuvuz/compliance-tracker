@@ -1,28 +1,150 @@
-@* US-022 R3: description, scope, phase and a summary. US-024: the phase can be changed here.
-   Ids used by the tests: #project-description, #project-scope, #framework-summary, #work-item-summary, #change-phase. *@
+@* US-022 R3, US-024, US-048: how the project stands and what needs attention.
+   Ids used by the tests: #project-description, #project-scope, #about-project, #framework-summary, #work-item-summary,
+   #change-phase, #coverage-summary (li data-framework with .coverage-percent), #needs-attention (li),
+   #risk-summary (a data-level with .risk-count), #latest-activity (li .activity-text), #show-all-activity. *@
+@using ComplianceTracker.Application.Compliance
 @using ComplianceTracker.Domain.Projects
+@using ComplianceTracker.Domain.Risks
+@using ComplianceTracker.Domain.WorkItems
 @model ProjectDetailsViewModel
 @{
     var project = Model.Project;
     var otherPhases = Enum.GetValues<LifecyclePhase>().Where(p => p != project.Phase);
+    var canChangePhase = !project.IsClosed && await Permissions.CanAsync(Permission.EditProjects);
+    var frameworks = Model.Compliance?.Frameworks ?? [];
+    var openRisks = Model.AllRisks.Where(r => r.Status != RiskStatus.Closed).ToList();
+
+    string Plural(int count, string one, string many) => $"{count} {(count == 1 ? one : many)}";
+    string? SubWhere(Func<FrameworkCompliance, bool> has)
+        => frameworks.FirstOrDefault(has) is { } f ? FrameworkNames.Slug(f.Framework.Name) : null;
+    string ComplianceUrl(string? sub, string? show)
+        => Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Compliance, sub, show })!;
+    string RisksUrl(string? level = null, string? due = null)
+        => Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks, level, due })!;
+
+    // US-048 R2: only what is not zero, each linking to the matching view
+    var notCovered = frameworks.Sum(f => f.NotCovered);
+    var suggestions = frameworks.Sum(f => f.SuggestionCount);
+    var withoutEvidence = frameworks.Sum(f => f.Requirements.Count(r => r.IsApplicable && r.IsCovered && !r.HasEvidence));
+    var reviewDue = openRisks.Count(r => r.IsReviewDue(Model.Now));
+    var seriousWithoutMeasures = openRisks.Count(r => r.Level >= RiskLevel.High && r.HasNoMeasures);
+    var linkedStories = frameworks.SelectMany(f => f.Requirements).SelectMany(r => r.Links).Select(l => l.WorkItem.Id).ToHashSet();
+    var doneNotLinked = Model.WorkItems.Count(w => w.State == WorkItemState.Closed && !linkedStories.Contains(w.Id));
+
+    var attention = new List<(string Text, string Url)>();
+    if (notCovered > 0)
+    {
+        attention.Add((Plural(notCovered, "requirement not covered", "requirements not covered"),
+            ComplianceUrl(SubWhere(f => f.NotCovered > 0), ComplianceFilters.NotCovered)));
+    }
+    if (suggestions > 0)
+    {
+        attention.Add((Plural(suggestions, "AI suggestion", "AI suggestions"),
+            ComplianceUrl(SubWhere(f => f.SuggestionCount > 0), ComplianceFilters.HasSuggestions)));
+    }
+    if (withoutEvidence > 0)
+    {
+        attention.Add((Plural(withoutEvidence, "covered requirement without evidence", "covered requirements without evidence"),
+            ComplianceUrl(SubWhere(f => f.Requirements.Any(r => r.IsApplicable && r.IsCovered && !r.HasEvidence)), null)));
+    }
+    if (reviewDue > 0)
+    {
+        attention.Add((Plural(reviewDue, "risk due for review", "risks due for review"), RisksUrl(due: "1")));
+    }
+    if (seriousWithoutMeasures > 0)
+    {
+        attention.Add((Plural(seriousWithoutMeasures, "High or Critical risk without measures", "High or Critical risks without measures"), RisksUrl()));
+    }
+    if (doneNotLinked > 0)
+    {
+        attention.Add((Plural(doneNotLinked, "done story not linked to a requirement", "done stories not linked to a requirement"),
+            Url.Action("Details", new { id = project.Id, tab = ProjectTabs.UserStories })!));
+    }
+
+    // e.g. "RequirementLinked" → "Requirement linked"
+    static string Words(string action)
+        => string.Concat(action.Select((c, i) => i > 0 && char.IsUpper(c) ? " " + char.ToLowerInvariant(c) : c.ToString()));
 }
 
 <div class="row g-4">
-    <div class="col-md-8">
-        <dl class="row mb-0">
-            <dt class="col-sm-3">Description</dt>
-            <dd class="col-sm-9" id="project-description">@(string.IsNullOrEmpty(project.Description) ? "–" : project.Description)</dd>
+    <div class="col-lg-8">
+        @* US-048 R1: the same numbers as the Compliance tab, each linking to its sub-tab *@
+        <section class="mb-4">
+            <h2 class="h6">Coverage</h2>
+            @if (frameworks.Count == 0)
+            {
+                <p class="text-muted small mb-0">No frameworks yet. <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Frameworks">Add one</a>.</p>
+            }
+            else
+            {
+                <ul class="list-unstyled mb-0" id="coverage-summary">
+                    @foreach (var framework in frameworks)
+                    {
+                        var shortName = FrameworkNames.Short(framework.Framework.Name);
+                        <li class="mb-2" data-framework="@shortName">
+                            <div class="d-flex justify-content-between small">
+                                <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Compliance"
+                                   asp-route-sub="@FrameworkNames.Slug(framework.Framework.Name)">@shortName</a>
+                                <span><span class="coverage-percent">@framework.Percent %</span> (@framework.Covered of @framework.Total covered@(framework.NotApplicable > 0 ? $", {framework.NotApplicable} not applicable" : ""))</span>
+                            </div>
+                            <div class="progress" role="progressbar" aria-label="@shortName coverage" aria-valuenow="@framework.Percent"
+                                 aria-valuemin="0" aria-valuemax="100" style="height: .5rem">
+                                <div class="progress-bar bg-success" style="width: @framework.Percent%"></div>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
 
-            <dt class="col-sm-3">Scope</dt>
-            <dd class="col-sm-9" id="project-scope">@(string.IsNullOrEmpty(project.Scope) ? "–" : project.Scope)</dd>
-
-            <dt class="col-sm-3">Lifecycle phase</dt>
-            <dd class="col-sm-9">
-                @project.Phase
-                @* US-024 R2: EndOfSupport is final, so the form is not shown then *@
-                @if (!project.IsClosed)
+        @* US-048 R2 *@
+        <section class="mb-4">
+            <h2 class="h6">Needs attention</h2>
+            <ul class="list-unstyled mb-0" id="needs-attention">
+                @if (attention.Count == 0)
                 {
-                    <form asp-action="ChangePhase" method="post" class="d-inline-flex gap-1 ms-2" id="change-phase">
+                    <li class="text-success">Nothing needs attention</li>
+                }
+                @foreach (var (text, url) in attention)
+                {
+                    <li><a href="@url">@text</a></li>
+                }
+            </ul>
+        </section>
+
+        @* US-048 R5: the five latest entries, with who, role and when *@
+        <section>
+            <h2 class="h6">Latest activity</h2>
+            @if (Model.Activity.Count == 0)
+            {
+                <p class="text-muted small mb-0">Nothing yet.</p>
+            }
+            else
+            {
+                <ul class="list-unstyled small mb-1" id="latest-activity">
+                    @foreach (var entry in Model.Activity.Take(5))
+                    {
+                        var who = Model.NameOf(entry.UserId) + (entry.Role is { } role ? $" ({ComplianceTracker.Domain.Users.RolePermissions.Title(role)})" : "");
+                        <li class="mb-1">
+                            <span class="activity-text">@who · @Words(entry.Action.ToString())@(string.IsNullOrEmpty(entry.Details) ? "" : ": " + entry.Details)</span>
+                            <span class="text-muted">· @entry.OccurredAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</span>
+                        </li>
+                    }
+                </ul>
+                <a class="small" id="show-all-activity" asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Activity">Show all</a>
+            }
+        </section>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h2 class="h6 card-title">Lifecycle phase</h2>
+                <p class="mb-1 fw-semibold">@project.Phase</p>
+                @* US-024 R2: EndOfSupport is final. US-048 R8: only roles that may edit the project. *@
+                @if (canChangePhase)
+                {
+                    <form asp-action="ChangePhase" method="post" class="d-flex gap-1" id="change-phase">
                         <input type="hidden" name="projectId" value="@project.Id" />
                         <select name="phase" class="form-select form-select-sm" aria-label="New lifecycle phase">
                             @foreach (var phase in otherPhases)
@@ -33,35 +155,42 @@
                         <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">Change phase</button>
                     </form>
                 }
-            </dd>
-        </dl>
-    </div>
+            </div>
+        </div>
 
-    <div class="col-md-4">
-        <div class="card">
+        @* US-048 R3: open risks per level, each linking to the Risks tab filtered on it *@
+        <div class="card mb-3">
             <div class="card-body">
-                <h2 class="h6 card-title">Summary</h2>
+                <h2 class="h6 card-title">Open risks</h2>
+                <div class="d-flex flex-wrap gap-2" id="risk-summary">
+                    @foreach (var level in Enum.GetValues<RiskLevel>().Reverse())
+                    {
+                        <a class="text-decoration-none" data-level="@level" href="@RisksUrl(level.ToString())">@level <span class="risk-count badge text-bg-light">@openRisks.Count(r => r.Level == level)</span></a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body small">
                 <p class="mb-1">
                     <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Frameworks" id="framework-summary">@Model.FrameworkSummary</a>
                 </p>
-                <p class="mb-2">
+                <p class="mb-0">
                     <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.UserStories" id="work-item-summary">@Model.WorkItemSummary</a>
                 </p>
-                @* US-041 R10: coverage per framework, each linking to its sub-tab *@
-                @if (Model.Compliance is { Frameworks.Count: > 0 } compliance)
-                {
-                    <ul class="list-unstyled small mb-0" id="coverage-summary">
-                        @foreach (var framework in compliance.Frameworks)
-                        {
-                            <li>
-                                <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Compliance"
-                                   asp-route-sub="@FrameworkNames.Slug(framework.Framework.Name)">@FrameworkNames.Short(framework.Framework.Name)</a>:
-                                @framework.Covered of @framework.Total covered@(framework.NotApplicable > 0 ? $", {framework.NotApplicable} not applicable" : "")
-                            </li>
-                        }
-                    </ul>
-                }
             </div>
         </div>
+
+        @* US-048 R6: folded, but open while the project has no frameworks *@
+        <details id="about-project" open="@(frameworks.Count == 0)">
+            <summary class="h6">About the project</summary>
+            <dl class="mb-0 small">
+                <dt>Description</dt>
+                <dd id="project-description">@(string.IsNullOrEmpty(project.Description) ? "–" : project.Description)</dd>
+                <dt>Scope</dt>
+                <dd id="project-scope">@(string.IsNullOrEmpty(project.Scope) ? "–" : project.Scope)</dd>
+            </dl>
+        </details>
     </div>
 </div>

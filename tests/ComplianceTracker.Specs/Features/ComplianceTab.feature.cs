@@ -723,7 +723,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I open the \"Overview\" tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 97
-    await testRunner.ThenAsync("the coverage summary shows \"Security policy: 1 of 2 covered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the coverage summary shows \"Security policy 50 % (1 of 2 covered)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

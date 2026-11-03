@@ -131,8 +131,8 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound(); // US-008 R5: also when the project belongs to another organisation
             }
 
-            // The Activity tab is the only one that reads the log
-            var activity = activeTab == ProjectTabs.Activity
+            // The Activity tab reads the log; the Overview shows the latest entries (US-048 R5)
+            var activity = activeTab is ProjectTabs.Activity or ProjectTabs.Overview
                 ? await _projects.ActivityAsync(id, cancellationToken)
                 : [];
 
@@ -141,8 +141,8 @@ namespace ComplianceTracker.Web.Controllers
                 ? await _complianceQueries.ForProjectAsync(id, cancellationToken)
                 : null;
 
-            // US-042: the register, sorted by level; closed risks only when asked for (R7)
-            var allRisks = activeTab == ProjectTabs.Risks ? await _risks.ForProjectAsync(id, cancellationToken) ?? [] : [];
+            // US-042: the register, sorted by level; closed risks only when asked for (R7). US-048 R3: the overview counts them.
+            var allRisks = activeTab is ProjectTabs.Risks or ProjectTabs.Overview ? await _risks.ForProjectAsync(id, cancellationToken) ?? [] : [];
             var now = _clock.GetUtcNow().UtcDateTime;
             var risks = allRisks
                 .Where(r => string.IsNullOrEmpty(status) ? r.Status != RiskStatus.Closed : r.DisplayStatus.Equals(status, StringComparison.OrdinalIgnoreCase))
