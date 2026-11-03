@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ComplianceTracker.Application.Ai;
 using ComplianceTracker.Infrastructure.WorkItems;
 using Microsoft.AspNetCore.Authentication;
@@ -30,7 +31,7 @@ namespace ComplianceTracker.Specs.Support
         // overrides: settings to change, e.g. an empty ClientId to test the start-up check (US-029 R3)
         // github: the pretend GitHub the app reads user stories from (US-018); without one, an empty one
         // ai: the pretend local AI (US-020); without one, a new one
-        public static TestApp WithTestSignIn(string connectionString, TimeProvider clock, IDictionary<string, string?>? overrides = null, FakeGitHub? github = null, FakeAi? ai = null)
+        public static TestApp WithTestSignIn(string connectionString, TimeProvider clock, IDictionary<string, string?>? overrides = null, FakeGitHub? github = null, FakeAi? ai = null, DatabaseRace? race = null)
         {
             github ??= new FakeGitHub();
             ai ??= new FakeAi();
@@ -61,6 +62,13 @@ namespace ComplianceTracker.Specs.Support
                 // US-020: the pretend AI replaces the Ollama adapters (the last registration wins)
                 services.AddSingleton<IEmbeddingModel>(ai);
                 services.AddSingleton<IRationaleWriter>(ai);
+
+                // US-015: lets a scenario save something at the same moment as the app
+                if (race is not null)
+                {
+                    services.ConfigureDbContext<ComplianceTracker.Infrastructure.Persistence.ComplianceTrackerDbContext>(
+                        options => options.AddInterceptors(race.Interceptor));
+                }
 
                 // Make the test sign-in the default, replacing the cookie + Keycloak setup from Program.cs
                 services
