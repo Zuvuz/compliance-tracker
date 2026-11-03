@@ -1,6 +1,13 @@
 # Navnet bliver præfiks på containere og volumes, fx compliance-tracker-postgres-1
 name: compliance-tracker
 
+# US-013: "docker compose up -d" starter kun databasen og Keycloak til lokal udvikling.
+# US-017: "docker compose --profile full up -d" starter også migreringen og webappen (http://localhost:8080).
+
+# Forbindelsen til databasen inde i Docker-netværket. Kodeordet kommer fra .env.
+x-database: &database
+  ConnectionStrings__ComplianceTracker: Host=postgres;Port=5432;Database=compliance_tracker;Username=postgres;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+
 services:
   postgres:
     image: postgres:17
@@ -28,11 +35,70 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
+      # US-017: browseren bruger altid localhost:8180, mens webappen i Docker taler med keycloak:8080.
+      # Begge får samme issuer i tokens, så log-ind virker både fra Visual Studio og fra containeren.
+      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
     ports:
-      - "8180:8080"   # 8080 gemmer vi til webappen i US-017
+      - "8180:8080"   # 8080 er webappens port (US-017)
     volumes:
       - keycloak-data:/opt/keycloak/data   # brugere og opsætning overlever genstart
       - ./keycloak:/opt/keycloak/data/import:ro   # realm-filen fra repoet (kun læse)
+    healthcheck:
+      # Keycloak-imaget har ingen curl, så bash spørger management-porten 9000 direkte
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  # US-017 R2: kører migreringerne én gang og stopper. Fejler den, startes webappen ikke.
+  migrate:
+    profiles: [full]
+    build:
+      context: .
+      target: migrate
+    image: compliance-tracker-migrate:local
+    environment:
+      <<: *database
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # US-017 R1, R3: webappen på http://localhost:8080. Ingen hemmeligheder i imaget; de kommer fra .env.
+  web:
+    profiles: [full]
+    build:
+      context: .
+      target: web
+    image: compliance-tracker-web:local
+    environment:
+      <<: *database
+      Authentication__Keycloak__Authority: http://keycloak:8080/realms/compliance-tracker
+      Authentication__Keycloak__ClientId: compliance-tracker-web
+      # Klientens secret fra Keycloak (Clients → compliance-tracker-web → Credentials). Mangler den, stopper appen med en besked.
+      Authentication__Keycloak__ClientSecret: ${KEYCLOAK_CLIENT_SECRET:-}
+      # Ollama på din egen computer. Den skal lytte på mere end 127.0.0.1 for at kunne nås fra Docker (se README).
+      Ai__BaseUrl: ${AI_BASE_URL:-http://host.docker.internal:11434}
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # gør adressen kendt på Linux; Docker Desktop har den i forvejen
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_started
+    healthcheck:
+      # ASP.NET-imaget har ingen curl, så bash spørger /health direkte
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /health HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
 
 volumes:
   postgres-data:

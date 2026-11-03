@@ -20,14 +20,15 @@
       "redirectUris": [
         "http://localhost:5203/signin-oidc",
         "https://localhost:7068/signin-oidc",
-        "https://localhost/signin-oidc"
+        "https://localhost/signin-oidc",
+        "http://localhost:8080/signin-oidc"
       ],
       "webOrigins": [
         "+"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:5203/signout-callback-oidc##https://localhost:7068/signout-callback-oidc##https://localhost/signout-callback-oidc"
+        "post.logout.redirect.uris": "http://localhost:5203/signout-callback-oidc##https://localhost:7068/signout-callback-oidc##https://localhost/signout-callback-oidc##http://localhost:8080/signout-callback-oidc"
       },
       "protocolMappers": [
         {

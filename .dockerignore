@@ -1,0 +1,12 @@
+# US-017: only the source the images need is sent to Docker. Never secrets or build output.
+.git
+.github
+.vs
+.env
+**/bin
+**/obj
+**/*.user
+tests
+docs
+keycloak
+*.md

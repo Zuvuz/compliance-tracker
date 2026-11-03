@@ -117,6 +117,25 @@ setx Ai__BaseUrl "http://my-gpu-server:8000"
 
 Every suggestion stores which models and prompt version made it, so results from different models can be compared.
 
+## Running the whole tracker in Docker
+
+The web app, a migration step, PostgreSQL and Keycloak start together with one command (US-017):
+
+```bash
+docker compose --profile full up -d --build
+```
+
+- **Migrations** run in their own container (`migrate`) before the web app starts. If a migration fails, the web app is not started; see `docker compose logs migrate`.
+- **The web app** answers on `http://localhost:8080`, and `http://localhost:8080/health` says whether it can reach the database. It runs as the non-root user `app`, and the image has no secrets in it.
+- **Sign-in from the container is not finished yet:** outside Development the app requires Keycloak on https, and in Docker it is on http. Until that is decided, sign in through the app run from Visual Studio.
+- **`.env`** needs `KEYCLOAK_CLIENT_SECRET` as well (see `.env.example`). Without it the web app stops with a message that names it.
+- **Keycloak:** a Keycloak that was created before US-017 does not know the address `http://localhost:8080`. Add `http://localhost:8080/signin-oidc` to **Valid redirect URIs** and `http://localhost:8080/signout-callback-oidc` to **Valid post logout redirect URIs** on the client `compliance-tracker-web`, or reset Keycloak (see below), so it imports the realm file again.
+- **The AI (optional):** the web app looks for Ollama at `http://host.docker.internal:11434` (set `AI_BASE_URL` in `.env` to change it). Ollama must then listen on more than `127.0.0.1`.
+
+`docker compose up -d` without `--profile full` still starts only PostgreSQL and Keycloak, for running the app from Visual Studio.
+
+CI builds both images on every pull request, starts the whole system, checks it and scans the images with Trivy. When a change is merged to `main`, the web image is published as `ghcr.io/zuvuz/compliance-tracker` with the commit SHA and `latest`.
+
 ## Running the tests
 
 ```bash
