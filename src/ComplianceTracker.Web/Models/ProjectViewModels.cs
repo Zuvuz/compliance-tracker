@@ -93,6 +93,36 @@ namespace ComplianceTracker.Web.Models
             => string.IsNullOrEmpty(slug) ? Overview : All.Select(t => t.Slug).FirstOrDefault(t => t == slug.ToLowerInvariant());
     }
 
+    // US-044 R2: the Compliance tab's filters, as ?show=... so a filtered view can be shared
+    public static class ComplianceFilters
+    {
+        public const string All = "all";
+        public const string NotCovered = "not-covered";
+        public const string HasSuggestions = "has-suggestions";
+        public const string NotApplicable = "not-applicable";
+
+        // In the order they are shown, with the text on the button
+        public static readonly IReadOnlyList<(string Slug, string Title)> Each =
+        [
+            (All, "All"),
+            (NotCovered, "Not covered"),
+            (HasSuggestions, "Has suggestions"),
+            (NotApplicable, "Not applicable")
+        ];
+
+        // An unknown or missing filter shows everything
+        public static string Find(string? slug)
+            => Each.Select(f => f.Slug).FirstOrDefault(f => f == slug?.ToLowerInvariant()) ?? All;
+
+        public static bool Matches(string filter, RequirementCoverage row) => filter switch
+        {
+            NotCovered => row.IsApplicable && !row.IsCovered, // not applicable is not "not covered" (US-043 R6)
+            HasSuggestions => row.HasSuggestions,
+            NotApplicable => !row.IsApplicable,
+            _ => true
+        };
+    }
+
     // US-041: short names and addresses for the Compliance tab's sub-tabs.
     // The built-in frameworks are called e.g. "CRA – Regulation (EU) 2024/2847": the part before " – " is the short name.
     public static class FrameworkNames
@@ -157,7 +187,7 @@ namespace ComplianceTracker.Web.Models
         public ProjectCompliance? Compliance { get; init; }
         public string? Sub { get; init; }
         public string? Search { get; init; }
-        public bool OnlyNotCovered { get; init; }
+        public string ComplianceFilter { get; init; } = ComplianceFilters.All;
 
         // US-042: the Risks tab's register (already filtered), the filters and the time for "Review due"
         public IReadOnlyList<Risk> Risks { get; init; } = [];

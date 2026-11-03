@@ -305,6 +305,21 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At fjerne medlemmer (egen story).
   - At system-admin kan se data.
 
+### B32 – AI-forslagene besluttes på Compliance-fanen
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-044)
+  - **Ét sted til forslagene:** de ventende AI-forslag vises under det krav, de handler om, på Compliance-fanen, og der godkendes eller afvises de. User Stories-fanen viser kun et mærke ("2 AI suggestions"), som linker til Compliance-fanen filtreret på "Has suggestions". "Suggest mappings" og "Show more" pr. story bliver på User Stories-fanen.
+  - **Overblik øverst:** pr. regulering vises dækket / ikke dækket / AI-forslag / ikke relevant og en bjælke. Tallene er de samme som i US-043 R6: krav, der ikke er relevante, tæller ikke med.
+  - **Filtre er links** (`?show=not-covered`, `has-suggestions`, `not-applicable`), så en filtreret visning kan deles.
+  - **"Suggest for not covered"** spørger kun om den åbne regulerings krav, der hverken er dækket eller markeret ikke relevante. For hvert af dem bliver de 3 bedste stories til forslag. Ventende forslag til de krav erstattes. Par, der er koblet, godkendt eller afvist, foreslås aldrig igen.
+  - Domænet er uændret. En afvisning kræver stadig en årsag (US-020 R7).
+- **Begrundelse:** Hullerne lukkes pr. regulering, så det er dér, man har brug for forslagene (CRA art. 13, ISO 27001 5.31 og 9.1). Med beslutningen ét sted er man ikke i tvivl om, hvor et forslag blev afgjort.
+- **Fravalgt:**
+  - At godkende flere forslag på én gang.
+  - At køre "Suggest for not covered" automatisk efter en GitHub-synk.
+  - At vise "dækket af åbne stories" i overblikket.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
