@@ -327,7 +327,7 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - **Målet:** en lille udviklingsvirksomhed kan for hver regulering se, hvilke krav der er opfyldt, og bevise det over for en auditor.
   - **MVP'en er de stories, der har labelen `mvp`:**
     - US-044: AI-forslag og overblik på Compliance-fanen (bygget).
-    - Evidens pr. krav (ny story).
+    - US-057: evidens pr. krav.
     - US-052: sporbarhedsmatrix som CSV, rykket frem fra fase 2.
     - US-017: Docker.
     - US-014: backup med en testet gendannelse.
