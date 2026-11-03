@@ -86,7 +86,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         [When("I open the organisation page")]
         public Task WhenIOpenTheOrganisationPage()
-            => _web.OpenAsync("/Organizations/Mine");
+            => _web.OpenAsync("/Projects");
 
         // R6: the "Use newest" button on the project page
         [When("I move {string} to the newest version of {string}")]

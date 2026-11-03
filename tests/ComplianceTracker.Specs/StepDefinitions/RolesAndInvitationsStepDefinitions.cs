@@ -9,7 +9,7 @@ using System.Net;
 namespace ComplianceTracker.Specs.StepDefinitions
 {
     // US-009, US-010: invitations, roles and the system admin, through the web app with test sign-in.
-    // UI contract: the Users tab (#organisation-users rows data-member, forms change-role, #create-invitation,
+    // UI contract: the Users page /Users (#organisation-users rows data-member, forms change-role, #create-invitation,
     // #invitation-link, revoke-invitation), /Invitations/Accept/{token} (#invitation-problem, #accept-invitation),
     // and /System (#system-organisations, #system-members rows data-member with system-change-role forms).
     [Binding]
@@ -53,8 +53,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
             var response = await client.PostAsync(_invitationPath,
                 new FormUrlEncodedContent(new Dictionary<string, string> { ["__RequestVerificationToken"] = token }));
-            // Lands on the organisation's own page, not on "create your organisation"
-            Assert.StartsWith("/Organizations/Details/", response.RequestMessage!.RequestUri!.AbsolutePath);
+            // Lands on the organisation's projects, not on "create your organisation" (US-045)
+            Assert.Equal("/Projects", response.RequestMessage!.RequestUri!.AbsolutePath);
         }
 
         [When("{string} opens the invitation link")]
@@ -86,14 +86,15 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task WhenIChangeTheRoleOf(string userName, string role)
         {
             await OpenUsersAsync();
-            var row = _web.Page!.QuerySelector($"#organisation-users tr[data-member='{userName}']")!;
-            var form = row.QuerySelector("form.change-role");
+            var row = _web.Page!.QuerySelector($"#organisation-users tr[data-member='{userName}']");
+            var form = row?.QuerySelector("form.change-role");
             if (form is null)
             {
-                // The page hides the form for roles that may not change roles; send the request directly (R5)
-                var organisationId = await OrganisationIdAsync();
+                // Roles that may not change roles cannot open the page (US-045 R2); send the request directly (US-010 R5).
+                // The antiforgery token comes from a page the role may open.
                 var memberId = await MemberIdAsync(userName);
-                await _web.PostFormAsync($"/Organizations/ChangeRole/{organisationId}",
+                await _web.OpenAsync("/Projects");
+                await _web.PostFormAsync("/Users/ChangeRole",
                     new Dictionary<string, string> { ["memberId"] = memberId.ToString(), ["role"] = role });
                 return;
             }
@@ -190,7 +191,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 realmRoles: "system-admin");
 
         private async Task OpenUsersAsync()
-            => await _web.OpenAsync($"/Organizations/Users/{await OrganisationIdAsync()}");
+            => await _web.OpenAsync("/Users");
 
         private async Task<Guid> OrganisationIdAsync()
         {

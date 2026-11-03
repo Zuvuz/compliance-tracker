@@ -76,7 +76,7 @@ Open `https://localhost:7068`, click **Sign in**, and choose **Register** to cre
 
 ## Roles and the system admin
 
-The person who creates an organisation is its **organisation admin**. They invite colleagues from the organisation's **Users** tab with a role (Organisation admin, Compliance manager, Developer or Auditor). The table "What may each role do?" on that tab shows the permissions.
+The person who creates an organisation is its **organisation admin**. They invite colleagues from **Users** in the top bar with a role (Organisation admin, Compliance manager, Developer or Auditor). The table "What may each role do?" on that page shows the permissions. Users and **Settings** (the AI feedback consent) are only shown to the organisation admin.
 
 The **system admin** is the owner of the tracker. They see all organisations and their members under **System**, and can change roles, but cannot see the organisations' data. It is a Keycloak realm role, so the app can never give it:
 

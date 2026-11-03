@@ -1,9 +1,8 @@
-@* The signed-in user's own organisation: the Overview tab (US-003 R2, US-004 R5, US-008 R4).
-   The ids (#organisation-name, #organisation-projects, .project-link ...) are used by the tests. *@
+@* Projects: the front page after sign-in (US-045). The organisation's projects (US-008 R4) and the frameworks
+   they use (US-011 R5). The ids (#organisation-name, #organisation-projects, .project-link ...) are used by the tests. *@
 @model OrganizationOverviewViewModel
 @{
-    ViewData["Title"] = Model.Organization.Name;
-    ViewData["ActiveTab"] = "Overview";
+    ViewData["Title"] = "Projects";
 }
 
 <partial name="_OrganizationHeader" model="Model.Organization" />
@@ -88,30 +87,3 @@
         </table>
     }
 </section>
-
-@* US-036 R5–R9: the consent to use decisions on AI suggestions to improve the AI, and the export. Admin only.
-   Ids used by the tests: #ai-feedback, #ai-sharing-state, #set-ai-sharing, #export-ai-feedback. *@
-@{
-    var me = Model.Organization.Users.FirstOrDefault(u => u.ExternalId == User.FindFirst("sub")?.Value);
-}
-@if (me?.Role == ComplianceTracker.Domain.Users.UserRole.Admin)
-{
-    <section id="ai-feedback" class="mt-4">
-        <h2 class="h4">AI feedback</h2>
-        <div asp-validation-summary="All" class="text-danger" role="alert"></div>
-        <p class="small text-muted mb-2">
-            Every AI suggestion and your decision on it is kept in the tracker as an audit trail.
-            Only when sharing is on can the decisions be exported to improve the AI. The export has no names or e-mails.
-        </p>
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-            <span>Share our decisions to improve the AI: <strong id="ai-sharing-state">@(Model.Organization.ShareAiFeedback ? "On" : "Off")</strong></span>
-            <form asp-action="SetAiSharing" asp-route-id="@Model.Organization.Id" method="post" id="set-ai-sharing">
-                <input type="hidden" name="share" value="@(Model.Organization.ShareAiFeedback ? "false" : "true")" />
-                <button type="submit" class="btn btn-sm btn-outline-primary">@(Model.Organization.ShareAiFeedback ? "Switch off" : "Switch on")</button>
-            </form>
-            <form asp-action="ExportAiFeedback" asp-route-id="@Model.Organization.Id" method="post" id="export-ai-feedback">
-                <button type="submit" class="btn btn-sm btn-outline-secondary">Export AI feedback</button>
-            </form>
-        </div>
-    </section>
-}

@@ -20,30 +20,47 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    @* Left side of the menu. Links to pages that require sign-in are only shown when signed in. *@
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        @if (User.Identity?.IsAuthenticated == true)
+                    @* Left side of the menu (US-045): the main pages. Users and Settings only for the roles that may use them,
+                       System only for the tracker's owner (US-010). The id #top-bar is used by the tests. *@
+                    @{
+                        var signedIn = User.Identity?.IsAuthenticated == true;
+                        var current = ViewContext.RouteData.Values["controller"] as string;
+                        string Active(params string[] controllers) => controllers.Contains(current) ? "active fw-semibold" : "";
+                    }
+                    <ul class="navbar-nav flex-grow-1" id="top-bar">
+                        @if (signedIn)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Organizations" asp-action="Mine">My organisation</a>
+                                <a class="nav-link text-dark @Active("Projects", "Risks")" id="nav-projects" asp-area="" asp-controller="Projects" asp-action="Index">Projects</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Frameworks" asp-action="Index">Frameworks</a>
+                                <a class="nav-link text-dark @Active("Frameworks")" id="nav-frameworks" asp-area="" asp-controller="Frameworks" asp-action="Index">Frameworks</a>
                             </li>
+                            @if (await Permissions.CanAsync(Permission.ManageMembers))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark @Active("Users")" id="nav-users" asp-area="" asp-controller="Users" asp-action="Index">Users</a>
+                                </li>
+                            }
+                            @if (await Permissions.CanAsync(Permission.ManageAiSharing))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark @Active("Settings")" id="nav-settings" asp-area="" asp-controller="Settings" asp-action="Index">Settings</a>
+                                </li>
+                            }
+                            @if (User.HasClaim(ComplianceTracker.Web.Security.SystemAdmin.ClaimType, ComplianceTracker.Web.Security.SystemAdmin.Role))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark @Active("System")" id="system-link" asp-area="" asp-controller="System" asp-action="Index">System</a>
+                                </li>
+                            }
                         }
-                        @if (User.HasClaim(ComplianceTracker.Web.Security.SystemAdmin.ClaimType, ComplianceTracker.Web.Security.SystemAdmin.Role))
+                        else
                         {
-                            @* US-010: only for the tracker's owner *@
                             <li class="nav-item">
-                                <a class="nav-link text-dark" id="system-link" asp-area="" asp-controller="System" asp-action="Index">System</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                             </li>
                         }
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
                     </ul>
                     @* Right side of the menu: the signed-in user's name and "Sign out", or "Sign in" (US-004) *@
                     <ul class="navbar-nav">
