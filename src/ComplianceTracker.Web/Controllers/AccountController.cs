@@ -1,4 +1,4 @@
-﻿using ComplianceTracker.Application.Users;
+using ComplianceTracker.Application.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -23,6 +23,14 @@ namespace ComplianceTracker.Web.Controllers
         public IActionResult Login()
         {
             return Challenge(new AuthenticationProperties { RedirectUri = "/" });
+        }
+
+        // Where the cookie sends a signed-in user whose role does not allow a page (US-045 R2)
+        [HttpGet]
+        public IActionResult AccessDenied()
+        {
+            Response.StatusCode = StatusCodes.Status403Forbidden;
+            return View();
         }
 
         // Signs out of both the app (deletes the cookie) and Keycloak; otherwise the next

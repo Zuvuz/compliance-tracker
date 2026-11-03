@@ -114,7 +114,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // Opens the organisation's Overview and returns the address of the project's link
         private async Task<string> ProjectLinkAsync(string projectName)
         {
-            await _web.OpenAsync("/Organizations/Mine");
+            await _web.OpenAsync("/Projects");
 
             var link = _web.Page!.QuerySelectorAll("#organisation-projects a.project-link")
                 .FirstOrDefault(a => a.TextContent.Trim() == projectName)

@@ -1,4 +1,4 @@
-@* The Users tab: the members of the organisation and their roles (US-010), and invitations (US-009).
+@* Users (US-045, in the top bar): the members of the organisation and their roles (US-010), and invitations (US-009).
    The first three columns are checked by the tests: name, e-mail, role.
    Ids and classes used by the tests: #organisation-users rows with data-member, change-role forms,
    #create-invitation, #invitation-link, #open-invitations rows with revoke-invitation forms. *@
@@ -6,8 +6,7 @@
 @model MembersViewModel
 @{
     var organization = Model.Organization;
-    ViewData["Title"] = $"{organization.Name} – Users";
-    ViewData["ActiveTab"] = "Users";
+    ViewData["Title"] = "Users";
     var canManage = await Permissions.CanAsync(Permission.ManageMembers);
     var roles = Enum.GetValues<UserRole>();
 }
@@ -39,7 +38,7 @@
                 {
                     <td>
                         @* US-010 R2: earlier decisions keep the role the member had then *@
-                        <form asp-action="ChangeRole" asp-route-id="@organization.Id" method="post" class="d-flex gap-1 change-role">
+                        <form asp-action="ChangeRole" method="post" class="d-flex gap-1 change-role">
                             <input type="hidden" name="memberId" value="@user.Id" />
                             <select name="role" class="form-select form-select-sm" aria-label="New role for @user.Name">
                                 @foreach (var role in roles)
@@ -82,7 +81,7 @@
                 <input class="form-control mt-2" id="invitation-link" value="@link" readonly />
             </div>
         }
-        <form asp-action="CreateInvitation" asp-route-id="@organization.Id" method="post" class="d-flex gap-2 mb-3" id="create-invitation">
+        <form asp-action="CreateInvitation" method="post" class="d-flex gap-2 mb-3" id="create-invitation">
             <select name="role" class="form-select form-select-sm w-auto" aria-label="Role for the invited person">
                 @foreach (var role in roles)
                 {
@@ -104,7 +103,7 @@
                             <td>@invitation.CreatedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
                             <td>@invitation.ExpiresAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
                             <td>
-                                <form asp-action="RevokeInvitation" asp-route-id="@organization.Id" method="post" class="revoke-invitation">
+                                <form asp-action="RevokeInvitation" method="post" class="revoke-invitation">
                                     <input type="hidden" name="invitationId" value="@invitation.Id" />
                                     <button type="submit" class="btn btn-sm btn-outline-danger">Revoke</button>
                                 </form>

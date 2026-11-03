@@ -580,7 +580,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I change the role of \"Anna\" to \"Auditor\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 77
-    await testRunner.ThenAsync("I see the error \"Your role does not allow this\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("\"Anna\" is a member of \"Acme ApS\" with the role \"Admin\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

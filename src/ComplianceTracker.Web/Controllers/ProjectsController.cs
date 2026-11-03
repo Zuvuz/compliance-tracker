@@ -58,6 +58,24 @@ namespace ComplianceTracker.Web.Controllers
             _workItems = workItems;
         }
 
+        // GET /Projects: the front page after sign-in (US-045 R4). The organisation's projects (US-008 R4)
+        // and which framework versions they use (US-011 R5).
+        [HttpGet]
+        public async Task<IActionResult> Index(CancellationToken cancellationToken)
+        {
+            var organization = await _organizations.MineAsync(cancellationToken);
+            if (organization is null)
+            {
+                return RedirectToAction("Create", "Organizations");
+            }
+
+            return View(new OrganizationOverviewViewModel(
+                organization,
+                await _projects.ListAsync(cancellationToken),
+                await _frameworks.ListAsync(cancellationToken),
+                _clock.Today()));
+        }
+
         // GET /Projects/Create: the empty form (the framework checkboxes come from the FrameworkChoices view component)
         [HttpGet]
         public async Task<IActionResult> Create(CancellationToken cancellationToken)

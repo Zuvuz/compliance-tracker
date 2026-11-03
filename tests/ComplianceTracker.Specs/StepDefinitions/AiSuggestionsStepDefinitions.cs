@@ -10,7 +10,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
     // US-020, US-036: AI suggestions through the web app with test sign-in and a pretend AI (FakeAi).
     // UI contract (Views/Projects/_WorkItems.cshtml and _UserStoriesTab.cshtml): #suggest-mappings, per story
     // .ai-suggestion with data-code, .suggestion-score and .suggestion-rationale, the forms .approve-suggestion,
-    // .reject-suggestion (reason, comment) and .show-more-suggestions; on the organisation page #set-ai-sharing
+    // .reject-suggestion (reason, comment) and .show-more-suggestions; on the Settings page #set-ai-sharing
     // and #export-ai-feedback.
     [Binding]
     public class AiSuggestionsStepDefinitions
@@ -116,7 +116,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I switch on \"Share our decisions to improve the AI\"")]
         public async Task WhenISwitchOnSharing()
         {
-            await _web.OpenAsync("/Organizations/Mine");
+            await _web.OpenAsync("/Settings");
             var form = _web.Page!.QuerySelector("form#set-ai-sharing")
                 ?? throw new Xunit.Sdk.XunitException("The organisation page has no AI sharing switch.");
             await _web.PostFormAsync(form.GetAttribute("action")!, HiddenFields(form));
@@ -127,7 +127,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I export the AI feedback")]
         public async Task WhenIExportTheAiFeedback()
         {
-            await _web.OpenAsync("/Organizations/Mine");
+            await _web.OpenAsync("/Settings");
             var form = _web.Page!.QuerySelector("form#export-ai-feedback")!;
             var fields = new Dictionary<string, string> { ["__RequestVerificationToken"] = _web.AntiforgeryToken() };
             var response = await _web.Client.PostAsync(form.GetAttribute("action")!, new FormUrlEncodedContent(fields));

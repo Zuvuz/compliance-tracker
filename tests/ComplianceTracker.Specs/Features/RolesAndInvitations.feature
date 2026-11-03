@@ -74,7 +74,7 @@ Feature: Roles, invitations and the system admin
     Given "Bo" has joined "Acme ApS" as "ComplianceManager"
     And I am signed in as "Bo"
     When I change the role of "Anna" to "Auditor"
-    Then I see the error "Your role does not allow this"
+    Then "Anna" is a member of "Acme ApS" with the role "Admin"
 
   @US-010 @integration
   Scenario: Buttons the role may not use are hidden
