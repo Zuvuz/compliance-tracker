@@ -342,6 +342,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Flere AI-funktioner (US-037 til US-040).
   - Forbedringer af faser og risici (US-046, US-047, US-049) før MVP'en.
 
+### B34 – Backup med pg_dump hver nat, 30 dage, uden for containeren
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-014)
+  - En egen service `backup` i Docker-stakken laver hver nat kl. 02:00 en `pg_dump` (custom format) af hele databasen til `./backups` på værtsmaskinen og sletter backupper ældre end 30 dage.
+  - Gendannelse sker med `./scripts/restore.sh <fil>` i én transaktion. En fil, der ikke er en backup, afvises først.
+  - Gendannelsen testes i CI med de samme scripts.
+- **Begrundelse:** ISO 27001 A.8.13 kræver backup og test af gendannelse. `pg_dump` er PostgreSQLs eget værktøj, kræver ingen ekstra software og tager også filerne i databasen med (PDF'er, evidens, nøglerne til GitHub-tokens). En test i CI viser hver gang, at en backup faktisk kan gendannes.
+- **Fravalgt indtil videre:**
+  - Kryptering af backupperne.
+  - En kopi et andet sted.
+  - Point-in-time recovery.
+  - At vise seneste backup i appen.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

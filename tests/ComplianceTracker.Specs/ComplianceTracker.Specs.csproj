@@ -26,4 +26,9 @@
     <ProjectReference Include="..\..\src\ComplianceTracker.Web\ComplianceTracker.Web.csproj" />
   </ItemGroup>
 
+  <!-- US-014: the backup and restore scripts, so the tests run the same scripts as the backup service -->
+  <ItemGroup>
+    <None Include="..\..\docker\backup-db.sh;..\..\docker\restore-db.sh" LinkBase="scripts" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
