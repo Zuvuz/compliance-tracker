@@ -12,3 +12,5 @@ keycloak
 *.md
 certs
 docker
+backups
+scripts

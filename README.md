@@ -151,6 +151,16 @@ dotnet test
 
 Docker Desktop must be running: the integration tests start their own PostgreSQL and Keycloak containers with Testcontainers, so they do not use your local environment. The Keycloak scenario takes about a minute the first time, because the image is downloaded.
 
+## Backups
+
+With the whole system (`--profile full`), the `backup` service backs up the database every night at 02:00 to `./backups` and keeps 30 days. To restore one:
+
+```bash
+./scripts/restore.sh backups/compliance_tracker_2026-10-25.dump
+```
+
+The procedure, what is in a backup, and how the restore is tested are described in [docs/backup-og-gendannelse.md](docs/backup-og-gendannelse.md) (US-014).
+
 ## Stopping and resetting
 
 ```bash

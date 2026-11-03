@@ -39,6 +39,20 @@ namespace ComplianceTracker.Specs.Support
             }
         }
 
+        // US-014: runs a command inside the PostgreSQL container, e.g. the backup script. Started first if needed.
+        public static async Task<DotNet.Testcontainers.Containers.ExecResult> ExecAsync(params string[] command)
+        {
+            await GetConnectionStringAsync();
+            return await _container!.ExecAsync(command);
+        }
+
+        // US-014: copies a file into the PostgreSQL container
+        public static async Task CopyAsync(byte[] content, string path)
+        {
+            await GetConnectionStringAsync();
+            await _container!.CopyAsync(content, path);
+        }
+
         // Interceptors let a test change what happens in the database, e.g. make saving fail (US-016)
         public static ComplianceTrackerDbContext CreateContext(string connectionString, params IInterceptor[] interceptors)
         {
