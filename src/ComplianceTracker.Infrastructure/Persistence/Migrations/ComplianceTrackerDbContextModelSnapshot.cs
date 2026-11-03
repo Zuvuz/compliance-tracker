@@ -512,6 +512,76 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Mappings.Evidence", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("AddedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AddedRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("ContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("RemovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RemovedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RequirementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Sha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<long?>("SizeInBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Url")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateOnly?>("ValidUntil")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AddedById");
+
+                    b.HasIndex("RemovedById");
+
+                    b.HasIndex("RequirementId");
+
+                    b.HasIndex("ProjectId", "RequirementId");
+
+                    b.ToTable("Evidence", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Evidence_LinkOrFile", "(\"Url\" IS NULL) <> (\"FileName\" IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Mappings.MappingSuggestion", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1091,6 +1161,20 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("CatalogDocuments", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.EvidenceDocument", b =>
+                {
+                    b.Property<Guid>("EvidenceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("EvidenceId");
+
+                    b.ToTable("EvidenceDocuments", (string)null);
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
                 {
                     b.Property<int>("Id")
@@ -1183,6 +1267,32 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .WithMany("Requirements")
                         .HasForeignKey("FrameworkVersionId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Mappings.Evidence", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("AddedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("RemovedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ComplianceTracker.Domain.Frameworks.Requirement", null)
+                        .WithMany()
+                        .HasForeignKey("RequirementId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -1487,6 +1597,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasOne("ComplianceTracker.Domain.Frameworks.FrameworkVersion", null)
                         .WithOne()
                         .HasForeignKey("ComplianceTracker.Infrastructure.Persistence.CatalogDocument", "FrameworkVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.EvidenceDocument", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Mappings.Evidence", null)
+                        .WithOne()
+                        .HasForeignKey("ComplianceTracker.Infrastructure.Persistence.EvidenceDocument", "EvidenceId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

@@ -277,6 +277,65 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
         }
 
+        // ---------------------------------------------------------- Evidence (US-057)
+
+        // Room for a 10 MB file and the form (EvidenceFile refuses anything larger with a clear message)
+        private const long MaxEvidenceRequestSize = 25 * 1024 * 1024;
+
+        // POST /Projects/AddEvidence: R1, R2. A link, or a file if one is chosen.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(MaxEvidenceRequestSize)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaxEvidenceRequestSize)]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> AddEvidence(
+            Guid projectId, Guid requirementId, string? title, string? url, IFormFile? file, DateOnly? validUntil, string? sub,
+            CancellationToken cancellationToken)
+        {
+            if (file is { Length: > 0 })
+            {
+                if (!string.IsNullOrWhiteSpace(url))
+                {
+                    throw new Domain.Common.DomainException("Give a link or a file, not both");
+                }
+
+                using var buffer = new MemoryStream();
+                await file.CopyToAsync(buffer, cancellationToken);
+                await _compliance.AddEvidenceFileAsync(projectId, requirementId, title ?? "", file.FileName, buffer.ToArray(), validUntil, cancellationToken);
+            }
+            else
+            {
+                await _compliance.AddEvidenceLinkAsync(projectId, requirementId, title ?? "", url ?? "", validUntil, cancellationToken);
+            }
+
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // POST /Projects/RemoveEvidence: R5, kept as history
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> RemoveEvidence(Guid projectId, Guid evidenceId, string? sub, CancellationToken cancellationToken)
+        {
+            await _compliance.RemoveEvidenceAsync(projectId, evidenceId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // GET /Projects/EvidenceFile/{id}?evidenceId=...: R6, for anyone in the organisation
+        [HttpGet]
+        public async Task<IActionResult> EvidenceFile(Guid id, Guid evidenceId, CancellationToken cancellationToken)
+        {
+            var file = await _complianceQueries.EvidenceFileAsync(id, evidenceId, cancellationToken);
+            if (file is null)
+            {
+                return NotFound(); // also for another organisation's evidence
+            }
+
+            // ASVS V5.4.1: always a download with the stored content type and our cleaned name; nosniff stops guessing
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+            return File(file.Value.Content, file.Value.Evidence.ContentType!, file.Value.Evidence.FileName);
+        }
+
         // ---------------------------------------------------------- AI suggestions (US-020, US-036)
 
         // POST /Projects/SuggestMappings: R1, R8

@@ -175,7 +175,7 @@ classDiagram
 | Krav | Ét krav i en frameworkversion, fx et Annex I-krav i CRA. Kategori afspejler frameworkets egen struktur. | 1 |
 | Kontrol | Organisationens eget tiltag, der opfylder et eller flere krav. Én kontrol kan dække krav fra flere frameworks. | 1 |
 | Kravvurdering | Status for ét krav, fx opfyldt, delvist, ikke opfyldt eller ikke relevant, med begrundelse. | 1 |
-| Evidens | Bevis for, at en kontrol virker: dokument, scanningsresultat, link til PR osv. Har gyldighedsperiode. | 1 |
+| Evidens | Bevis for, at en kontrol virker: dokument, scanningsresultat, link til PR osv. Har gyldighedsperiode. I MVP'en knyttes den til kravet i et projekt (B33, US-057). | 1 |
 | Arbejdselement | En henvisning til en user story, use case eller opgave i et eksternt system. Trackeren ejer den ikke. | 1 |
 | Mappingforslag | AI'ens forslag til en kobling mellem et krav og et arbejdselement eller en kontrol. Skal godkendes af et menneske. | 1 |
 | Logpost | En registrering af, hvem der gjorde hvad og hvornår, fx at et katalog blev importeret eller et framework valgt. Ændres og slettes aldrig. | 1 |
@@ -191,7 +191,7 @@ Disse regler kan ikke udtrykkes med multipliciteter alene. De vises som noter i 
 2. **Kravvurdering:** hører til præcis ét af følgende: en release (projektframeworks som CRA) eller organisationen (organisationsframeworks som ISO 27001).
 3. **Fund:** vedrører mindst ét krav eller én kontrol.
 4. **Framework** er fælles referencedata (kun navn og niveau). **Indbyggede frameworkversioner** er også fælles. **Importerede frameworkversioner** ejes af præcis én organisation og er usynlige for alle andre. Organisationer kan også oprette egne frameworks, fx en sikkerhedspolitik; de ejes ligeledes af præcis én organisation og er usynlige for alle andre (B18).
-5. **Evidens** knyttes altid til en kontrol og kan desuden knyttes til en release, når den kun gælder en bestemt version (fx en SBOM).
+5. **Evidens** knyttes altid til en kontrol og kan desuden knyttes til en release, når den kun gælder en bestemt version (fx en SBOM). Indtil kontroller og releases er bygget, knyttes evidens til kravet i et projekt (B33, US-057).
 6. **En frameworkversion er låst, når den er aktiv.** Den starter som *kladde* og kan rettes; når den aktiveres, kan dens krav ikke længere ændres. Rettelser kræver en ny version. Derfor peger en mapping eller vurdering altid på præcis den tekst, den blev lavet imod.
 7. **Kun aktive versioner kan vælges**, og et projekt kan kun vælge versioner med niveau *projekt*, mens organisationen vælger versioner med niveau *organisation*.
 8. **Højst én version pr. framework** pr. projekt og pr. organisation ad gangen.

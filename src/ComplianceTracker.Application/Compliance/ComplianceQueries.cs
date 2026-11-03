@@ -19,7 +19,9 @@ namespace ComplianceTracker.Application.Compliance
         private readonly IRequirementLinkRepository _links;
         private readonly IRequirementApplicabilityRepository _applicability;
         private readonly IMappingSuggestionRepository _suggestions;
+        private readonly IEvidenceRepository _evidence;
         private readonly CurrentMember _member;
+        private readonly TimeProvider _clock;
 
         public ComplianceQueries(
             IProjectRepository projects,
@@ -28,7 +30,9 @@ namespace ComplianceTracker.Application.Compliance
             IRequirementLinkRepository links,
             IRequirementApplicabilityRepository applicability,
             IMappingSuggestionRepository suggestions,
-            CurrentMember member)
+            IEvidenceRepository evidence,
+            CurrentMember member,
+            TimeProvider clock)
         {
             _projects = projects;
             _frameworks = frameworks;
@@ -36,7 +40,24 @@ namespace ComplianceTracker.Application.Compliance
             _links = links;
             _applicability = applicability;
             _suggestions = suggestions;
+            _evidence = evidence;
             _member = member;
+            _clock = clock;
+        }
+
+        // US-057 R6: a file of the member's own project, for anyone in the organisation; null otherwise
+        public async Task<(Domain.Mappings.Evidence Evidence, byte[] Content)?> EvidenceFileAsync(
+            Guid projectId, Guid evidenceId, CancellationToken cancellationToken = default)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is not { } organization
+                || await _projects.GetAsync(organization.Id, projectId, cancellationToken) is not { } project
+                || await _evidence.GetAsync(project.Id, evidenceId, cancellationToken) is not { IsFile: true } evidence
+                || await _evidence.GetContentAsync(evidence.Id, cancellationToken) is not { } content)
+            {
+                return null;
+            }
+
+            return (evidence, content);
         }
 
         public async Task<ProjectCompliance?> ForProjectAsync(Guid projectId, CancellationToken cancellationToken = default)
@@ -57,6 +78,12 @@ namespace ComplianceTracker.Application.Compliance
             // US-020, US-044 R4: the pending AI suggestions, for stories that still exist
             var pendingSuggestions = (await _suggestions.ListAsync(project.Id, cancellationToken))
                 .Where(s => s.IsPending && workItems.ContainsKey(s.WorkItemId))
+                .ToList();
+
+            // US-057: the evidence that is not removed, newest first; expired evidence is shown but does not count
+            var today = DateOnly.FromDateTime(_clock.GetUtcNow().UtcDateTime);
+            var evidence = (await _evidence.ListActiveAsync(project.Id, cancellationToken))
+                .OrderByDescending(e => e.AddedAt)
                 .ToList();
 
             var result = new List<FrameworkCompliance>();
@@ -82,6 +109,9 @@ namespace ComplianceTracker.Application.Compliance
                         Suggestions = pendingSuggestions.Where(s => s.RequirementId == requirement.Id)
                             .OrderByDescending(s => s.Score)
                             .Select(s => new SuggestedWorkItem(s, workItems[s.WorkItemId]))
+                            .ToList(),
+                        Evidence = evidence.Where(e => e.RequirementId == requirement.Id)
+                            .Select(e => new EvidenceItem(e, e.IsExpiredOn(today)))
                             .ToList()
                     })
                     .ToList();
@@ -138,6 +168,9 @@ namespace ComplianceTracker.Application.Compliance
         public int NotCovered => Total - Covered;
         public int SuggestionCount => Requirements.Where(r => r.IsApplicable).Sum(r => r.Suggestions.Count);
 
+        // US-057 R4: applicable requirements with at least one evidence that has not expired
+        public int WithEvidence => Requirements.Count(r => r.HasEvidence);
+
         // e.g. "12 of 20 requirements covered (60 %), 2 not applicable"
         public string CoverageText
             => $"{Covered} of {Total} requirements covered ({Percent} %)" + (NotApplicable > 0 ? $", {NotApplicable} not applicable" : "");
@@ -158,7 +191,14 @@ namespace ComplianceTracker.Application.Compliance
         public IReadOnlyList<SuggestedWorkItem> Suggestions { get; init; } = [];
 
         public bool HasSuggestions => IsApplicable && Suggestions.Count > 0;
+
+        // US-057: the evidence on this requirement, newest first. R3, R8: expired or not applicable does not count.
+        public IReadOnlyList<EvidenceItem> Evidence { get; init; } = [];
+
+        public bool HasEvidence => IsApplicable && Evidence.Any(e => !e.IsExpired);
     }
+
+    public record EvidenceItem(Domain.Mappings.Evidence Evidence, bool IsExpired);
 
     public record SuggestedWorkItem(Domain.Mappings.MappingSuggestion Suggestion, WorkItem WorkItem);
 

@@ -32,8 +32,23 @@ namespace ComplianceTracker.Application.Compliance
         Task AddAsync(RequirementApplicability applicability, CancellationToken cancellationToken = default);
     }
 
+    // Storage for evidence (US-057). A file's content is stored apart, so listing never loads the files.
+    public interface IEvidenceRepository
+    {
+        // The project's evidence that is not removed
+        Task<IReadOnlyList<Evidence>> ListActiveAsync(Guid projectId, CancellationToken cancellationToken = default);
+
+        Task<Evidence?> GetAsync(Guid projectId, Guid evidenceId, CancellationToken cancellationToken = default);
+
+        // content: the file's bytes, or null for a link
+        Task AddAsync(Evidence evidence, byte[]? content, CancellationToken cancellationToken = default);
+
+        Task<byte[]?> GetContentAsync(Guid evidenceId, CancellationToken cancellationToken = default);
+    }
+
     // US-021: links a project's user story to one of its requirements by hand, or removes the link.
     // US-043: marks a requirement as not applicable to the project, with a reason, or applicable again.
+    // US-057: adds evidence (a link or a file) to a requirement, or removes it.
     // AI suggestions (US-020) will add links the same way after a person approves them.
     public class ComplianceService
     {
@@ -42,6 +57,7 @@ namespace ComplianceTracker.Application.Compliance
         private readonly IWorkItemRepository _workItems;
         private readonly IRequirementLinkRepository _links;
         private readonly IRequirementApplicabilityRepository _applicability;
+        private readonly IEvidenceRepository _evidence;
         private readonly CurrentMember _member;
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
@@ -53,6 +69,7 @@ namespace ComplianceTracker.Application.Compliance
             IWorkItemRepository workItems,
             IRequirementLinkRepository links,
             IRequirementApplicabilityRepository applicability,
+            IEvidenceRepository evidence,
             CurrentMember member,
             IActivityLogger log,
             IUnitOfWork unitOfWork,
@@ -63,6 +80,7 @@ namespace ComplianceTracker.Application.Compliance
             _workItems = workItems;
             _links = links;
             _applicability = applicability;
+            _evidence = evidence;
             _member = member;
             _log = log;
             _unitOfWork = unitOfWork;
@@ -138,6 +156,58 @@ namespace ComplianceTracker.Application.Compliance
             decision.Revoke(userId, Now);
             var requirement = await RequirementOfProjectAsync(organizationId, project, requirementId, cancellationToken);
             await _log.LogAsync(ActivityAction.RequirementMarkedApplicable, project.Id, requirement?.Code ?? "?", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-057 R1, R6: a link as evidence for one of the project's applicable requirements
+        public Task AddEvidenceLinkAsync(
+            Guid projectId, Guid requirementId, string title, string url, DateOnly? validUntil, CancellationToken cancellationToken = default)
+            => AddEvidenceAsync(projectId, requirementId,
+                (userId, role, at) => (Evidence.ForLink(projectId, requirementId, title, url, validUntil, userId, role, at), null),
+                cancellationToken);
+
+        // US-057 R2: a file as evidence; EvidenceFile checks the size, type and name
+        public Task AddEvidenceFileAsync(
+            Guid projectId, Guid requirementId, string title, string fileName, byte[] content, DateOnly? validUntil,
+            CancellationToken cancellationToken = default)
+            => AddEvidenceAsync(projectId, requirementId,
+                (userId, role, at) =>
+                {
+                    var file = EvidenceFile.Create(fileName, content);
+                    return (Evidence.ForFile(projectId, requirementId, title, file, validUntil, userId, role, at), file.Content);
+                },
+                cancellationToken);
+
+        // US-057 R5: kept as history with the time it was removed
+        public async Task RemoveEvidenceAsync(Guid projectId, Guid evidenceId, CancellationToken cancellationToken = default)
+        {
+            var (organizationId, userId, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var evidence = await _evidence.GetAsync(project.Id, evidenceId, cancellationToken)
+                ?? throw new DomainException("Evidence not found");
+
+            evidence.Remove(userId, Now);
+            var requirement = await RequirementOfProjectAsync(organizationId, project, evidence.RequirementId, cancellationToken);
+            await _log.LogAsync(ActivityAction.EvidenceRemoved, project.Id, $"{requirement?.Code ?? "?"}: {evidence.Title}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        private async Task AddEvidenceAsync(
+            Guid projectId, Guid requirementId, Func<Guid, UserRole?, DateTime, (Evidence Evidence, byte[]? Content)> create,
+            CancellationToken cancellationToken)
+        {
+            var (organizationId, userId, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var requirement = await RequirementOfProjectAsync(organizationId, project, requirementId, cancellationToken)
+                ?? throw new DomainException("The requirement is not in a framework version the project follows");
+
+            if ((await _applicability.ListActiveAsync(project.Id, cancellationToken)).Any(a => a.RequirementId == requirementId))
+            {
+                throw new DomainException($"{requirement.Code} does not apply to the project");
+            }
+
+            var role = (await _member.RequireAsync(cancellationToken)).User.Role;
+            var (evidence, content) = create(userId, role, Now);
+            await _evidence.AddAsync(evidence, content, cancellationToken);
+            await _log.LogAsync(ActivityAction.EvidenceAdded, project.Id, $"{requirement.Code}: {evidence.Title}", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
