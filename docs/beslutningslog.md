@@ -320,6 +320,28 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At køre "Suggest for not covered" automatisk efter en GitHub-synk.
   - At vise "dækket af åbne stories" i overblikket.
 
+### B33 – MVP'en for fase 1
+
+- **Status:** Vedtaget
+- **Beslutning:**
+  - **Målet:** en lille udviklingsvirksomhed kan for hver regulering se, hvilke krav der er opfyldt, og bevise det over for en auditor.
+  - **MVP'en er de stories, der har labelen `mvp`:**
+    - US-044: AI-forslag og overblik på Compliance-fanen (bygget).
+    - Evidens pr. krav (ny story).
+    - US-052: sporbarhedsmatrix som CSV, rykket frem fra fase 2.
+    - US-017: Docker.
+    - US-014: backup med en testet gendannelse.
+    - US-048: projektets overblik.
+    - US-015: samme CVR gemt på samme tid.
+  - **Udskudt fra fase 1 til efter MVP'en:** `Kontrol`, `Kravvurdering` og `Release` fra domænemodellen. I MVP'en viser koblede stories og evidens, hvordan et krav opfyldes. Koblingen sammen med "ikke relevant" og dens begrundelse (US-043) fungerer som vurderingen.
+  - Alle andre åbne stories bygges efter MVP'en. Nye idéer skrives som stories, men får ikke labelen `mvp`, medmindre de erstatter en af de syv.
+- **Begrundelse:** Uden evidens kan trackeren vise *hvem* der skal opfylde et krav, men ikke *at* det er gjort. Det er det, en auditor spørger om (ISO 27001 9.2, CRA bilag VII). En kunde skal kunne køre trackeren selv og ikke miste data (DOK-01 F3). Kontroller er mest vigtige for ISO 27001 på organisationsniveau, og releases bliver først nødvendige med SBOM (fase 3).
+- **Fravalgt:**
+  - At bygge kontroller og releases nu.
+  - Flere rapporter (fase 2).
+  - Flere AI-funktioner (US-037 til US-040).
+  - Forbedringer af faser og risici (US-046, US-047, US-049) før MVP'en.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

@@ -1,12 +1,18 @@
 # Compliance-tracker – Udvidelser fase 2–4
 
-Senest opdateret: 2026-10-18
+Senest opdateret: 2026-11-03
 
 En ide-liste over, hvad der kan komme efter første fase. Kun kernen i fase 2 (audit, fund og rapportsnapshot) er besluttet og allerede med i [domænemodellen](domaenemodel.md). Resten er forslag, der kan omprioriteres, når fase 1 er bygget.
 
 | Fase | Tema | Status |
 |---|---|---|
-| 1 | Kernen: krav, kontroller, evidens, releases og AI-mapping | Modelleret |
+| 1 | Kernen: krav, kontroller, evidens, releases og AI-mapping | MVP afgrænset (B33) |
+
+## Fase 1 – MVP
+
+**Mål:** En lille udviklingsvirksomhed kan for hver regulering se, hvilke krav der er opfyldt, og bevise det over for en auditor. Hvilke stories det er, står i [B33](beslutningslog.md) og i issues med labelen `mvp`.
+
+Kontroller, kravvurderinger og releases bygges efter MVP'en.
 | 2 | Revision og dokumentation | Kerne besluttet |
 | 3 | Sårbarheder og risiko | Forslag |
 | 4 | Bredere dækning og klogere AI | Forslag |
