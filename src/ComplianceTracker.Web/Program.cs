@@ -130,6 +130,9 @@ builder.Services
         }
     });
 
+// US-017: /health for Docker and CI; only says whether the database can be reached
+builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
+
 // Every page requires sign-in, unless it is marked [AllowAnonymous] (US-004 R1)
 builder.Services.AddAuthorization(options =>
 {
@@ -160,6 +163,9 @@ app.UseAuthorization();    // what may the user do?
 
 // CSS, JavaScript and images must be available without sign-in
 app.MapStaticAssets().AllowAnonymous();
+
+// US-017: Docker and CI ask this before they send traffic; it answers without sign-in
+app.MapHealthChecks("/health").AllowAnonymous();
 
 // URLs map to controller/action/id, e.g. /Frameworks/Versions/{id}. "/" goes to Home/Index.
 app.MapControllerRoute(

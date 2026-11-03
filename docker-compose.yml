@@ -1,6 +1,14 @@
 # Navnet bliver præfiks på containere og volumes, fx compliance-tracker-postgres-1
 name: compliance-tracker
 
+# US-013: "docker compose up -d" starter kun databasen og Keycloak til lokal udvikling (http, Visual Studio).
+# US-017: "docker compose --profile full up -d" starter hele systemet over HTTPS:
+#   webappen på https://localhost:8443 og en egen Keycloak på https://keycloak.localhost:8543.
+
+# Forbindelsen til databasen inde i Docker-netværket. Kodeordet kommer fra .env.
+x-database: &database
+  ConnectionStrings__ComplianceTracker: Host=postgres;Port=5432;Database=compliance_tracker;Username=postgres;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+
 services:
   postgres:
     image: postgres:17
@@ -29,11 +37,116 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
     ports:
-      - "8180:8080"   # 8080 gemmer vi til webappen i US-017
+      - "8180:8080"   # 8080 er fri til andre ting
     volumes:
       - keycloak-data:/opt/keycloak/data   # brugere og opsætning overlever genstart
       - ./keycloak:/opt/keycloak/data/import:ro   # realm-filen fra repoet (kun læse)
 
+  # ---------------------------------------------------------- Hele systemet over HTTPS (US-017)
+
+  # Laver certifikaterne i ./certs første gang (aldrig i git). Findes de, sker der ingenting.
+  certs:
+    profiles: [full]
+    image: alpine:3.20
+    command: ["sh", "-c", "apk add --no-cache openssl > /dev/null && sh /scripts/make-dev-certs.sh /certs"]
+    volumes:
+      - ./certs:/certs
+      - ./docker/make-dev-certs.sh:/scripts/make-dev-certs.sh:ro
+
+  # En egen Keycloak til Docker-stakken, så udviklings-Keycloak'en ovenfor ikke ændres.
+  # Browseren og webappen bruger begge https://keycloak.localhost:8543, så tokens har én issuer.
+  # Brugere oprettes her for sig (Register), adskilt fra udviklings-Keycloak'en.
+  keycloak-full:
+    profiles: [full]
+    image: quay.io/keycloak/keycloak:26.3
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
+      KC_HOSTNAME: https://keycloak.localhost:8543
+      KC_HTTPS_PORT: "8543"
+      KC_HTTPS_CERTIFICATE_FILE: /certs/tls.crt
+      KC_HTTPS_CERTIFICATE_KEY_FILE: /certs/tls.key
+    ports:
+      - "8543:8543"
+    networks:
+      default:
+        aliases:
+          - keycloak.localhost   # webappen når Keycloak på samme adresse som browseren
+    volumes:
+      - keycloak-full-data:/opt/keycloak/data
+      - ./keycloak:/opt/keycloak/data/import:ro
+      - ./certs:/certs:ro
+    depends_on:
+      certs:
+        condition: service_completed_successfully
+    healthcheck:
+      # Keycloak-imaget har ingen curl; bash tjekker, at HTTPS-porten tager imod forbindelser
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8543"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  # US-017 R2: kører migreringerne én gang og stopper. Fejler den, startes webappen ikke.
+  migrate:
+    profiles: [full]
+    build:
+      context: .
+      target: migrate
+    image: compliance-tracker-migrate:local
+    environment:
+      <<: *database
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # US-017 R1, R3: webappen på https://localhost:8443. Ingen hemmeligheder i imaget; de kommer fra .env.
+  web:
+    profiles: [full]
+    build:
+      context: .
+      target: web
+    image: compliance-tracker-web:local
+    environment:
+      <<: *database
+      ASPNETCORE_URLS: https://+:8443
+      ASPNETCORE_HTTPS_PORTS: "8443"
+      ASPNETCORE_Kestrel__Certificates__Default__Path: /certs/tls.crt
+      ASPNETCORE_Kestrel__Certificates__Default__KeyPath: /certs/tls.key
+      # Stoler på den lokale CA ud over de almindelige, så webappen kan tale med Keycloak over HTTPS
+      SSL_CERT_DIR: /etc/ssl/certs:/certs
+      Authentication__Keycloak__Authority: https://keycloak.localhost:8543/realms/compliance-tracker
+      Authentication__Keycloak__ClientId: compliance-tracker-web
+      # Klientens secret fra keycloak-full (Clients → compliance-tracker-web → Credentials). Mangler den, stopper appen med en besked.
+      Authentication__Keycloak__ClientSecret: ${KEYCLOAK_CLIENT_SECRET:-}
+      # Ollama på din egen computer. Den skal lytte på mere end 127.0.0.1 for at kunne nås fra Docker (se README).
+      Ai__BaseUrl: ${AI_BASE_URL:-http://host.docker.internal:11434}
+    ports:
+      - "8443:8443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # gør adressen kendt på Linux; Docker Desktop har den i forvejen
+    volumes:
+      - ./certs:/certs:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      certs:
+        condition: service_completed_successfully
+      keycloak-full:
+        condition: service_started
+    healthcheck:
+      # ASP.NET-imaget har ingen curl; bash tjekker, at HTTPS-porten tager imod forbindelser.
+      # CI tjekker /health over HTTPS for sig.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8443"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
 volumes:
   postgres-data:
   keycloak-data:
+  keycloak-full-data:
