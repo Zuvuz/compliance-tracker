@@ -54,6 +54,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<IWorkItemRepository, WorkItemRepository>();
                 services.AddScoped<IRequirementLinkRepository, RequirementLinkRepository>(); // US-021
                 services.AddScoped<IRequirementApplicabilityRepository, RequirementApplicabilityRepository>(); // US-043
+                services.AddScoped<IEvidenceRepository, EvidenceRepository>(); // US-057
 
                 // US-020: not used by these tests, but the use cases must be creatable
                 services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();

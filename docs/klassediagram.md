@@ -340,14 +340,34 @@ classDiagram
   }
   class Evidence {
     -id: Guid
-    -controlId: Guid
-    -releaseId: Guid?
-    -submittedById: Guid
-    -type: EvidenceType
-    -description: string
-    -reference: string
-    -validFrom: DateOnly
-    -validTo: DateOnly?
+    -projectId: Guid
+    -requirementId: Guid
+    -title: string
+    -url: string?
+    -fileName: string?
+    -contentType: string?
+    -sizeInBytes: long?
+    -sha256: string?
+    -validUntil: DateOnly?
+    -addedById: Guid
+    -addedRole: UserRole?
+    -addedAt: DateTime
+    -removedById: Guid?
+    -removedAt: DateTime?
+    +IsActive: bool
+    +IsFile: bool
+    +ForLink(projectId, requirementId, title, url, validUntil, addedById, role, at)$ Evidence
+    +ForFile(projectId, requirementId, title, file: EvidenceFile, validUntil, addedById, role, at)$ Evidence
+    +IsExpiredOn(today: DateOnly) bool
+    +Remove(userId: Guid, at: DateTime)
+  }
+  class EvidenceFile {
+    <<value object>>
+    +FileName: string
+    +ContentType: string
+    +Content: byte[]
+    +Sha256: string
+    +Create(fileName: string, content: byte[])$ EvidenceFile
   }
 
   %% ================= Vurderinger =================
@@ -449,9 +469,13 @@ classDiagram
     +UnlinkAsync(projectId: Guid, linkId: Guid) Task
     +MarkNotApplicableAsync(projectId: Guid, requirementId: Guid, reason: string) Task
     +MarkApplicableAsync(projectId: Guid, requirementId: Guid) Task
+    +AddEvidenceLinkAsync(projectId: Guid, requirementId: Guid, title: string, url: string, validUntil: DateOnly?) Task
+    +AddEvidenceFileAsync(projectId: Guid, requirementId: Guid, title: string, fileName: string, content: byte[], validUntil: DateOnly?) Task
+    +RemoveEvidenceAsync(projectId: Guid, evidenceId: Guid) Task
   }
   class ComplianceQueries {
     +ForProjectAsync(projectId: Guid) Task~ProjectCompliance?~
+    +EvidenceFileAsync(projectId: Guid, evidenceId: Guid) Task
   }
   class MappingSuggestion {
     -id: Guid
@@ -755,8 +779,9 @@ classDiagram
   Control "1" --> "*" RequirementControl : requirements
   RequirementControl "*" --> "1" Requirement
   Control "*" --> "1" User : owner
-  Control "1" --> "*" Evidence : evidence
-  Evidence "*" --> "0..1" Release
+  Evidence "*" --> "1" Project
+  Evidence "*" --> "1" Requirement
+  Evidence ..> EvidenceFile : made from
   RequirementLink "*" --> "1" WorkItem
   RequirementLink "*" --> "1" Requirement
   RequirementLink "*" --> "1" Project
@@ -840,6 +865,7 @@ classDiagram
 - **AI-forslag i to trin, og modellen kan skiftes.** Trin 1: en embedding-model (`IEmbeddingModel`) scorer hvert krav mod hver story, og de 4 bedste bliver `MappingSuggestion`. Trin 2: en lille chat-model (`IRationaleWriter`) skriver begrundelsen i baggrunden (`RationaleWorker`). Hvilken server og hvilke modeller der bruges, står i `Ai:*`, og der er adaptere til Ollama og til OpenAI-kompatible servere. Hvert forslag gemmer model og prompt-version, og en godkendelse bliver til et `RequirementLink` med kilden `AiApproved` (B29). (US-020, US-036)
 - **Hvert projekt har et risikoregister.** `Risk` har sandsynlighed og konsekvens fra 1 til 5. Niveauet beregnes: 1–4 Low, 5–9 Medium, 10–16 High, 20–25 Critical. En risiko har en ejer og en behandling og kan få en valgfri restrisiko. Den kobles til de krav og user stories, der mindsker den (`RiskMeasure`). En risiko slettes aldrig, den lukkes med en begrundelse. Efter 12 måneder uden review vises "Review due" (B30). (US-042)
 - **Roller styrer, hvad et medlem må, og en beslutning husker rollen.** `RolePermissions` er rettighedstabellen, og hvert brugsscenarie spørger `CurrentMember.RequireAsync(Permission)`. Logposter, AI-beslutninger, koblinger, "not applicable", accepterede risici og aktiverede versioner gemmer rollen på beslutningstidspunktet, så en senere op- eller nedgradering ikke ændrer fortiden. System-admin er en Keycloak-rolle (`ICurrentUser.IsSystemAdmin`) og har kun adgang til organisationer og medlemmer (B31). (US-009, US-010)
+- **Evidens hører til kravet i et projekt i MVP'en.** `Evidence` er sit eget aggregat ligesom `RequirementLink`. Det er et link eller en fil (højst 10 MB, PDF/PNG/JPG/TXT/CSV/MD) med SHA-256 og eventuelt en "gyldig til"-dato. Filens indhold ligger i sin egen tabel (`EvidenceDocuments`), så listen aldrig henter filerne. Evidens slettes aldrig, den får `removedAt`. Koblingen til `Control` og `Release` kommer, når de bygges (B33). (US-057)
 - **Koblingsklasser med data.** `RequirementControl` og `RequirementLink` registrerer via `MappingSource`, om koblingen er lavet manuelt eller via et godkendt AI-forslag.
 - **Vurderinger ændres ikke.** En ny `RequirementAssessment` oprettes i stedet, og den seneste er gældende. Det giver historik til en auditor.
 - **Frameworkversioner låses ved aktivering.** Når `status` er `Active`, kan `requirements` ikke ændres. Så kan en mapping nøjes med at pege på et `Requirement`, fordi teksten bag aldrig ændrer sig. En rettelse er en ny `FrameworkVersion`.

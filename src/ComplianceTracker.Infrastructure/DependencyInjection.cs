@@ -63,6 +63,7 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<IWorkItemRepository, WorkItemRepository>();
             services.AddScoped<IRequirementLinkRepository, RequirementLinkRepository>();
             services.AddScoped<IRequirementApplicabilityRepository, RequirementApplicabilityRepository>();
+            services.AddScoped<IEvidenceRepository, EvidenceRepository>();
             services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();
             services.AddScoped<IRiskRepository, RiskRepository>();
             services.AddScoped<IInvitationRepository, InvitationRepository>();

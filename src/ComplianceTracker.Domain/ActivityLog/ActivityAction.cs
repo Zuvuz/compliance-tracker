@@ -82,6 +82,11 @@ namespace ComplianceTracker.Domain.ActivityLog
         MemberRoleChanged,
         InvitationCreated,
         InvitationRevoked,
-        InvitationAccepted
+        InvitationAccepted,
+
+        // Evidence was added to or removed from a requirement of a project (US-057).
+        // SubjectId points at the project; Details holds e.g. "I.2(d): PR 42".
+        EvidenceAdded,
+        EvidenceRemoved
     }
 }
