@@ -10,7 +10,8 @@
    per row .ai-suggestion (data-story) with .suggestion-story, .suggestion-score, .suggestion-rationale and the forms
    .approve-suggestion and .reject-suggestion (reason, comment).
    US-057: #summary-evidence; per row .evidence (data-title) with .evidence-title, .evidence-sha256, .evidence-expired and
-   form .remove-evidence; form .add-evidence (title, url, file, validUntil); .evidence-status "No evidence". *@
+   form .remove-evidence; form .add-evidence (title, url, file, validUntil); .evidence-status "No evidence".
+   US-052: #download-traceability (this regulation) and #download-traceability-all. *@
 @model ProjectDetailsViewModel
 @{
     var project = Model.Project;
@@ -136,10 +137,18 @@
             <button type="submit" class="btn btn-sm btn-outline-secondary">Search</button>
         </form>
 
+        @* US-052: the traceability matrix as CSV, for this regulation or all of them; for every role *@
+        <div class="btn-group btn-group-sm ms-md-auto" role="group" aria-label="Download traceability matrix" id="traceability-download">
+            <a class="btn btn-outline-secondary" id="download-traceability"
+               asp-action="Traceability" asp-route-id="@project.Id" asp-route-sub="@activeSlug">Download CSV</a>
+            <a class="btn btn-outline-secondary" id="download-traceability-all"
+               asp-action="Traceability" asp-route-id="@project.Id" title="Every regulation the project follows">All regulations</a>
+        </div>
+
         @if (!project.IsClosed && canLink && openStories.Count > 0 && framework.NotCovered > 0)
         {
             @* US-044 R3: only this framework's not-covered, applicable requirements *@
-            <form asp-action="SuggestForNotCovered" method="post" class="ms-md-auto" id="suggest-not-covered">
+            <form asp-action="SuggestForNotCovered" method="post" id="suggest-not-covered">
                 <input type="hidden" name="projectId" value="@project.Id" />
                 <input type="hidden" name="frameworkId" value="@framework.Framework.Id" />
                 <input type="hidden" name="sub" value="@activeSlug" />

@@ -100,7 +100,7 @@ namespace ComplianceTracker.Application.Compliance
                     .Select(requirement => new RequirementCoverage(
                         requirement,
                         links.Where(l => l.RequirementId == requirement.Id && workItems.ContainsKey(l.WorkItemId))
-                            .Select(l => new LinkedWorkItem(l.Id, workItems[l.WorkItemId]))
+                            .Select(l => new LinkedWorkItem(l, workItems[l.WorkItemId]))
                             .OrderBy(l => l.WorkItem.Title, StringComparer.OrdinalIgnoreCase)
                             .ToList(),
                         notApplicable.GetValueOrDefault(requirement.Id))
@@ -202,7 +202,11 @@ namespace ComplianceTracker.Application.Compliance
 
     public record SuggestedWorkItem(Domain.Mappings.MappingSuggestion Suggestion, WorkItem WorkItem);
 
-    public record LinkedWorkItem(Guid LinkId, WorkItem WorkItem);
+    // The link itself is kept for the traceability matrix (US-052): source, when and by whom
+    public record LinkedWorkItem(Domain.Mappings.RequirementLink Link, WorkItem WorkItem)
+    {
+        public Guid LinkId => Link.Id;
+    }
 
     public record PendingSuggestion(Domain.Mappings.MappingSuggestion Suggestion, Requirement Requirement);
 }
