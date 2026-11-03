@@ -46,7 +46,7 @@ jobs:
       - name: Kør tests
         run: dotnet test --no-build --configuration Release --verbosity normal
 
-  # US-017: builds the images, starts the whole system, checks it and scans it. Publishes on merge to main.
+  # US-017: builds the images, starts the whole system over HTTPS, checks it and scans it. Publishes on merge to main.
   docker:
     runs-on: ubuntu-latest
     needs: build-and-test
@@ -60,11 +60,19 @@ jobs:
     env:
       POSTGRES_PASSWORD: ci-placeholder
       KEYCLOAK_ADMIN_PASSWORD: ci-placeholder
-      KEYCLOAK_CLIENT_SECRET: ci-placeholder
+      KEYCLOAK_CLIENT_SECRET: ci-only-client-secret
+      # curl talks to Keycloak by the same name as the browser
+      KEYCLOAK: --resolve keycloak.localhost:8543:127.0.0.1
 
     steps:
       - name: Hent koden
         uses: actions/checkout@v7
+
+      - name: Giv Keycloak-klienten et kendt test-secret
+        # Kun i CI's kopi af realm-filen, så webappens log-ind kan tjekkes hele vejen til Keycloak
+        run: |
+          jq '.clients |= map(if .clientId == "compliance-tracker-web" then .secret = env.KEYCLOAK_CLIENT_SECRET else . end)' \
+            keycloak/compliance-tracker-realm.json > realm.json && mv realm.json keycloak/compliance-tracker-realm.json
 
       - name: Byg images (R4)
         run: docker compose --profile full build
@@ -72,21 +80,31 @@ jobs:
       - name: Start hele systemet (R1, R2)
         run: docker compose --profile full up -d
 
-      - name: Vent på at webappen svarer
+      - name: Vent på webappen og Keycloak
         run: |
           for i in $(seq 1 60); do
-            if curl -fsS http://localhost:8080/health > /dev/null; then echo "Healthy"; exit 0; fi
+            if curl -fsS --cacert certs/ca.crt https://localhost:8443/health > /dev/null \
+              && curl -fsS --cacert certs/ca.crt $KEYCLOAK https://keycloak.localhost:8543/realms/compliance-tracker/.well-known/openid-configuration > /dev/null; then
+              echo "Both answer over HTTPS"; exit 0
+            fi
             sleep 5
           done
-          echo "The web app never answered on /health"; exit 1
+          echo "The web app or Keycloak never answered"; exit 1
 
-      - name: Tjek migreringer, forside og bruger (R2, R3, R6)
+      - name: Tjek migreringer, forside, log-ind og bruger (R2, R3, R6)
         run: |
           test "$(docker compose ps -a migrate --format '{{.ExitCode}}')" = "0"
           migrations=$(docker compose exec -T postgres psql -U postgres -d compliance_tracker -tAc 'select count(*) from "__EFMigrationsHistory"')
           echo "Migrations applied: $migrations"
           test "$migrations" -gt 0
-          curl -fsS http://localhost:8080/ -o /dev/null
+          curl -fsS --cacert certs/ca.crt https://localhost:8443/ -o /dev/null
+          location=$(curl -sS --cacert certs/ca.crt -o /dev/null -w '%{redirect_url}' https://localhost:8443/Organizations/Create)
+          echo "Sign-in goes to: ${location%%\?*}"
+          case "$location" in
+            https://keycloak.localhost:8543/realms/compliance-tracker/protocol/openid-connect/auth*) ;;
+            *) echo "The create organisation page did not send me to Keycloak"; exit 1 ;;
+          esac
+          curl -fsS --cacert certs/ca.crt $KEYCLOAK "$location" -o /dev/null
           uid=$(docker compose exec -T web id -u)
           echo "The web app runs as uid $uid"
           test "$uid" != "0"

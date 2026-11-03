@@ -43,6 +43,6 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS web
 WORKDIR /app
 COPY --from=build /app ./
 USER $APP_UID
-ENV ASPNETCORE_HTTP_PORTS=8080
-EXPOSE 8080
+# Listens on 8080 (http) by default; docker-compose.yml switches it to https on 8443 with the local certificate
+EXPOSE 8080 8443
 ENTRYPOINT ["dotnet", "ComplianceTracker.Web.dll"]

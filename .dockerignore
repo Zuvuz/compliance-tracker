@@ -10,3 +10,5 @@ tests
 docs
 keycloak
 *.md
+certs
+docker

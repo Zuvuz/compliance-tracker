@@ -119,22 +119,29 @@ Every suggestion stores which models and prompt version made it, so results from
 
 ## Running the whole tracker in Docker
 
-The web app, a migration step, PostgreSQL and Keycloak start together with one command (US-017):
+The whole system starts over HTTPS with one command (US-017):
 
 ```bash
 docker compose --profile full up -d --build
 ```
 
-- **Migrations** run in their own container (`migrate`) before the web app starts. If a migration fails, the web app is not started; see `docker compose logs migrate`.
-- **The web app** answers on `http://localhost:8080`, and `http://localhost:8080/health` says whether it can reach the database. It runs as the non-root user `app`, and the image has no secrets in it.
-- **Sign-in from the container is not finished yet:** outside Development the app requires Keycloak on https, and in Docker it is on http. Until that is decided, sign in through the app run from Visual Studio.
-- **`.env`** needs `KEYCLOAK_CLIENT_SECRET` as well (see `.env.example`). Without it the web app stops with a message that names it.
-- **Keycloak:** a Keycloak that was created before US-017 does not know the address `http://localhost:8080`. Add `http://localhost:8080/signin-oidc` to **Valid redirect URIs** and `http://localhost:8080/signout-callback-oidc` to **Valid post logout redirect URIs** on the client `compliance-tracker-web`, or reset Keycloak (see below), so it imports the realm file again.
+| What | Address |
+|---|---|
+| The tracker | `https://localhost:8443` |
+| Its own Keycloak | `https://keycloak.localhost:8543` (admin: `admin` and `KEYCLOAK_ADMIN_PASSWORD`) |
+
+How it works:
+
+- **Certificates:** the first time, the `certs` service makes a local certificate authority and a certificate for `localhost` and `keycloak.localhost` in `./certs`. The folder is never committed, and the authority exists only on your machine. To avoid the browser warning, trust `certs/ca.crt` once: on Windows, double-click it → **Install Certificate** → **Current User** → **Trusted Root Certification Authorities**. Delete `./certs` to make new ones.
+- **Keycloak:** the Docker stack has its own Keycloak, so the development Keycloak on port 8180 is not changed. Create users there with **Register**.
+- **Client secret:** the first start stops the web app with a message that `ClientSecret` is missing. Copy the secret from `https://keycloak.localhost:8543` → realm **compliance-tracker** → **Clients** → **compliance-tracker-web** → **Credentials** into `KEYCLOAK_CLIENT_SECRET` in `.env`, and run the command again.
+- **Migrations:** they run in their own container (`migrate`) before the web app starts. If a migration fails, the web app is not started; see `docker compose logs migrate`.
+- **The web app:** it requires HTTPS for both itself and Keycloak, just like in production. It runs as the non-root user `app`, and the images have no secrets in them. `https://localhost:8443/health` says whether it can reach the database.
 - **The AI (optional):** the web app looks for Ollama at `http://host.docker.internal:11434` (set `AI_BASE_URL` in `.env` to change it). Ollama must then listen on more than `127.0.0.1`.
 
-`docker compose up -d` without `--profile full` still starts only PostgreSQL and Keycloak, for running the app from Visual Studio.
+`docker compose up -d` without `--profile full` still starts only PostgreSQL and the development Keycloak, for running the app from Visual Studio.
 
-CI builds both images on every pull request, starts the whole system, checks it and scans the images with Trivy. When a change is merged to `main`, the web image is published as `ghcr.io/zuvuz/compliance-tracker` with the commit SHA and `latest`.
+CI builds both images on every pull request. It starts the whole system and checks that sign-in sends you to Keycloak over HTTPS. It also scans the images with Trivy. When a change is merged to `main`, the web image is published as `ghcr.io/zuvuz/compliance-tracker` with the commit SHA and `latest`.
 
 ## Running the tests
 

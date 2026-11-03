@@ -483,3 +483,6 @@ $RECYCLE.BIN/
 
 # Lokale Claude Code-filer
 .claude/
+
+# US-017: local certificates for the Docker stack (made by the certs service, never committed)
+certs/
