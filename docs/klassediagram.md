@@ -461,6 +461,11 @@ classDiagram
     -skippedRows: List~string~
     +Summary: string
   }
+  class IRequirementDocumentReaderFactory {
+    <<interface>>
+    +Supported: (string, DocumentKind)[]
+    +For(extension: string, kind: DocumentKind) IRequirementDocumentReader?
+  }
   class IRequirementDocumentReader {
     <<interface>>
     +Extension: string
@@ -844,7 +849,9 @@ classDiagram
   Project "1" --> "*" RequirementDocument : requirement specifications
   RequirementDocument "1" *-- "1..*" RequirementDocumentVersion : versions
   WorkItem "*" --> "0..1" RequirementDocument : document
-  RequirementDocumentService --> IRequirementDocumentReader : readers
+  RequirementDocumentService --> IRequirementDocumentReaderFactory : readers
+  IRequirementDocumentReaderFactory ..> IRequirementDocumentReader : For(extension, kind)
+  IRequirementDocumentReaderFactory <|.. RequirementDocumentReaderFactory
   IRequirementDocumentReader <|.. ExcelRequirementReader
   IRequirementDocumentReader <|.. CsvRequirementReader
   IRequirementDocumentReader <|.. WordRequirementReader

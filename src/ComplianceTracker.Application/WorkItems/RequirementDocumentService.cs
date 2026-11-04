@@ -53,7 +53,7 @@ namespace ComplianceTracker.Application.WorkItems
         private readonly IProjectRepository _projects;
         private readonly IWorkItemRepository _workItems;
         private readonly IRequirementDocumentRepository _documents;
-        private readonly IEnumerable<IRequirementDocumentReader> _readers;
+        private readonly IRequirementDocumentReaderFactory _readers;
         private readonly IWorkItemNotifier _notifier;
         private readonly CurrentMember _member;
         private readonly IActivityLogger _log;
@@ -64,7 +64,7 @@ namespace ComplianceTracker.Application.WorkItems
             IProjectRepository projects,
             IWorkItemRepository workItems,
             IRequirementDocumentRepository documents,
-            IEnumerable<IRequirementDocumentReader> readers,
+            IRequirementDocumentReaderFactory readers,
             IWorkItemNotifier notifier,
             CurrentMember member,
             IActivityLogger log,
@@ -99,7 +99,8 @@ namespace ComplianceTracker.Application.WorkItems
 
             // R1: size, type and content
             var file = RequirementFile.Create(fileName, content);
-            var reader = _readers.FirstOrDefault(r => r.Extension == file.Extension && r.Kind == kind)
+            // US-083: the factory picks the reader for the file type and the kind of document
+            var reader = _readers.For(file.Extension, kind)
                 ?? throw new DomainException(kind == DocumentKind.UseCases ? "A use case document must be a .docx file" : RequirementFile.AllowedMessage);
 
             // R2, R3, R4: read and check the whole file before anything is changed

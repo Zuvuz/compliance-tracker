@@ -23,7 +23,7 @@ namespace ComplianceTracker.Infrastructure.WorkItems.Documents
 
                 var paragraphs = new List<Paragraph>();
                 var position = 0;
-                foreach (var paragraph in main.Document.Body?.Elements<DocumentFormat.OpenXml.Wordprocessing.Paragraph>() ?? [])
+                foreach (var paragraph in main.Document?.Body?.Elements<DocumentFormat.OpenXml.Wordprocessing.Paragraph>() ?? [])
                 {
                     position++;
                     var properties = paragraph.ParagraphProperties;

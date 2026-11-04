@@ -60,10 +60,8 @@ namespace ComplianceTracker.Infrastructure
             services.AddSingleton<IRequirementExtractor, PdfRequirementExtractor>();
 
             // US-032: one reader per file type of a requirement specification. No state.
-            services.AddSingleton<IRequirementDocumentReader, ExcelRequirementReader>();
-            services.AddSingleton<IRequirementDocumentReader, CsvRequirementReader>();
-            services.AddSingleton<IRequirementDocumentReader, WordRequirementReader>(); // US-033
-            services.AddSingleton<IRequirementDocumentReader, UseCaseReader>(); // US-034
+            // US-083: keyed by file type and kind, chosen through IRequirementDocumentReaderFactory
+            RequirementDocumentReaderFactory.AddRequirementDocumentReaders(services);
 
             // US-018: the GitHub adapter (B11). A typed HttpClient, so connections are reused safely.
             // GitHub requires a User-Agent; the API version header keeps the JSON format stable.
@@ -101,7 +99,11 @@ namespace ComplianceTracker.Infrastructure
         // configuration (appsettings.json), so a better model or another server needs no code change.
         private static void AddAi(IServiceCollection services)
         {
-            services.AddOptions<AiOptions>().BindConfiguration(AiOptions.Section);
+            // US-083 R4: an unknown provider stops the app at start, instead of silently using Ollama
+            services.AddOptions<AiOptions>()
+                .BindConfiguration(AiOptions.Section)
+                .Validate(options => AiProviders.Key(options.Provider) is not null, AiProviders.UnknownMessage)
+                .ValidateOnStart();
 
             void Configure(IServiceProvider provider, HttpClient client)
             {
@@ -119,15 +121,8 @@ namespace ComplianceTracker.Infrastructure
             services.AddHttpClient<OpenAiCompatibleEmbeddingModel>(Configure);
             services.AddHttpClient<OpenAiCompatibleRationaleWriter>(Configure);
 
-            services.AddTransient<IEmbeddingModel>(provider => IsOpenAiCompatible(provider)
-                ? provider.GetRequiredService<OpenAiCompatibleEmbeddingModel>()
-                : provider.GetRequiredService<OllamaEmbeddingModel>());
-            services.AddTransient<IRationaleWriter>(provider => IsOpenAiCompatible(provider)
-                ? provider.GetRequiredService<OpenAiCompatibleRationaleWriter>()
-                : provider.GetRequiredService<OllamaRationaleWriter>());
+            // US-083: keyed by provider name; the setting picks one (AiProviders)
+            AiProviders.Add(services);
         }
-
-        private static bool IsOpenAiCompatible(IServiceProvider provider)
-            => string.Equals(provider.GetRequiredService<IOptions<AiOptions>>().Value.Provider, "OpenAICompatible", StringComparison.OrdinalIgnoreCase);
     }
 }
