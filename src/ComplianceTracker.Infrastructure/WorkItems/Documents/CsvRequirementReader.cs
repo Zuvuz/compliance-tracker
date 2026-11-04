@@ -9,6 +9,8 @@ namespace ComplianceTracker.Infrastructure.WorkItems.Documents
     public class CsvRequirementReader : IRequirementDocumentReader
     {
         // The ID column says what the ID is
+        public DocumentKind Kind => DocumentKind.RequirementSpecification;
+
         public bool UsesIdPattern => false;
 
         public string Extension => ".csv";

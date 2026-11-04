@@ -112,13 +112,30 @@ namespace ComplianceTracker.Specs.Support
         // A Word document from a doc string in a scenario
         public static byte[] Docx(string text) => Docx(text.Replace("\r", "").Split('\n'));
 
+        // US-034: the tests name use case documents "use-cases...docx"
+        public static bool IsUseCaseDocument(string fileName)
+            => fileName.StartsWith("use-case", StringComparison.OrdinalIgnoreCase);
+
         // US-033: a requirement specification of the type its name says, one requirement per "ID Title".
         // In Word each requirement is a heading with a line of description under it.
+        // US-034: in a use case document each use case gets a primary actor and a main success scenario of two steps.
         public static byte[] For(string fileName, params string[] requirements)
         {
             if (!fileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
             {
                 return XlsxWith(requirements);
+            }
+
+            if (IsUseCaseDocument(fileName))
+            {
+                return Docx(requirements.Select(Requirement).SelectMany(r => new[]
+                {
+                    $"# {r.Id} {(r.Title.Length > 0 ? r.Title : "Use case " + r.Id)}",
+                    "Primary actor: Nurse",
+                    "Main success scenario:",
+                    "1. The nurse opens the form",
+                    "2. The system saves it"
+                }));
             }
 
             return Docx(requirements.Select(Requirement).SelectMany(r => new[]

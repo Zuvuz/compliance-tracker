@@ -397,6 +397,7 @@ classDiagram
     -gherkin: string
     -description: string
     -acceptanceCriteria: string
+    -useCase: UseCaseSections?
     -labels: string
     -state: WorkItemState
     -documentId: Guid?
@@ -416,11 +417,26 @@ classDiagram
     -projectId: Guid
     -name: string
     -createdAt: DateTime
+    -kind: DocumentKind
     -idPattern: string?
     -versions: List~RequirementDocumentVersion~
     +NextVersionNumber: int
     +Create(projectId: Guid, name: string, at: DateTime)$ RequirementDocument
     +AddVersion(file: RequirementFile, counts: ImportCounts, skipped: string[], userId: Guid, at: DateTime, idPattern: IdPattern?) RequirementDocumentVersion
+  }
+  class UseCaseSections {
+    <<value object>>
+    -primaryActor: string
+    -preconditions: string
+    -steps: List~string~
+    -extensions: string
+    -postconditions: string
+    +AcceptanceCriteria: string
+  }
+  class DocumentKind {
+    <<enumeration>>
+    RequirementSpecification
+    UseCases
   }
   class IdPattern {
     <<value object>>
@@ -446,11 +462,12 @@ classDiagram
   class IRequirementDocumentReader {
     <<interface>>
     +Extension: string
+    +Kind: DocumentKind
     +UsesIdPattern: bool
     +Read(content: byte[], idPattern: IdPattern) RequirementReadResult
   }
   class RequirementDocumentService {
-    +UploadAsync(projectId: Guid, fileName: string, content: byte[], documentId: Guid?, idPattern: string?) Task~RequirementDocumentVersion~
+    +UploadAsync(projectId: Guid, fileName: string, content: byte[], documentId: Guid?, idPattern: string?, kind: DocumentKind) Task~RequirementDocumentVersion~
   }
   class GitHubLink {
     <<owned by Project>>
@@ -828,6 +845,8 @@ classDiagram
   IRequirementDocumentReader <|.. ExcelRequirementReader
   IRequirementDocumentReader <|.. CsvRequirementReader
   IRequirementDocumentReader <|.. WordRequirementReader
+  IRequirementDocumentReader <|.. UseCaseReader
+  WorkItem "1" *-- "0..1" UseCaseSections : useCase
   WorkItemSyncService --> IWorkItemNotifier : notifier
   WorkItemSyncService --> ISecretProtector : secrets
   DataProtectionSecretProtector ..|> ISecretProtector

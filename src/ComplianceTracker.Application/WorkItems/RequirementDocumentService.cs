@@ -15,6 +15,9 @@ namespace ComplianceTracker.Application.WorkItems
         // The extension it reads, e.g. ".xlsx"
         string Extension { get; }
 
+        // US-034: what kind of document it reads: requirements or use cases
+        DocumentKind Kind { get; }
+
         // Whether it uses the ID pattern (US-033: Word does, a spreadsheet has an ID column)
         bool UsesIdPattern { get; }
 
@@ -81,10 +84,10 @@ namespace ComplianceTracker.Application.WorkItems
 
         // R1-R10. documentId: the specification this is a new version of; without it, the one with the same file name,
         // or a new specification. idPattern: how IDs look in a Word document (US-033 R2); empty means the default.
-        // Returns the new version. A broken rule changes nothing.
+        // kind: requirements, or Unified Process use cases (US-034). Returns the new version. A broken rule changes nothing.
         public async Task<RequirementDocumentVersion> UploadAsync(
             Guid projectId, string fileName, byte[] content, Guid? documentId, string? idPattern = null,
-            CancellationToken cancellationToken = default)
+            DocumentKind kind = DocumentKind.RequirementSpecification, CancellationToken cancellationToken = default)
         {
             var (organization, user) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
             var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
@@ -96,14 +99,14 @@ namespace ComplianceTracker.Application.WorkItems
 
             // R1: size, type and content
             var file = RequirementFile.Create(fileName, content);
-            var reader = _readers.FirstOrDefault(r => r.Extension == file.Extension)
-                ?? throw new DomainException(RequirementFile.AllowedMessage);
+            var reader = _readers.FirstOrDefault(r => r.Extension == file.Extension && r.Kind == kind)
+                ?? throw new DomainException(kind == DocumentKind.UseCases ? "A use case document must be a .docx file" : RequirementFile.AllowedMessage);
 
             // R2, R3, R4: read and check the whole file before anything is changed
-            var pattern = IdPattern.Create(idPattern);
+            var pattern = IdPattern.Create(idPattern, kind);
             var read = reader.Read(file.Content, pattern);
             RefuseDuplicates(read);
-            if (read.Items.Count == 0)
+            if (read.Items.Count == 0 && read.Skipped.Count == 0)
             {
                 throw new DomainException("No requirements found in the file");
             }
@@ -113,8 +116,15 @@ namespace ComplianceTracker.Application.WorkItems
             var document = documentId is { } id
                 ? documents.FirstOrDefault(d => d.Id == id) ?? throw new DomainException("Requirement specification not found")
                 : documents.FirstOrDefault(d => d.Name.Equals(file.FileName, StringComparison.OrdinalIgnoreCase));
+            if (document is not null && document.Kind != kind)
+            {
+                throw new DomainException(document.Kind == DocumentKind.UseCases
+                    ? $"{document.Name} is a use case document"
+                    : $"{document.Name} is a requirement specification");
+            }
+
             var isNew = document is null;
-            document ??= RequirementDocument.Create(project.Id, file.FileName, Now);
+            document ??= RequirementDocument.Create(project.Id, file.FileName, Now, kind);
             var number = document.NextVersionNumber;
 
             // R5: matched on ID within this specification only
@@ -133,7 +143,7 @@ namespace ComplianceTracker.Application.WorkItems
                 else
                 {
                     await _workItems.AddAsync(
-                        WorkItem.FromDocument(project.Id, document.Id, WorkItemType.Requirement, requirement.Item, number, Now), cancellationToken);
+                        WorkItem.FromDocument(project.Id, document.Id, document.WorkItemType, requirement.Item, number, Now), cancellationToken);
                     added++;
                 }
             }

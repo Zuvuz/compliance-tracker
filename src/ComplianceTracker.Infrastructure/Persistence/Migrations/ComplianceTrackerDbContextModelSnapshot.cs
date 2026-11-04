@@ -1091,6 +1091,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -1744,6 +1749,39 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.OwnsOne("ComplianceTracker.Domain.WorkItems.UseCaseSections", "UseCase", b1 =>
+                        {
+                            b1.Property<Guid>("WorkItemId");
+
+                            b1.Property<string>("Extensions")
+                                .IsRequired();
+
+                            b1.Property<string>("Postconditions")
+                                .IsRequired();
+
+                            b1.Property<string>("Preconditions")
+                                .IsRequired();
+
+                            b1.Property<string>("PrimaryActor")
+                                .IsRequired();
+
+                            b1.PrimitiveCollection<string>("Steps")
+                                .IsRequired();
+
+                            b1.HasKey("WorkItemId");
+
+                            b1.ToTable("WorkItems");
+
+                            b1
+                                .ToJson("UseCase")
+                                .HasColumnType("jsonb");
+
+                            b1.WithOwner()
+                                .HasForeignKey("WorkItemId");
+                        });
+
+                    b.Navigation("UseCase");
                 });
 
             modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.CatalogDocument", b =>

@@ -32,6 +32,9 @@ namespace ComplianceTracker.Domain.WorkItems
         public string Description { get; private set; } = "";
         public string AcceptanceCriteria { get; private set; } = "";
 
+        // US-034: a use case's sections; null for every other kind of work item
+        public UseCaseSections? UseCase { get; private set; }
+
         // The labels in the source, comma separated, e.g. "user-story, framework:iso27001"
         public string Labels { get; private set; } = "";
 
@@ -116,11 +119,12 @@ namespace ComplianceTracker.Domain.WorkItems
             var description = item.Description.Trim();
             var criteria = item.AcceptanceCriteria.Trim();
             var changed = Title != title || Description != description || AcceptanceCriteria != criteria
-                || State != WorkItemState.Open;
+                || State != WorkItemState.Open || !(UseCase is null ? item.UseCase is null : UseCase.SameAs(item.UseCase));
 
             Title = title;
             Description = description;
             AcceptanceCriteria = criteria;
+            UseCase = item.UseCase; // US-034
             State = WorkItemState.Open;
             DocumentVersion = version;
             RemovedInVersion = null;
@@ -169,8 +173,10 @@ namespace ComplianceTracker.Domain.WorkItems
         string Labels,
         bool IsClosed);
 
-    // US-032: one requirement as a requirement specification has it, e.g. ("REQ-012", "Log in", "...", "...")
-    public record DocumentWorkItem(string Reference, string Title, string Description = "", string AcceptanceCriteria = "");
+    // US-032: one requirement as a requirement specification has it, e.g. ("REQ-012", "Log in", "...", "...").
+    // US-034: or a use case with its sections; its acceptance criteria are the steps and postconditions (R5).
+    public record DocumentWorkItem(string Reference, string Title, string Description = "", string AcceptanceCriteria = "",
+        UseCaseSections? UseCase = null);
 
     // Where a work item comes from. Stored as text, so new sources (Azure DevOps, documents) never shift data.
     public enum WorkItemSource
@@ -187,7 +193,10 @@ namespace ComplianceTracker.Domain.WorkItems
         UserStory,
 
         // US-032: a requirement from a requirement specification
-        Requirement
+        Requirement,
+
+        // US-034: a Unified Process use case from a use case document
+        UseCase
     }
 
     public enum WorkItemState
