@@ -41,6 +41,9 @@ namespace ComplianceTracker.Web.Models
     {
         public Guid Id { get; set; }
 
+        // US-092: the version the form was opened with
+        public uint? Version { get; set; }
+
         [Display(Name = "Name")]
         public string? Name { get; set; }
 
@@ -56,6 +59,7 @@ namespace ComplianceTracker.Web.Models
         public static EditProjectViewModel From(Project project) => new()
         {
             Id = project.Id,
+            Version = project.Version,
             Name = project.Name,
             Description = project.Description,
             IntendedPurpose = project.IntendedPurpose,

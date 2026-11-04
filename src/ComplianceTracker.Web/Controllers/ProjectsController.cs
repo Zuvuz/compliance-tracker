@@ -498,7 +498,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> Edit(EditProjectViewModel model, CancellationToken cancellationToken)
         {
             await _service.UpdateAsync(
-                model.Id, model.Name ?? "", model.Description, model.IntendedPurpose ?? "", model.Scope, cancellationToken);
+                model.Id, model.Name ?? "", model.Description, model.IntendedPurpose ?? "", model.Scope, cancellationToken, model.Version);
             return RedirectToAction(nameof(Details), new { id = model.Id }); // Post/Redirect/Get
         }
 

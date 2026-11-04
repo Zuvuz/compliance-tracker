@@ -12,6 +12,10 @@ namespace ComplianceTracker.Domain.Projects
         private readonly List<ProjectFramework> _frameworks = new();
 
         public Guid Id { get; } = Guid.NewGuid();
+
+        // US-092: the row's version, set by the database (PostgreSQL's xmin). A form carries it, so a save
+        // can tell that someone else changed the row after the form was opened.
+        public uint Version { get; private set; }
         public Guid OrganizationId { get; private set; }
 
         // Unique within the organisation (checked in ProjectService, because it needs the database)

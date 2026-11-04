@@ -78,9 +78,11 @@ namespace ComplianceTracker.Application.Risks
             return risk;
         }
 
-        public async Task UpdateAsync(Guid projectId, Guid riskId, RiskInput input, CancellationToken cancellationToken = default)
+        // US-092: expectedVersion is the version the form was opened with
+        public async Task UpdateAsync(Guid projectId, Guid riskId, RiskInput input, CancellationToken cancellationToken = default, uint? expectedVersion = null)
         {
             var (organization, _, project, risk) = await RiskAsync(projectId, riskId, cancellationToken);
+            Concurrency.Ensure(risk.Version, expectedVersion);
             EnsureMember(organization, input.OwnerId);
 
             var changes = risk.Update(input.Title, input.Description, input.Likelihood, input.Impact, input.OwnerId, input.Treatment,

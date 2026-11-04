@@ -14,6 +14,9 @@ namespace ComplianceTracker.Web.Models
         // Empty when adding
         public Guid? RiskId { get; set; }
 
+        // US-092: the version the edit form was opened with
+        public uint? Version { get; set; }
+
         [Display(Name = "Title")]
         public string? Title { get; set; }
 
@@ -43,6 +46,7 @@ namespace ComplianceTracker.Web.Models
             ProjectId = risk.ProjectId,
             ProjectName = projectName,
             RiskId = risk.Id,
+            Version = risk.Version,
             Title = risk.Title,
             Description = risk.Description,
             Likelihood = risk.Likelihood,

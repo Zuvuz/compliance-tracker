@@ -18,6 +18,10 @@ namespace ComplianceTracker.Domain.Risks
         private readonly List<RiskMeasure> _measures = new();
 
         public Guid Id { get; } = Guid.NewGuid();
+
+        // US-092: the row's version, set by the database (PostgreSQL's xmin). A form carries it, so a save
+        // can tell that someone else changed the row after the form was opened.
+        public uint Version { get; private set; }
         public Guid ProjectId { get; private set; }
 
         public string Title { get; private set; } = "";
