@@ -7,11 +7,21 @@ namespace ComplianceTracker.Application.Organizations
     public class OrganizationQueries
     {
         private readonly CurrentMember _member;
+        private readonly ICurrentUser _currentUser;
+        private readonly IOrganizationRepository _organizations;
 
-        public OrganizationQueries(CurrentMember member)
+        public OrganizationQueries(CurrentMember member, ICurrentUser currentUser, IOrganizationRepository organizations)
         {
             _member = member;
+            _currentUser = currentUser;
+            _organizations = organizations;
         }
+
+        // US-090 R3: the organisation the signed-in person was removed from, if they are in none now
+        public async Task<string?> FormerOrganizationAsync(CancellationToken cancellationToken = default)
+            => await MineAsync(cancellationToken) is null
+                ? await _organizations.FormerOrganizationNameAsync(_currentUser.Identity.ExternalId, cancellationToken)
+                : null;
 
         // The user's organisation, or null if they have not created one yet
         public Task<Organization?> MineAsync(CancellationToken cancellationToken = default)

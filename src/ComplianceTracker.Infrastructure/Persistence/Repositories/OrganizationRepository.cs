@@ -28,7 +28,16 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         public async Task<IReadOnlyList<Organization>> ListAllAsync(CancellationToken cancellationToken = default)
             => await _db.Organizations.OrderBy(o => o.Name).ToListAsync(cancellationToken);
 
+        // US-090: only a member who has not been removed
         public Task<Organization?> GetByMemberAsync(string externalId, CancellationToken cancellationToken = default)
-            => _db.Organizations.FirstOrDefaultAsync(o => o.Users.Any(u => u.ExternalId == externalId), cancellationToken);
+            => _db.Organizations.FirstOrDefaultAsync(o => o.Users.Any(u => u.ExternalId == externalId && u.RemovedAt == null), cancellationToken);
+
+        // US-090 R3: the organisation the person was last removed from
+        public Task<string?> FormerOrganizationNameAsync(string externalId, CancellationToken cancellationToken = default)
+            => _db.Organizations
+                .SelectMany(o => o.Users.Where(u => u.ExternalId == externalId && u.RemovedAt != null).Select(u => new { o.Name, u.RemovedAt }))
+                .OrderByDescending(x => x.RemovedAt)
+                .Select(x => x.Name)
+                .FirstOrDefaultAsync(cancellationToken);
     }
 }

@@ -23,7 +23,11 @@ namespace ComplianceTracker.Domain.Organizations
         public Sector Sector { get; private set; }
         public OrganizationSize Size { get; private set; }
 
+        // Every user who has been a member, also removed ones, so names stay on history (US-090)
         public IReadOnlyList<User> Users => _users;
+
+        // US-090: the members now: who can sign in, act and be chosen, e.g. as a risk's owner
+        public IReadOnlyList<User> Members => _users.Where(u => u.IsActive).ToList();
 
         // US-036 R5: whether the organisation's decisions on AI suggestions may be exported to improve the AI.
         // Off until an Admin switches it on.
@@ -100,9 +104,16 @@ namespace ComplianceTracker.Domain.Organizations
         // the caller checks the other organisations.
         public User AddMember(UserIdentity identity, UserRole role)
         {
-            if (_users.Any(u => u.ExternalId == identity.ExternalId))
+            if (_users.FirstOrDefault(u => u.ExternalId == identity.ExternalId) is { } known)
             {
-                throw new DomainException("You are already a member of this organisation");
+                if (known.IsActive)
+                {
+                    throw new DomainException("You are already a member of this organisation");
+                }
+
+                // US-090 R7: a removed member who is invited again comes back, with the history under the same name
+                known.Restore(role);
+                return known;
             }
 
             var user = new User(identity.ExternalId, identity.Name, identity.Email, role);
@@ -122,6 +133,27 @@ namespace ComplianceTracker.Domain.Organizations
             return SetRole(memberId, role);
         }
 
+        // US-090 R1, R2: an Admin removes a member. The member is kept, so their name stays on what they did (R4).
+        public User RemoveMember(Guid memberId, Guid removedById, DateTime at)
+        {
+            if (_users.FirstOrDefault(u => u.Id == removedById)?.Can(Permission.ManageMembers) != true)
+            {
+                throw new DomainException("Your role does not allow this");
+            }
+
+            var member = Members.FirstOrDefault(u => u.Id == memberId)
+                ?? throw new DomainException("Member not found");
+
+            // R2: the organisation always keeps at least one Admin (US-010 R3)
+            if (member.Role == UserRole.Admin && Members.Count(u => u.Role == UserRole.Admin) == 1)
+            {
+                throw new DomainException("Give another member the Admin role first");
+            }
+
+            member.Remove(removedById, at);
+            return member;
+        }
+
         // US-010: the system admin (the tracker's owner) changes a role, e.g. when an organisation has locked itself out.
         // The caller checks that the person is the system admin.
         public ProjectChange? ChangeRoleAsSystemAdmin(Guid memberId, UserRole role) => SetRole(memberId, role);
@@ -133,7 +165,7 @@ namespace ComplianceTracker.Domain.Organizations
                 throw new DomainException("Choose a role");
             }
 
-            var member = _users.FirstOrDefault(u => u.Id == memberId)
+            var member = Members.FirstOrDefault(u => u.Id == memberId)
                 ?? throw new DomainException("Member not found");
 
             if (member.Role == role)
@@ -142,7 +174,7 @@ namespace ComplianceTracker.Domain.Organizations
             }
 
             // R3: the organisation always keeps at least one Admin
-            if (member.Role == UserRole.Admin && _users.Count(u => u.Role == UserRole.Admin) == 1)
+            if (member.Role == UserRole.Admin && Members.Count(u => u.Role == UserRole.Admin) == 1)
             {
                 throw new DomainException("The organisation must keep at least one organisation admin");
             }

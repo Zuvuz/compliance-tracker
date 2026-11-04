@@ -35,6 +35,8 @@ classDiagram
     -controls: List~Control~
     -frameworks: List~OrganizationFramework~
     +Create(name: string, cvr: string, sector: Sector?, size: OrganizationSize?, creator: UserIdentity)$ Organization
+    +Members: List~User~
+    +RemoveMember(memberId: Guid, removedById: Guid, at: DateTime) User
   }
   class User {
     -id: Guid
@@ -43,6 +45,9 @@ classDiagram
     -name: string
     -email: string
     -role: UserRole
+    -removedAt: DateTime?
+    -removedById: Guid?
+    +IsActive: bool
   }
   class UserIdentity {
     <<record>>

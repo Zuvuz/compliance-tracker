@@ -39,7 +39,7 @@ namespace ComplianceTracker.Application.Common
         {
             var organization = await FindOrganizationAsync(cancellationToken)
                 ?? throw new DomainException("You must belong to an organisation");
-            var user = organization.Users.Single(u => u.ExternalId == _currentUser.Identity.ExternalId);
+            var user = organization.Members.Single(u => u.ExternalId == _currentUser.Identity.ExternalId);
             return (organization, user);
         }
 
@@ -58,7 +58,7 @@ namespace ComplianceTracker.Application.Common
         // For pages: whether the signed-in member may do this (false without an organisation)
         public async Task<bool> CanAsync(Permission permission, CancellationToken cancellationToken = default)
             => await FindOrganizationAsync(cancellationToken) is { } organization
-               && organization.Users.FirstOrDefault(u => u.ExternalId == _currentUser.Identity.ExternalId)?.Can(permission) == true;
+               && organization.Members.FirstOrDefault(u => u.ExternalId == _currentUser.Identity.ExternalId)?.Can(permission) == true;
 
         // Forget the lookup, e.g. right after the user has created their organisation
         public void Reset()

@@ -15,5 +15,8 @@ namespace ComplianceTracker.Application.Organizations
 
         // The organisation the user with this sign-in id is a member of (null if none)
         Task<Organization?> GetByMemberAsync(string externalId, CancellationToken cancellationToken = default);
+
+        // US-090 R3: the name of the organisation the person was last removed from, or null
+        Task<string?> FormerOrganizationNameAsync(string externalId, CancellationToken cancellationToken = default);
     }
 }

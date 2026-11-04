@@ -63,6 +63,15 @@ namespace ComplianceTracker.Application.Organizations
             }
         }
 
+        // US-090 R1, R2, R6: an Admin removes a member; their access ends at once and their history keeps their name
+        public async Task RemoveAsync(Guid memberId, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.ManageMembers, cancellationToken);
+            var removed = organization.RemoveMember(memberId, user.Id, Now);
+            await _log.LogAsync(ActivityAction.MemberRemoved, removed.Id, removed.Name, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
         // US-009 R1, R6: a random token; only its SHA-256 is stored. Returns the token, which is shown once.
         public async Task<string> CreateInvitationAsync(UserRole role, CancellationToken cancellationToken = default)
         {

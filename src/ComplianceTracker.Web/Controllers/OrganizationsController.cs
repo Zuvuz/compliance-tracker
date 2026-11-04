@@ -38,6 +38,8 @@ namespace ComplianceTracker.Web.Controllers
                 return RedirectToAction("Index", "Projects");
             }
 
+            // US-090 R3
+            ViewData["FormerOrganization"] = await _organizations.FormerOrganizationAsync(cancellationToken);
             return View(new CreateOrganizationViewModel());
         }
 

@@ -69,6 +69,15 @@ namespace ComplianceTracker.Web.Models
         public string NameOf(Guid? userId)
             => Organization.Users.FirstOrDefault(u => u.Id == userId)?.Name ?? "Unknown";
 
+        // US-090 R5: a removed owner is shown as such until a new owner is chosen
+        public string OwnerOf(Guid userId)
+            => OwnerName(Organization, userId);
+
+        public static string OwnerName(Domain.Organizations.Organization? organization, Guid userId)
+            => organization?.Users.FirstOrDefault(u => u.Id == userId) is { } owner
+                ? owner.IsActive ? owner.Name : $"Owner removed ({owner.Name})"
+                : "Unknown";
+
         public string MeasureName(RiskMeasure measure)
             => measure.RequirementId is { } requirementId
                 ? Compliance?.Frameworks.SelectMany(f => f.Requirements).FirstOrDefault(r => r.Requirement.Id == requirementId) is { } row

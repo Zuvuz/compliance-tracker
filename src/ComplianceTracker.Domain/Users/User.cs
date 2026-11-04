@@ -14,7 +14,27 @@ namespace ComplianceTracker.Domain.Users
         // Changed only through Organization.ChangeRole, so the "at least one Admin" rule always runs (US-010 R3)
         public UserRole Role { get; internal set; }
 
-        public bool Can(Permission permission) => RolePermissions.Can(Role, permission);
+        // US-090: a removed member is kept, so their name stays on what they did; they can no longer act
+        public DateTime? RemovedAt { get; private set; }
+        public Guid? RemovedById { get; private set; }
+        public bool IsActive => RemovedAt is null;
+
+        // A removed member may do nothing
+        public bool Can(Permission permission) => IsActive && RolePermissions.Can(Role, permission);
+
+        internal void Remove(Guid removedById, DateTime at)
+        {
+            RemovedAt = at;
+            RemovedById = removedById;
+        }
+
+        // R7: invited again, the person comes back with the invitation's role
+        internal void Restore(UserRole role)
+        {
+            RemovedAt = null;
+            RemovedById = null;
+            Role = role;
+        }
 
         // Internal: users are only created through Organization, so they always belong to one.
         // EF Core also uses this constructor; the parameter names match the property names.

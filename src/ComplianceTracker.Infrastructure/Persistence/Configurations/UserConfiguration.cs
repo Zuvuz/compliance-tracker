@@ -17,9 +17,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
 
             builder.Property(u => u.Name).IsRequired();
 
-            // Keycloak's "sub": required and unique, so one sign-in identity can never belong to two users (ASVS V10.5.2)
+            // Keycloak's "sub": required and unique among the members, so one sign-in identity can never belong to
+            // two members (ASVS V10.5.2). US-090: a removed member's row is kept, so the person can join another organisation.
             builder.Property(u => u.ExternalId).IsRequired().HasMaxLength(255);
-            builder.HasIndex(u => u.ExternalId).IsUnique();
+            builder.HasIndex(u => u.ExternalId).IsUnique().HasFilter("\"RemovedAt\" IS NULL");
+            builder.Ignore(u => u.IsActive);
 
             // 320 characters is the longest possible e-mail address
             builder.Property(u => u.Email).IsRequired().HasMaxLength(320);
