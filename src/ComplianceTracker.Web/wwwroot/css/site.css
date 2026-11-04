@@ -1,4 +1,55 @@
+/* US-064: the tracker's theme, navy and teal. Every colour is a variable here; views set no colours of their own (R4).
+   The variables override Bootstrap's, so all pages follow without changes. Contrast is WCAG 2.1 AA (R5):
+   teal #0F766E on white 5.5:1, muted text #55657A on white 5.6:1, white on navy 11.6:1. */
+
+/* R6: Inter, served by the tracker itself (wwwroot/fonts/inter, SIL Open Font License 1.1) */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("../fonts/inter/inter-latin-wght-normal.woff2") format("woff2-variations");
+}
+
+:root {
+  /* The theme */
+  --ct-navy: #1F3A5F;
+  --ct-navy-text: #FFFFFF;
+  --ct-navy-muted: #C9D5E3;
+  --ct-teal: #0F766E;
+  --ct-teal-hover: #115E59;
+  --ct-teal-light: #5EEAD4;
+  --ct-teal-tint: #DDF3EF;
+  --ct-page: #F5F7FA;
+  --ct-surface: #FFFFFF;
+  --ct-border: #DDE3EA;
+  --ct-text: #14243A;
+  --ct-muted: #55657A;
+  --ct-radius: 8px;
+
+  /* Bootstrap, pointed at the theme */
+  --bs-body-font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --bs-body-color: var(--ct-text);
+  --bs-body-color-rgb: 20, 36, 58;
+  --bs-secondary-color: var(--ct-muted);
+  --bs-border-color: var(--ct-border);
+  --bs-border-radius: var(--ct-radius);
+  --bs-border-radius-sm: 6px;
+  --bs-border-radius-lg: 10px;
+  --bs-primary: var(--ct-teal);
+  --bs-primary-rgb: 15, 118, 110;
+  --bs-info: var(--ct-teal);
+  --bs-info-rgb: 15, 118, 110;
+  --bs-link-color: var(--ct-teal);
+  --bs-link-color-rgb: 15, 118, 110;
+  --bs-link-hover-color: var(--ct-teal-hover);
+  --bs-link-hover-color-rgb: 17, 94, 89;
+  --bs-focus-ring-color: rgba(15, 118, 110, 0.35);
+}
+
 html {
+  position: relative;
+  min-height: 100%;
   font-size: 14px;
 }
 
@@ -8,17 +59,154 @@ html {
   }
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
-
+/* R1: the page is light grey; cards, tables and inputs are white */
 body {
   margin-bottom: 60px;
+  background-color: var(--ct-page);
+}
+
+h1, h2, h3, .h1, .h2, .h3, .h4, .h5, .h6 {
+  color: var(--ct-text);
+  letter-spacing: -0.01em;
+}
+
+/* Numbers line up in tables and summaries */
+.table, .card, .progress, .badge {
+  font-variant-numeric: tabular-nums;
+}
+
+.card {
+  border-color: var(--ct-border);
+}
+
+.table {
+  --bs-table-bg: var(--ct-surface);
+  --bs-table-border-color: var(--ct-border);
+  border: 1px solid var(--ct-border);
+}
+
+.table > thead th {
+  color: var(--ct-muted);
+  font-weight: 600;
+  font-size: 0.85em;
+}
+
+/* R8: wide tables scroll inside the page instead of breaking it */
+main {
+  overflow-x: auto;
+}
+
+/* R1: the top bar is navy with white text; the active page has a teal underline */
+.ct-topbar {
+  background-color: var(--ct-navy);
+  --bs-navbar-color: var(--ct-navy-muted);
+  --bs-navbar-hover-color: var(--ct-navy-text);
+  --bs-navbar-active-color: var(--ct-navy-text);
+  --bs-navbar-brand-color: var(--ct-navy-text);
+  --bs-navbar-brand-hover-color: var(--ct-navy-text);
+}
+
+.ct-topbar .navbar-brand {
+  font-weight: 600;
+}
+
+.ct-topbar .nav-link {
+  border-bottom: 2px solid transparent;
+}
+
+.ct-topbar .nav-link.active {
+  border-bottom-color: var(--ct-teal-light);
+}
+
+.ct-topbar .btn-link.nav-link {
+  text-decoration: none;
+}
+
+/* R2: teal is the one accent colour */
+.btn-primary {
+  --bs-btn-bg: var(--ct-teal);
+  --bs-btn-border-color: var(--ct-teal);
+  --bs-btn-hover-bg: var(--ct-teal-hover);
+  --bs-btn-hover-border-color: var(--ct-teal-hover);
+  --bs-btn-active-bg: var(--ct-teal-hover);
+  --bs-btn-active-border-color: var(--ct-teal-hover);
+  --bs-btn-disabled-bg: var(--ct-teal);
+  --bs-btn-disabled-border-color: var(--ct-teal);
+  --bs-btn-focus-shadow-rgb: 15, 118, 110;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--ct-teal);
+  --bs-btn-border-color: var(--ct-teal);
+  --bs-btn-hover-bg: var(--ct-teal);
+  --bs-btn-hover-border-color: var(--ct-teal);
+  --bs-btn-active-bg: var(--ct-teal-hover);
+  --bs-btn-active-border-color: var(--ct-teal-hover);
+  --bs-btn-disabled-color: var(--ct-teal);
+  --bs-btn-disabled-border-color: var(--ct-teal);
+  --bs-btn-focus-shadow-rgb: 15, 118, 110;
+}
+
+.btn-outline-info {
+  --bs-btn-color: var(--ct-teal);
+  --bs-btn-border-color: var(--ct-teal);
+  --bs-btn-hover-color: #FFFFFF;
+  --bs-btn-hover-bg: var(--ct-teal);
+  --bs-btn-hover-border-color: var(--ct-teal);
+}
+
+.nav-pills {
+  --bs-nav-pills-link-active-bg: var(--ct-teal);
+  --bs-nav-link-color: var(--ct-teal);
+  --bs-nav-link-hover-color: var(--ct-teal-hover);
+}
+
+.link-primary {
+  color: var(--ct-teal) !important;
+}
+
+.progress {
+  --bs-progress-bg: var(--ct-border);
+  --bs-progress-bar-bg: var(--ct-teal);
+}
+
+/* R3: teal means AI-generated; white text keeps it readable */
+.text-bg-info {
+  color: #FFFFFF !important;
+  background-color: var(--ct-teal) !important;
+}
+
+.text-bg-primary {
+  color: #FFFFFF !important;
+  background-color: var(--ct-teal) !important;
+}
+
+.border-info {
+  border-color: var(--ct-teal) !important;
+}
+
+.text-info {
+  color: var(--ct-teal) !important;
+}
+
+/* R5: keyboard focus is clearly visible */
+.btn:focus-visible, .btn-link.nav-link:focus-visible, .form-control:focus, .form-select:focus,
+.form-check-input:focus, a:focus-visible, summary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 0.1rem #FFFFFF, 0 0 0 0.25rem var(--ct-teal);
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--ct-teal);
+}
+
+.form-check-input:checked {
+  background-color: var(--ct-teal);
+  border-color: var(--ct-teal);
+}
+
+.footer {
+  background-color: var(--ct-surface);
 }
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {

@@ -1,10 +1,11 @@
 ﻿@* The public front page (US-004 R1). Signed-in users never see it: HomeController sends them to their organisation. *@
+@inject Microsoft.Extensions.Options.IOptions<ComplianceTracker.Web.Models.BrandingOptions> Branding
 @{
-    ViewData["Title"] = "Compliance Tracker";
+    ViewData["Title"] = "Welcome";
 }
 
 <div class="text-center py-5" id="front-page">
-    <h1 class="display-4">Compliance Tracker</h1>
+    <h1 class="display-4">@Branding.Value.Name</h1>
     <p class="lead">Keep track of the standards and regulations your organisation and products must meet.</p>
     <p>
         @* Goes to AccountController.Login, which sends the user to Keycloak *@
