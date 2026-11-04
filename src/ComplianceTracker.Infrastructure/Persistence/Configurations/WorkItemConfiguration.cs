@@ -31,14 +31,28 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(w => w.Examples).IsRequired();
             builder.Property(w => w.Gherkin).IsRequired();
 
+            // US-032: a requirement's description and acceptance criteria. Empty for GitHub; existing rows get "".
+            builder.Property(w => w.Description).IsRequired().HasDefaultValue("");
+            builder.Property(w => w.AcceptanceCriteria).IsRequired().HasDefaultValue("");
+
             // Belongs to one project. Restrict: a project cannot be deleted while it has work items.
             builder.HasOne<Project>()
                 .WithMany()
                 .HasForeignKey(w => w.ProjectId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // One work item per item in the source, e.g. one per GitHub issue
-            builder.HasIndex(w => new { w.ProjectId, w.Source, w.ExternalReference }).IsUnique();
+            // US-032: the requirement specification it comes from. Restrict: never deleted while it has requirements.
+            builder.HasOne<RequirementDocument>()
+                .WithMany()
+                .HasForeignKey(w => w.DocumentId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // One work item per item in the source, e.g. one per GitHub issue, or one per ID in a requirement specification.
+            // NULLS NOT DISTINCT: GitHub's work items have no document and must still be unique.
+            builder.HasIndex(w => new { w.ProjectId, w.Source, w.DocumentId, w.ExternalReference })
+                .IsUnique()
+                .AreNullsDistinct(false);
         }
     }
 }

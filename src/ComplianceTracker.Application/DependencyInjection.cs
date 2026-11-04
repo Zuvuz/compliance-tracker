@@ -33,6 +33,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<FrameworkService>();
             services.AddScoped<ProjectService>();
             services.AddScoped<WorkItemSyncService>();
+            services.AddScoped<RequirementDocumentService>();
             services.AddScoped<ComplianceService>();
             services.AddScoped<MappingSuggestionService>();
             services.AddScoped<RationaleService>();

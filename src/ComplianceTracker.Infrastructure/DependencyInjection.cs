@@ -14,6 +14,7 @@ using ComplianceTracker.Infrastructure.Persistence.Repositories;
 using ComplianceTracker.Infrastructure.Security;
 using Microsoft.AspNetCore.DataProtection;
 using ComplianceTracker.Infrastructure.WorkItems;
+using ComplianceTracker.Infrastructure.WorkItems.Documents;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,9 +59,14 @@ namespace ComplianceTracker.Infrastructure
             // US-007: reads requirements from PDF text. Holds no state, so one instance is enough.
             services.AddSingleton<IRequirementExtractor, PdfRequirementExtractor>();
 
+            // US-032: one reader per file type of a requirement specification. No state.
+            services.AddSingleton<IRequirementDocumentReader, ExcelRequirementReader>();
+            services.AddSingleton<IRequirementDocumentReader, CsvRequirementReader>();
+
             // US-018: the GitHub adapter (B11). A typed HttpClient, so connections are reused safely.
             // GitHub requires a User-Agent; the API version header keeps the JSON format stable.
             services.AddScoped<IWorkItemRepository, WorkItemRepository>();
+            services.AddScoped<IRequirementDocumentRepository, RequirementDocumentRepository>();
             services.AddScoped<IRequirementLinkRepository, RequirementLinkRepository>();
             services.AddScoped<IRequirementApplicabilityRepository, RequirementApplicabilityRepository>();
             services.AddScoped<IEvidenceRepository, EvidenceRepository>();

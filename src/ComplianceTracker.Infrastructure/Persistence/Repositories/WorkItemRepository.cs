@@ -20,6 +20,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
                 .Where(w => w.ProjectId == projectId && w.Source == source)
                 .ToListAsync(cancellationToken);
 
+        public async Task<IReadOnlyList<WorkItem>> ListByDocumentAsync(Guid projectId, Guid documentId, CancellationToken cancellationToken = default)
+            => await _db.WorkItems
+                .Where(w => w.ProjectId == projectId && w.DocumentId == documentId)
+                .ToListAsync(cancellationToken);
+
         // Open ones first, then by title
         public async Task<IReadOnlyList<WorkItem>> ListAsync(Guid projectId, CancellationToken cancellationToken = default)
             => (await _db.WorkItems

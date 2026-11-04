@@ -356,6 +356,22 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Point-in-time recovery.
   - At vise seneste backup i appen.
 
+### B35 – Kravspecifikationer importeres som versioner og synkroniseres ikke
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-032)
+  - Et projekt kan få en eller flere kravspecifikationer (`RequirementDocument`) uploadet som Excel eller CSV. Hver upload er en ny version (`RequirementDocumentVersion`), og filen gemmes i databasen.
+  - Hvert krav bliver et `WorkItem` med `Source = Document` og `Type = Requirement`, så det vises og kan kobles til regler på samme måde som en user story fra GitHub.
+  - Kravene matches på deres ID inden for samme kravspecifikation. Nye tilføjes, ændrede opdateres, og krav, der ikke længere er i filen, markeres "Removed in version N". Intet slettes.
+  - En fil med et ID to gange afvises helt, så en halv import aldrig sker.
+  - En ny version vælges i formularen, ellers bruges kravspecifikationen med samme filnavn.
+- **Begrundelse:** Projekter, der følger vandfaldsmodellen, har deres krav i et dokument og ikke i et issue-system. Et dokument har ingen API at synkronisere med, så en ny version kommer kun, når nogen uploader den. Det er også det, ISO 27001 A.8.32 beder om: hver ændring er en version, man kan se og hente igen.
+- **Fravalgt indtil videre:**
+  - Gamle `.xls`-filer, Google Sheets og Numbers.
+  - At vælge kolonnenavne ved upload.
+  - Flere ark i samme fil (kun det første læses).
+  - Et preview før importen.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

@@ -395,13 +395,53 @@ classDiagram
     -rules: string
     -examples: string
     -gherkin: string
+    -description: string
+    -acceptanceCriteria: string
     -labels: string
     -state: WorkItemState
+    -documentId: Guid?
+    -documentVersion: int?
+    -removedInVersion: int?
     -firstSyncedAt: DateTime
     -lastSyncedAt: DateTime
     +Create(projectId: Guid, source: WorkItemSource, item: ExternalWorkItem, at: DateTime)$ WorkItem
+    +FromDocument(projectId: Guid, documentId: Guid, type: WorkItemType, item: DocumentWorkItem, version: int, at: DateTime)$ WorkItem
     +Update(item: ExternalWorkItem, at: DateTime) bool
+    +UpdateFromDocument(item: DocumentWorkItem, version: int, at: DateTime) bool
     +MarkRemoved() bool
+    +MarkRemovedIn(version: int) bool
+  }
+  class RequirementDocument {
+    -id: Guid
+    -projectId: Guid
+    -name: string
+    -createdAt: DateTime
+    -versions: List~RequirementDocumentVersion~
+    +NextVersionNumber: int
+    +Create(projectId: Guid, name: string, at: DateTime)$ RequirementDocument
+    +AddVersion(file: RequirementFile, counts: ImportCounts, skipped: string[], userId: Guid, at: DateTime) RequirementDocumentVersion
+  }
+  class RequirementDocumentVersion {
+    -id: Guid
+    -number: int
+    -fileName: string
+    -contentType: string
+    -sha256: string
+    -uploadedById: Guid
+    -uploadedAt: DateTime
+    -added: int
+    -changed: int
+    -removed: int
+    -skippedRows: List~string~
+    +Summary: string
+  }
+  class IRequirementDocumentReader {
+    <<interface>>
+    +Extension: string
+    +Read(content: byte[]) RequirementReadResult
+  }
+  class RequirementDocumentService {
+    +UploadAsync(projectId: Guid, fileName: string, content: byte[], documentId: Guid?) Task~RequirementDocumentVersion~
   }
   class GitHubLink {
     <<owned by Project>>
@@ -723,6 +763,7 @@ classDiagram
   class WorkItemType {
     <<enumeration>>
     UserStory
+    Requirement
     UseCase
     Task
     Bug
@@ -731,6 +772,7 @@ classDiagram
   class WorkItemSource {
     <<enumeration>>
     GitHub
+    Document
   }
   class WorkItemState {
     <<enumeration>>
@@ -770,6 +812,12 @@ classDiagram
   Project "1" *-- "0..1" GitHubLink : gitHub
   GitHubWorkItemSource ..|> IWorkItemSource
   WorkItemSyncService --> IWorkItemSource : github
+  Project "1" --> "*" RequirementDocument : requirement specifications
+  RequirementDocument "1" *-- "1..*" RequirementDocumentVersion : versions
+  WorkItem "*" --> "0..1" RequirementDocument : document
+  RequirementDocumentService --> IRequirementDocumentReader : readers
+  IRequirementDocumentReader <|.. ExcelRequirementReader
+  IRequirementDocumentReader <|.. CsvRequirementReader
   WorkItemSyncService --> IWorkItemNotifier : notifier
   WorkItemSyncService --> ISecretProtector : secrets
   DataProtectionSecretProtector ..|> ISecretProtector

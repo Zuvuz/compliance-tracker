@@ -31,6 +31,7 @@ namespace ComplianceTracker.Web.Controllers
         private readonly ComplianceQueries _complianceQueries;
         private readonly MappingSuggestionService _suggestions;
         private readonly RiskQueries _risks;
+        private readonly RequirementDocumentService _documents;
 
         public ProjectsController(
             ProjectService service,
@@ -43,8 +44,10 @@ namespace ComplianceTracker.Web.Controllers
             ComplianceQueries complianceQueries,
             MappingSuggestionService suggestions,
             RiskQueries risks,
+            RequirementDocumentService documents,
             TimeProvider clock)
         {
+            _documents = documents;
             _risks = risks;
             _suggestions = suggestions;
             _compliance = compliance;
@@ -163,6 +166,8 @@ namespace ComplianceTracker.Web.Controllers
                 await _workItems.ListAsync(id, cancellationToken) ?? [],
                 _clock.Today())
             {
+                // US-032: the requirement specifications, for the User stories tab
+                Documents = activeTab == ProjectTabs.UserStories ? await _workItems.DocumentsAsync(id, cancellationToken) : [],
                 Tab = activeTab,
                 Organization = organization,
                 Activity = activity,
@@ -192,7 +197,48 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound(); // R9
             }
 
-            return PartialView("_WorkItems", new WorkItemsViewModel(project, workItems, await _complianceQueries.ForProjectAsync(id, cancellationToken)));
+            return PartialView("_WorkItems", new WorkItemsViewModel(
+                project, workItems, await _complianceQueries.ForProjectAsync(id, cancellationToken), await _workItems.DocumentsAsync(id, cancellationToken)));
+        }
+
+        // ---------------------------------------------------------- Requirement specifications (US-032)
+
+        // Room for a 10 MB file and the form (RequirementFile refuses anything larger with a clear message)
+        private const long MaxDocumentRequestSize = 25 * 1024 * 1024;
+
+        // POST /Projects/UploadRequirementDocument: R1-R10. documentId: the specification this is a new version of;
+        // empty means "the one with the same file name, or a new one".
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(MaxDocumentRequestSize)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaxDocumentRequestSize)]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        public async Task<IActionResult> UploadRequirementDocument(Guid projectId, IFormFile? file, Guid? documentId, CancellationToken cancellationToken)
+        {
+            if (file is not { Length: > 0 })
+            {
+                throw new Domain.Common.DomainException("Choose a file to upload");
+            }
+
+            using var buffer = new MemoryStream();
+            await file.CopyToAsync(buffer, cancellationToken);
+            await _documents.UploadAsync(projectId, file.FileName, buffer.ToArray(), documentId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+        }
+
+        // GET /Projects/RequirementDocumentFile/{id}?versionId=...: R7, for anyone in the organisation (R8: 404 for others)
+        [HttpGet]
+        public async Task<IActionResult> RequirementDocumentFile(Guid id, Guid versionId, CancellationToken cancellationToken)
+        {
+            var file = await _workItems.DocumentFileAsync(id, versionId, cancellationToken);
+            if (file is null)
+            {
+                return NotFound();
+            }
+
+            // ASVS V5.4.1: always a download with the stored content type and our cleaned name; nosniff stops guessing
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+            return File(file.Value.Content, file.Value.Version.ContentType, file.Value.Version.FileName);
         }
 
         // POST /Projects/LinkGitHub: R1

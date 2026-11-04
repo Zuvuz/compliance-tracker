@@ -42,6 +42,9 @@ namespace ComplianceTracker.Application.WorkItems
         // Every work item of the project, newest first
         Task<IReadOnlyList<WorkItem>> ListAsync(Guid projectId, CancellationToken cancellationToken = default);
 
+        // US-032: every requirement of one requirement specification, also removed ones
+        Task<IReadOnlyList<WorkItem>> ListByDocumentAsync(Guid projectId, Guid documentId, CancellationToken cancellationToken = default);
+
         Task AddAsync(WorkItem workItem, CancellationToken cancellationToken = default);
     }
 
