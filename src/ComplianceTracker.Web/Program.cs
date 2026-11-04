@@ -8,6 +8,7 @@ using ComplianceTracker.Application.WorkItems;
 using ComplianceTracker.Web.Background;
 using ComplianceTracker.Web.Filters;
 using ComplianceTracker.Web.Hubs;
+using ComplianceTracker.Web.Models;
 using ComplianceTracker.Web.Security;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -69,6 +70,9 @@ builder.Services.AddHostedService<ScheduledWorkItemSync>();
 builder.Services.AddSingleton<RationaleWorker>();
 builder.Services.AddSingleton<IRationaleQueue>(provider => provider.GetRequiredService<RationaleWorker>());
 builder.Services.AddHostedService(provider => provider.GetRequiredService<RationaleWorker>());
+
+// US-064 R7: the product name (Branding:ProductName), shown in the title, the top bar and the footer
+builder.Services.AddOptions<BrandingOptions>().BindConfiguration(BrandingOptions.Section);
 
 // The Keycloak settings, checked when the app starts (US-029 R3)
 builder.Services

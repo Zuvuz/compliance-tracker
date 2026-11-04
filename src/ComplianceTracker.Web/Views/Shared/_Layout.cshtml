@@ -1,10 +1,12 @@
-@* The shared frame around every page: menu at the top, the page itself in the middle (@RenderBody), footer at the bottom *@
+@* The shared frame around every page: menu at the top, the page itself in the middle (@RenderBody), footer at the bottom.
+   US-064: the theme is in wwwroot/css/site.css (top bar .ct-topbar); the product name comes from Branding:ProductName. *@
+@inject Microsoft.Extensions.Options.IOptions<ComplianceTracker.Web.Models.BrandingOptions> Branding
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Compliance Tracker</title>
+    <title>@ViewData["Title"] - @Branding.Value.Name</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -12,9 +14,9 @@
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark ct-topbar mb-4">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Compliance Tracker</a>
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index" id="product-name">@Branding.Value.Name</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -31,34 +33,34 @@
                         @if (signedIn)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark @Active("Projects", "Risks")" id="nav-projects" asp-area="" asp-controller="Projects" asp-action="Index">Projects</a>
+                                <a class="nav-link @Active("Projects", "Risks")" id="nav-projects" asp-area="" asp-controller="Projects" asp-action="Index">Projects</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark @Active("Frameworks")" id="nav-frameworks" asp-area="" asp-controller="Frameworks" asp-action="Index">Frameworks</a>
+                                <a class="nav-link @Active("Frameworks")" id="nav-frameworks" asp-area="" asp-controller="Frameworks" asp-action="Index">Frameworks</a>
                             </li>
                             @if (await Permissions.CanAsync(Permission.ManageMembers))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark @Active("Users")" id="nav-users" asp-area="" asp-controller="Users" asp-action="Index">Users</a>
+                                    <a class="nav-link @Active("Users")" id="nav-users" asp-area="" asp-controller="Users" asp-action="Index">Users</a>
                                 </li>
                             }
                             @if (await Permissions.CanAsync(Permission.ManageAiSharing))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark @Active("Settings")" id="nav-settings" asp-area="" asp-controller="Settings" asp-action="Index">Settings</a>
+                                    <a class="nav-link @Active("Settings")" id="nav-settings" asp-area="" asp-controller="Settings" asp-action="Index">Settings</a>
                                 </li>
                             }
                             @if (User.HasClaim(ComplianceTracker.Web.Security.SystemAdmin.ClaimType, ComplianceTracker.Web.Security.SystemAdmin.Role))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark @Active("System")" id="system-link" asp-area="" asp-controller="System" asp-action="Index">System</a>
+                                    <a class="nav-link @Active("System")" id="system-link" asp-area="" asp-controller="System" asp-action="Index">System</a>
                                 </li>
                             }
                         }
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                                <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                             </li>
                         }
                     </ul>
@@ -67,19 +69,19 @@
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item">
-                                <span class="nav-link text-dark" id="signed-in-user">@User.Identity.Name</span>
+                                <span class="nav-link" id="signed-in-user">@User.Identity.Name</span>
                             </li>
                             @* Sign out is a POST form with an antiforgery token, so other websites cannot sign the user out *@
                             <li class="nav-item">
                                 <form asp-controller="Account" asp-action="Logout" method="post">
-                                    <button type="submit" class="nav-link btn btn-link text-dark">Sign out</button>
+                                    <button type="submit" class="nav-link btn btn-link">Sign out</button>
                                 </form>
                             </li>
                         }
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">Sign in</a>
+                                <a class="nav-link" asp-controller="Account" asp-action="Login">Sign in</a>
                             </li>
                         }
                     </ul>
@@ -95,7 +97,7 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2026 - Compliance Tracker -<a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            &copy; 2026 - <span id="footer-product-name">@Branding.Value.Name</span> - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
