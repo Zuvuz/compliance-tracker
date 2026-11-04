@@ -404,6 +404,7 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - En ukendt nøgle giver en klar besked: en ukendt filtype afvises med de filtyper, der virker, og en ukendt `Ai:Provider` stopper appen ved start.
 - **Begrundelse:** En ny filtype, scanner eller udbyder bliver én ny klasse og én registrering, uden ændringer i use cases eller andre steder (ISO 27001 A.8.27, A.8.32). Det er nemt at teste hver del for sig. En factory gør ikke systemet hurtigere i sig selv; gevinsten er, at det er nemt at udvide uden at ændre det, der virker.
 - **Fravalgt:** factories overalt, og et plugin-system, der indlæser assemblies, mens appen kører.
+
 ### B37 – Kryptering i lag: først TLS til databasen
 
 - **Status:** Vedtaget
