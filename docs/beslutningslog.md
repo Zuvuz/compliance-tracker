@@ -335,6 +335,17 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
     - US-015: samme CVR gemt på samme tid.
   - **Udskudt fra fase 1 til efter MVP'en:** `Kontrol`, `Kravvurdering` og `Release` fra domænemodellen. I MVP'en viser koblede stories og evidens, hvordan et krav opfyldes. Koblingen sammen med "ikke relevant" og dens begrundelse (US-043) fungerer som vurderingen.
   - Alle andre åbne stories bygges efter MVP'en. Nye idéer skrives som stories, men får ikke labelen `mvp`, medmindre de erstatter en af de syv.
+  - **Udvidet 04-11-2026:** de syv er bygget. Før en rigtig kunde får adgang, skal sikkerhedens grundlag også være på plads, og CRA-kravene skal være komplette. Derfor har disse også fået `mvp`:
+    - US-086: ingen organisation kan nå en andens data, testet på alle handlinger.
+    - US-087: sikkerheds-headers.
+    - US-088: sessioner udløber.
+    - US-089: Keycloak stopper gætteri på passwords og kræver MFA for Admins.
+    - US-090: et medlem kan fjernes.
+    - US-094: tests, der holder injection ude.
+    - US-084: TLS til databasen.
+    - US-068: dækningsliste for de indbyggede regulativer.
+    - US-096: kom-godt-i-gang-tjekliste.
+  - **Fase 1 efter MVP'en** har labelen `phase:1`: US-069, US-075, US-083, US-091, US-092, US-093 og US-095. Resten har `phase:2` eller ingen fase endnu.
 - **Begrundelse:** Uden evidens kan trackeren vise *hvem* der skal opfylde et krav, men ikke *at* det er gjort. Det er det, en auditor spørger om (ISO 27001 9.2, CRA bilag VII). En kunde skal kunne køre trackeren selv og ikke miste data (DOK-01 F3). Kontroller er mest vigtige for ISO 27001 på organisationsniveau, og releases bliver først nødvendige med SBOM (fase 3).
 - **Fravalgt:**
   - At bygge kontroller og releases nu.
