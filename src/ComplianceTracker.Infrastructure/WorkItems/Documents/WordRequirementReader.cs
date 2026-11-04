@@ -18,6 +18,8 @@ namespace ComplianceTracker.Infrastructure.WorkItems.Documents
 
         public string Extension => ".docx";
 
+        public DocumentKind Kind => DocumentKind.RequirementSpecification;
+
         public bool UsesIdPattern => true;
 
         public RequirementReadResult Read(byte[] content, IdPattern idPattern)

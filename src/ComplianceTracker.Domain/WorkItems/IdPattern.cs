@@ -9,6 +9,9 @@ namespace ComplianceTracker.Domain.WorkItems
     public sealed class IdPattern
     {
         public const string Default = @"[A-Z]{2,10}-\d+";
+
+        // US-034 R2: the default for a use case document, e.g. "UC-03"
+        public const string UseCaseDefault = @"UC-\d+";
         public const int MaxLength = 200;
 
         // ASVS V5.1.5: a pattern typed by the user can be slow on purpose; a match gets one second at most
@@ -26,10 +29,16 @@ namespace ComplianceTracker.Domain.WorkItems
                 RegexOptions.CultureInvariant | RegexOptions.Singleline, Timeout);
         }
 
-        // An empty pattern means the default
-        public static IdPattern Create(string? value)
+        // An empty pattern means the default. US-034: for use cases the use case default, also when the form's
+        // requirement default was left as it was.
+        public static IdPattern Create(string? value, DocumentKind kind = DocumentKind.RequirementSpecification)
         {
             var pattern = string.IsNullOrWhiteSpace(value) ? Default : value.Trim();
+            if (kind == DocumentKind.UseCases && pattern == Default)
+            {
+                pattern = UseCaseDefault;
+            }
+
             if (pattern.Length > MaxLength)
             {
                 throw new DomainException($"The ID pattern is longer than {MaxLength} characters");

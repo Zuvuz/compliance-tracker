@@ -35,6 +35,13 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(w => w.Description).IsRequired().HasDefaultValue("");
             builder.Property(w => w.AcceptanceCriteria).IsRequired().HasDefaultValue("");
 
+            // US-034: a use case's sections, as one JSON column; null for every other work item
+            builder.OwnsOne(w => w.UseCase, useCase =>
+            {
+                useCase.ToJson("UseCase");
+                useCase.Ignore(u => u.AcceptanceCriteria);
+            });
+
             // Belongs to one project. Restrict: a project cannot be deleted while it has work items.
             builder.HasOne<Project>()
                 .WithMany()

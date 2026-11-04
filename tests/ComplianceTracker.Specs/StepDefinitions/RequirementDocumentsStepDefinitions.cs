@@ -77,6 +77,16 @@ namespace ComplianceTracker.Specs.StepDefinitions
             return UploadAsync(Project, fileName, _lastContent);
         }
 
+        // US-034: a use case document from the doc string, "# " for a heading
+        [When("I upload the use case document {string} to {string} containing:")]
+        public Task WhenIUploadTheUseCaseDocument(string fileName, string projectName, string text)
+            => UploadAsync(projectName, fileName, TestDocuments.Docx(text));
+
+        // US-034 R4
+        [When("I upload the use case document {string} with {string} that only has a primary actor")]
+        public Task WhenIUploadAUseCaseWithOnlyAPrimaryActor(string fileName, string useCase)
+            => UploadAsync(Project, fileName, TestDocuments.Docx([$"# {useCase}", "Primary actor: Warehouse worker"]));
+
         // US-033 R6: the same file again, with another ID pattern
         [When("I upload it again with the ID pattern {string}")]
         public Task WhenIUploadItAgainWithTheIdPattern(string pattern)
@@ -151,6 +161,35 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.DoesNotContain(_web.Page!.QuerySelectorAll(".work-item[data-source=Document]"), w => w.GetAttribute("data-reference") == id);
         }
 
+        // US-034 R2
+        [Then("the project has the use case {string} with the name {string}")]
+        public async Task ThenTheProjectHasTheUseCase(string id, string name)
+        {
+            await OpenAsync(Project);
+            var useCase = Requirement(id);
+            Assert.Equal("Use case", useCase.QuerySelector(".work-item-type")?.TextContent.Trim());
+            Assert.Equal(name, useCase.QuerySelector(".work-item-title")?.TextContent.Trim());
+            _lastRequirement = id;
+        }
+
+        // US-034 R3
+        [Then("the use case has the primary actor {string} and {int} steps")]
+        public void ThenTheUseCaseHasThePrimaryActorAndSteps(string actor, int steps)
+        {
+            var useCase = Requirement(_lastRequirement!);
+            Assert.Equal(actor, useCase.QuerySelector(".use-case-actor")?.TextContent.Trim());
+            Assert.Equal(steps, useCase.QuerySelectorAll(".use-case-steps li").Length);
+        }
+
+        // US-034 R5
+        [Then("its acceptance criteria contain {string}")]
+        public void ThenItsAcceptanceCriteriaContain(string text)
+            => Assert.Contains(text, Requirement(_lastRequirement!).QuerySelector(".work-item-acceptance")?.TextContent ?? "");
+
+        [Then("the use case {string} is marked {string}")]
+        public Task ThenTheUseCaseIsMarked(string id, string state)
+            => ThenTheRequirementIsMarked(id, state);
+
         [Then("the requirement {string} is still active")]
         public Task ThenTheRequirementIsStillActive(string id)
             => ThenTheRequirementIsMarked(id, "Active");
@@ -208,6 +247,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 .ToDictionary(i => i.GetAttribute("name")!, i => i.GetAttribute("value") ?? "");
             fields["documentId"] = "";
             fields["idPattern"] = idPattern ?? form.QuerySelector("input[name=idPattern]")?.GetAttribute("value") ?? "";
+            fields["kind"] = TestDocuments.IsUseCaseDocument(fileName) ? "UseCases" : "RequirementSpecification"; // US-034
 
             await _web.PostFileAsync(form.GetAttribute("action")!, fields, fileName, content);
 

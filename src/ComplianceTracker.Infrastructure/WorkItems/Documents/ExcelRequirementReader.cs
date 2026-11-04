@@ -16,6 +16,8 @@ namespace ComplianceTracker.Infrastructure.WorkItems.Documents
         internal static readonly OpenSettings Limits = new() { MaxCharactersInPart = 50_000_000 };
 
         // The ID column says what the ID is
+        public DocumentKind Kind => DocumentKind.RequirementSpecification;
+
         public bool UsesIdPattern => false;
 
         public string Extension => ".xlsx";

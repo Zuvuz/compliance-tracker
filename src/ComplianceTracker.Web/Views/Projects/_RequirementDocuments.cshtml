@@ -1,4 +1,5 @@
 @* US-032: upload a requirement specification (Excel or CSV) and see its versions. US-033: or a Word document.
+   US-034: or a Word document with Unified Process use cases (select[name=kind]).
    Each upload is a new version; its requirements appear in the work item list below.
    Ids and classes used by the tests: #requirement-documents, #upload-requirement-document (input[name=idPattern]), .requirement-document[data-name],
    .document-summary, .document-skipped li, .document-version[data-version] a. *@
@@ -31,6 +32,13 @@
             <div class="col-md-3">
                 <button type="submit" class="btn btn-outline-primary w-100">Upload requirement specification</button>
             </div>
+            @* US-034 R1: what the document holds *@
+            <div class="col-md-4">
+                <select name="kind" class="form-select form-select-sm" aria-label="The document holds">
+                    <option value="@DocumentKind.RequirementSpecification">Requirement specification</option>
+                    <option value="@DocumentKind.UseCases">Use case document (.docx)</option>
+                </select>
+            </div>
             @* US-033 R2: how IDs look in a Word document, as a regular expression *@
             <div class="col-md-5">
                 <div class="input-group input-group-sm">
@@ -46,6 +54,9 @@
                 Only the first sheet is read.
                 Word: a requirement starts at a heading or paragraph that begins with an ID, e.g. "REQ-012 The user can log in".
                 The text below it is the description; after a line "Acceptance criteria:" it is the acceptance criteria.
+                Use cases: each starts at a heading such as "UC-03 Register patient" (the ID pattern is then UC-\d+ unless you change it),
+                with the sections Primary actor, Preconditions, Main success scenario, Extensions and Postconditions
+                (or Primær aktør, Forudsætninger, Hovedforløb, Udvidelser and Resultat).
             </div>
         </form>
     }
@@ -59,7 +70,13 @@
     {
         var latest = document.Latest!;
         <div class="requirement-document border rounded p-2 mb-2" data-name="@document.Name">
-            <div class="fw-semibold">@document.Name</div>
+            <div class="fw-semibold">
+                @document.Name
+                @if (document.Kind == DocumentKind.UseCases)
+                {
+                    <span class="badge text-bg-light border">Use cases</span>
+                }
+            </div>
             <p class="document-summary small mb-1">@latest.Summary</p>
             <p class="small text-muted mb-1">Uploaded by @Model.NameOf(latest.UploadedById), @latest.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</p>
             @if (latest.SkippedRows.Count > 0)
