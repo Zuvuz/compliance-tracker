@@ -26,6 +26,14 @@
     <ProjectReference Include="..\..\src\ComplianceTracker.Web\ComplianceTracker.Web.csproj" />
   </ItemGroup>
 
+  <!-- US-094: where the repository is, so the guardrail tests can read the app's source code wherever the tests run -->
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>RepositoryRoot</_Parameter1>
+      <_Parameter2>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../../'))</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
   <!-- US-014: the backup and restore scripts, so the tests run the same scripts as the backup service -->
   <ItemGroup>
     <None Include="..\..\docker\backup-db.sh;..\..\docker\restore-db.sh" LinkBase="scripts" CopyToOutputDirectory="PreserveNewest" />
