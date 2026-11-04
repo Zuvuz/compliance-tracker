@@ -52,6 +52,7 @@ namespace ComplianceTracker.Specs.Support
 
                 // US-018: not used by these tests, but the use cases must be creatable. Never reaches a network.
                 services.AddScoped<IWorkItemRepository, WorkItemRepository>();
+                services.AddScoped<IRequirementDocumentRepository, RequirementDocumentRepository>(); // US-032
                 services.AddScoped<IRequirementLinkRepository, RequirementLinkRepository>(); // US-021
                 services.AddScoped<IRequirementApplicabilityRepository, RequirementApplicabilityRepository>(); // US-043
                 services.AddScoped<IEvidenceRepository, EvidenceRepository>(); // US-057

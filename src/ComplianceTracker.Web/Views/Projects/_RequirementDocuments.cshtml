@@ -1,0 +1,79 @@
+@* US-032: upload a requirement specification (Excel or CSV) and see its versions.
+   Each upload is a new version; its requirements appear in the work item list below.
+   Ids and classes used by the tests: #requirement-documents, #upload-requirement-document, .requirement-document[data-name],
+   .document-summary, .document-skipped li, .document-version[data-version] a. *@
+@model ProjectDetailsViewModel
+@{
+    var project = Model.Project;
+    var canUpload = !project.IsClosed && await Permissions.CanAsync(Permission.EditProjects);
+}
+
+<section id="requirement-documents" class="mb-4">
+    <h2 class="h6">Requirement specifications</h2>
+
+    @if (canUpload)
+    {
+        <form asp-action="UploadRequirementDocument" method="post" enctype="multipart/form-data" class="row g-2 mb-2" id="upload-requirement-document">
+            <input type="hidden" name="projectId" value="@project.Id" />
+            <div class="col-md-5">
+                <input type="file" name="file" accept=".xlsx,.csv" class="form-control" aria-label="Requirement specification" />
+            </div>
+            <div class="col-md-4">
+                <select name="documentId" class="form-select" aria-label="Upload as">
+                    <option value="">New specification, or new version of one with the same file name</option>
+                    @foreach (var document in Model.Documents)
+                    {
+                        <option value="@document.Id">New version of @document.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-outline-primary w-100">Upload requirement specification</button>
+            </div>
+            <div class="col-12 form-text mt-0">
+                An .xlsx or .csv file of at most 10 MB. The first row names the columns: ID and Title are required,
+                Description and Acceptance criteria are optional (Krav-ID, Titel, Beskrivelse and Acceptkriterier also work).
+                Only the first sheet is read.
+            </div>
+        </form>
+    }
+
+    @if (Model.Documents.Count == 0)
+    {
+        <p class="small text-muted mb-0">No requirement specifications uploaded.</p>
+    }
+
+    @foreach (var document in Model.Documents)
+    {
+        var latest = document.Latest!;
+        <div class="requirement-document border rounded p-2 mb-2" data-name="@document.Name">
+            <div class="fw-semibold">@document.Name</div>
+            <p class="document-summary small mb-1">@latest.Summary</p>
+            <p class="small text-muted mb-1">Uploaded by @Model.NameOf(latest.UploadedById), @latest.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</p>
+            @if (latest.SkippedRows.Count > 0)
+            {
+                @* R3: the rows that did not become requirements, and why *@
+                <ul class="document-skipped small mb-1">
+                    @foreach (var skipped in latest.SkippedRows)
+                    {
+                        <li>@skipped</li>
+                    }
+                </ul>
+            }
+            <details>
+                <summary class="small">@document.Versions.Count version@(document.Versions.Count == 1 ? "" : "s")</summary>
+                <ul class="small mb-0">
+                    @foreach (var version in document.Versions.OrderByDescending(v => v.Number))
+                    {
+                        @* R7: every version's file can be downloaded *@
+                        <li class="document-version" data-version="@version.Number">
+                            <a href="@Url.Action("RequirementDocumentFile", "Projects", new { id = project.Id, versionId = version.Id })">Version @version.Number</a>
+                            · @version.FileName · @Model.NameOf(version.UploadedById), @version.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy")
+                            · <span class="text-muted" title="SHA-256 @version.Sha256">@version.Sha256[..12]</span>
+                        </li>
+                    }
+                </ul>
+            </details>
+        </div>
+    }
+</section>

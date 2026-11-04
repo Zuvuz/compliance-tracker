@@ -88,6 +88,9 @@ namespace ComplianceTracker.Specs.Support
                     WHERE "FrameworkId" IN (SELECT "Id" FROM "Frameworks" WHERE "OwnerOrganizationId" IS NOT NULL);
                 DELETE FROM "Frameworks" WHERE "OwnerOrganizationId" IS NOT NULL;
                 DELETE FROM "WorkItems";
+                DELETE FROM "RequirementDocumentFiles";
+                DELETE FROM "RequirementDocumentVersions";
+                DELETE FROM "RequirementDocuments";
                 DELETE FROM "SkippedIssues";
                 DELETE FROM "Projects";
                 DELETE FROM "Users";

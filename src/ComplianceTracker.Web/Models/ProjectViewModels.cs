@@ -173,7 +173,22 @@ namespace ComplianceTracker.Web.Models
 
     // The project's user stories from GitHub and how the last sync went (Views/Projects/_WorkItems.cshtml, US-018)
     // Compliance: when given, each user story shows the requirements it is linked to (US-021 R3)
-    public record WorkItemsViewModel(Project Project, IReadOnlyList<WorkItem> WorkItems, ProjectCompliance? Compliance = null);
+    // Documents: the requirement specifications the document work items come from (US-032)
+    public record WorkItemsViewModel(
+        Project Project, IReadOnlyList<WorkItem> WorkItems, ProjectCompliance? Compliance = null, IReadOnlyList<RequirementDocument>? Documents = null)
+    {
+        // US-032: e.g. "kravspec.xlsx", for a requirement read from a document
+        public string DocumentName(WorkItem item)
+            => Documents?.FirstOrDefault(d => d.Id == item.DocumentId)?.Name ?? "Document";
+
+        // US-032 R5: a document's requirement is "Active" or "Removed in version N"; GitHub's keep their own state
+        public static string StateText(WorkItem item) => item.Source switch
+        {
+            WorkItemSource.Document when item.State == WorkItemState.Removed => $"Removed in version {item.RemovedInVersion}",
+            WorkItemSource.Document => "Active",
+            _ => item.State.ToString()
+        };
+    }
 
     // Data for the project page (Views/Projects/Details.cshtml and its tabs)
     public record ProjectDetailsViewModel(Project Project, IReadOnlyList<Framework> AvailableFrameworks, IReadOnlyList<WorkItem> WorkItems, DateOnly Today)
@@ -202,7 +217,10 @@ namespace ComplianceTracker.Web.Models
             => Compliance?.Frameworks.FirstOrDefault(f => FrameworkNames.Slug(f.Framework.Name) == Sub)
                ?? Compliance?.Frameworks.FirstOrDefault();
 
-        public WorkItemsViewModel WorkItemsSection => new(Project, WorkItems, Compliance);
+        // US-032: the project's requirement specifications with their versions (User stories tab)
+        public IReadOnlyList<RequirementDocument> Documents { get; init; } = [];
+
+        public WorkItemsViewModel WorkItemsSection => new(Project, WorkItems, Compliance, Documents);
 
         // The name of a member, or "System" for what the tracker did by itself (US-018 R6)
         public string NameOf(Guid? userId)

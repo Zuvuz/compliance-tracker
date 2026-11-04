@@ -315,9 +315,10 @@ namespace ComplianceTracker.Application.Ai
             }
         }
 
-        // What the AI reads: the story's title, rules and examples, and the requirement's code, title and text (US-020 R3)
+        // What the AI reads: the story's title, rules and examples, and the requirement's code, title and text (US-020 R3).
+        // US-032: a requirement from a document gives its description and acceptance criteria instead.
         public static string StoryText(WorkItem story)
-            => Cut($"{story.Title}\n{story.Rules}\n{story.Examples}", 2000);
+            => Cut(story.MatchingText, 2000);
 
         public static string RequirementText(Requirement requirement)
             => Cut($"{requirement.Code} {requirement.Title}\n{requirement.Description}", 2000);

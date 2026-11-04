@@ -51,6 +51,8 @@
         </div>
     }
 
+    <partial name="_RequirementDocuments" model="Model" />
+
     @if (!project.IsClosed && Model.WorkItems.Count > 0)
     {
         @* US-020 R1: the local AI suggests requirements for every story; a person decides each one *@

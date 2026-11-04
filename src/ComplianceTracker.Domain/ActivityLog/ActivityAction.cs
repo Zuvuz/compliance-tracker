@@ -87,6 +87,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         // Evidence was added to or removed from a requirement of a project (US-057).
         // SubjectId points at the project; Details holds e.g. "I.2(d): PR 42".
         EvidenceAdded,
-        EvidenceRemoved
+        EvidenceRemoved,
+
+        // A requirement specification was uploaded to a project as a new version (US-032).
+        // SubjectId points at the project; Details holds the file name, the version and what it changed.
+        RequirementDocumentUploaded
     }
 }
