@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ComplianceTracker.Domain.WorkItems
 {
-    // US-032 R1: an uploaded requirement specification that has passed every check: at most 10 MB, a known type whose
+    // US-032 R1, US-033 R1: an uploaded requirement specification that has passed every check: at most 10 MB, a known type whose
     // content matches its extension, and a safe file name. A value object: if one exists, it is valid.
     public sealed class RequirementFile
     {
@@ -15,10 +15,11 @@ namespace ComplianceTracker.Domain.WorkItems
         private static readonly (string Extension, string ContentType)[] Types =
         [
             (".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-            (".csv", "text/csv")
+            (".csv", "text/csv"),
+            (".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document") // US-033
         ];
 
-        // .xlsx is a ZIP file
+        // .xlsx and .docx are ZIP files
         private static readonly byte[] ZipSignature = [0x50, 0x4B, 0x03, 0x04];
 
         // The cleaned file name, only used for display and downloads
@@ -33,7 +34,7 @@ namespace ComplianceTracker.Domain.WorkItems
 
         public string Sha256 { get; }
 
-        // R1, e.g. "Only .xlsx and .csv files can be uploaded"
+        // R1, e.g. "Only .xlsx, .csv and .docx files can be uploaded"
         public static string AllowedMessage
         {
             get

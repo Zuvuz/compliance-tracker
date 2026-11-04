@@ -1,7 +1,11 @@
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Wordprocessing;
 using System.Text;
+using Text = DocumentFormat.OpenXml.Spreadsheet.Text;
+using WordText = DocumentFormat.OpenXml.Wordprocessing.Text;
+using Run = DocumentFormat.OpenXml.Wordprocessing.Run;
 
 namespace ComplianceTracker.Specs.Support
 {
@@ -68,5 +72,60 @@ namespace ComplianceTracker.Specs.Support
 
         // A CSV file in UTF-8, e.g. "ID;Title\nREQ-001;Log in"
         public static byte[] Csv(string text) => Encoding.UTF8.GetBytes(text);
+
+        // US-033: a .docx file, one paragraph per line. "# " makes the line a "heading 1", as Word's built-in style does.
+        public static byte[] Docx(IEnumerable<string> lines)
+        {
+            using var stream = new MemoryStream();
+            using (var document = WordprocessingDocument.Create(stream, WordprocessingDocumentType.Document))
+            {
+                var main = document.AddMainDocumentPart();
+                var styles = main.AddNewPart<StyleDefinitionsPart>();
+                styles.Styles = new Styles(new Style(
+                    new StyleName { Val = "heading 1" },
+                    new StyleParagraphProperties(new OutlineLevel { Val = 0 }))
+                {
+                    Type = StyleValues.Paragraph,
+                    StyleId = "Heading1"
+                });
+
+                var body = new Body();
+                foreach (var line in lines)
+                {
+                    var heading = line.StartsWith("# ", StringComparison.Ordinal);
+                    var paragraph = new Paragraph(new Run(new WordText(heading ? line[2..] : line) { Space = SpaceProcessingModeValues.Preserve }));
+                    if (heading)
+                    {
+                        paragraph.ParagraphProperties = new ParagraphProperties(new ParagraphStyleId { Val = "Heading1" });
+                    }
+
+                    body.AppendChild(paragraph);
+                }
+
+                main.Document = new Document(body);
+                main.Document.Save();
+            }
+
+            return stream.ToArray();
+        }
+
+        // A Word document from a doc string in a scenario
+        public static byte[] Docx(string text) => Docx(text.Replace("\r", "").Split('\n'));
+
+        // US-033: a requirement specification of the type its name says, one requirement per "ID Title".
+        // In Word each requirement is a heading with a line of description under it.
+        public static byte[] For(string fileName, params string[] requirements)
+        {
+            if (!fileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
+            {
+                return XlsxWith(requirements);
+            }
+
+            return Docx(requirements.Select(Requirement).SelectMany(r => new[]
+            {
+                $"# {r.Id} {(r.Title.Length > 0 ? r.Title : "Requirement " + r.Id)}",
+                $"The description of {r.Id}."
+            }));
+        }
     }
 }

@@ -467,7 +467,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I upload the requirement specification \"kravspec.pdf\" to \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 60
-    await testRunner.ThenAsync("I see the error \"Only .xlsx and .csv files can be uploaded\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("I see the error \"Only .xlsx, .csv and .docx files can be uploaded\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

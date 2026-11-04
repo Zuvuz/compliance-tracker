@@ -213,7 +213,9 @@ namespace ComplianceTracker.Web.Controllers
         [RequestSizeLimit(MaxDocumentRequestSize)]
         [RequestFormLimits(MultipartBodyLengthLimit = MaxDocumentRequestSize)]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
-        public async Task<IActionResult> UploadRequirementDocument(Guid projectId, IFormFile? file, Guid? documentId, CancellationToken cancellationToken)
+        // US-033: idPattern says how IDs look in a Word document
+        public async Task<IActionResult> UploadRequirementDocument(
+            Guid projectId, IFormFile? file, Guid? documentId, string? idPattern, CancellationToken cancellationToken)
         {
             if (file is not { Length: > 0 })
             {
@@ -222,7 +224,7 @@ namespace ComplianceTracker.Web.Controllers
 
             using var buffer = new MemoryStream();
             await file.CopyToAsync(buffer, cancellationToken);
-            await _documents.UploadAsync(projectId, file.FileName, buffer.ToArray(), documentId, cancellationToken);
+            await _documents.UploadAsync(projectId, file.FileName, buffer.ToArray(), documentId, idPattern, cancellationToken);
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
         }
 
