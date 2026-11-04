@@ -192,6 +192,7 @@ classDiagram
   %% ================= Projekt og releases =================
   class Project {
     -id: Guid
+    -version: uint
     -organizationId: Guid
     -name: string
     -description: string
@@ -276,6 +277,7 @@ classDiagram
   }
   class Requirement {
     -id: Guid
+    -version: uint
     -frameworkVersionId: Guid
     -code: string
     -title: string
@@ -597,6 +599,7 @@ classDiagram
   %% ================= Risici (US-042) =================
   class Risk {
     -id: Guid
+    -version: uint
     -projectId: Guid
     -title: string
     -description: string

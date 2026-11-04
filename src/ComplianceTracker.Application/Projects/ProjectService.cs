@@ -86,9 +86,11 @@ namespace ComplianceTracker.Application.Projects
             string? description,
             string intendedPurpose,
             string? scope,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            uint? expectedVersion = null)
         {
             var project = await ProjectAsync(projectId, cancellationToken);
+            Concurrency.Ensure(project.Version, expectedVersion); // US-092
 
             var changes = project.Update(name, description, intendedPurpose, scope);
             if (changes.Count == 0)

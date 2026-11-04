@@ -42,7 +42,9 @@ Servicen er "healthy", når der findes en backup, der er under 26 timer gammel:
 docker compose --profile full ps backup
 ```
 
-Uden hele systemet kan backup-servicen startes alene ved siden af udviklingsdatabasen:
+Backup-servicen forbinder til hele stakkens database, `postgres-full`, over TLS og godkender dens certifikat (US-084).
+
+Udviklingsdatabasen kan få den samme backup for sig med servicen `backup-dev`. Backupperne havner i `./backups/dev`:
 
 ```bash
 docker compose --profile backup up -d
@@ -62,6 +64,12 @@ Gendannelse erstatter **alle** data i databasen med backuppen. Det sker i én tr
 3. Skriv `yes`, når scriptet spørger.
 
 Scriptet stopper webappen, gendanner, og starter den igen. På Windows køres det fra Git Bash.
+
+Scriptet gendanner i hele stakkens database (`postgres-full`). En backup af udviklingsdatabasen gendannes med `--dev`:
+
+```bash
+./scripts/restore.sh backups/dev/compliance_tracker_2026-10-25.dump --dev
+```
 
 ## 4. Test af gendannelsen
 

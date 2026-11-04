@@ -95,9 +95,16 @@ namespace ComplianceTracker.Application.Frameworks
         }
 
         // R2: corrects one requirement
-        public async Task ChangeRequirementAsync(Guid frameworkVersionId, Guid requirementId, string code, string title, string? description, CancellationToken cancellationToken = default)
+        // US-092: expectedVersion is the version of the requirement the row was shown with
+        public async Task ChangeRequirementAsync(Guid frameworkVersionId, Guid requirementId, string code, string title, string? description,
+            CancellationToken cancellationToken = default, uint? expectedVersion = null)
         {
             var version = await DraftAsync(frameworkVersionId, cancellationToken);
+            if (version.Requirements.FirstOrDefault(r => r.Id == requirementId) is { } requirement)
+            {
+                Concurrency.Ensure(requirement.Version, expectedVersion);
+            }
+
             version.ChangeRequirement(requirementId, code, title, description);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }

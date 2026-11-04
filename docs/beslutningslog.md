@@ -404,6 +404,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - En ukendt nøgle giver en klar besked: en ukendt filtype afvises med de filtyper, der virker, og en ukendt `Ai:Provider` stopper appen ved start.
 - **Begrundelse:** En ny filtype, scanner eller udbyder bliver én ny klasse og én registrering, uden ændringer i use cases eller andre steder (ISO 27001 A.8.27, A.8.32). Det er nemt at teste hver del for sig. En factory gør ikke systemet hurtigere i sig selv; gevinsten er, at det er nemt at udvide uden at ændre det, der virker.
 - **Fravalgt:** factories overalt, og et plugin-system, der indlæser assemblies, mens appen kører.
+### B37 – Kryptering i lag: først TLS til databasen
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-084)
+  - Hele stakken (`--profile full`) får sin egen database, `postgres-full`. Den tager kun imod forbindelser over TLS (`hostssl` i `pg_hba_tls.conf`), og kun med password (SCRAM).
+  - Webappen, migreringerne og backuppen godkender certifikatet (`SSL Mode=VerifyFull`, `sslmode=verify-full`). Certifikatet udstedes af den lokale CA, som `certs`-servicen laver.
+  - Udviklingsdatabasen (port 5433, Visual Studio) er uændret og kører uden TLS.
+- **Begrundelse:** TLS beskytter data på vej mellem webappen og databasen og er billigt at indføre. Det er nødvendigt, så snart databasen ligger på en anden maskine eller i skyen (ISO 27001 A.8.24, ASVS V9.2.2). En separat database til stakken betyder, at din udviklingsdatabase ikke ændres, og stakken ligner produktion.
+- **Senere lag, i den rækkefølge:**
+  - Krypteret disk eller volume (drift).
+  - Krypterede backupper (genbesøger B34).
+  - Kryptering af filer og hemmeligheder i appen med nøgler uden for databasen.
+- **Fravalgt:** at slå TLS til på den fælles database, fordi det ville ændre udviklingsmiljøet og kræve certifikater i Visual Studio.
 
 ## Åbne spørgsmål til klassediagrammet
 

@@ -101,6 +101,8 @@ else
                             <form id="@formId" asp-action="ChangeRequirement" method="post" class="d-inline">
                                 <input type="hidden" name="versionId" value="@version.Id" />
                                 <input type="hidden" name="requirementId" value="@requirement.Id" />
+                                @* US-092: the version the row was shown with *@
+                                <input type="hidden" name="rowVersion" value="@requirement.Version" />
                                 <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
                             </form>
                             <form asp-action="RemoveRequirement" method="post" class="d-inline">

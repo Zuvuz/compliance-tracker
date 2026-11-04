@@ -12,6 +12,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
         {
             builder.ToTable("Projects");
 
+            // US-092: PostgreSQL's xmin as the row version; a save fails if someone else changed the row since it was read
+            builder.Property(x => x.Version).IsRowVersion();
+
             // The id is set by the domain, not by the database
             builder.HasKey(p => p.Id);
             builder.Property(p => p.Id).ValueGeneratedNever();

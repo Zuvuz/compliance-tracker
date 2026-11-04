@@ -29,6 +29,11 @@ namespace ComplianceTracker.Infrastructure.Persistence
             {
                 await _db.SaveChangesAsync(cancellationToken);
             }
+            catch (DbUpdateConcurrencyException)
+            {
+                // US-092: someone else saved the same row after this request read it; nothing from this attempt is saved
+                throw new DomainException(Concurrency.Message);
+            }
             catch (DbUpdateException error) when (error.InnerException is PostgresException
             {
                 SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: { } constraint

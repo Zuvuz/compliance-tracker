@@ -10,6 +10,10 @@ namespace ComplianceTracker.Domain.Frameworks
         public Guid Id { get; } = Guid.NewGuid();
         public Guid FrameworkVersionId { get; private set; }
 
+        // US-092: the row's version, set by the database (PostgreSQL's xmin). A form carries it, so a save
+        // can tell that someone else changed the row after the form was opened.
+        public uint Version { get; private set; }
+
         // The requirement's own number in the framework, e.g. "A.5.15". Unique within the version.
         public string Code { get; private set; } = "";
 
