@@ -217,3 +217,24 @@ main {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+/* US-087: sizes that were inline styles, so the Content-Security-Policy can forbid inline styles */
+.ct-w-10 {
+  width: 10rem;
+}
+
+.ct-max-w-10 {
+  max-width: 10rem;
+}
+
+.ct-max-w-11 {
+  max-width: 11rem;
+}
+
+.ct-progress-sm {
+  height: 0.75rem;
+}
+
+.ct-progress-xs {
+  height: 0.5rem;
+}

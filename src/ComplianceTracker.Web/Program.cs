@@ -39,6 +39,10 @@ builder.Services
         options.Filters.Add<DomainExceptionFilter>();
         options.Filters.Add<DomainErrorFromTempDataFilter>();
     })
+    // The domain checks the input (US-029 R4); no page loads the browser-side validation scripts.
+    // US-087: without it, the validation summary no longer renders a hidden <li style="display:none">,
+    // so the Content-Security-Policy can forbid inline styles.
+    .AddViewOptions(options => options.HtmlHelperOptions.ClientValidationEnabled = false)
     .AddControllersAsServices();
 
 // Each layer registers its own services (US-029 R2):
@@ -153,6 +157,9 @@ builder.Services.AddAuthorization(options =>
 });
 
 var app = builder.Build();
+
+// US-087: security headers on every response, also static files and error pages
+app.UseSecurityHeaders();
 
 // Locally the database is migrated when the app starts (Database:MigrateOnStartup in appsettings.Development.json),
 // so new tables from a pull exist before the first request

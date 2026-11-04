@@ -87,9 +87,9 @@
                                    asp-route-sub="@FrameworkNames.Slug(framework.Framework.Name)">@shortName</a>
                                 <span><span class="coverage-percent">@framework.Percent %</span> (@framework.Covered of @framework.Total covered@(framework.NotApplicable > 0 ? $", {framework.NotApplicable} not applicable" : ""))</span>
                             </div>
-                            <div class="progress" role="progressbar" aria-label="@shortName coverage" aria-valuenow="@framework.Percent"
-                                 aria-valuemin="0" aria-valuemax="100" style="height: .5rem">
-                                <div class="progress-bar bg-success" style="width: @framework.Percent%"></div>
+                            <div class="progress ct-progress-xs" role="progressbar" aria-label="@shortName coverage" aria-valuenow="@framework.Percent"
+                                 aria-valuemin="0" aria-valuemax="100">
+                                <div class="progress-bar bg-success" data-percent="@framework.Percent"></div>
                             </div>
                         </li>
                     }
