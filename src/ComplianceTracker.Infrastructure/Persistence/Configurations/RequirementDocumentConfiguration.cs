@@ -16,6 +16,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.HasKey(d => d.Id);
             builder.Property(d => d.Id).ValueGeneratedNever();
             builder.Property(d => d.Name).IsRequired().HasMaxLength(200);
+            builder.Property(d => d.IdPattern).HasMaxLength(IdPattern.MaxLength); // US-033
 
             // Calculated, not stored
             builder.Ignore(d => d.Latest);

@@ -62,6 +62,7 @@ namespace ComplianceTracker.Infrastructure
             // US-032: one reader per file type of a requirement specification. No state.
             services.AddSingleton<IRequirementDocumentReader, ExcelRequirementReader>();
             services.AddSingleton<IRequirementDocumentReader, CsvRequirementReader>();
+            services.AddSingleton<IRequirementDocumentReader, WordRequirementReader>(); // US-033
 
             // US-018: the GitHub adapter (B11). A typed HttpClient, so connections are reused safely.
             // GitHub requires a User-Agent; the API version header keeps the JSON format stable.

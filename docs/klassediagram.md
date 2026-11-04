@@ -416,10 +416,18 @@ classDiagram
     -projectId: Guid
     -name: string
     -createdAt: DateTime
+    -idPattern: string?
     -versions: List~RequirementDocumentVersion~
     +NextVersionNumber: int
     +Create(projectId: Guid, name: string, at: DateTime)$ RequirementDocument
-    +AddVersion(file: RequirementFile, counts: ImportCounts, skipped: string[], userId: Guid, at: DateTime) RequirementDocumentVersion
+    +AddVersion(file: RequirementFile, counts: ImportCounts, skipped: string[], userId: Guid, at: DateTime, idPattern: IdPattern?) RequirementDocumentVersion
+  }
+  class IdPattern {
+    <<value object>>
+    +Default: string$
+    -value: string
+    +Create(value: string?)$ IdPattern
+    +MatchStart(text: string) (string, string)?
   }
   class RequirementDocumentVersion {
     -id: Guid
@@ -438,10 +446,11 @@ classDiagram
   class IRequirementDocumentReader {
     <<interface>>
     +Extension: string
-    +Read(content: byte[]) RequirementReadResult
+    +UsesIdPattern: bool
+    +Read(content: byte[], idPattern: IdPattern) RequirementReadResult
   }
   class RequirementDocumentService {
-    +UploadAsync(projectId: Guid, fileName: string, content: byte[], documentId: Guid?) Task~RequirementDocumentVersion~
+    +UploadAsync(projectId: Guid, fileName: string, content: byte[], documentId: Guid?, idPattern: string?) Task~RequirementDocumentVersion~
   }
   class GitHubLink {
     <<owned by Project>>
@@ -818,6 +827,7 @@ classDiagram
   RequirementDocumentService --> IRequirementDocumentReader : readers
   IRequirementDocumentReader <|.. ExcelRequirementReader
   IRequirementDocumentReader <|.. CsvRequirementReader
+  IRequirementDocumentReader <|.. WordRequirementReader
   WorkItemSyncService --> IWorkItemNotifier : notifier
   WorkItemSyncService --> ISecretProtector : secrets
   DataProtectionSecretProtector ..|> ISecretProtector

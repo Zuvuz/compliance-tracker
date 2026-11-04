@@ -1,7 +1,8 @@
-@* US-032: upload a requirement specification (Excel or CSV) and see its versions.
+@* US-032: upload a requirement specification (Excel or CSV) and see its versions. US-033: or a Word document.
    Each upload is a new version; its requirements appear in the work item list below.
-   Ids and classes used by the tests: #requirement-documents, #upload-requirement-document, .requirement-document[data-name],
+   Ids and classes used by the tests: #requirement-documents, #upload-requirement-document (input[name=idPattern]), .requirement-document[data-name],
    .document-summary, .document-skipped li, .document-version[data-version] a. *@
+@using ComplianceTracker.Domain.WorkItems
 @model ProjectDetailsViewModel
 @{
     var project = Model.Project;
@@ -16,7 +17,7 @@
         <form asp-action="UploadRequirementDocument" method="post" enctype="multipart/form-data" class="row g-2 mb-2" id="upload-requirement-document">
             <input type="hidden" name="projectId" value="@project.Id" />
             <div class="col-md-5">
-                <input type="file" name="file" accept=".xlsx,.csv" class="form-control" aria-label="Requirement specification" />
+                <input type="file" name="file" accept=".xlsx,.csv,.docx" class="form-control" aria-label="Requirement specification" />
             </div>
             <div class="col-md-4">
                 <select name="documentId" class="form-select" aria-label="Upload as">
@@ -30,10 +31,21 @@
             <div class="col-md-3">
                 <button type="submit" class="btn btn-outline-primary w-100">Upload requirement specification</button>
             </div>
+            @* US-033 R2: how IDs look in a Word document, as a regular expression *@
+            <div class="col-md-5">
+                <div class="input-group input-group-sm">
+                    <label class="input-group-text" for="id-pattern">ID pattern (Word)</label>
+                    <input type="text" name="idPattern" id="id-pattern" class="form-control font-monospace" value="@IdPattern.Default"
+                           maxlength="@IdPattern.MaxLength" spellcheck="false" />
+                </div>
+            </div>
             <div class="col-12 form-text mt-0">
-                An .xlsx or .csv file of at most 10 MB. The first row names the columns: ID and Title are required,
+                An .xlsx, .csv or .docx file of at most 10 MB.
+                Excel and CSV: the first row names the columns. ID and Title are required,
                 Description and Acceptance criteria are optional (Krav-ID, Titel, Beskrivelse and Acceptkriterier also work).
                 Only the first sheet is read.
+                Word: a requirement starts at a heading or paragraph that begins with an ID, e.g. "REQ-012 The user can log in".
+                The text below it is the description; after a line "Acceptance criteria:" it is the acceptance criteria.
             </div>
         </form>
     }
