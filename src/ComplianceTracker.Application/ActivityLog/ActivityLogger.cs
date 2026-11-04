@@ -19,6 +19,9 @@ namespace ComplianceTracker.Application.ActivityLog
         // current request's user (signing in, before the cookie exists)
         Task LogAsync(Guid organizationId, Guid userId, ActivityAction action, Guid? subjectId = null, CancellationToken cancellationToken = default);
 
+        // As above, with a text, e.g. why a session ended (US-088)
+        Task LogAsync(Guid organizationId, Guid userId, ActivityAction action, string details, CancellationToken cancellationToken = default);
+
         // When the system acts on its own, without a user (US-018 R6: the scheduled check of GitHub)
         Task LogSystemAsync(Guid organizationId, ActivityAction action, Guid? subjectId, string? details, CancellationToken cancellationToken = default);
     }
@@ -55,6 +58,11 @@ namespace ComplianceTracker.Application.ActivityLog
         public Task LogAsync(Guid organizationId, Guid userId, ActivityAction action, Guid? subjectId = null, CancellationToken cancellationToken = default)
             => _log.AppendAsync(
                 new ActivityLogEntry(organizationId, userId, action, _clock.GetUtcNow().UtcDateTime, subjectId),
+                cancellationToken);
+
+        public Task LogAsync(Guid organizationId, Guid userId, ActivityAction action, string details, CancellationToken cancellationToken = default)
+            => _log.AppendAsync(
+                new ActivityLogEntry(organizationId, userId, action, _clock.GetUtcNow().UtcDateTime, null, details),
                 cancellationToken);
     }
 }

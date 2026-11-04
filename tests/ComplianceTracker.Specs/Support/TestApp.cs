@@ -90,6 +90,42 @@ namespace ComplianceTracker.Specs.Support
             });
         }
 
+        // US-088: the web app with its real cookie and Keycloak setup (no test sign-in), where CookieSignIn gives the
+        // cookie. The clock replaces TimeProvider.System, so a scenario can let time pass between requests.
+        public static TestApp WithCookieSignIn(string connectionString, TimeProvider clock, IDictionary<string, string?>? overrides = null)
+        {
+            var settings = new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:ComplianceTracker"] = connectionString,
+                ["Authentication:Keycloak:Authority"] = FakeKeycloak.Issuer,
+                ["Authentication:Keycloak:ClientId"] = "compliance-tracker-web",
+                ["Authentication:Keycloak:ClientSecret"] = "not-used-in-tests",
+                ["Database:MigrateOnStartup"] = "false",
+                ["WorkItemSync:Enabled"] = "false"
+            };
+            foreach (var (key, value) in overrides ?? new Dictionary<string, string?>())
+            {
+                settings[key] = value;
+            }
+
+            return Create(settings, services =>
+            {
+                services.AddSingleton(clock);
+                services.AddTransient<Microsoft.AspNetCore.Hosting.IStartupFilter, CookieSignIn>();
+
+                // A closed page sends the user to the made-up Keycloak, without asking a real one for its settings
+                services.PostConfigure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme, options =>
+                {
+                    options.Configuration = FakeKeycloak.Configuration;
+                    options.ConfigurationManager =
+                        new StaticConfigurationManager<OpenIdConnectConfiguration>(FakeKeycloak.Configuration);
+                });
+            });
+        }
+
+        // The made-up Keycloak's sign-in page, where a closed page sends a signed-out user
+        public static string FakeKeycloakSignInPage => FakeKeycloak.Configuration.AuthorizationEndpoint;
+
         // The web app with real sign-in against a Keycloak container
         public static TestApp WithKeycloak(string connectionString, string authority, string clientSecret)
         {

@@ -55,5 +55,7 @@
         "description": "The owner of the Compliance Tracker (US-010). Sees all organisations and their members, not their data."
       }
     ]
-  }
+  },
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 28800
 }

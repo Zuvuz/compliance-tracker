@@ -96,6 +96,12 @@ builder.Services
     .AddCookie()
     .AddOpenIdConnect();
 
+// US-088: the session ends after a while without activity, and after a working day at most
+builder.Services.AddOptions<SignInSessionOptions>().BindConfiguration(SignInSessionOptions.Section);
+builder.Services
+    .AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme)
+    .Configure<IOptions<SignInSessionOptions>>((cookie, session) => SessionLifetime.Configure(cookie, session, builder.Environment.IsDevelopment()));
+
 // OpenID Connect is set up from the checked KeycloakOptions.
 // That way the integration tests can supply their own Keycloak address and secret.
 builder.Services

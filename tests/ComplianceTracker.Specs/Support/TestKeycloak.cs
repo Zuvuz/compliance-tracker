@@ -40,7 +40,7 @@ namespace ComplianceTracker.Specs.Support
                 }
 
                 // The same realm file the developers use in docker-compose.yml
-                var realmFile = Path.Combine(RepositoryRoot(), "keycloak", "compliance-tracker-realm.json");
+                var realmFile = Path.Combine(Repository.Root(), "keycloak", "compliance-tracker-realm.json");
 
                 _container = new KeycloakBuilder("quay.io/keycloak/keycloak:26.3")
                     .WithUsername(AdminUser)
@@ -130,19 +130,6 @@ namespace ComplianceTracker.Specs.Support
             client.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.GetProperty("access_token").GetString());
             return client;
-        }
-
-        // Walks up from the test's bin folder until it finds the solution file
-        private static string RepositoryRoot()
-        {
-            var directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "ComplianceTracker.slnx")))
-            {
-                directory = directory.Parent;
-            }
-
-            return directory?.FullName
-                ?? throw new InvalidOperationException("Could not find the repository root (ComplianceTracker.slnx).");
         }
     }
 }
