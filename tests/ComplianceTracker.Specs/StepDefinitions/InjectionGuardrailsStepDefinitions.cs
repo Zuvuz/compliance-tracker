@@ -1,3 +1,4 @@
+using ComplianceTracker.Specs.Support;
 using System.Text.RegularExpressions;
 
 namespace ComplianceTracker.Specs.StepDefinitions
@@ -20,7 +21,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("the app's source code is read")]
         public void WhenTheSourceCodeIsRead()
         {
-            var root = RepositoryRoot();
+            var root = Repository.Root();
             var src = Path.Combine(root, "src");
             _files = Directory.EnumerateFiles(src, "*.*", SearchOption.AllDirectories)
                 .Where(f => f.EndsWith(".cs") || f.EndsWith(".cshtml") || f.EndsWith(".js"))
@@ -94,30 +95,6 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
             text = Regex.Replace(text, @"/\*.*?\*/", Blank, RegexOptions.Singleline);
             return string.Join('\n', text.Split('\n').Select(line => line.TrimStart().StartsWith("//") ? "" : line));
-        }
-
-        // The folder with ComplianceTracker.slnx: written into the test assembly when it is built (the .csproj),
-        // or found by going up from where the tests run
-        private static string RepositoryRoot()
-        {
-            var built = typeof(InjectionGuardrailsStepDefinitions).Assembly
-                .GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), false)
-                .Cast<System.Reflection.AssemblyMetadataAttribute>()
-                .FirstOrDefault(a => a.Key == "RepositoryRoot")?.Value;
-            if (built is not null && File.Exists(Path.Combine(built, "ComplianceTracker.slnx")))
-            {
-                return built;
-            }
-
-            for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
-            {
-                if (File.Exists(Path.Combine(dir.FullName, "ComplianceTracker.slnx")))
-                {
-                    return dir.FullName;
-                }
-            }
-
-            throw new Xunit.Sdk.XunitException("The repository (ComplianceTracker.slnx) was not found from " + AppContext.BaseDirectory);
         }
 
         private sealed record SourceFile(string Path, string Code);

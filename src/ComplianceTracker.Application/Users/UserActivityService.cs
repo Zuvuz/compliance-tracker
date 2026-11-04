@@ -42,6 +42,21 @@ namespace ComplianceTracker.Application.Users
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        // US-088 R7: the session ended by itself (idle or too long). The cookie is already gone,
+        // so the user is passed in by the web app, like at sign-in.
+        public async Task RecordSessionEndedAsync(string externalId, string reason, CancellationToken cancellationToken = default)
+        {
+            var organization = await _organizations.GetByMemberAsync(externalId, cancellationToken);
+            if (organization is null)
+            {
+                return; // see the class comment
+            }
+
+            var user = organization.Users.Single(u => u.ExternalId == externalId);
+            await _log.LogAsync(organization.Id, user.Id, ActivityAction.UserSignedOut, reason, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
         // The signed-in user signs out
         public async Task RecordSignOutAsync(CancellationToken cancellationToken = default)
         {
