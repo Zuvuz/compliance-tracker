@@ -13,6 +13,8 @@
             @* Shows the domain's error messages, e.g. "Project name already in use" *@
             <div asp-validation-summary="All" class="text-danger" role="alert"></div>
             <input type="hidden" asp-for="Id" />
+            @* US-092: the version the form was opened with *@
+            <input type="hidden" asp-for="Version" />
 
             <div class="mb-3">
                 <label asp-for="Name" class="form-label"></label>

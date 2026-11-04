@@ -79,7 +79,7 @@ namespace ComplianceTracker.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(RiskFormModel model, CancellationToken cancellationToken)
         {
-            await _service.UpdateAsync(model.ProjectId, model.RiskId ?? Guid.Empty, Input(model), cancellationToken);
+            await _service.UpdateAsync(model.ProjectId, model.RiskId ?? Guid.Empty, Input(model), cancellationToken, model.Version);
             return RedirectToAction(nameof(Details), new { id = model.RiskId });
         }
 

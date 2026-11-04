@@ -111,9 +111,11 @@ namespace ComplianceTracker.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Version), IdFrom = "versionId")]
-        public async Task<IActionResult> ChangeRequirement(Guid versionId, Guid requirementId, string? code, string? title, string? description, CancellationToken cancellationToken)
+        // US-092: rowVersion is the version of the requirement the row was shown with
+        public async Task<IActionResult> ChangeRequirement(
+            Guid versionId, Guid requirementId, string? code, string? title, string? description, uint? rowVersion, CancellationToken cancellationToken)
         {
-            await _service.ChangeRequirementAsync(versionId, requirementId, code ?? "", title ?? "", description, cancellationToken);
+            await _service.ChangeRequirementAsync(versionId, requirementId, code ?? "", title ?? "", description, cancellationToken, rowVersion);
             return RedirectToAction(nameof(Version), new { id = versionId });
         }
 
