@@ -1,3 +1,5 @@
 * text=auto
 # US-017: shell scripts run inside Linux containers and must keep LF line endings
 *.sh text eol=lf
+# US-084: PostgreSQL's configuration files are read inside Linux containers too
+*.conf text eol=lf

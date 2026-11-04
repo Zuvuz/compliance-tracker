@@ -94,7 +94,7 @@ jobs:
       - name: Tjek migreringer, forside, log-ind og bruger (R2, R3, R6)
         run: |
           test "$(docker compose ps -a migrate --format '{{.ExitCode}}')" = "0"
-          migrations=$(docker compose exec -T postgres psql -U postgres -d compliance_tracker -tAc 'select count(*) from "__EFMigrationsHistory"')
+          migrations=$(docker compose exec -T postgres-full psql -U postgres -d compliance_tracker -tAc 'select count(*) from "__EFMigrationsHistory"')
           echo "Migrations applied: $migrations"
           test "$migrations" -gt 0
           curl -fsS --cacert certs/ca.crt https://localhost:8443/ -o /dev/null
@@ -108,6 +108,23 @@ jobs:
           uid=$(docker compose exec -T web id -u)
           echo "The web app runs as uid $uid"
           test "$uid" != "0"
+
+      - name: Databasen kræver TLS (US-084)
+        run: |
+          # Webappens forbindelser (fra Docker-netværket) bruger TLS
+          tls=$(docker compose exec -T postgres-full psql -U postgres -d compliance_tracker -tAc \
+            "select count(*) from pg_stat_ssl s join pg_stat_activity a using (pid) where a.client_addr is not null and s.ssl")
+          echo "Connections over TLS: $tls"
+          test "$tls" -gt 0
+          # En forbindelse med TLS og godkendt certifikat virker
+          docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" postgres-full \
+            psql "host=postgres-full user=postgres dbname=compliance_tracker sslmode=verify-full sslrootcert=/certs/ca.crt" -tAc "select 1"
+          # En forbindelse uden TLS afvises
+          if docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" postgres-full \
+            psql "host=postgres-full user=postgres dbname=compliance_tracker sslmode=disable" -tAc "select 1"; then
+            echo "A connection without TLS was accepted"; exit 1
+          fi
+          echo "A connection without TLS was refused"
 
       - name: Vis logs, hvis noget fejlede
         if: failure()
