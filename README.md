@@ -132,9 +132,10 @@ docker compose --profile full up -d --build
 
 How it works:
 
-- **Certificates:** the first time, the `certs` service makes a local certificate authority and a certificate for `localhost` and `keycloak.localhost` in `./certs`. The folder is never committed, and the authority exists only on your machine. To avoid the browser warning, trust `certs/ca.crt` once: on Windows, double-click it → **Install Certificate** → **Current User** → **Trusted Root Certification Authorities**. Delete `./certs` to make new ones.
+- **Certificates:** the `certs` service makes what is missing in `./certs`: a local certificate authority, a certificate for `localhost` and `keycloak.localhost`, and one for the database (`postgres-full`). The folder is never committed, and the authority exists only on your machine. To avoid the browser warning, trust `certs/ca.crt` once: on Windows, double-click it → **Install Certificate** → **Current User** → **Trusted Root Certification Authorities**. Delete `./certs` to make new ones.
 - **Keycloak:** the Docker stack has its own Keycloak, so the development Keycloak on port 8180 is not changed. Create users there with **Register**.
 - **Client secret:** the first start stops the web app with a message that `ClientSecret` is missing. Copy the secret from `https://keycloak.localhost:8543` → realm **compliance-tracker** → **Clients** → **compliance-tracker-web** → **Credentials** into `KEYCLOAK_CLIENT_SECRET` in `.env`, and run the command again.
+- **Database:** the Docker stack has its own database, `postgres-full`, apart from the development database on port 5433. It only accepts connections over TLS (US-084). The web app, the migrations and the backup verify its certificate (`SSL Mode=VerifyFull`), which the `certs` service makes as `certs/db.crt`. It has no port on your machine. To look inside, use `docker compose --profile full exec postgres-full psql -U postgres -d compliance_tracker`.
 - **Migrations:** they run in their own container (`migrate`) before the web app starts. If a migration fails, the web app is not started; see `docker compose logs migrate`.
 - **The web app:** it requires HTTPS for both itself and Keycloak, just like in production. It runs as the non-root user `app`, and the images have no secrets in them. `https://localhost:8443/health` says whether it can reach the database.
 - **The AI (optional):** the web app looks for Ollama at `http://host.docker.internal:11434` (set `AI_BASE_URL` in `.env` to change it). Ollama must then listen on more than `127.0.0.1`.
@@ -153,11 +154,13 @@ Docker Desktop must be running: the integration tests start their own PostgreSQL
 
 ## Backups
 
-With the whole system (`--profile full`), the `backup` service backs up the database every night at 02:00 to `./backups` and keeps 30 days. To restore one:
+With the whole system (`--profile full`), the `backup` service backs up the database (`postgres-full`) every night at 02:00 to `./backups` and keeps 30 days. To restore one:
 
 ```bash
 ./scripts/restore.sh backups/compliance_tracker_2026-10-25.dump
 ```
+
+`docker compose --profile backup up -d` backs up the development database instead, to `./backups/dev`. Restore one of those with `--dev`.
 
 The procedure, what is in a backup, and how the restore is tested are described in [docs/backup-og-gendannelse.md](docs/backup-og-gendannelse.md) (US-014).
 
