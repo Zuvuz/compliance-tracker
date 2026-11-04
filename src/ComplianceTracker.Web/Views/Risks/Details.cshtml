@@ -32,7 +32,7 @@
         <dd class="col-sm-9">@risk.ResidualLikelihood × @risk.ResidualImpact (@residual)</dd>
     }
     <dt class="col-sm-3">Owner</dt>
-    <dd class="col-sm-9">@Model.NameOf(risk.OwnerId)</dd>
+    <dd class="col-sm-9" id="risk-owner">@Model.OwnerOf(risk.OwnerId)</dd>
     <dt class="col-sm-3">Treatment</dt>
     <dd class="col-sm-9">@risk.Treatment</dd>
     <dt class="col-sm-3">Status</dt>

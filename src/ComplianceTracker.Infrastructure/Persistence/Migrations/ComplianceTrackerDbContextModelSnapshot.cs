@@ -1082,6 +1082,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("RemovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RemovedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -1090,7 +1096,8 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ExternalId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"RemovedAt\" IS NULL");
 
                     b.HasIndex("OrganizationId");
 

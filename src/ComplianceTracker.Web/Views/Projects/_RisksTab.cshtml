@@ -120,7 +120,7 @@
                                     </div>
                                 </td>
                                 <td class="text-nowrap">@risk.Likelihood × @risk.Impact = @risk.Score</td>
-                                <td>@Model.NameOf(risk.OwnerId)</td>
+                                <td class="risk-owner">@RiskPageViewModel.OwnerName(Model.Organization, risk.OwnerId)</td>
                                 <td>@risk.Treatment</td>
                                 <td class="risk-status">@risk.DisplayStatus</td>
                                 <td class="small">@(risk.LastReviewedAt?.ToLocalTime().ToString("dd-MM-yyyy") ?? "never")</td>

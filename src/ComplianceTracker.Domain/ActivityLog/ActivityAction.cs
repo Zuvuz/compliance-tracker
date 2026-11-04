@@ -84,6 +84,9 @@ namespace ComplianceTracker.Domain.ActivityLog
         InvitationRevoked,
         InvitationAccepted,
 
+        // US-090: a member was removed by an Admin. SubjectId points at the member; Details holds the name.
+        MemberRemoved,
+
         // Evidence was added to or removed from a requirement of a project (US-057).
         // SubjectId points at the project; Details holds e.g. "I.2(d): PR 42".
         EvidenceAdded,

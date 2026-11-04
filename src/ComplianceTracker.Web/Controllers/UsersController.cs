@@ -56,6 +56,16 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // POST /Users/Remove: US-090 R1, R2. The member's access ends at once; their history keeps their name.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> Remove(Guid memberId, CancellationToken cancellationToken)
+        {
+            await _members.RemoveAsync(memberId, cancellationToken);
+            return RedirectToAction(nameof(Index));
+        }
+
         // POST /Users/CreateInvitation: US-009 R1. The link is shown once (only its hash is stored).
         [HttpPost]
         [ValidateAntiForgeryToken]

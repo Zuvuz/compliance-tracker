@@ -37,7 +37,7 @@ namespace ComplianceTracker.Application.Users
                 return; // see the class comment
             }
 
-            var user = organization.Users.Single(u => u.ExternalId == externalId);
+            var user = organization.Members.Single(u => u.ExternalId == externalId);
             await _log.LogAsync(organization.Id, user.Id, ActivityAction.UserSignedIn, cancellationToken: cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }

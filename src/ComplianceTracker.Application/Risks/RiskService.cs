@@ -163,7 +163,8 @@ namespace ComplianceTracker.Application.Risks
 
         private static void EnsureMember(Organization organization, Guid userId)
         {
-            if (organization.Users.All(u => u.Id != userId))
+            // US-090: a removed member cannot be made owner
+            if (organization.Members.All(u => u.Id != userId))
             {
                 throw new DomainException("The owner must be a member of the organisation");
             }

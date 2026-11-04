@@ -1,6 +1,6 @@
 @* Users (US-045, in the top bar): the members of the organisation and their roles (US-010), and invitations (US-009).
    The first three columns are checked by the tests: name, e-mail, role.
-   Ids and classes used by the tests: #organisation-users rows with data-member, change-role forms,
+   Ids and classes used by the tests: #organisation-users rows with data-member, change-role and remove-member forms (US-090),
    #create-invitation, #invitation-link, #open-invitations rows with revoke-invitation forms. *@
 @using ComplianceTracker.Domain.Organizations
 @model MembersViewModel
@@ -24,11 +24,13 @@
             @if (canManage)
             {
                 <th>Change role</th>
+                <th></th>
             }
         </tr>
     </thead>
     <tbody>
-        @foreach (var user in organization.Users.OrderBy(u => u.Name))
+        @* US-090: removed members are not listed; their names stay on what they did *@
+        @foreach (var user in organization.Members.OrderBy(u => u.Name))
         {
             <tr data-member="@user.Name">
                 <td>@user.Name</td>
@@ -48,6 +50,16 @@
                             </select>
                             <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
                         </form>
+                    </td>
+                    <td>
+                        @* US-090 R1: asks once more before the member is removed *@
+                        <details class="remove-member-confirm">
+                            <summary class="btn btn-sm btn-outline-danger">Remove</summary>
+                            <form asp-action="Remove" method="post" class="remove-member mt-1">
+                                <input type="hidden" name="memberId" value="@user.Id" />
+                                <button type="submit" class="btn btn-sm btn-danger">Remove @user.Name now</button>
+                            </form>
+                        </details>
                     </td>
                 }
             </tr>

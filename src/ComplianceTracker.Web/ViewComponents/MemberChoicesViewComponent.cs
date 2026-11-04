@@ -18,7 +18,8 @@ namespace ComplianceTracker.Web.ViewComponents
         public async Task<IViewComponentResult> InvokeAsync(string name, Guid selected)
         {
             var organization = await _organizations.MineAsync(HttpContext.RequestAborted);
-            var members = (organization?.Users ?? [])
+            // US-090: only current members can be chosen
+            var members = (organization?.Members ?? [])
                 .OrderBy(u => u.Name)
                 .Select(u => new SelectListItem(u.Name, u.Id.ToString(), u.Id == selected))
                 .ToList();

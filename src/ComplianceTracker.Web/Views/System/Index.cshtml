@@ -15,8 +15,8 @@
             <tr data-organisation="@organization.Name">
                 <td><a asp-action="Organization" asp-route-id="@organization.Id">@organization.Name</a></td>
                 <td>@organization.Cvr</td>
-                <td>@organization.Users.Count</td>
-                <td>@string.Join(", ", organization.Users.Where(u => u.Role == UserRole.Admin).Select(u => u.Name))</td>
+                <td>@organization.Members.Count</td>
+                <td>@string.Join(", ", organization.Members.Where(u => u.Role == UserRole.Admin).Select(u => u.Name))</td>
             </tr>
         }
     </tbody>
