@@ -18,6 +18,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // What each upload sent, so a download can be compared: (file name, version) → bytes
         private readonly Dictionary<(string FileName, int Version), byte[]> _uploaded = new();
         private string? _lastFileName;
+        private byte[]? _lastContent;
+        private string? _lastRequirement;
 
         public RequirementDocumentsStepDefinitions(WebScenario web)
         {
@@ -44,20 +46,51 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             // The Given names the project first, the When names the file first
             var (projectName, fileName) = first.Contains('.') ? (second, first) : (first, second);
-            return UploadAsync(projectName, fileName, TestDocuments.XlsxWith(requirement));
+            return UploadAsync(projectName, fileName, TestDocuments.For(fileName, requirement));
         }
 
         [Given("{string} has version 1 of {string} with {string} and {string}")]
         public Task GivenHasVersion1WithTwo(string projectName, string fileName, string first, string second)
-            => UploadAsync(projectName, fileName, TestDocuments.XlsxWith(first, second));
+            => UploadAsync(projectName, fileName, TestDocuments.For(fileName, first, second));
 
         [When("I upload version 2 of {string} with only {string}")]
         public Task WhenIUploadVersion2Of(string fileName, string requirement)
-            => UploadAsync(Project, fileName, TestDocuments.XlsxWith(requirement));
+            => UploadAsync(Project, fileName, TestDocuments.For(fileName, requirement));
 
         [When("I upload version 2 with {string} and {string}")]
         public Task WhenIUploadVersion2With(string first, string second)
-            => UploadAsync(Project, _lastFileName!, TestDocuments.XlsxWith(first, second));
+            => UploadAsync(Project, _lastFileName!, TestDocuments.For(_lastFileName!, first, second));
+
+        [When("I upload version 2 with only {string}")]
+        public Task WhenIUploadVersion2WithOnly(string requirement)
+            => UploadAsync(Project, _lastFileName!, TestDocuments.For(_lastFileName!, requirement));
+
+        // US-033: a Word document from the doc string, "# " for a heading
+        [When("I upload the Word document {string} to {string} containing:")]
+        public Task WhenIUploadTheWordDocument(string fileName, string projectName, string text)
+            => UploadAsync(projectName, fileName, TestDocuments.Docx(text));
+
+        [When("I upload the Word document {string} with the heading {string}")]
+        public Task WhenIUploadTheWordDocumentWithTheHeading(string fileName, string heading)
+        {
+            _lastContent = TestDocuments.Docx([$"# {heading}", "The description."]);
+            return UploadAsync(Project, fileName, _lastContent);
+        }
+
+        // US-034: a use case document from the doc string, "# " for a heading
+        [When("I upload the use case document {string} to {string} containing:")]
+        public Task WhenIUploadTheUseCaseDocument(string fileName, string projectName, string text)
+            => UploadAsync(projectName, fileName, TestDocuments.Docx(text));
+
+        // US-034 R4
+        [When("I upload the use case document {string} with {string} that only has a primary actor")]
+        public Task WhenIUploadAUseCaseWithOnlyAPrimaryActor(string fileName, string useCase)
+            => UploadAsync(Project, fileName, TestDocuments.Docx([$"# {useCase}", "Primary actor: Warehouse worker"]));
+
+        // US-033 R6: the same file again, with another ID pattern
+        [When("I upload it again with the ID pattern {string}")]
+        public Task WhenIUploadItAgainWithTheIdPattern(string pattern)
+            => UploadAsync(Project, _lastFileName!, _lastContent!, pattern);
 
         // R4: the header is row 1, so the ID is put on the given rows and other IDs everywhere else
         [When("I upload a requirement specification where {string} is in rows {int} and {int}")]
@@ -76,6 +109,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             {
                 ".pdf" => TestFiles.Pdf(),
                 ".xlsx" => TestDocuments.XlsxWith("REQ-001 Log in"),
+                ".docx" => TestDocuments.For(fileName, "REQ-001 Log in"),
                 _ => [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1, 0, 0, 0, 0] // an old binary Office file
             };
             return UploadAsync(projectName, fileName, content);
@@ -105,6 +139,56 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await OpenAsync(Project);
             Assert.Equal("Requirement", Requirement(id).QuerySelector(".work-item-type")?.TextContent.Trim());
         }
+
+        // US-033 R2, R3
+        [Then("the project has the requirement {string} with the title {string}")]
+        public async Task ThenTheProjectHasTheRequirementWithTheTitle(string id, string title)
+        {
+            await OpenAsync(Project);
+            Assert.Equal(title, Requirement(id).QuerySelector(".work-item-title")?.TextContent.Trim());
+            _lastRequirement = id;
+        }
+
+        [Then("its acceptance criteria are {string}")]
+        public void ThenItsAcceptanceCriteriaAre(string criteria)
+            => Assert.Equal(criteria, Requirement(_lastRequirement!).QuerySelector(".work-item-acceptance")?.TextContent.Trim());
+
+        // US-033 R4: an ID inside the text is not a requirement
+        [Then("the project has no requirement {string}")]
+        public async Task ThenTheProjectHasNoRequirement(string id)
+        {
+            await OpenAsync(Project);
+            Assert.DoesNotContain(_web.Page!.QuerySelectorAll(".work-item[data-source=Document]"), w => w.GetAttribute("data-reference") == id);
+        }
+
+        // US-034 R2
+        [Then("the project has the use case {string} with the name {string}")]
+        public async Task ThenTheProjectHasTheUseCase(string id, string name)
+        {
+            await OpenAsync(Project);
+            var useCase = Requirement(id);
+            Assert.Equal("Use case", useCase.QuerySelector(".work-item-type")?.TextContent.Trim());
+            Assert.Equal(name, useCase.QuerySelector(".work-item-title")?.TextContent.Trim());
+            _lastRequirement = id;
+        }
+
+        // US-034 R3
+        [Then("the use case has the primary actor {string} and {int} steps")]
+        public void ThenTheUseCaseHasThePrimaryActorAndSteps(string actor, int steps)
+        {
+            var useCase = Requirement(_lastRequirement!);
+            Assert.Equal(actor, useCase.QuerySelector(".use-case-actor")?.TextContent.Trim());
+            Assert.Equal(steps, useCase.QuerySelectorAll(".use-case-steps li").Length);
+        }
+
+        // US-034 R5
+        [Then("its acceptance criteria contain {string}")]
+        public void ThenItsAcceptanceCriteriaContain(string text)
+            => Assert.Contains(text, Requirement(_lastRequirement!).QuerySelector(".work-item-acceptance")?.TextContent ?? "");
+
+        [Then("the use case {string} is marked {string}")]
+        public Task ThenTheUseCaseIsMarked(string id, string state)
+            => ThenTheRequirementIsMarked(id, state);
 
         [Then("the requirement {string} is still active")]
         public Task ThenTheRequirementIsStillActive(string id)
@@ -150,7 +234,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // ---------------------------------------------------------- Helpers
 
         // Uploads through the form on the User stories tab, as a new specification or a new version of the same name
-        private async Task UploadAsync(string projectName, string fileName, byte[] content)
+        // idPattern: what to type in the ID pattern field (US-033); null keeps the form's default
+        private async Task UploadAsync(string projectName, string fileName, byte[] content, string? idPattern = null)
         {
             await OpenAsync(projectName);
             var form = _web.Page!.QuerySelector("form#upload-requirement-document")
@@ -161,6 +246,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 .Where(i => i.GetAttribute("name") != "__RequestVerificationToken")
                 .ToDictionary(i => i.GetAttribute("name")!, i => i.GetAttribute("value") ?? "");
             fields["documentId"] = "";
+            fields["idPattern"] = idPattern ?? form.QuerySelector("input[name=idPattern]")?.GetAttribute("value") ?? "";
+            fields["kind"] = TestDocuments.IsUseCaseDocument(fileName) ? "UseCases" : "RequirementSpecification"; // US-034
 
             await _web.PostFileAsync(form.GetAttribute("action")!, fields, fileName, content);
 

@@ -16,10 +16,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.HasKey(d => d.Id);
             builder.Property(d => d.Id).ValueGeneratedNever();
             builder.Property(d => d.Name).IsRequired().HasMaxLength(200);
+            builder.Property(d => d.IdPattern).HasMaxLength(IdPattern.MaxLength); // US-033
+
+            // US-034: stored as text like all enums. Existing specifications hold requirements.
+            builder.Property(d => d.Kind).HasConversion<string>().HasMaxLength(30).IsRequired();
 
             // Calculated, not stored
             builder.Ignore(d => d.Latest);
             builder.Ignore(d => d.NextVersionNumber);
+            builder.Ignore(d => d.WorkItemType);
 
             // Restrict: a project cannot be deleted while it has requirement specifications
             builder.HasOne<Project>().WithMany().HasForeignKey(d => d.ProjectId).OnDelete(DeleteBehavior.Restrict);

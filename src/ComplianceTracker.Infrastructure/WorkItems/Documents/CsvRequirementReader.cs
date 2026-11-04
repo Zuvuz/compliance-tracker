@@ -1,4 +1,5 @@
 using ComplianceTracker.Application.WorkItems;
+using ComplianceTracker.Domain.WorkItems;
 using System.Text;
 
 namespace ComplianceTracker.Infrastructure.WorkItems.Documents
@@ -7,11 +8,16 @@ namespace ComplianceTracker.Infrastructure.WorkItems.Documents
     // Quoted fields may hold separators, line breaks and doubled quotes (RFC 4180).
     public class CsvRequirementReader : IRequirementDocumentReader
     {
+        // The ID column says what the ID is
+        public DocumentKind Kind => DocumentKind.RequirementSpecification;
+
+        public bool UsesIdPattern => false;
+
         public string Extension => ".csv";
 
-        public RequirementReadResult Read(byte[] content)
+        public RequirementReadResult Read(byte[] content, IdPattern idPattern)
         {
-            var text = new UTF8Encoding(false).GetString(content).TrimStart('﻿');
+            var text = new UTF8Encoding(false).GetString(content).TrimStart('\uFEFF');
             var firstLine = text.Split('\n')[0];
             var separator = firstLine.Count(c => c == ';') >= firstLine.Count(c => c == ',') ? ';' : ',';
             return RequirementTable.Read(Rows(text, separator));

@@ -57,7 +57,7 @@ Feature: Upload a requirement specification as Excel or CSV
   @US-032 @integration
   Scenario: Other file types are refused
     When I upload the requirement specification "kravspec.pdf" to "Acme Portal"
-    Then I see the error "Only .xlsx and .csv files can be uploaded"
+    Then I see the error "Only .xlsx, .csv and .docx files can be uploaded"
 
   @US-032 @iso27001-A.5.15 @integration
   Scenario: Other organisations cannot see the requirements

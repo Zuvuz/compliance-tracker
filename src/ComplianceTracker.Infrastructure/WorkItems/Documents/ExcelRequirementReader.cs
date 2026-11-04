@@ -1,4 +1,5 @@
 using ComplianceTracker.Application.WorkItems;
+using ComplianceTracker.Domain.WorkItems;
 using ComplianceTracker.Domain.Common;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
@@ -14,9 +15,14 @@ namespace ComplianceTracker.Infrastructure.WorkItems.Documents
         // ASVS V5.2.3: a 10 MB file can unpack to far more; a part larger than this is refused instead of read
         internal static readonly OpenSettings Limits = new() { MaxCharactersInPart = 50_000_000 };
 
+        // The ID column says what the ID is
+        public DocumentKind Kind => DocumentKind.RequirementSpecification;
+
+        public bool UsesIdPattern => false;
+
         public string Extension => ".xlsx";
 
-        public RequirementReadResult Read(byte[] content)
+        public RequirementReadResult Read(byte[] content, IdPattern idPattern)
         {
             try
             {

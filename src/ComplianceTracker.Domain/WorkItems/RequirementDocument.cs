@@ -17,6 +17,15 @@ namespace ComplianceTracker.Domain.WorkItems
 
         public DateTime CreatedAt { get; private set; }
 
+        // US-034: requirements or use cases; the same for every version
+        public DocumentKind Kind { get; private set; }
+
+        // The kind of work item its entries become
+        public WorkItemType WorkItemType => Kind == DocumentKind.UseCases ? WorkItemType.UseCase : WorkItemType.Requirement;
+
+        // US-033: the ID pattern the newest version of a Word document was read with; null for a spreadsheet
+        public string? IdPattern { get; private set; }
+
         public IReadOnlyList<RequirementDocumentVersion> Versions => _versions;
 
         public RequirementDocumentVersion? Latest => _versions.MaxBy(v => v.Number);
@@ -27,19 +36,22 @@ namespace ComplianceTracker.Domain.WorkItems
         // For EF Core only
         private RequirementDocument() { }
 
-        public static RequirementDocument Create(Guid projectId, string name, DateTime at)
+        public static RequirementDocument Create(Guid projectId, string name, DateTime at, DocumentKind kind = DocumentKind.RequirementSpecification)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
                 throw new DomainException("A requirement specification needs a name");
             }
 
-            return new RequirementDocument { ProjectId = projectId, Name = name.Trim(), CreatedAt = at };
+            return new RequirementDocument { ProjectId = projectId, Name = name.Trim(), CreatedAt = at, Kind = kind };
         }
 
-        // R5, R6, R7: one upload, with its file and what it did to the requirements
-        public RequirementDocumentVersion AddVersion(RequirementFile file, ImportCounts counts, IReadOnlyList<string> skipped, Guid userId, DateTime at)
+        // R5, R6, R7: one upload, with its file and what it did to the requirements.
+        // idPattern: the pattern a Word document was read with (US-033), or null for a spreadsheet.
+        public RequirementDocumentVersion AddVersion(
+            RequirementFile file, ImportCounts counts, IReadOnlyList<string> skipped, Guid userId, DateTime at, IdPattern? idPattern = null)
         {
+            IdPattern = idPattern?.Value;
             var version = new RequirementDocumentVersion(Id, NextVersionNumber, file, counts, skipped, userId, at);
             _versions.Add(version);
             return version;

@@ -370,17 +370,21 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 ### B35 – Kravspecifikationer importeres som versioner og synkroniseres ikke
 
 - **Status:** Vedtaget
-- **Beslutning:** (US-032)
-  - Et projekt kan få en eller flere kravspecifikationer (`RequirementDocument`) uploadet som Excel eller CSV. Hver upload er en ny version (`RequirementDocumentVersion`), og filen gemmes i databasen.
-  - Hvert krav bliver et `WorkItem` med `Source = Document` og `Type = Requirement`, så det vises og kan kobles til regler på samme måde som en user story fra GitHub.
+- **Beslutning:** (US-032, US-033, US-034)
+  - Et projekt kan få en eller flere kravspecifikationer (`RequirementDocument`) uploadet som Excel, CSV eller Word. Et Word-dokument kan også være et use case-dokument (Unified Process). Hver upload er en ny version (`RequirementDocumentVersion`), og filen gemmes i databasen.
+  - Hvert krav bliver et `WorkItem` med `Source = Document` og `Type = Requirement`, så det vises og kan kobles til regler på samme måde som en user story fra GitHub. En use case bliver `Type = UseCase` med sine afsnit (primær aktør, forudsætninger, hovedforløb, udvidelser og resultat) gemt som JSON.
+  - En use case's hovedforløb og resultat er dens acceptkriterier, så AI-mappingen (US-020) læser den som en user story.
   - Kravene matches på deres ID inden for samme kravspecifikation. Nye tilføjes, ændrede opdateres, og krav, der ikke længere er i filen, markeres "Removed in version N". Intet slettes.
   - En fil med et ID to gange afvises helt, så en halv import aldrig sker.
   - En ny version vælges i formularen, ellers bruges kravspecifikationen med samme filnavn.
+  - I Word starter et krav ved en overskrift eller et afsnit, der begynder med et ID. Hvordan et ID ser ud, er et regulært udtryk pr. kravspecifikation (standard `[A-Z]{2,10}-\d+`). Et ID midt i teksten starter ikke et nyt krav. Udtrykket får højst ét sekund pr. afsnit.
 - **Begrundelse:** Projekter, der følger vandfaldsmodellen, har deres krav i et dokument og ikke i et issue-system. Et dokument har ingen API at synkronisere med, så en ny version kommer kun, når nogen uploader den. Det er også det, ISO 27001 A.8.32 beder om: hver ændring er en version, man kan se og hente igen.
 - **Fravalgt indtil videre:**
   - Gamle `.xls`-filer, Google Sheets og Numbers.
   - At vælge kolonnenavne ved upload.
   - Flere ark i samme fil (kun det første læses).
+  - Krav i Word-tabeller, billeder og PDF.
+  - Use case-diagrammer og "include"/"extend" som andet end tekst.
   - Et preview før importen.
 
 ## Åbne spørgsmål til klassediagrammet

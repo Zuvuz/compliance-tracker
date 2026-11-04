@@ -4,7 +4,7 @@
    The ids and classes (#sync-now, #last-synced, #sync-error, #skipped-issues, .skipped-issue, #work-items,
    .work-item, .work-item-title, .work-item-state, .work-item-rules, .work-item-examples, .work-item-gherkin,
    .work-item-link, .ai-suggestion-badge, .work-item-type, .work-item-source, .work-item-description,
-   .work-item-acceptance) are used by the tests. *@
+   .work-item-acceptance, .use-case-actor, .use-case-steps li) are used by the tests. *@
 @using ComplianceTracker.Domain.WorkItems
 @model WorkItemsViewModel
 @{
@@ -74,7 +74,7 @@ else
                     <span class="work-item-title">@item.Title</span>
                     @if (item.Type != WorkItemType.UserStory)
                     {
-                        <span class="work-item-type badge text-bg-light border">@item.Type</span>
+                        <span class="work-item-type badge text-bg-light border">@(item.Type == WorkItemType.UseCase ? "Use case" : item.Type.ToString())</span>
                     }
                     <span class="work-item-state badge @(active ? "text-bg-success" : "text-bg-secondary")">@WorkItemsViewModel.StateText(item)</span>
                 </summary>
@@ -128,7 +128,47 @@ else
                     <h3 class="h6">Description</h3>
                     <pre class="work-item-description small">@item.Description</pre>
                 }
-                @if (!string.IsNullOrEmpty(item.AcceptanceCriteria))
+                @if (item.UseCase is { } useCase)
+                {
+                    @* US-034 R3: the use case's sections, with the main success scenario as numbered steps *@
+                    <dl class="use-case small mb-2">
+                        @if (useCase.PrimaryActor.Length > 0)
+                        {
+                            <dt>Primary actor</dt>
+                            <dd class="use-case-actor">@useCase.PrimaryActor</dd>
+                        }
+                        @if (useCase.Preconditions.Length > 0)
+                        {
+                            <dt>Preconditions</dt>
+                            <dd><pre class="use-case-preconditions mb-0">@useCase.Preconditions</pre></dd>
+                        }
+                        <dt>Main success scenario</dt>
+                        <dd>
+                            <ol class="use-case-steps mb-0">
+                                @foreach (var step in useCase.Steps)
+                                {
+                                    <li>@step</li>
+                                }
+                            </ol>
+                        </dd>
+                        @if (useCase.Extensions.Length > 0)
+                        {
+                            <dt>Extensions</dt>
+                            <dd><pre class="use-case-extensions mb-0">@useCase.Extensions</pre></dd>
+                        }
+                        @if (useCase.Postconditions.Length > 0)
+                        {
+                            <dt>Postconditions</dt>
+                            <dd><pre class="use-case-postconditions mb-0">@useCase.Postconditions</pre></dd>
+                        }
+                    </dl>
+                    @* R5: what the mapping reads as its acceptance criteria *@
+                    <details class="small mb-2">
+                        <summary>Acceptance criteria used for mapping</summary>
+                        <pre class="work-item-acceptance small mb-0">@item.AcceptanceCriteria</pre>
+                    </details>
+                }
+                else if (!string.IsNullOrEmpty(item.AcceptanceCriteria))
                 {
                     <h3 class="h6">Acceptance criteria</h3>
                     <pre class="work-item-acceptance small">@item.AcceptanceCriteria</pre>
