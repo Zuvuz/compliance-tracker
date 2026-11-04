@@ -387,6 +387,24 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Use case-diagrammer og "include"/"extend" som andet end tekst.
   - Et preview før importen.
 
+### B36 – Factories, hvor der vælges mellem flere implementeringer
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-083)
+  - Der bruges en factory, hvor der findes flere implementeringer af det samme, og valget først træffes, mens appen kører:
+    - dokumentlæsere (filtype og dokumenttype)
+    - AI-udbydere (`Ai:Provider`)
+    - senere også scanner- og SBOM-importører, rapportgeneratorer, kilder til work items og brancheprofiler
+  - Implementeringerne registreres som *keyed services* i .NET, fx `"UseCases:.docx"` eller `"Ollama"`. Factory'en henter én ud fra nøglen.
+  - Factory'ens interface ligger dér, hvor valget træffes:
+    - Vælger en use case ud fra brugerens input, ligger interfacet i Application (`IRequirementDocumentReaderFactory`).
+    - Er valget konfiguration, ligger factory'en i Infrastructure (`AiProviders`), og Application spørger bare efter `IEmbeddingModel`.
+  - Application og Domain bruger aldrig `IServiceProvider` (ingen *service locator*). En arkitekturtest fejler, hvis det sker.
+  - Hvor der kun er én implementering (repositories og use cases), er DI-containeren selv factory'en. Der skrives ingen factory-klasse.
+  - En ukendt nøgle giver en klar besked: en ukendt filtype afvises med de filtyper, der virker, og en ukendt `Ai:Provider` stopper appen ved start.
+- **Begrundelse:** En ny filtype, scanner eller udbyder bliver én ny klasse og én registrering, uden ændringer i use cases eller andre steder (ISO 27001 A.8.27, A.8.32). Det er nemt at teste hver del for sig. En factory gør ikke systemet hurtigere i sig selv; gevinsten er, at det er nemt at udvide uden at ændre det, der virker.
+- **Fravalgt:** factories overalt, og et plugin-system, der indlæser assemblies, mens appen kører.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

@@ -41,13 +41,13 @@ namespace ComplianceTracker.Infrastructure.WorkItems.Documents
         private static IEnumerable<(int Number, IReadOnlyList<string> Cells)> Rows(SpreadsheetDocument document)
         {
             var workbook = document.WorkbookPart ?? throw new DomainException("The workbook has no sheets");
-            var first = workbook.Workbook.Sheets?.Elements<Sheet>().FirstOrDefault()
+            var first = workbook.Workbook?.Sheets?.Elements<Sheet>().FirstOrDefault()
                 ?? throw new DomainException("The workbook has no sheets");
-            var sheet = (WorksheetPart)workbook.GetPartById(first.Id!.Value!);
-            var strings = workbook.SharedStringTablePart?.SharedStringTable.Elements<SharedStringItem>().Select(i => i.InnerText).ToList() ?? [];
+            var sheet = (WorksheetPart)workbook.GetPartById(first.Id?.Value ?? throw new DomainException("The workbook has no sheets"));
+            var strings = workbook.SharedStringTablePart?.SharedStringTable?.Elements<SharedStringItem>().Select(i => i.InnerText).ToList() ?? [];
 
             var position = 0;
-            foreach (var row in sheet.Worksheet.Descendants<Row>())
+            foreach (var row in sheet.Worksheet?.Descendants<Row>() ?? [])
             {
                 position++;
                 var number = (int?)row.RowIndex?.Value ?? position;
