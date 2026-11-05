@@ -38,6 +38,15 @@ namespace ComplianceTracker.Domain.Projects
         public string? SupportPeriodReason { get; private set; }
         public DateOnly? ReleasedOn { get; private set; }
 
+        // US-074: when support ended, the last day the product was placed on the market, and until when the project and its
+        // documentation must be kept (CRA Art. 13(13))
+        public DateOnly? EndOfSupportOn { get; private set; }
+        public DateOnly? LastPlacedOnMarketOn { get; private set; }
+        public DateOnly? RetainUntil { get; private set; }
+
+        // CRA Art. 13(13): at least 10 years after the product was placed on the market, or the support period if longer
+        public const int RetentionYears = 10;
+
         // CRA Art. 13(8): at least five years, unless the product is expected to be in use for less
         public const int MinimumSupportYears = 5;
         public const int MaxSupportReasonLength = 1000;
@@ -146,9 +155,67 @@ namespace ComplianceTracker.Domain.Projects
                 ReleasedOn ??= today;
             }
 
+            // US-074 R1: end of support sets the retention date, counted from today unless EndSupport was used
+            if (phase == LifecyclePhase.EndOfSupport && today is { } day && RetainUntil is null)
+            {
+                Retain(LastPlacedOnMarketOn ?? day, null, day);
+            }
+
             var change = new ProjectChange("Phase", Phase.ToString(), phase.ToString());
             Phase = phase;
             return change;
+        }
+
+        // ---------------------------------------------------------- End of support and retention (US-074)
+
+        // R1: the product was last placed on the market on that day; the project is kept 10 years after it, or until the
+        // end of the support period if that is later. A later date may be chosen, never an earlier one.
+        public ProjectChange EndSupport(DateOnly lastPlacedOnMarket, DateOnly? keepUntil, DateOnly today)
+        {
+            EnsureOpen();
+            Retain(lastPlacedOnMarket, keepUntil, today);
+            var change = ChangePhase(LifecyclePhase.EndOfSupport, today)
+                ?? throw new DomainException("The project is already at end of support");
+            return new ProjectChange(change.Field, change.OldValue, $"{change.NewValue}, kept until {RetainUntil:dd-MM-yyyy}");
+        }
+
+        // R3: a project at end of support may not be archived or deleted before its retention date (used by US-028)
+        public void EnsureMayBeRemoved(DateOnly today)
+        {
+            if (RetainUntil is { } until && today <= until)
+            {
+                throw new DomainException($"The project must be kept until {until:dd-MM-yyyy}");
+            }
+        }
+
+        // The earliest date the rules allow
+        public DateOnly MinimumRetention(DateOnly lastPlacedOnMarket)
+        {
+            var tenYears = lastPlacedOnMarket.AddYears(RetentionYears);
+            return SupportEndsOn is { } supportEnds && supportEnds > tenYears ? supportEnds : tenYears;
+        }
+
+        private void Retain(DateOnly lastPlacedOnMarket, DateOnly? keepUntil, DateOnly today)
+        {
+            if (lastPlacedOnMarket > today)
+            {
+                throw new DomainException("The product cannot have been placed on the market after today");
+            }
+
+            if (ReleasedOn is { } released && lastPlacedOnMarket < released)
+            {
+                throw new DomainException($"The product was released on {released:dd-MM-yyyy}; it cannot have been placed on the market before that");
+            }
+
+            var minimum = MinimumRetention(lastPlacedOnMarket);
+            if (keepUntil is { } chosen && chosen < minimum)
+            {
+                throw new DomainException($"The project must be kept until at least {minimum:dd-MM-yyyy}");
+            }
+
+            LastPlacedOnMarketOn = lastPlacedOnMarket;
+            RetainUntil = keepUntil ?? minimum;
+            EndOfSupportOn = today;
         }
 
         // ---------------------------------------------------------- Support period (US-025)

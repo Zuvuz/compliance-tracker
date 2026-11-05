@@ -44,7 +44,7 @@ Listen gennemgås igen, når et regulativ får en ny version (US-035).
 | Art. 13(23) | Besked til myndigheder og brugere, hvis producenten lukker | I trackeren | Art.13(23) |
 | Art. 13(24)–(25) | Kommissionens gennemførelsesretsakter | Udeladt | Pligter for Kommissionen |
 | Art. 14(1)–(4), (7)–(8) | Indberetning af aktivt udnyttede sårbarheder og alvorlige hændelser (24 timer, 72 timer, 14 dage og en måned), via den fælles platform, og besked til brugerne | I trackeren | Art.14(1), Art.14(2)(a), Art.14(2)(b), Art.14(2)(c), Art.14(3), Art.14(4)(a), Art.14(4)(b), Art.14(4)(c), Art.14(7), Art.14(8) |
-| Art. 14(5)–(6), (9)–(10) | Hvornår en hændelse er alvorlig, mellemrapport på anmodning, og Kommissionens retsakter | Udeladt | En definition, et svar på en anmodning og Kommissionens pligter. Fristerne følges op i [#133](https://github.com/Zuvuz/compliance-tracker/issues/133) (US-073) |
+| Art. 14(5)–(6), (9)–(10) | Hvornår en hændelse er alvorlig, mellemrapport på anmodning, og Kommissionens retsakter | Udeladt | En definition, et svar på en anmodning og Kommissionens pligter. Fristerne fra stk. 2 og 4 følges op på fanen "Security events" (US-073, B49) |
 | Art. 15 | Frivillig indberetning | Udeladt | Frivilligt |
 | Art. 16–17 | ENISA's indberetningsplatform og regler for den | Udeladt | Pligter for ENISA og myndighederne |
 | Art. 18 | Bemyndiget repræsentant | Udeladt | Valgfrit for producenten |

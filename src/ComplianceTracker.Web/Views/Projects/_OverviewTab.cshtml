@@ -47,6 +47,40 @@
         attention.Add((Plural(withoutEvidence, "covered requirement without evidence", "covered requirements without evidence"),
             ComplianceUrl(SubWhere(f => f.Requirements.Any(r => r.IsApplicable && r.IsCovered && !r.HasEvidence)), null)));
     }
+    // US-073 R3: report deadlines due within 24 hours, and missed ones (shown in red)
+    var missedReports = new HashSet<string>();
+    foreach (var securityEvent in Model.SecurityEvents.Where(e => e.IsOpen))
+    {
+        foreach (var report in Enum.GetValues<ComplianceTracker.Domain.Security.SecurityReportKind>())
+        {
+            var title = ComplianceTracker.Domain.Security.SecurityReportNames.Title(report);
+            var eventsUrl = Url.Action("Details", new { id = project.Id, tab = ProjectTabs.SecurityEvents })!;
+            switch (securityEvent.Status(report, Model.Now))
+            {
+                case ComplianceTracker.Domain.Security.SecurityReportStatus.Missed:
+                    var missed = $"{title} for {securityEvent.Title} missed";
+                    missedReports.Add(missed);
+                    attention.Add((missed, eventsUrl));
+                    break;
+                case ComplianceTracker.Domain.Security.SecurityReportStatus.DueSoon:
+                    var hours = Math.Max(1, (int)Math.Ceiling((securityEvent.DueAt(report)!.Value - Model.Now).TotalHours));
+                    attention.Add(($"{title} for {securityEvent.Title} due in {Plural(hours, "hour", "hours")}", eventsUrl));
+                    break;
+            }
+        }
+    }
+
+    // US-073 R5: 90 days before the support period ends
+    if (project.SupportEndsOn is { } supportEnds && project.Phase == LifecyclePhase.Released)
+    {
+        var daysLeft = supportEnds.DayNumber - DateOnly.FromDateTime(Model.Now).DayNumber;
+        if (daysLeft is >= 0 and <= 90)
+        {
+            attention.Add(($"Support ends {supportEnds:dd-MM-yyyy} (in {Plural(daysLeft, "day", "days")})",
+                Url.Action("Details", new { id = project.Id })! + "#support-period"));
+        }
+    }
+
     // US-025: a released project without a support end date (released before US-025, or created as Released)
     if (project.Phase == LifecyclePhase.Released && project.SupportEndsOn is null)
     {
@@ -119,7 +153,8 @@
                 }
                 @foreach (var (text, url) in attention)
                 {
-                    <li><a href="@url">@text</a></li>
+                    @* US-073 R3: a missed report deadline is red *@
+                    <li class="@(missedReports.Contains(text) ? "attention-missed" : "")"><a href="@url" class="@(missedReports.Contains(text) ? "link-danger fw-semibold" : "")">@text</a></li>
                 }
             </ul>
         </section>
@@ -171,6 +206,13 @@
                             <div class="w-100 small text-muted mt-1">For Released: the support end date (at least five years, or a reason)</div>
                             <input type="date" name="supportEndsOn" class="form-control form-control-sm w-auto" aria-label="Support end date" />
                             <input name="supportReason" maxlength="1000" class="form-control form-control-sm" placeholder="Reason, if under five years" aria-label="Reason for a shorter support period" />
+                        }
+                        @if (otherPhases.Contains(LifecyclePhase.EndOfSupport))
+                        {
+                            @* US-074 R1: CRA Art. 13(13), kept 10 years after the product was last placed on the market *@
+                            <div class="w-100 small text-muted mt-1">For EndOfSupport: the last day the product was placed on the market, and a later retention date if you want one</div>
+                            <input type="date" name="lastPlacedOnMarket" class="form-control form-control-sm w-auto" value="@DateOnly.FromDateTime(Model.Now).ToString("yyyy-MM-dd")" aria-label="Last placed on the market" />
+                            <input type="date" name="keepUntil" class="form-control form-control-sm w-auto" aria-label="Keep until (optional, later than the rules require)" />
                         }
                     </form>
                 }

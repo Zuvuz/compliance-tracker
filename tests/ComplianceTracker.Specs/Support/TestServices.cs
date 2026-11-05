@@ -67,6 +67,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();
                 services.AddScoped<IRiskRepository, RiskRepository>(); // US-042
                 services.AddScoped<IClassificationRepository, ClassificationRepository>(); // US-026
+                services.AddScoped<ComplianceTracker.Application.Security.ISecurityEventRepository, SecurityEventRepository>(); // US-073
                 services.AddScoped<IInvitationRepository, InvitationRepository>(); // US-009
                 services.AddScoped<IGetStartedReadModel, GetStartedReadModel>(); // US-096
                 services.AddSingleton<FakeAi>();

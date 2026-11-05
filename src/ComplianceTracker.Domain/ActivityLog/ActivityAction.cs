@@ -124,6 +124,14 @@ namespace ComplianceTracker.Domain.ActivityLog
         // "Support until: 01-11-2031 → 01-11-2032".
         SupportPeriodSet,
 
+        // US-073: a security event of a product on the market (CRA Art. 14). SubjectId points at the project; Details
+        // holds the event's title and what happened, e.g. "CVE-2026-1234: Early warning sent, ref. ENISA 4711".
+        VulnerabilityRecorded,
+        IncidentRecorded,
+        SecurityReportSent,
+        SecurityFixAvailable,
+        SecurityEventClosed,
+
         // US-026: a project was classified under a regulation. SubjectId points at the project; Details holds e.g.
         // "CRA: Important, class I (Annex III, class I, point 2: a password manager)".
         ProjectClassified

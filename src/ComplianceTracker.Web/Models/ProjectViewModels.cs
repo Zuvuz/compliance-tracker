@@ -79,6 +79,7 @@ namespace ComplianceTracker.Web.Models
         public const string Compliance = "compliance";
         public const string Evidence = "evidence";
         public const string Risks = "risks";
+        public const string SecurityEvents = "security-events";
         // US-104 R1: was "User stories" at "user-stories"; the old address redirects (OldProductRequirements)
         public const string ProductRequirements = "product-requirements";
         public const string OldProductRequirements = "user-stories";
@@ -92,6 +93,7 @@ namespace ComplianceTracker.Web.Models
             (Compliance, "Compliance"),
             (Evidence, "Evidence"),
             (Risks, "Risks"),
+            (SecurityEvents, "Security events"),
             (ProductRequirements, "Product requirements"),
             (Activity, "Activity")
         ];
@@ -233,6 +235,8 @@ namespace ComplianceTracker.Web.Models
 
         // US-026: each built-in regulation the project follows, with its class (Overview tab)
         public IReadOnlyList<Application.Projects.RegulationClassification> Classifications { get; init; } = [];
+        // US-073: the project's security events (CRA Art. 14), for their tab and the Overview's deadlines
+        public IReadOnlyList<Domain.Security.SecurityEvent> SecurityEvents { get; init; } = [];
         public string? RiskStatusFilter { get; init; }
         public string? RiskLevelFilter { get; init; }
         public bool OnlyReviewDue { get; init; }

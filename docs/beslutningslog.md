@@ -574,6 +574,26 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Påmindelser før supporten slutter.
   - At kræve en dato, når et projekt oprettes direkte som "Released". Det vises i stedet under "Needs attention".
 
+### B49 – Sikkerhedshændelser og fristerne i CRA art. 14
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-073)
+  - En aktivt udnyttet sårbarhed eller en alvorlig hændelse registreres på projektets fane "Security events" med tidspunktet, hvor producenten fik kendskab til den. Fristerne regnes derfra, tjekket mod den officielle tekst (EUR-Lex, 05-11-2026):
+    - Early warning: 24 timer (art. 14, stk. 2, litra a, og stk. 4, litra a).
+    - Notifikation: 72 timer (stk. 2, litra b, og stk. 4, litra b).
+    - Slutrapport for en sårbarhed: 14 dage efter, at en korrigerende eller afhjælpende foranstaltning er tilgængelig (stk. 2, litra c).
+    - Slutrapport for en hændelse: én måned efter, at notifikationen er indsendt (stk. 4, litra c).
+  - Trackeren sender ikke rapporterne. En person markerer hver som sendt med tidspunkt og den reference, platformen gav. En rapport sendt efter fristen vises som "Sent late".
+  - Overview viser frister inden for 24 timer og overskredne frister (i rødt) under "Needs attention", og supportperiodens slutning 90 dage før.
+  - En hændelse kan kun lukkes, når alle tre rapporter er sendt. Et projekt kan ikke gå til "End of support", mens en hændelse er åben.
+  - Tider gemmes i UTC og vises i lokal tid.
+  - Samme roller som risikoregistret (`ManageRisks`) kan registrere og markere. Alle i organisationen kan se fanen.
+- **Begrundelse:** Art. 14 har gældet siden 11-09-2026, og fristerne er korte. En overskredet frist skal kunne ses med det samme (ISO 27001 A.5.24–A.5.26).
+- **Fravalgt:**
+  - At sende rapporterne til ENISA's fælles platform eller en CSIRT (uden for scope).
+  - At give brugerne besked (art. 14, stk. 8) fra trackeren; kravet ligger på Compliance-fanen.
+  - Porte mellem faserne (US-071, US-072). Kun "End of support"-reglen er med her.
+
 ### B50 – Klassificering af et projekt under hvert regulativ
 
 - **Status:** Vedtaget
@@ -589,6 +609,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - MDR (klasse I, IIa, IIb, III). Den kommer med US-023, når MDR bliver et indbygget regulativ.
   - At klassen styrer, hvilke krav der vises. Det kommer med US-061 og US-080.
+
+### B51 – End of support og opbevaring
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-074)
+  - Når et projekt går til "End of support", angiver man den sidste dag, produktet blev bragt i omsætning (som standard i dag). Projektet og dets dokumentation opbevares derefter mindst 10 år efter den dag, eller til supportperiodens slutning, hvis den er senere (CRA art. 13, stk. 13, tjekket mod EUR-Lex 05-11-2026). En senere dato kan vælges, aldrig en tidligere.
+  - Headeren viser "End of support since … · kept until …". Fasen logges med opbevaringsdatoen.
+  - Projektet er skrivebeskyttet (US-024), men kan stadig læses og eksporteres af alle i organisationen, også Auditor.
+  - `Project.EnsureMayBeRemoved` afviser arkivering og sletning før opbevaringsdatoen. Arkivering kommer med US-028, som skal bruge reglen.
+  - Evidensfiler og kravdokumenter slettes aldrig (de var allerede kun markeret som fjernet).
+- **Begrundelse:** Markedsovervågningen kan bede om dokumentationen i årevis efter, at produktet er udgået (ISO 27001 A.5.33, A.8.10).
+- **Fravalgt:**
+  - At kræve en låst teknisk dokumentation (US-050) før end of support. Udkastet (US-056) kan altid laves; låsning kommer med US-050.
+  - At slette projekter efter opbevaringsdatoen (en senere story).
 
 ## Åbne spørgsmål til klassediagrammet
 
