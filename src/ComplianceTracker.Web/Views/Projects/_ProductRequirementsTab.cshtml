@@ -1,12 +1,45 @@
-@* US-018, US-031: the user stories read from GitHub, the link to the repository and its token.
+@* US-104: the project's product requirements, from the methods it uses: GitHub user stories (US-018, US-031),
+   a requirement specification (US-032, US-033) and use cases (US-034). Only the chosen methods are shown (R3).
    The list (_WorkItems) is fetched again when SignalR says it changed (US-018 R7).
-   Ids used by the tests: #project-work-items, #link-github, #github-token, #token-status, #set-github-token. *@
+   Ids used by the tests: #requirement-methods (input[name=methods]), .method-section[data-method], #project-work-items,
+   #link-github, #github-token, #token-status, #set-github-token. *@
+@using ComplianceTracker.Domain.Projects
 @model ProjectDetailsViewModel
 @{
     var project = Model.Project;
+    var methods = project.RequirementMethods;
+    var canChooseMethods = !project.IsClosed && await Permissions.CanAsync(Permission.EditProjects);
 }
 
+@* R2, R4: the methods the project uses; only roles that edit projects can change them *@
+<section class="mb-3" id="requirement-methods-section">
+    <h2 class="h6">How does the project describe its requirements?</h2>
+    @if (canChooseMethods)
+    {
+        <form asp-action="ChooseRequirementMethods" method="post" class="d-flex flex-wrap align-items-center gap-3" id="requirement-methods">
+            <input type="hidden" name="projectId" value="@project.Id" />
+            @foreach (var (method, title) in RequirementMethodNames.All)
+            {
+                <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input" type="checkbox" name="methods" value="@method" id="method-@method" checked="@methods.HasFlag(method)" />
+                    <label class="form-check-label" for="method-@method">@title</label>
+                </div>
+            }
+            <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+        </form>
+        <p class="small text-muted mb-0 mt-1">Untick what the team does not use to hide it. Nothing is deleted: links and coverage stay.</p>
+    }
+    else
+    {
+        <p class="small mb-0" id="requirement-methods-readonly">@RequirementMethodNames.Describe(methods)</p>
+    }
+</section>
+
 <section id="project-work-items" data-project-id="@project.Id">
+    @if (methods.HasFlag(RequirementMethods.GitHubUserStories))
+    {
+    <div class="method-section" data-method="GitHub user stories">
+    <h2 class="h6">GitHub user stories</h2>
     @if (!project.IsClosed)
     {
         @* US-018 R1: a repository as owner/name, and the label that marks user stories *@
@@ -50,8 +83,13 @@
             </form>
         </div>
     }
+    </div>
+    }
 
-    <partial name="_RequirementDocuments" model="Model" />
+    @if (methods.HasFlag(RequirementMethods.RequirementSpecification) || methods.HasFlag(RequirementMethods.UseCases))
+    {
+        <partial name="_RequirementDocuments" model="Model" />
+    }
 
     @if (!project.IsClosed && Model.WorkItems.Count > 0)
     {

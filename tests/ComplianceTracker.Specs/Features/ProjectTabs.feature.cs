@@ -204,7 +204,7 @@ namespace ComplianceTracker.Specs.Features
         [global::Xunit.TraitAttribute("Category", "US-022")]
         [global::Xunit.TraitAttribute("Category", "integration")]
         [global::Xunit.InlineDataAttribute("frameworks", "Frameworks", "1", new string[0])]
-        [global::Xunit.InlineDataAttribute("user-stories", "User stories", "2", new string[0])]
+        [global::Xunit.InlineDataAttribute("product-requirements", "Product requirements", "2", new string[0])]
         [global::Xunit.InlineDataAttribute("activity", "Activity", "3", new string[0])]
         public async global::System.Threading.Tasks.Task EachTabHasItsOwnAddress(string address, string tab, string @__pickleIndex, string[] exampleTags)
         {

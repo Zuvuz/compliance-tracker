@@ -531,6 +531,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At hente testresultater fra GitHub Actions automatisk (kræver `actions: read` på tokenet; senere).
   - At gemme hele resultatfilen som evidens. Filtyperne fra US-057 tillader ikke XML, og en kort Markdown-fil er lettere at læse for en auditor.
 
+### B46 – Fanen "Product requirements" og projektets metoder
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-104)
+  - Fanen "User stories" hedder "Product requirements" (`/product-requirements`), fordi den rummer alle måder at beskrive produktets krav på. Den gamle adresse `/user-stories` sender videre (301), så delte links virker.
+  - Projektet gemmer, hvilke metoder det bruger: GitHub user stories, kravspecifikation og use cases. Det er en eller flere, valgt med afkrydsningsfelter af roller med `EditProjects`, og ændringen logges med før og efter.
+  - Kun de valgte metoders afsnit og elementer vises på fanen. At slå en metode fra sletter intet: links, dækning og evidens bliver og vises stadig på Compliance-fanen.
+  - Et nyt projekt bruger alle tre, indtil nogen vælger. Mindst én metode skal altid være valgt. Eksisterende projekter får de metoder, de allerede bruger (et GitHub-repository, en uploadet kravspecifikation eller use cases); et projekt, der ikke bruger nogen, får alle tre.
+- **Begrundelse:** Holdene arbejder forskelligt (B02), og fanen skal kun vise det, holdet bruger. Valget gemmes på projektet, så alle ser det samme, og det kan senere bruges af den tekniske dokumentation (CRA bilag VII (2)(a)) og af AI-udkast til nye krav (US-106).
+- **Fravalgt:**
+  - At et nyt projekt starter uden metoder og spørger først (som issuet foreslog). Det ville give en tom fane, før man kan komme i gang.
+  - Et valg pr. bruger i browseren. Så ville to personer på samme projekt se forskellige faner.
+  - At omdøbe `WorkItem` i koden.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
