@@ -109,6 +109,21 @@ jobs:
           echo "The web app runs as uid $uid"
           test "$uid" != "0"
 
+      - name: Keycloak beskytter log-ind (US-089)
+        run: |
+          # Keycloak-stakkens admin-token, med det kodeord CI giver containeren
+          token=$(curl -fsS --cacert certs/ca.crt $KEYCLOAK \
+            -d grant_type=password -d client_id=admin-cli -d username=admin -d "password=$KEYCLOAK_ADMIN_PASSWORD" \
+            https://keycloak.localhost:8543/realms/master/protocol/openid-connect/token | jq -r .access_token)
+          realm=$(curl -fsS --cacert certs/ca.crt $KEYCLOAK -H "Authorization: Bearer $token" \
+            https://keycloak.localhost:8543/admin/realms/compliance-tracker)
+          echo "$realm" | jq -e '.bruteForceProtected == true and .permanentLockout == false and .failureFactor == 5'
+          echo "$realm" | jq -e '.passwordPolicy | contains("length(12)")'
+          actions=$(curl -fsS --cacert certs/ca.crt $KEYCLOAK -H "Authorization: Bearer $token" \
+            https://keycloak.localhost:8543/admin/realms/compliance-tracker/authentication/required-actions)
+          echo "$actions" | jq -e '.[] | select(.alias == "CONFIGURE_TOTP") | .enabled and .defaultAction'
+          echo "Brute force protection, password policy and one-time password are on"
+
       - name: Databasen kræver TLS (US-084)
         run: |
           # Webappens forbindelser (fra Docker-netværket) bruger TLS

@@ -419,6 +419,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Kryptering af filer og hemmeligheder i appen med nøgler uden for databasen.
 - **Fravalgt:** at slå TLS til på den fælles database, fordi det ville ændre udviklingsmiljøet og kræve certifikater i Visual Studio.
 
+### B39 – Engangskode (MFA) for alle brugere
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-089)
+  - Alle brugere skal sætte en authenticator-app (TOTP) op ved første log-ind, og Keycloak beder om koden ved hvert log-ind.
+  - Brute force-beskyttelse er slået til med en midlertidig lås.
+  - Passwords skal have mindst 12 tegn.
+  - Det hele står i realm-filen. En eksisterende Keycloak sættes op efter `docs/keycloak-sikkerhed.md`.
+- **Begrundelse:** Keycloak kender ikke trackerens roller (de ligger i trackeren, US-010), så "kun Admins" ville kræve en ny integration, der holder en Keycloak-gruppe opdateret. Alle brugere kan se fortrolige compliance-data, og et stjålet password må ikke være nok (ISO 27001 A.8.5).
+- **Fravalgt:**
+  - MFA kun for Admins.
+  - Passkeys/WebAuthn (senere).
+  - Log-ind med kundens egen identitetsudbyder (senere).
 ### B38 – Trackeren følger producentens og udbyderens pligter
 
 - **Status:** Vedtaget
