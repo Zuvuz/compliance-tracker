@@ -20,6 +20,11 @@ namespace ComplianceTracker.Domain.Users
         public bool IsActive => RemovedAt is null;
 
         // A removed member may do nothing
+        // US-096 R4: the member has hidden the "Get started" card
+        public bool HidesGetStarted { get; private set; }
+
+        public void SetGetStartedHidden(bool hidden) => HidesGetStarted = hidden;
+
         public bool Can(Permission permission) => IsActive && RolePermissions.Can(Role, permission);
 
         internal void Remove(Guid removedById, DateTime at)

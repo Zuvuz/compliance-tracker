@@ -1,0 +1,74 @@
+@* US-096: the first steps, shown at the top of /Projects while a step is to do and the member has not hidden it.
+   Each step is done by itself when its data exists (R3). Links only for what the member's role may do (R5).
+   Ids and classes used by the tests: #get-started, .get-started-step[data-step] with .get-started-status
+   and a.get-started-link, #hide-get-started, #show-get-started. *@
+@using ComplianceTracker.Application.Organizations
+@model GetStartedChecklist?
+
+@if (Model is null || Model.AllDone)
+{
+    return;
+}
+
+@if (Model.Hidden)
+{
+    @* R4: a hidden card can be shown again *@
+    <form asp-controller="Projects" asp-action="ShowGetStarted" method="post" class="mb-3" id="show-get-started">
+        <button type="submit" class="btn btn-link btn-sm p-0">Show "Get started"</button>
+    </form>
+    return;
+}
+
+<section class="card mb-4" id="get-started">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+            <h2 class="h5">Get started</h2>
+            <form asp-controller="Projects" asp-action="HideGetStarted" method="post" id="hide-get-started">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">Hide</button>
+            </form>
+        </div>
+        <p class="small text-muted">From an empty tracker to a requirement that is covered and proven. Each step is ticked by itself.</p>
+        <ol class="list-group list-group-numbered">
+            @foreach (var item in Model.Items)
+            {
+                var canDo = item.Permission is { } permission && await Permissions.CanAsync(permission);
+                <li class="list-group-item d-flex justify-content-between align-items-center get-started-step" data-step="@item.Step">
+                    <span class="ms-2 me-auto">@item.Title</span>
+                    @if (!item.Done && canDo && Link(item.Step) is { } href)
+                    {
+                        <a class="get-started-link btn btn-sm btn-outline-primary me-2" href="@href">@LinkText(item.Step)</a>
+                    }
+                    <span class="get-started-status badge @(item.Done ? "text-bg-success" : "text-bg-light border")">@(item.Done ? "Done" : "To do")</span>
+                </li>
+            }
+        </ol>
+    </div>
+</section>
+
+@functions {
+    // R2: where each step is done; steps on a project go to the first project
+    private string? Link(GetStartedStep step)
+    {
+        var project = Model!.FirstProjectId;
+        string? Tab(string tab) => project is { } id ? Url.Action("Details", "Projects", new { id, tab }) : null;
+        return step switch
+        {
+            GetStartedStep.SwitchOnRegulation => Url.Action("BuiltIn", "Frameworks"),
+            GetStartedStep.CreateProject => Url.Action("Create", "Projects"),
+            GetStartedStep.AddFrameworks => Tab(ProjectTabs.Frameworks),
+            GetStartedStep.GetWorkItems => Tab(ProjectTabs.UserStories),
+            GetStartedStep.LinkRequirements or GetStartedStep.AddEvidence => Tab(ProjectTabs.Compliance),
+            _ => null
+        };
+    }
+
+    private static string LinkText(GetStartedStep step) => step switch
+    {
+        GetStartedStep.SwitchOnRegulation => "Switch on",
+        GetStartedStep.CreateProject => "Create project",
+        GetStartedStep.AddFrameworks => "Add frameworks",
+        GetStartedStep.GetWorkItems => "Get work items",
+        GetStartedStep.LinkRequirements => "Link requirements",
+        _ => "Add evidence"
+    };
+}

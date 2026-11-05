@@ -40,6 +40,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<AiFeedbackService>();
             services.AddScoped<RiskService>();
             services.AddScoped<MemberService>();
+            services.AddScoped<GetStartedService>(); // US-096
             services.AddScoped<SystemAdminService>();
 
             // Queries (read data for the pages)
