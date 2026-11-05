@@ -1,0 +1,149 @@
+@* US-073: actively exploited vulnerabilities and severe incidents of a product on the market (CRA Art. 14), each with its
+   three reports and their deadlines. The tracker does not send the reports; a person marks each as sent (R4).
+   Times are shown in local time. Ids and classes used by the tests: #record-security-event (kind, title, description,
+   awareAt), .security-event[data-title] with .security-event-closed, .security-report[data-report] holding .report-due,
+   .report-status, form .mark-report-sent (sentAt, reference); form .mark-fix-available; form .close-security-event. *@
+@using ComplianceTracker.Domain.Security
+@model ProjectDetailsViewModel
+@{
+    var project = Model.Project;
+    var canChange = !project.IsClosed && await Permissions.CanAsync(Permission.ManageRisks);
+    string Local(DateTime utc) => DateTime.SpecifyKind(utc, DateTimeKind.Utc).ToLocalTime().ToString("dd-MM-yyyy HH:mm");
+    string Input(DateTime utc) => DateTime.SpecifyKind(utc, DateTimeKind.Utc).ToLocalTime().ToString("yyyy-MM-ddTHH:mm");
+}
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <h2 class="h5">Security events</h2>
+        <p class="small text-muted">
+            An actively exploited vulnerability or a severe incident must be reported to the CSIRT and ENISA
+            (CRA Art. 14): an early warning within 24 hours, a notification within 72 hours, and a final report
+            (14 days after a fix is available, or one month after the notification for an incident). Send them through
+            ENISA's single reporting platform and mark them here with the reference you get.
+        </p>
+
+        @if (Model.SecurityEvents.Count == 0)
+        {
+            <p class="text-muted" id="no-security-events">No security events recorded.</p>
+        }
+
+        @foreach (var securityEvent in Model.SecurityEvents)
+        {
+            <div class="card mb-3 security-event" data-title="@securityEvent.Title">
+                <div class="card-body">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span class="fw-semibold">@securityEvent.Title</span>
+                        <span class="badge text-bg-light">@SecurityReportNames.Title(securityEvent.Kind)</span>
+                        @if (!securityEvent.IsOpen)
+                        {
+                            <span class="badge text-bg-success security-event-closed">Closed @Local(securityEvent.ClosedAt!.Value)</span>
+                        }
+                    </div>
+                    <p class="small text-muted mb-2">Aware since @Local(securityEvent.AwareAt)@(securityEvent.FixAvailableAt is { } fix ? $", fix available {Local(fix)}" : "")</p>
+                    @if (securityEvent.Description is not null)
+                    {
+                        <p class="small ct-pre-wrap">@securityEvent.Description</p>
+                    }
+
+                    <table class="table table-sm small align-middle mb-2">
+                        <thead><tr><th>Report</th><th>Due</th><th>Status</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var report in Enum.GetValues<SecurityReportKind>())
+                            {
+                                var status = securityEvent.Status(report, Model.Now);
+                                var due = securityEvent.DueAt(report);
+                                <tr class="security-report" data-report="@report">
+                                    <td>@SecurityReportNames.Title(report)</td>
+                                    <td class="report-due">@(due is { } d ? Local(d) : report == SecurityReportKind.FinalReport && securityEvent.Kind == SecurityEventKind.ActivelyExploitedVulnerability ? "14 days after the fix" : "1 month after the notification")</td>
+                                    <td class="report-status">
+                                        @switch (status)
+                                        {
+                                            case SecurityReportStatus.Sent:
+                                                <span class="text-success">Sent @Local(securityEvent.SentAt(report)!.Value), ref. @securityEvent.Reference(report)</span>
+                                                break;
+                                            case SecurityReportStatus.SentLate:
+                                                <span class="text-warning">Sent late @Local(securityEvent.SentAt(report)!.Value), ref. @securityEvent.Reference(report)</span>
+                                                break;
+                                            case SecurityReportStatus.Missed:
+                                                <span class="text-danger fw-semibold">Missed</span>
+                                                break;
+                                            case SecurityReportStatus.DueSoon:
+                                                <span class="text-danger">Due within 24 hours</span>
+                                                break;
+                                            case SecurityReportStatus.Waiting:
+                                                <span class="text-muted">Not due yet</span>
+                                                break;
+                                            default:
+                                                <span>Open</span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (canChange && securityEvent.IsOpen && securityEvent.SentAt(report) is null)
+                                        {
+                                            <form asp-action="MarkSecurityReportSent" method="post" class="d-flex gap-1 mark-report-sent">
+                                                <input type="hidden" name="projectId" value="@project.Id" />
+                                                <input type="hidden" name="eventId" value="@securityEvent.Id" />
+                                                <input type="hidden" name="report" value="@report" />
+                                                <input type="datetime-local" name="sentAt" class="form-control form-control-sm" value="@Input(Model.Now)" aria-label="Sent at" />
+                                                <input name="reference" class="form-control form-control-sm" maxlength="200" placeholder="Reference" aria-label="Reference" required />
+                                                <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Mark sent</button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    @if (canChange && securityEvent.IsOpen)
+                    {
+                        <div class="d-flex flex-wrap gap-2">
+                            @if (securityEvent.Kind == SecurityEventKind.ActivelyExploitedVulnerability && securityEvent.FixAvailableAt is null)
+                            {
+                                <form asp-action="MarkSecurityFixAvailable" method="post" class="d-flex gap-1 mark-fix-available">
+                                    <input type="hidden" name="projectId" value="@project.Id" />
+                                    <input type="hidden" name="eventId" value="@securityEvent.Id" />
+                                    <input type="datetime-local" name="fixAvailableAt" class="form-control form-control-sm" value="@Input(Model.Now)" aria-label="Fix available at" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">Fix available</button>
+                                </form>
+                            }
+                            <form asp-action="CloseSecurityEvent" method="post" class="close-security-event">
+                                <input type="hidden" name="projectId" value="@project.Id" />
+                                <input type="hidden" name="eventId" value="@securityEvent.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-success">Close event</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (canChange)
+    {
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h6 card-title">Record a security event</h2>
+                    <form asp-action="RecordSecurityEvent" method="post" id="record-security-event" class="d-flex flex-column gap-2">
+                        <input type="hidden" name="projectId" value="@project.Id" />
+                        <select name="kind" class="form-select form-select-sm" aria-label="What happened">
+                            @foreach (var kind in Enum.GetValues<SecurityEventKind>())
+                            {
+                                <option value="@kind">@SecurityReportNames.Title(kind)</option>
+                            }
+                        </select>
+                        <input name="title" class="form-control form-control-sm" maxlength="200" placeholder="Title, e.g. CVE-2026-1234" aria-label="Title" required />
+                        <textarea name="description" class="form-control form-control-sm" rows="3" maxlength="4000" placeholder="What happened (optional)" aria-label="Description"></textarea>
+                        <label class="small text-muted" for="aware-at">When you became aware of it</label>
+                        <input type="datetime-local" name="awareAt" id="aware-at" class="form-control form-control-sm" value="@Input(Model.Now)" required />
+                        <button type="submit" class="btn btn-sm btn-primary">Record</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+</div>

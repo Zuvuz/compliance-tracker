@@ -24,6 +24,7 @@ namespace ComplianceTracker.Application.Projects
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
         private readonly VersionCarryOver _carryOver;
+        private readonly Security.ISecurityEventRepository _securityEvents;
 
         public ProjectService(
             IProjectRepository projects,
@@ -32,8 +33,10 @@ namespace ComplianceTracker.Application.Projects
             IActivityLogger log,
             IUnitOfWork unitOfWork,
             TimeProvider clock,
-            VersionCarryOver carryOver)
+            VersionCarryOver carryOver,
+            Security.ISecurityEventRepository securityEvents)
         {
+            _securityEvents = securityEvents;
             _carryOver = carryOver;
             _projects = projects;
             _frameworks = frameworks;
@@ -128,6 +131,13 @@ namespace ComplianceTracker.Application.Projects
                 {
                     await _log.LogAsync(ActivityAction.SupportPeriodSet, project.Id, Describe(support, project), cancellationToken);
                 }
+            }
+
+            // US-073 R1: every security event is closed before the product leaves the market
+            if (phase == LifecyclePhase.EndOfSupport && project.Phase != LifecyclePhase.EndOfSupport
+                && (await _securityEvents.ListAsync(project.Id, cancellationToken)).Any(e => e.IsOpen))
+            {
+                throw new DomainException("Close every security event before end of support");
             }
 
             var change = project.ChangePhase(phase, today);

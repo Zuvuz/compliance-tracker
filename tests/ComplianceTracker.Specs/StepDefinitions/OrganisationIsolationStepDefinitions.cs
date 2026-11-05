@@ -348,6 +348,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "memberid" or "ownerid" => ids.Member,
                 "invitationid" => ids.Invitation,
                 "measureid" => ids.Measure,
+                "eventid" => ids.SecurityEvent, // US-073
                 "documentid" => ids.Document,
                 "frameworkids" => ids.Framework,
                 "requirementids" => ids.CraRequirement,
@@ -366,10 +367,10 @@ namespace ComplianceTracker.Specs.StepDefinitions
         private sealed record Ids(
             Guid Organization, Guid Project, Guid Risk, Guid Measure, Guid Evidence, Guid WorkItem, Guid Link,
             Guid Document, Guid DocumentVersion, Guid Framework, Guid FrameworkVersion, Guid FrameworkRequirement,
-            Guid CraRequirement, Guid Member, Guid Invitation)
+            Guid CraRequirement, Guid Member, Guid Invitation, Guid SecurityEvent)
         {
             public IEnumerable<Guid> All => [Organization, Project, Risk, Measure, Evidence, WorkItem, Link, Document,
-                DocumentVersion, Framework, FrameworkVersion, FrameworkRequirement, Member, Invitation];
+                DocumentVersion, Framework, FrameworkVersion, FrameworkRequirement, Member, Invitation, SecurityEvent];
         }
 
         private async Task<Ids> IdsAsync(string organisation)
@@ -398,7 +399,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 await db.Requirements.Where(r => r.FrameworkVersionId == version.Id).Select(r => r.Id).FirstAsync(),
                 link.RequirementId,
                 org.Users.Single(u => u.Name == "Carl").Id,
-                await db.Invitations.Where(i => i.OrganizationId == org.Id).OrderByDescending(i => i.CreatedAt).Select(i => i.Id).FirstAsync()); // the open one, not Carl's used one
+                await db.Invitations.Where(i => i.OrganizationId == org.Id).OrderByDescending(i => i.CreatedAt).Select(i => i.Id).FirstAsync(), // the open one, not Carl's used one
+                await db.SecurityEvents.Where(e => e.ProjectId == project.Id).Select(e => e.Id).SingleAsync()); // US-073
         }
 
         // A form token for the caller, from a page they may open (their own Users page)
