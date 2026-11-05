@@ -672,6 +672,15 @@ classDiagram
     +Replace()
     +SetRationale(rationale: string, model: string)
   }
+  class IAiLimits {
+    <<interface>>
+    +MinimumScoreForStories: double
+    +MinimumScoreForEvidence: double
+  }
+  class ConfiguredAiLimits
+  IAiLimits <|.. ConfiguredAiLimits
+  MappingSuggestionService --> IAiLimits
+  EvidenceService --> IAiLimits
   class IEmbeddingModel {
     <<interface>>
     +Name: string

@@ -492,6 +492,11 @@ namespace ComplianceTracker.Web.Controllers
             {
                 TempData["EvidenceAiUnavailable"] = $"No suggestions: {added.AiUnavailable}";
             }
+            else if (added.Suggestions == 0)
+            {
+                // US-105 R3: nothing reached the limit, so nothing weak is shown
+                TempData["EvidenceAiUnavailable"] = "No requirement looks like a match; link it by hand.";
+            }
 
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
         }
