@@ -11,7 +11,7 @@ namespace ComplianceTracker.Infrastructure.WorkItems
     // Only GET requests: the tracker never writes to GitHub (R2, decision B12).
     // The HttpClient is set up in AddInfrastructure (base address, headers, timeout).
     // US-058: also reads which merged pull requests closed an issue (the issue's timeline), still only GET
-    public class GitHubWorkItemSource : IWorkItemSource, Application.Compliance.IPullRequestReader
+    public partial class GitHubWorkItemSource : IWorkItemSource, Application.Compliance.IPullRequestReader
     {
         public const string NoAcceptanceCriteria = "no acceptance criteria";
 
@@ -30,6 +30,12 @@ namespace ComplianceTracker.Infrastructure.WorkItems
 
         public async Task<WorkItemReadResult> ReadAsync(WorkItemQuery query, CancellationToken cancellationToken = default)
         {
+            // US-107: an organisation's GitHub Project is read through GraphQL
+            if (query.ProjectNumber is { } projectNumber)
+            {
+                return await ReadProjectAsync(query, projectNumber, cancellationToken);
+            }
+
             var items = new List<ExternalWorkItem>();
             var skipped = new List<SkippedIssue>();
 

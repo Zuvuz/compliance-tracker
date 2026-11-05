@@ -2971,6 +2971,17 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                             b1.Property<DateTime?>("LastSyncedAt")
                                 .HasColumnType("timestamp with time zone");
 
+                            b1.Property<int?>("ProjectNumber")
+                                .HasColumnType("integer");
+
+                            b1.Property<string>("ProjectOwner")
+                                .HasMaxLength(39)
+                                .HasColumnType("character varying(39)");
+
+                            b1.Property<string>("ProjectTitle")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)");
+
                             b1.Property<string>("Repository")
                                 .IsRequired()
                                 .HasMaxLength(140)

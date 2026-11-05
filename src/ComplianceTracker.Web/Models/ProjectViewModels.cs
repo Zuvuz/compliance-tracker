@@ -237,6 +237,9 @@ namespace ComplianceTracker.Web.Models
         public IReadOnlyList<Application.Projects.RegulationClassification> Classifications { get; init; } = [];
         // US-073: the project's security events (CRA Art. 14), for their tab and the Overview's deadlines
         public IReadOnlyList<Domain.Security.SecurityEvent> SecurityEvents { get; init; } = [];
+
+        // US-107 R3: the organisation's GitHub Projects to choose from
+        public IReadOnlyList<Application.WorkItems.GitHubProjectInfo> GitHubProjectChoices { get; init; } = [];
         public string? RiskStatusFilter { get; init; }
         public string? RiskLevelFilter { get; init; }
         public bool OnlyReviewDue { get; init; }

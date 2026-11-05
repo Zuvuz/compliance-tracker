@@ -624,6 +624,21 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At kræve en låst teknisk dokumentation (US-050) før end of support. Udkastet (US-056) kan altid laves; låsning kommer med US-050.
   - At slette projekter efter opbevaringsdatoen (en senere story).
 
+### B52 – Et projekt kan kobles til ét GitHub Project i en organisation
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-107)
+  - Linkformularen tager en GitHub-adresse: et repository (som i dag), et GitHub Project (`github.com/orgs/<org>/projects/<nummer>`) eller en organisation (`github.com/<org>`), hvor man derefter vælger et af organisationens projekter.
+  - Et GitHub Project læses med GitHub's GraphQL-API og kun med et token. Kun det koblede projekts issues læses, også når de ligger i flere repositories. Organisationens andre projekter og repositories læses aldrig.
+  - Et tracker-projekt er koblet til højst ét repository eller GitHub Project. Ved et skift markeres de gamle stories som fjernet ved næste synkronisering. To tracker-projekter i samme organisation kan ikke koble sig til samme GitHub Project.
+  - Referencen er stadig `ejer/repo#nummer`, så sporbarhed, PR-forslag (US-058) og links virker uændret.
+  - Trackeren læser stadig kun (B12).
+- **Begrundelse:** En organisation med flere produkter i samme GitHub må ikke få dem blandet sammen; hvert tracker-projekts dækning skal komme fra dets egne stories (ISO 27001 A.5.15, A.8.25).
+- **Fravalgt:**
+  - Personlige (brugerejede) GitHub Projects.
+  - Flere GitHub Projects til ét tracker-projekt.
+  - **Kendt begrænsning:** GitHub kan ikke begrænse et token til ét Project; et token med læseadgang til projects kan læse alle organisationens projects. README anbefaler en maskinbruger, der kun er medlem af det ene projekt.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
