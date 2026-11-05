@@ -147,7 +147,10 @@ namespace ComplianceTracker.Web.Controllers
         // US-042: on the Risks tab, status, level and due=1 filter the register (R8)
         public async Task<IActionResult> Details(
             Guid id, string? tab, string? sub, string? q, string? show,
-            string? status, string? level, string? due, CancellationToken cancellationToken)
+            string? status, string? level, string? due,
+            // US-101: the Activity tab's filters (q is the search there too)
+            string? from, string? to, string? group, string? user, string? sort, string? page,
+            CancellationToken cancellationToken)
         {
             var activeTab = ProjectTabs.Find(tab);
             var project = await _projects.GetAsync(id, cancellationToken);
@@ -157,10 +160,14 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound(); // US-008 R5: also when the project belongs to another organisation
             }
 
-            // The Activity tab reads the log; the Overview shows the latest entries (US-048 R5)
-            var activity = activeTab is ProjectTabs.Activity or ProjectTabs.Overview
+            // The Overview shows the latest entries (US-048 R5); the Activity tab searches the log (US-101)
+            var activity = activeTab is ProjectTabs.Overview
                 ? await _projects.ActivityAsync(id, cancellationToken)
                 : [];
+            var (activityQuery, activityIgnored) = ActivityFilters.Parse(q, from, to, group, user, sort, page);
+            var activityPage = activeTab is ProjectTabs.Activity
+                ? await _projects.SearchActivityAsync(id, activityQuery, cancellationToken)
+                : null;
 
             // Requirements and links: for the Compliance tab, the overview's summary and the user stories' requirements
             var compliance = activeTab is ProjectTabs.Compliance or ProjectTabs.Overview or ProjectTabs.UserStories
@@ -194,6 +201,9 @@ namespace ComplianceTracker.Web.Controllers
                 Tab = activeTab,
                 Organization = organization,
                 Activity = activity,
+                ActivityPage = activityPage,
+                ActivityQuery = activityQuery,
+                ActivityIgnored = activityIgnored,
                 Compliance = compliance,
                 Sub = sub,
                 Search = q,

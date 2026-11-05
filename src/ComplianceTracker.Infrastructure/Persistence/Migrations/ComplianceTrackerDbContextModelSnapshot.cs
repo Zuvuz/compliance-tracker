@@ -58,9 +58,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrganizationId");
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("OrganizationId", "OccurredAt");
+
+                    b.HasIndex("OrganizationId", "SubjectId", "OccurredAt");
 
                     b.ToTable("ActivityLog", (string)null);
                 });

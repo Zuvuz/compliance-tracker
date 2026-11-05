@@ -202,6 +202,11 @@ namespace ComplianceTracker.Web.Models
         public Organization? Organization { get; init; }
         public IReadOnlyList<ActivityLogEntry> Activity { get; init; } = [];
 
+        // US-101: the Activity tab's page of entries, the filters behind it, and filters that were ignored (R9)
+        public Application.ActivityLog.ActivityLogPage? ActivityPage { get; init; }
+        public Application.ActivityLog.ActivityLogQuery ActivityQuery { get; init; } = new();
+        public IReadOnlyList<string> ActivityIgnored { get; init; } = [];
+
         // US-019, US-021, US-041: the Compliance tab's data, the chosen sub-tab (slug), the search and the filter
         public ProjectCompliance? Compliance { get; init; }
         public string? Sub { get; init; }
