@@ -218,6 +218,10 @@ namespace ComplianceTracker.Web.Controllers
             {
                 // US-032: the requirement specifications, for the User stories tab
                 Documents = activeTab == ProjectTabs.ProductRequirements ? await _workItems.DocumentsAsync(id, cancellationToken) : [],
+                // US-107 R3: the organisation's GitHub Projects, while one is still to be chosen
+                GitHubProjectChoices = activeTab == ProjectTabs.ProductRequirements && project.GitHub is { NeedsProjectChoice: true }
+                    ? await _sync.ProjectsToChooseAsync(id, cancellationToken)
+                    : [],
                 Tab = activeTab,
                 Organization = organization,
                 Activity = activity,
@@ -299,13 +303,24 @@ namespace ComplianceTracker.Web.Controllers
             return File(file.Value.Content, file.Value.Version.ContentType, file.Value.Version.FileName);
         }
 
-        // POST /Projects/LinkGitHub: R1
+        // POST /Projects/LinkGitHub: R1. US-107: the address may also be an organisation's GitHub Project or the organisation,
+        // and a token can be given at once (needed for a GitHub Project). The token is never sent back to the page.
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.ProductRequirements)]
-        public async Task<IActionResult> LinkGitHub(Guid projectId, string? repository, string? label, CancellationToken cancellationToken)
+        public async Task<IActionResult> LinkGitHub(Guid projectId, string? repository, string? label, string? token, CancellationToken cancellationToken)
         {
-            await _sync.LinkGitHubAsync(projectId, repository ?? "", label, cancellationToken);
+            await _sync.LinkGitHubAddressAsync(projectId, repository ?? "", label, token, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.ProductRequirements });
+        }
+
+        // POST /Projects/ChooseGitHubProject: US-107 R3
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.ProductRequirements)]
+        public async Task<IActionResult> ChooseGitHubProject(Guid projectId, int number, CancellationToken cancellationToken)
+        {
+            await _sync.ChooseGitHubProjectAsync(projectId, number, cancellationToken);
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.ProductRequirements });
         }
 

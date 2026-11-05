@@ -25,6 +25,11 @@ namespace ComplianceTracker.Specs.Support
 
         public List<CreatedFeedbackIssue> CreatedIssues { get; } = new();
 
+        // US-107: organisations' GitHub Projects (boards), each with issues from any repository, and the token that may read them
+        public const string ProjectsToken = "test-projects-token";
+
+        public Dictionary<string, List<FakeProject>> Organizations { get; } = new(StringComparer.OrdinalIgnoreCase);
+
         public List<FakeIssue> Repository(string name)
         {
             if (!_repositories.TryGetValue(name, out var issues))
@@ -77,6 +82,12 @@ namespace ComplianceTracker.Specs.Support
 
                 // repos/{owner}/{name}/issues?labels=...&state=all&per_page=100&page=1
                 var path = request.RequestUri!.AbsolutePath.Trim('/').Split('/');
+
+                // US-107: POST /graphql, only for organisations' GitHub Projects, always with the projects token
+                if (request.Method == HttpMethod.Post && path is ["graphql"])
+                {
+                    return GraphQl(request);
+                }
 
                 // US-058: repos/{owner}/{name}/issues/{number}/timeline, with the pull request that closed the issue
                 if (request.Method == HttpMethod.Get && path.Length == 6 && path[0] == "repos" && path[3] == "issues" && path[5] == "timeline"
@@ -170,6 +181,72 @@ namespace ComplianceTracker.Specs.Support
             }
         }
 
+        // US-107: answers the two queries the adapter sends: the organisation's projects, and one project's items
+        private HttpResponseMessage GraphQl(HttpRequestMessage request)
+        {
+            if (request.Headers.Authorization is not { Scheme: "Bearer", Parameter: ProjectsToken })
+            {
+                return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+            }
+
+            using var sent = JsonDocument.Parse(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
+            var query = sent.RootElement.GetProperty("query").GetString()!;
+            var variables = sent.RootElement.GetProperty("variables");
+            var login = variables.GetProperty("login").GetString()!;
+
+            object answer;
+            if (!Organizations.TryGetValue(login, out var projects))
+            {
+                answer = new { data = (object?)null, errors = new[] { new { type = "NOT_FOUND", message = "Could not resolve to an Organization" } } };
+            }
+            else if (query.Contains("projectsV2(", StringComparison.Ordinal))
+            {
+                answer = new { data = new { organization = new { projectsV2 = new { nodes = projects.Select(p => new { number = p.Number, title = p.Title, closed = false }) } } } };
+            }
+            else
+            {
+                var number = variables.GetProperty("number").GetInt32();
+                var project = projects.FirstOrDefault(p => p.Number == number);
+                answer = project is null
+                    ? new { data = (object?)null, errors = new[] { new { type = "NOT_FOUND", message = "Could not resolve to a ProjectV2" } } }
+                    : new
+                    {
+                        data = (object?)new
+                        {
+                            organization = new
+                            {
+                                projectV2 = new
+                                {
+                                    items = new
+                                    {
+                                        pageInfo = new { hasNextPage = false, endCursor = (string?)null },
+                                        nodes = project.Items.Select(item => new
+                                        {
+                                            content = new Dictionary<string, object?>
+                                            {
+                                                ["__typename"] = "Issue",
+                                                ["number"] = item.Issue.Number,
+                                                ["title"] = item.Issue.Title,
+                                                ["body"] = item.Issue.Body,
+                                                ["state"] = item.Issue.State == "closed" ? "CLOSED" : "OPEN",
+                                                ["url"] = $"https://github.com/{item.Repository}/issues/{item.Issue.Number}",
+                                                ["repository"] = new { nameWithOwner = item.Repository },
+                                                ["labels"] = new { nodes = item.Issue.Labels.Select(name => new { name }) }
+                                            }
+                                        })
+                                    }
+                                }
+                            }
+                        }
+                    };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(answer), Encoding.UTF8, "application/json")
+            };
+        }
+
         private sealed class Handler : HttpMessageHandler
         {
             private readonly FakeGitHub _github;
@@ -182,6 +259,14 @@ namespace ComplianceTracker.Specs.Support
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
                 => Task.FromResult(_github.Answer(request));
         }
+    }
+
+    // US-107: a GitHub Project of an organisation, with its items: issues and the repository each is in
+    public sealed class FakeProject
+    {
+        public int Number { get; init; }
+        public string Title { get; init; } = "";
+        public List<(string Repository, FakeIssue Issue)> Items { get; } = new();
     }
 
     // US-063: an issue the feedback writer created

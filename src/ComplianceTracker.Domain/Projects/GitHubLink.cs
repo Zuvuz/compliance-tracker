@@ -15,8 +15,22 @@ namespace ComplianceTracker.Domain.Projects
 
         private readonly List<SkippedIssue> _skipped = new();
 
-        // e.g. "Zuvuz/compliance-tracker"
+        // e.g. "Zuvuz/compliance-tracker"; for a GitHub Project, the organisation (US-107)
         public string Repository { get; private set; } = "";
+
+        // US-107: an organisation's GitHub Project instead of a repository. The number is null while the user still has
+        // to choose one of the organisation's projects.
+        public string? ProjectOwner { get; private set; }
+        public int? ProjectNumber { get; private set; }
+        public string? ProjectTitle { get; private set; }
+
+        public bool IsProject => ProjectOwner is not null;
+
+        // US-107 R3: linked to an organisation, but no project is chosen yet; nothing is read until it is
+        public bool NeedsProjectChoice => IsProject && ProjectNumber is null;
+
+        // e.g. "github.com/orgs/acme/projects/3"
+        public string? ProjectAddress => IsProject && ProjectNumber is { } number ? $"github.com/orgs/{ProjectOwner}/projects/{number}" : null;
 
         // Only issues with this label are read (R3)
         public string Label { get; private set; } = DefaultLabel;
@@ -56,6 +70,37 @@ namespace ComplianceTracker.Domain.Projects
             Label = string.IsNullOrWhiteSpace(label) ? DefaultLabel : label.Trim();
             ConnectedById = connectedById;
             ConnectedAt = at;
+        }
+
+        // US-107: an organisation's GitHub Project, or the organisation while a project is still to be chosen.
+        // The token stays when the organisation is the same; another organisation needs its own token.
+        internal GitHubLink(string owner, int? projectNumber, string? projectTitle, Guid connectedById, DateTime at, GitHubLink? previous)
+        {
+            if (previous is not null && string.Equals(previous.ProjectOwner ?? previous.Repository.Split('/')[0], owner, StringComparison.OrdinalIgnoreCase))
+            {
+                EncryptedToken = previous.EncryptedToken;
+                TokenChangedAt = previous.TokenChangedAt;
+            }
+
+            Repository = owner;
+            ProjectOwner = owner;
+            ProjectNumber = projectNumber;
+            ProjectTitle = projectTitle;
+            Label = DefaultLabel;
+            ConnectedById = connectedById;
+            ConnectedAt = at;
+        }
+
+        // US-107 R3: the user chose one of the organisation's projects
+        internal void ChooseProject(int number, string title)
+        {
+            if (!IsProject)
+            {
+                throw new DomainException("The project is linked to a repository, not an organisation");
+            }
+
+            ProjectNumber = number;
+            ProjectTitle = title;
         }
 
         // R1: "owner/name", with or without "https://github.com/" in front

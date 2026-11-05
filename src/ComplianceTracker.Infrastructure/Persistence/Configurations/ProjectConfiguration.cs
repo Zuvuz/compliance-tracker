@@ -67,6 +67,13 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
                 link.Property(l => l.LastSyncError).HasMaxLength(500);
                 link.Ignore(l => l.HasToken);
 
+                // US-107: an organisation's GitHub Project
+                link.Property(l => l.ProjectOwner).HasMaxLength(39);
+                link.Property(l => l.ProjectTitle).HasMaxLength(500);
+                link.Ignore(l => l.IsProject);
+                link.Ignore(l => l.NeedsProjectChoice);
+                link.Ignore(l => l.ProjectAddress);
+
                 // US-031: only the encrypted token is stored (Data Protection output, base64url)
                 link.Property(l => l.EncryptedToken).HasMaxLength(2000);
 

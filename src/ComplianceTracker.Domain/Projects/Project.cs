@@ -174,6 +174,29 @@ namespace ComplianceTracker.Domain.Projects
 
         // ---------------------------------------------------------- GitHub (US-018)
 
+        // US-107 R1, R3, R4: links the project to one GitHub Project of an organisation (number null: choose later).
+        // Returns false when nothing changed. Items from the previous repository or project are marked "Removed" by the next
+        // sync, because they are not on the new one, so nothing is mixed.
+        public bool LinkGitHubProject(string owner, int? number, string? title, Guid userId, DateTime at)
+        {
+            EnsureOpen();
+            if (GitHub is { IsProject: true } current && string.Equals(current.ProjectOwner, owner, StringComparison.OrdinalIgnoreCase)
+                && current.ProjectNumber == number)
+            {
+                return false;
+            }
+
+            GitHub = new GitHubLink(owner, number, title, userId, at, previous: GitHub);
+            return true;
+        }
+
+        // US-107 R3
+        public void ChooseGitHubProject(int number, string title)
+        {
+            EnsureOpen();
+            (GitHub ?? throw new DomainException("Link the project to a GitHub organisation first")).ChooseProject(number, title);
+        }
+
         // R1: links the project to a public repository, or moves it to another one.
         // Returns false when nothing changed. Work items from a previous repository are marked
         // "Removed" by the next sync, because their references name the old repository.

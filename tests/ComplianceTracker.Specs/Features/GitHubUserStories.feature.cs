@@ -119,32 +119,32 @@ namespace ComplianceTracker.Specs.Features
 #line 11
     await testRunner.AndAsync("the project \"Acme Portal\" exists", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-            global::Reqnroll.Table table3 = new global::Reqnroll.Table(new string[] {
+            global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
                         "number",
                         "title",
                         "labels",
                         "follows template",
                         "state"});
-            table3.AddRow(new string[] {
+            table1.AddRow(new string[] {
                         "19",
                         "[US-003] Create organisation via web UI",
                         "user-story",
                         "yes",
                         "open"});
-            table3.AddRow(new string[] {
+            table1.AddRow(new string[] {
                         "40",
                         "Fix typo",
                         "bug",
                         "no",
                         "open"});
-            table3.AddRow(new string[] {
+            table1.AddRow(new string[] {
                         "41",
                         "[US-099] Draft without rules",
                         "user-story",
                         "no",
                         "open"});
 #line 12
-    await testRunner.AndAsync("the GitHub repository \"Zuvuz/compliance-tracker\" has these issues:", ((string)(null)), table3, "And ");
+    await testRunner.AndAsync("the GitHub repository \"Zuvuz/compliance-tracker\" has these issues:", ((string)(null)), table1, "And ");
 #line hidden
         }
         
@@ -230,19 +230,19 @@ namespace ComplianceTracker.Specs.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="The repository must be written as owner/name")]
+        [global::Xunit.SkippableFactAttribute(DisplayName="The address must be a repository, a GitHub Project or an organisation")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Read user stories from GitHub")]
-        [global::Xunit.TraitAttribute("Description", "The repository must be written as owner/name")]
+        [global::Xunit.TraitAttribute("Description", "The address must be a repository, a GitHub Project or an organisation")]
         [global::Xunit.TraitAttribute("Category", "US-018")]
         [global::Xunit.TraitAttribute("Category", "integration")]
-        public async global::System.Threading.Tasks.Task TheRepositoryMustBeWrittenAsOwnerName()
+        public async global::System.Threading.Tasks.Task TheAddressMustBeARepositoryAGitHubProjectOrAnOrganisation()
         {
             string[] tagsOfScenario = new string[] {
                     "US-018",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "1";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The repository must be written as owner/name", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The address must be a repository, a GitHub Project or an organisation", "", tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 28
@@ -258,12 +258,12 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 29
-    await testRunner.WhenAsync("I link \"Acme Portal\" to the repository \"compliance-tracker\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
 #line 30
-    await testRunner.ThenAsync("I see the error \"Enter the repository as owner/name, e.g. Zuvuz/compliance-tracke" +
-                        "r\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.WhenAsync("I link \"Acme Portal\" to the repository \"Zuvuz/compliance-tracker/issues\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 31
+    await testRunner.ThenAsync("I see the error \"Enter a repository (owner/name), a GitHub Project (github.com/or" +
+                        "gs/<org>/projects/<number>) or an organisation (github.com/<org>)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -286,7 +286,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Issues without acceptance criteria are skipped", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 33
+#line 34
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -299,16 +299,16 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 34
+#line 35
     await testRunner.GivenAsync("\"Acme Portal\" is linked to \"Zuvuz/compliance-tracker\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 35
+#line 36
     await testRunner.WhenAsync("I click \"Sync now\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 36
+#line 37
     await testRunner.ThenAsync("issue 41 is listed as skipped with \"no acceptance criteria\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 37
+#line 38
     await testRunner.AndAsync("issue 40 is not read", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -330,7 +330,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The tracker only reads from GitHub", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 40
+#line 41
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -343,13 +343,13 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 41
+#line 42
     await testRunner.GivenAsync("\"Acme Portal\" is linked to \"Zuvuz/compliance-tracker\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 42
+#line 43
     await testRunner.WhenAsync("I click \"Sync now\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 43
+#line 44
     await testRunner.ThenAsync("the tracker only sent read requests to GitHub", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -371,7 +371,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Closed issues are updated by themselves", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 46
+#line 47
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -384,16 +384,16 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 47
+#line 48
     await testRunner.GivenAsync("\"Acme Portal\" is linked to \"Zuvuz/compliance-tracker\" and synced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 48
+#line 49
     await testRunner.WhenAsync("issue 19 is closed on GitHub", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 49
+#line 50
     await testRunner.AndAsync("the scheduled check runs", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 50
+#line 51
     await testRunner.ThenAsync("the work item \"[US-003] Create organisation via web UI\" is marked \"Closed\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -415,7 +415,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("An issue that loses its label is kept and marked removed", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 53
+#line 54
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -428,16 +428,16 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 54
+#line 55
     await testRunner.GivenAsync("\"Acme Portal\" is linked to \"Zuvuz/compliance-tracker\" and synced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 55
+#line 56
     await testRunner.WhenAsync("issue 19 no longer has the label \"user-story\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 56
+#line 57
     await testRunner.AndAsync("I click \"Sync now\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 57
+#line 58
     await testRunner.ThenAsync("the work item \"[US-003] Create organisation via web UI\" is marked \"Removed\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -459,7 +459,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A failed sync keeps the work items", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 60
+#line 61
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -472,19 +472,19 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 61
+#line 62
     await testRunner.GivenAsync("\"Acme Portal\" is linked to \"Zuvuz/compliance-tracker\" and synced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 62
+#line 63
     await testRunner.WhenAsync("GitHub refuses requests because of its rate limit", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 63
+#line 64
     await testRunner.AndAsync("I click \"Sync now\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 64
+#line 65
     await testRunner.ThenAsync("I see \"Sync failed: GitHub\'s limit for requests was reached. Try again later\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 65
+#line 66
     await testRunner.AndAsync("the project has the work item \"[US-003] Create organisation via web UI\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -506,7 +506,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A repository that does not exist", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 68
+#line 69
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -519,13 +519,13 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 69
+#line 70
     await testRunner.GivenAsync("\"Acme Portal\" is linked to \"Zuvuz/does-not-exist\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 70
+#line 71
     await testRunner.WhenAsync("I click \"Sync now\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 71
+#line 72
     await testRunner.ThenAsync("I see \"Sync failed: Repository not found or private: add a token\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -547,7 +547,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("An open page updates when a sync finds changes", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 74
+#line 75
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -560,17 +560,17 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 75
+#line 76
     await testRunner.GivenAsync("\"Acme Portal\" is linked to \"Zuvuz/compliance-tracker\" and synced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 76
+#line 77
     await testRunner.AndAsync("I have the project page open", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 77
+#line 78
     await testRunner.WhenAsync("a new issue with label \"user-story\" is added on GitHub and the scheduled check ru" +
                         "ns", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 78
+#line 79
     await testRunner.ThenAsync("the new work item appears on the page without reloading", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -594,7 +594,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Other organisations cannot see the work items", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 81
+#line 82
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -607,19 +607,19 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 82
+#line 83
     await testRunner.GivenAsync("\"Acme Portal\" is linked to \"Zuvuz/compliance-tracker\" and synced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 83
+#line 84
     await testRunner.AndAsync("\"Bo\" has created the organisation \"Beta ApS\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 84
+#line 85
     await testRunner.WhenAsync("\"Bo\" opens the work items of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 85
+#line 86
     await testRunner.ThenAsync("the page is not found", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 86
+#line 87
     await testRunner.AndAsync("\"Bo\" cannot follow the live updates of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -643,7 +643,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Linking and syncing are logged", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 89
+#line 90
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -656,13 +656,13 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 90
+#line 91
     await testRunner.WhenAsync("I link \"Acme Portal\" to the repository \"Zuvuz/compliance-tracker\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 91
+#line 92
     await testRunner.AndAsync("I click \"Sync now\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 92
+#line 93
     await testRunner.ThenAsync("the activity log for \"Acme ApS\" has \"RepositoryConnected\" and \"WorkItemsSynced\" f" +
                         "or \"Anna\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
@@ -687,7 +687,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A scheduled sync is logged as the system", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 95
+#line 96
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -700,16 +700,16 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 96
+#line 97
     await testRunner.GivenAsync("\"Acme Portal\" is linked to \"Zuvuz/compliance-tracker\" and synced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 97
+#line 98
     await testRunner.WhenAsync("issue 19 is closed on GitHub", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 98
+#line 99
     await testRunner.AndAsync("the scheduled check runs", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 99
+#line 100
     await testRunner.ThenAsync("the activity log for \"Acme ApS\" has a \"WorkItemsSynced\" entry by the system", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }

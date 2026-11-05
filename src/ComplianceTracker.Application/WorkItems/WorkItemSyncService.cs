@@ -24,6 +24,7 @@ namespace ComplianceTracker.Application.WorkItems
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
+        private readonly IGitHubProjects _githubProjects;
         private readonly Compliance.EvidenceSuggestionService _evidenceSuggestions;
 
         public WorkItemSyncService(
@@ -36,8 +37,10 @@ namespace ComplianceTracker.Application.WorkItems
             IActivityLogger log,
             IUnitOfWork unitOfWork,
             TimeProvider clock,
-            Compliance.EvidenceSuggestionService evidenceSuggestions)
+            Compliance.EvidenceSuggestionService evidenceSuggestions,
+            IGitHubProjects githubProjects)
         {
+            _githubProjects = githubProjects;
             _evidenceSuggestions = evidenceSuggestions;
             _projects = projects;
             _workItems = workItems;
@@ -48,6 +51,123 @@ namespace ComplianceTracker.Application.WorkItems
             _log = log;
             _unitOfWork = unitOfWork;
             _clock = clock;
+        }
+
+        // US-107: the address may be a repository (as before), an organisation's GitHub Project, or an organisation, whose
+        // projects are then listed to choose one. A GitHub Project can only be read with a token (R6), given here.
+        public async Task LinkGitHubAddressAsync(
+            Guid projectId, string address, string? label, string? token, CancellationToken cancellationToken = default)
+        {
+            var parsed = GitHubAddress.Parse(address);
+            if (parsed.Kind == GitHubAddressKind.Repository)
+            {
+                await LinkGitHubAsync(projectId, $"{parsed.Owner}/{parsed.Repository}", label, cancellationToken);
+                if (!string.IsNullOrWhiteSpace(token))
+                {
+                    await SetGitHubTokenAsync(projectId, token, cancellationToken);
+                }
+
+                return;
+            }
+
+            var (organization, user) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
+            var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
+                ?? throw new DomainException("Project not found");
+
+            // R6: a new token, or the one already stored for the same organisation
+            var value = string.IsNullOrWhiteSpace(token)
+                ? project.GitHub is { } current && string.Equals(current.ProjectOwner ?? current.Repository.Split('/')[0], parsed.Owner, StringComparison.OrdinalIgnoreCase) ? Token(current) : null
+                : token.Trim();
+            if (value is null)
+            {
+                throw new DomainException("Reading a GitHub Project needs a token with read access to projects");
+            }
+
+            var projects = await ListProjectsAsync(parsed.Owner, value, cancellationToken);
+            GitHubProjectInfo? chosen = null;
+            if (parsed.ProjectNumber is { } number)
+            {
+                chosen = projects.FirstOrDefault(p => p.Number == number)
+                    ?? throw new DomainException("GitHub Project not found, or the token cannot see it");
+                await EnsureNotLinkedElsewhereAsync(organization.Id, project, parsed.Owner, number, cancellationToken);
+            }
+
+            if (project.LinkGitHubProject(parsed.Owner, chosen?.Number, chosen?.Title, user.Id, Now) || !string.IsNullOrWhiteSpace(token))
+            {
+                project.GitHub!.SetToken(_secrets.Protect(value), Now);
+                await _log.LogAsync(ActivityAction.RepositoryConnected, project.Id, chosen is null
+                    ? $"GitHub organisation {parsed.Owner} (a project is still to be chosen)"
+                    : $"GitHub Project {project.GitHub.ProjectAddress} ({chosen.Title})", cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+
+            if (chosen is not null)
+            {
+                await SyncAsync(project, user.Id, cancellationToken);
+            }
+        }
+
+        // US-107 R3: the organisation's projects, while one is still to be chosen; empty otherwise
+        public async Task<IReadOnlyList<GitHubProjectInfo>> ProjectsToChooseAsync(Guid projectId, CancellationToken cancellationToken = default)
+        {
+            var (organization, _) = await _member.RequireAsync(cancellationToken);
+            var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken);
+            if (project?.GitHub is not { NeedsProjectChoice: true } link || Token(link) is not { } token)
+            {
+                return [];
+            }
+
+            try
+            {
+                return await _githubProjects.ListAsync(link.ProjectOwner!, token, cancellationToken);
+            }
+            catch (WorkItemSourceException)
+            {
+                return [];
+            }
+        }
+
+        // US-107 R3, R5
+        public async Task ChooseGitHubProjectAsync(Guid projectId, int number, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
+            var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
+                ?? throw new DomainException("Project not found");
+            var link = project.GitHub is { IsProject: true } l ? l : throw new DomainException("Link the project to a GitHub organisation first");
+            var token = Token(link) ?? throw new DomainException("Reading a GitHub Project needs a token with read access to projects");
+
+            var chosen = (await ListProjectsAsync(link.ProjectOwner!, token, cancellationToken)).FirstOrDefault(p => p.Number == number)
+                ?? throw new DomainException("GitHub Project not found, or the token cannot see it");
+            await EnsureNotLinkedElsewhereAsync(organization.Id, project, link.ProjectOwner!, number, cancellationToken);
+
+            project.ChooseGitHubProject(chosen.Number, chosen.Title);
+            await _log.LogAsync(ActivityAction.RepositoryConnected, project.Id, $"GitHub Project {link.ProjectAddress} ({chosen.Title})", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await SyncAsync(project, user.Id, cancellationToken);
+        }
+
+        private async Task<IReadOnlyList<GitHubProjectInfo>> ListProjectsAsync(string owner, string token, CancellationToken cancellationToken)
+        {
+            try
+            {
+                return await _githubProjects.ListAsync(owner, token, cancellationToken);
+            }
+            catch (WorkItemSourceException error)
+            {
+                throw new DomainException(error.Message);
+            }
+        }
+
+        // R5: a GitHub Project belongs to one tracker project of the organisation, so stories are never shared
+        private async Task EnsureNotLinkedElsewhereAsync(Guid organizationId, Project project, string owner, int number, CancellationToken cancellationToken)
+        {
+            var other = (await _projects.ListAsync(organizationId, cancellationToken))
+                .FirstOrDefault(p => p.Id != project.Id && p.GitHub is { IsProject: true } g
+                    && string.Equals(g.ProjectOwner, owner, StringComparison.OrdinalIgnoreCase) && g.ProjectNumber == number);
+            if (other is not null)
+            {
+                throw new DomainException($"Already linked to {other.Name}");
+            }
         }
 
         // R1, R10: links the project to a public repository (or another one). Logged with the repository.
@@ -76,10 +196,17 @@ namespace ComplianceTracker.Application.WorkItems
                 throw new DomainException("Enter a token");
             }
 
-            // R2: GitHub must accept the token for this repository; otherwise nothing is saved
+            // R2: GitHub must accept the token for this repository (US-107: or this organisation's projects); otherwise nothing is saved
             try
             {
-                await _github.ReadAsync(new WorkItemQuery(link.Repository, link.Label, value), cancellationToken);
+                if (link.NeedsProjectChoice)
+                {
+                    await _githubProjects.ListAsync(link.ProjectOwner!, value, cancellationToken);
+                }
+                else
+                {
+                    await _github.ReadAsync(new WorkItemQuery(link.Repository, link.Label, value, link.ProjectNumber), cancellationToken);
+                }
             }
             catch (WorkItemSourceException error)
             {
@@ -149,10 +276,22 @@ namespace ComplianceTracker.Application.WorkItems
             var link = project.GitHub!;
             var now = Now;
 
+            // US-107 R3: nothing is read until a project of the organisation is chosen
+            if (link.NeedsProjectChoice)
+            {
+                return SyncResult.Failed("Choose one of the organisation's GitHub Projects first");
+            }
+
             WorkItemReadResult read;
             try
             {
-                read = await _github.ReadAsync(new WorkItemQuery(link.Repository, link.Label, Token(link)), cancellationToken);
+                var token = Token(link);
+                if (link.IsProject && token is null)
+                {
+                    throw new WorkItemSourceException("Reading a GitHub Project needs a token with read access to projects");
+                }
+
+                read = await _github.ReadAsync(new WorkItemQuery(link.Repository, link.Label, token, link.ProjectNumber), cancellationToken);
             }
             catch (WorkItemSourceException error)
             {

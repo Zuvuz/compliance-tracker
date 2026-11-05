@@ -17,11 +17,23 @@ namespace ComplianceTracker.Application.WorkItems
 
     // Where to read: for GitHub the repository ("owner/name") and the label.
     // Token: the decrypted read-only token for a private repository (US-031), or null. Never logged or shown.
-    public record WorkItemQuery(string Location, string Label, string? Token = null)
+    // US-107: with ProjectNumber, Location is the organisation and only that GitHub Project's issues are read; the label
+    // is not used, as the project itself decides what belongs to it.
+    public record WorkItemQuery(string Location, string Label, string? Token = null, int? ProjectNumber = null)
     {
         // A record prints all its values; this one must never print the token
-        public override string ToString() => $"{Location} (label {Label})";
+        public override string ToString()
+            => ProjectNumber is { } number ? $"{Location} project {number}" : $"{Location} (label {Label})";
     }
+
+    // US-107 R3: an organisation's GitHub Projects (implemented by the GitHub adapter, read-only)
+    public interface IGitHubProjects
+    {
+        // Throws WorkItemSourceException with a message for the user when they cannot be read
+        Task<IReadOnlyList<GitHubProjectInfo>> ListAsync(string organization, string token, CancellationToken cancellationToken = default);
+    }
+
+    public record GitHubProjectInfo(int Number, string Title);
 
     public record WorkItemReadResult(IReadOnlyList<ExternalWorkItem> Items, IReadOnlyList<SkippedIssue> Skipped);
 

@@ -511,6 +511,19 @@ classDiagram
     +RecordSuccess(at: DateTime, skipped: SkippedIssue[])
     +RecordFailure(message: string)
   }
+  class GitHubAddress {
+    +Kind: GitHubAddressKind
+    +Owner: string
+    +Repository: string?
+    +ProjectNumber: int?
+    +Parse(address: string)$ GitHubAddress
+  }
+  class IGitHubProjects {
+    <<interface>>
+    +ListAsync(organization: string, token: string) Task
+  }
+  IGitHubProjects <|.. GitHubWorkItemSource
+
   class IWorkItemSource {
     <<interface>>
     +Source: WorkItemSource

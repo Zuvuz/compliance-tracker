@@ -230,6 +230,9 @@ namespace ComplianceTracker.Web.Models
         // US-042: the Risks tab's register (already filtered), the filters and the time for "Review due"
         public IReadOnlyList<Risk> Risks { get; init; } = [];
         public IReadOnlyList<Risk> AllRisks { get; init; } = [];
+
+        // US-107 R3: the organisation's GitHub Projects to choose from
+        public IReadOnlyList<Application.WorkItems.GitHubProjectInfo> GitHubProjectChoices { get; init; } = [];
         public string? RiskStatusFilter { get; init; }
         public string? RiskLevelFilter { get; init; }
         public bool OnlyReviewDue { get; init; }

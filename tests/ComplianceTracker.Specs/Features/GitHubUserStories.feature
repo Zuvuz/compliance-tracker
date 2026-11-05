@@ -25,9 +25,10 @@ Feature: Read user stories from GitHub
     And the page says when it was last synced
 
   @US-018 @integration
-  Scenario: The repository must be written as owner/name
-    When I link "Acme Portal" to the repository "compliance-tracker"
-    Then I see the error "Enter the repository as owner/name, e.g. Zuvuz/compliance-tracker"
+  Scenario: The address must be a repository, a GitHub Project or an organisation
+    # US-107: a single name ("compliance-tracker") is now an organisation, so an address in no known form is used here
+    When I link "Acme Portal" to the repository "Zuvuz/compliance-tracker/issues"
+    Then I see the error "Enter a repository (owner/name), a GitHub Project (github.com/orgs/<org>/projects/<number>) or an organisation (github.com/<org>)"
 
   @US-018 @iso27001-A.8.26 @integration
   Scenario: Issues without acceptance criteria are skipped
