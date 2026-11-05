@@ -53,14 +53,14 @@ else
     }
 }
 
-@if (Model.WorkItems.Count == 0)
+@if (Model.VisibleWorkItems.Count == 0)
 {
     <p class="text-muted">No work items read yet.</p>
 }
 else
 {
     <div id="work-items">
-        @foreach (var item in Model.WorkItems)
+        @foreach (var item in Model.VisibleWorkItems)
         {
             var fromDocument = item.Source == WorkItemSource.Document;
             var active = item.State == WorkItemState.Open;

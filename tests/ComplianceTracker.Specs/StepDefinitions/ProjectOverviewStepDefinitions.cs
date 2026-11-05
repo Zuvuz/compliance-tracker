@@ -21,15 +21,14 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("{string} opens the {string} tab of {string}")]
         public async Task WhenOpensTheTab(string userName, string tab, string projectName)
         {
-            if (tab != "Overview")
-            {
-                throw new Xunit.Sdk.XunitException("Only the Overview tab is supported by this step.");
-            }
+            // Any tab, by the text on it (US-104 uses "Product requirements")
+            var slug = ComplianceTracker.Web.Models.ProjectTabs.All.SingleOrDefault(t => t.Title == tab).Slug
+                ?? throw new Xunit.Sdk.XunitException($"There is no tab '{tab}'.");
 
             await using var db = _web.CreateDbContext();
             var id = await db.Projects.Where(p => p.Name == projectName).Select(p => p.Id).SingleAsync();
             using var client = _web.CreateClient(signedInAs: userName);
-            _web.Response = await client.GetAsync($"/Projects/Details/{id}/overview");
+            _web.Response = await client.GetAsync($"/Projects/Details/{id}/{slug}");
             _web.Page = await WebScenario.ParseAsync(_web.Response);
         }
 

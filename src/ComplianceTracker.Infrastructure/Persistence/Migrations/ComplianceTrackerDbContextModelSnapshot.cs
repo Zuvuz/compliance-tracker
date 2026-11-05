@@ -1998,6 +1998,13 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<string>("RequirementMethods")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasDefaultValue("All");
+
                     b.Property<string>("Scope")
                         .IsRequired()
                         .HasColumnType("text");

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {
-    // US-032: requirement specifications uploaded on the User stories tab, through the web app with test sign-in.
+    // US-032: requirement specifications uploaded on the Product requirements tab, through the web app with test sign-in.
     // UI contract: Views/Projects/_RequirementDocuments.cshtml (#upload-requirement-document, .requirement-document[data-name],
     // .document-version[data-version] a) and _WorkItems.cshtml (.work-item[data-reference][data-source], .work-item-state).
     [Binding]
@@ -233,13 +233,13 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         // ---------------------------------------------------------- Helpers
 
-        // Uploads through the form on the User stories tab, as a new specification or a new version of the same name
+        // Uploads through the form on the Product requirements tab, as a new specification or a new version of the same name
         // idPattern: what to type in the ID pattern field (US-033); null keeps the form's default
         private async Task UploadAsync(string projectName, string fileName, byte[] content, string? idPattern = null)
         {
             await OpenAsync(projectName);
             var form = _web.Page!.QuerySelector("form#upload-requirement-document")
-                ?? throw new Xunit.Sdk.XunitException("The User stories tab has no upload form for requirement specifications.");
+                ?? throw new Xunit.Sdk.XunitException("The Product requirements tab has no upload form for requirement specifications.");
 
             // PostFileAsync adds the antiforgery token itself
             var fields = form.QuerySelectorAll("input[type=hidden]")
@@ -264,7 +264,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         private async Task OpenAsync(string projectName)
-            => await _web.OpenAsync($"/Projects/Details/{await ProjectIdAsync(projectName)}/user-stories");
+            => await _web.OpenAsync($"/Projects/Details/{await ProjectIdAsync(projectName)}/product-requirements");
 
         private IElement Requirement(string id)
             => _web.Page!.QuerySelectorAll(".work-item[data-source=Document]").FirstOrDefault(w => w.GetAttribute("data-reference") == id)

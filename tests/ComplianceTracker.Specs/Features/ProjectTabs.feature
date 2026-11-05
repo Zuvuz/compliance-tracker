@@ -24,7 +24,7 @@ Feature: Project page with tabs
     Examples:
       | address      | tab          |
       | frameworks   | Frameworks   |
-      | user-stories | User stories |
+      | product-requirements | Product requirements |
       | activity     | Activity     |
 
   @US-022 @integration
