@@ -47,6 +47,11 @@
         attention.Add((Plural(withoutEvidence, "covered requirement without evidence", "covered requirements without evidence"),
             ComplianceUrl(SubWhere(f => f.Requirements.Any(r => r.IsApplicable && r.IsCovered && !r.HasEvidence)), null)));
     }
+    // US-025: a released project without a support end date (released before US-025, or created as Released)
+    if (project.Phase == LifecyclePhase.Released && project.SupportEndsOn is null)
+    {
+        attention.Add(("No support end date", Url.Action("Details", new { id = project.Id })! + "#support-period"));
+    }
     // US-058: evidence suggested from tests and pull requests
     var evidenceSuggestions = frameworks.Sum(f => f.EvidenceSuggestionCount);
     if (evidenceSuggestions > 0)
@@ -151,15 +156,22 @@
                 @* US-024 R2: EndOfSupport is final. US-048 R8: only roles that may edit the project. *@
                 @if (canChangePhase)
                 {
-                    <form asp-action="ChangePhase" method="post" class="d-flex gap-1" id="change-phase">
+                    <form asp-action="ChangePhase" method="post" class="d-flex flex-wrap gap-1" id="change-phase">
                         <input type="hidden" name="projectId" value="@project.Id" />
-                        <select name="phase" class="form-select form-select-sm" aria-label="New lifecycle phase">
+                        <select name="phase" class="form-select form-select-sm w-auto" aria-label="New lifecycle phase">
                             @foreach (var phase in otherPhases)
                             {
                                 <option value="@phase">@phase</option>
                             }
                         </select>
                         <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">Change phase</button>
+                        @if (project.SupportEndsOn is null && otherPhases.Contains(LifecyclePhase.Released))
+                        {
+                            @* US-025 R1, R2: needed when the new phase is Released *@
+                            <div class="w-100 small text-muted mt-1">For Released: the support end date (at least five years, or a reason)</div>
+                            <input type="date" name="supportEndsOn" class="form-control form-control-sm w-auto" aria-label="Support end date" />
+                            <input name="supportReason" maxlength="1000" class="form-control form-control-sm" placeholder="Reason, if under five years" aria-label="Reason for a shorter support period" />
+                        }
                     </form>
                 }
             </div>
@@ -212,6 +224,37 @@
                 </ul>
             </div>
         </div>
+
+        @* US-025: the support period (CRA Art. 13(8)); the end date can only move later (R3) *@
+        @if (project.Phase == LifecyclePhase.Released || project.SupportEndsOn is not null)
+        {
+            <div class="card mb-3" id="support-period">
+                <div class="card-body small">
+                    <h2 class="h6 card-title">Support period</h2>
+                    @if (project.SupportEndsOn is { } ends)
+                    {
+                        <p class="mb-1">Supported until <strong>@ends.ToString("dd-MM-yyyy")</strong>@(project.ReleasedOn is { } released ? $", released {released:dd-MM-yyyy}" : "")</p>
+                        @if (project.SupportPeriodReason is { } reason)
+                        {
+                            <p class="mb-1 text-muted">Shorter than five years: @reason</p>
+                        }
+                    }
+                    else
+                    {
+                        <p class="mb-1 text-danger">No support end date is set.</p>
+                    }
+                    @if (canChangePhase)
+                    {
+                        <form asp-action="SetSupportPeriod" method="post" class="d-flex flex-wrap gap-1 mt-2" id="set-support-period">
+                            <input type="hidden" name="projectId" value="@project.Id" />
+                            <input type="date" name="supportEndsOn" class="form-control form-control-sm w-auto" value="@project.SupportEndsOn?.ToString("yyyy-MM-dd")" aria-label="Support end date" />
+                            <input name="supportReason" maxlength="1000" class="form-control form-control-sm" value="@project.SupportPeriodReason" placeholder="Reason, if under five years" aria-label="Reason for a shorter support period" />
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">@(project.SupportEndsOn is null ? "Set" : "Move later")</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
 
         @* US-026: how each built-in regulation the project follows applies to it (R5), with a guide (R6) and the history (R4) *@
         @if (Model.Classifications.Count > 0)

@@ -2004,6 +2004,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<DateOnly?>("ReleasedOn")
+                        .HasColumnType("date");
+
                     b.Property<string>("RequirementMethods")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -2014,6 +2017,13 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<string>("Scope")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateOnly?>("SupportEndsOn")
+                        .HasColumnType("date");
+
+                    b.Property<string>("SupportPeriodReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
