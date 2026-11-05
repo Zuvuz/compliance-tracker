@@ -78,6 +78,7 @@ namespace ComplianceTracker.Infrastructure
             services.AddSingleton<IEvidenceTextReader, Compliance.EvidenceTextReader>();
             services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();
             services.AddScoped<IRiskRepository, RiskRepository>();
+            services.AddScoped<Application.Projects.IClassificationRepository, ClassificationRepository>(); // US-026
             services.AddScoped<Application.Security.ISecurityEventRepository, SecurityEventRepository>(); // US-073
             services.AddScoped<IInvitationRepository, InvitationRepository>();
             services.AddScoped<IGetStartedReadModel, GetStartedReadModel>(); // US-096

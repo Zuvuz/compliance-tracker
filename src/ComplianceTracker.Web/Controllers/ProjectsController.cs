@@ -151,6 +151,7 @@ namespace ComplianceTracker.Web.Controllers
             string? status, string? level, string? due,
             // US-101: the Activity tab's filters (q is the search there too)
             string? from, string? to, string? group, string? user, string? sort, string? page,
+            [FromServices] ClassificationService classifications,
             [FromServices] Application.Security.SecurityEventQueries securityEventQueries,
             [FromServices] EvidenceQueries evidenceQueries,
             CancellationToken cancellationToken)
@@ -197,6 +198,7 @@ namespace ComplianceTracker.Web.Controllers
 
             // US-042: the register, sorted by level; closed risks only when asked for (R7). US-048 R3: the overview counts them.
             var allRisks = activeTab is ProjectTabs.Risks or ProjectTabs.Overview ? await _risks.ForProjectAsync(id, cancellationToken) ?? [] : [];
+            var classified = activeTab is ProjectTabs.Overview ? await classifications.ForProjectAsync(id, cancellationToken) ?? [] : [];
             var securityEvents = activeTab is ProjectTabs.SecurityEvents or ProjectTabs.Overview
                 ? await securityEventQueries.ForProjectAsync(id, cancellationToken) ?? []
                 : [];
@@ -235,6 +237,7 @@ namespace ComplianceTracker.Web.Controllers
                 ComplianceFilter = ComplianceFilters.Find(show),
                 Risks = risks,
                 AllRisks = allRisks,
+                Classifications = classified,
                 SecurityEvents = securityEvents,
                 RiskStatusFilter = status,
                 RiskLevelFilter = level,
@@ -604,6 +607,20 @@ namespace ComplianceTracker.Web.Controllers
             // ASVS V5.4.1: always a download with the stored content type and our cleaned name; nosniff stops guessing
             Response.Headers["X-Content-Type-Options"] = "nosniff";
             return File(file.Value.Content, file.Value.Evidence.ContentType!, file.Value.Evidence.FileName);
+        }
+
+        // ---------------------------------------------------------- Classification (US-026)
+
+        // POST /Projects/Classify: R1–R4, R7
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId")]
+        public async Task<IActionResult> Classify(
+            Guid projectId, Guid frameworkId, string? classCode, string? reason,
+            [FromServices] ClassificationService classifications, CancellationToken cancellationToken)
+        {
+            await classifications.ClassifyAsync(projectId, frameworkId, classCode, reason, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId });
         }
 
         // ---------------------------------------------------------- Security events (US-073)

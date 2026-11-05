@@ -215,7 +215,6 @@ classDiagram
     -endOfSupportOn: DateOnly?
     -lastPlacedOnMarketOn: DateOnly?
     -retainUntil: DateOnly?
-    -craClass: CraClass
     -releases: List~Release~
     -workItems: List~WorkItem~
     -frameworks: List~ProjectFramework~
@@ -1021,14 +1020,27 @@ classDiagram
     Released
     EndOfSupport
   }
-  class CraClass {
-    <<enumeration>>
-    Default
-    ImportantClassI
-    ImportantClassII
-    Critical
-    NotApplicable
+  class ProjectClassification {
+    -id: Guid
+    -projectId: Guid
+    -frameworkId: Guid
+    -class: string
+    -reason: string
+    -classifiedById: Guid
+    -classifiedRole: UserRole?
+    -classifiedAt: DateTime
+    +Create(...)$ ProjectClassification
   }
+  class ClassificationService {
+    +ClassifyAsync(projectId: Guid, frameworkId: Guid, classCode: string, reason: string) Task
+    +ForProjectAsync(projectId: Guid) Task
+  }
+  class RegulationClasses {
+    <<static>>
+    +For(framework: Framework)$ ClassifiableRegulation?
+  }
+  Project "1" -- "*" ProjectClassification : history
+  ClassificationService --> RegulationClasses
   class FrameworkScope {
     <<enumeration>>
     Organization

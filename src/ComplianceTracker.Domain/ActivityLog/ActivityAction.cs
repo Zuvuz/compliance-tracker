@@ -130,6 +130,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         IncidentRecorded,
         SecurityReportSent,
         SecurityFixAvailable,
-        SecurityEventClosed
+        SecurityEventClosed,
+
+        // US-026: a project was classified under a regulation. SubjectId points at the project; Details holds e.g.
+        // "CRA: Important, class I (Annex III, class I, point 2: a password manager)".
+        ProjectClassified
     }
 }
