@@ -86,6 +86,16 @@ The **system admin** is the owner of the tracker. They see all organisations and
 
 A new Keycloak gets the role and the "realm roles" mapper from `keycloak/compliance-tracker-realm.json`. A Keycloak created before that has neither. Either add them by hand (**Realm roles**: create `system-admin`. **Clients**: open `compliance-tracker-web`, then **Client scopes**, then the dedicated scope, then **Add mapper**, **By configuration**, **User Realm Role**, with the token claim name `roles` and "Add to ID token" on), or delete the realm so it is imported again.
 
+### Feedback from users (US-063)
+
+Every page has **Send feedback** in the footer. The system admin sees the feedback under **System**, then **Feedback from users**, and can make a GitHub issue of it. That needs a fine-grained GitHub token with only **Issues: read and write** on the tracker's own repository. Set it as an environment variable, never in a file in the repo:
+
+```powershell
+$env:Feedback__GitHubToken = "<the token>"
+```
+
+The repository is `Zuvuz/compliance-tracker` unless `Feedback__Repository` says otherwise. Without a token, the feedback is kept and the page says so.
+
 ## The local AI (optional)
 
 AI suggestions (US-020) need a local model server. Without one, the app works, and "Suggest mappings" says the AI is not available.

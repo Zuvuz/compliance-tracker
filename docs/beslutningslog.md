@@ -444,6 +444,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** Trackerens brugere er dem, der laver produkterne. En liste med grunde viser en auditor, at intet er glemt, og hvorfor noget mangler (ISO 27001 A.5.31). Gennemgangen viste, at CRA's dokumentation og overensstemmelse også står i artikel 28–32, ikke kun i artikel 13.
 - **Fravalgt:** at indbygge hele regulativet, også myndighedernes pligter.
 
+### B42 – Feedback fra brugerne bliver issues i trackerens eget repository
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-063)
+  - Alle medlemmer kan sende feedback fra sidefoden, formet som en user story, med et valgfrit skærmbillede (PNG eller JPG, højst 5 MB, tjekket på indholdet).
+  - Kun systemadministratoren ser feedbacken. Det er det eneste fra en organisation, systemadministratoren kan se (undtagelse fra B31), fordi brugeren selv vælger at sende den.
+  - Systemadministratoren kan rette teksten og oprette et issue i trackerens eget repository (`Feedback:Repository`, som standard `Zuvuz/compliance-tracker`) med labels `user-story`, `status:draft` og `feedback`. Issuet indeholder aldrig afsenderen, organisationen eller skærmbilledet. Det siger kun, om der er et skærmbillede i trackeren.
+  - Det er det eneste sted, trackeren skriver til GitHub (undtagelse fra B12). Det bruger sit eget fine-grained token med kun "Issues: read and write" på det ene repository, fra miljøvariablen `Feedback__GitHubToken`.
+  - Højst 10 feedbacks i timen pr. bruger.
+- **Begrundelse:** CRA bilag I, del II (5)–(6): producenten skal kunne modtage rapporter fra brugerne. Skærmbilleder kan indeholde kundedata, og repositoryet kan være offentligt, så de bliver i trackeren (ISO 27001 A.5.34).
+- **Fravalgt:**
+  - At uploade skærmbilledet til GitHub.
+  - At bruge projekternes GitHub-tokens (de må kun læse).
+  - En liste over brugerens egen feedback (senere).
 ### B40 – Aktivitetsloggen kan ikke ændres
 
 - **Status:** Vedtaget

@@ -45,7 +45,9 @@ namespace ComplianceTracker.Specs.Support
                 // The tests migrate their own database (TestDatabase); some start the app without one
                 ["Database:MigrateOnStartup"] = "false",
                 // The tests run the scheduled GitHub check themselves ("the scheduled check runs"), never on a timer
-                ["WorkItemSync:Enabled"] = "false"
+                ["WorkItemSync:Enabled"] = "false",
+                // US-063: the feedback writer's token, which the pretend GitHub accepts
+                ["Feedback:GitHubToken"] = FakeGitHub.FeedbackToken
             };
             foreach (var (key, value) in overrides ?? new Dictionary<string, string?>())
             {
@@ -58,6 +60,10 @@ namespace ComplianceTracker.Specs.Support
 
                 // US-018: the GitHub adapter talks to the pretend GitHub instead of api.github.com
                 services.AddHttpClient<GitHubWorkItemSource>().ConfigurePrimaryHttpMessageHandler(github.CreateHandler);
+
+                // US-063: issues made from feedback go to the pretend GitHub too
+                services.AddHttpClient<ComplianceTracker.Infrastructure.Feedback.GitHubFeedbackIssueWriter>()
+                    .ConfigurePrimaryHttpMessageHandler(github.CreateHandler);
 
                 // US-020: the pretend AI replaces the Ollama adapters (the last registration wins)
                 services.AddSingleton<IEmbeddingModel>(ai);

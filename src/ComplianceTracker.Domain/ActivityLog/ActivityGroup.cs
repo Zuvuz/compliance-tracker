@@ -23,7 +23,8 @@ namespace ComplianceTracker.Domain.ActivityLog
             ActivityAction.UserSignedIn or ActivityAction.UserSignedOut => ActivityGroup.SignIn,
             ActivityAction.MemberRoleChanged or ActivityAction.InvitationCreated or ActivityAction.InvitationRevoked
                 or ActivityAction.InvitationAccepted or ActivityAction.MemberRemoved => ActivityGroup.Members,
-            ActivityAction.OrganizationCreated => ActivityGroup.Organisation,
+            ActivityAction.OrganizationCreated or ActivityAction.FeedbackSent or ActivityAction.FeedbackIssueCreated
+                or ActivityAction.FeedbackDismissed => ActivityGroup.Organisation,
             ActivityAction.CatalogImported or ActivityAction.CatalogActivated or ActivityAction.FrameworkEnabled
                 or ActivityAction.FrameworkDisabled => ActivityGroup.Frameworks,
             ActivityAction.ProjectCreated or ActivityAction.ProjectUpdated or ActivityAction.ProjectPhaseChanged

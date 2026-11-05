@@ -43,6 +43,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<MemberService>();
             services.AddScoped<GetStartedService>(); // US-096
             services.AddScoped<SystemAdminService>();
+            services.AddScoped<Feedback.FeedbackService>(); // US-063
 
             // Queries (read data for the pages)
             services.AddScoped<OrganizationQueries>();

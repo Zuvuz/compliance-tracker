@@ -688,6 +688,66 @@ classDiagram
     +ChangeRoleAsync(organizationId: Guid, memberId: Guid, role: UserRole) Task
   }
 
+  %% ================= Feedback (US-063) =================
+  class Feedback {
+    -id: Guid
+    -organizationId: Guid
+    -userId: Guid
+    -role: UserRole?
+    -sentAt: DateTime
+    -page: string
+    -asA: string
+    -iWant: string
+    -soThat: string
+    -rules: string?
+    -examples: string?
+    -screenshotFileName: string?
+    -screenshotSha256: string?
+    -status: FeedbackStatus
+    -issueNumber: int?
+    -issueUrl: string?
+    -dismissReason: string?
+    -decidedBy: string?
+    -decidedAt: DateTime?
+    +Send(...)$ Feedback
+    +SuggestedIssueTitle() string
+    +SuggestedIssueBody() string
+    +IssueCreated(number: int, url: string, decidedBy: string, at: DateTime)
+    +Dismiss(reason: string, decidedBy: string, at: DateTime)
+  }
+  class Screenshot {
+    +FileName: string
+    +ContentType: string
+    +Content: byte[]
+    +Sha256: string
+    +Create(fileName: string, content: byte[])$ Screenshot
+  }
+  class FeedbackStatus {
+    <<enumeration>>
+    New
+    IssueCreated
+    Dismissed
+  }
+  class FeedbackService {
+    +SendAsync(page, asA, iWant, soThat, rules, examples, screenshotName, screenshotContent) Task~Feedback~
+    +CreateIssueAsync(feedbackId: Guid, title: string, body: string) Task~CreatedIssue~
+    +DismissAsync(feedbackId: Guid, reason: string) Task
+    +ListAsync() Task
+  }
+  class IFeedbackRepository {
+    <<interface>>
+  }
+  class IFeedbackIssueWriter {
+    <<interface>>
+    +CreateAsync(title: string, body: string, labels: string[]) Task~CreatedIssue~
+  }
+  class GitHubFeedbackIssueWriter
+  Feedback --> FeedbackStatus
+  Feedback ..> Screenshot
+  FeedbackService --> IFeedbackRepository
+  FeedbackService --> IFeedbackIssueWriter
+  IFeedbackIssueWriter <|.. GitHubFeedbackIssueWriter
+
   %% ================= Log =================
   class ActivityGroup {
     <<enumeration>>
