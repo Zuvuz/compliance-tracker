@@ -42,7 +42,7 @@ Feature: Compliance tab: requirements, links and coverage per regulation
   @US-021 @integration
   Scenario: User stories show their requirements
     Given the user story "[US-004] Sign in with OpenID Connect" is linked to the requirement "SP-1"
-    When I open the "User stories" tab of "Acme Portal"
+    When I open the "Product requirements" tab of "Acme Portal"
     Then the user story "[US-004] Sign in with OpenID Connect" shows the requirements "SP-1"
 
   @US-021 @integration

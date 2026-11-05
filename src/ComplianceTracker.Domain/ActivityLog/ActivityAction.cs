@@ -116,6 +116,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         EvidenceSuggestionAccepted,
         EvidenceSuggestionRejected,
 
+        // US-104: the methods a project uses to describe its requirements changed. SubjectId points at the project;
+        // Details holds e.g. "Methods: GitHub user stories → GitHub user stories, Use cases".
+        ProjectMethodsChanged,
+
         // US-026: a project was classified under a regulation. SubjectId points at the project; Details holds e.g.
         // "CRA: Important, class I (Annex III, class I, point 2: a password manager)".
         ProjectClassified

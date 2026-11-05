@@ -35,6 +35,10 @@ namespace ComplianceTracker.Domain.Projects
         // US-018: the GitHub repository the project reads its user stories from, or null
         public GitHubLink? GitHub { get; private set; }
 
+        // US-104 R2: how the project describes its requirements. A new project starts with all of them, so nothing is
+        // hidden before someone chooses; there is always at least one.
+        public RequirementMethods RequirementMethods { get; private set; } = RequirementMethods.All;
+
         // US-024 R4: a project at end of support is kept as it was and cannot be changed
         public bool IsClosed => Phase == LifecyclePhase.EndOfSupport;
 
@@ -66,6 +70,29 @@ namespace ComplianceTracker.Domain.Projects
                 Scope = scope?.Trim() ?? "",
                 Phase = phase
             };
+        }
+
+        // ---------------------------------------------------------- Methods (US-104)
+
+        // R2, R4: one or more methods. Turning one off hides it on the tab and deletes nothing (R5).
+        // Returns the change, or null when nothing changed.
+        public ProjectChange? ChangeRequirementMethods(RequirementMethods methods)
+        {
+            EnsureOpen();
+            methods &= RequirementMethods.All;
+            if (methods == RequirementMethods.None)
+            {
+                throw new DomainException("Choose at least one method");
+            }
+
+            if (methods == RequirementMethods)
+            {
+                return null;
+            }
+
+            var change = new ProjectChange("Methods", RequirementMethodNames.Describe(RequirementMethods), RequirementMethodNames.Describe(methods));
+            RequirementMethods = methods;
+            return change;
         }
 
         // ---------------------------------------------------------- Editing (US-024)

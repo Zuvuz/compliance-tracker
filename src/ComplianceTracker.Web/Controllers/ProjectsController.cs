@@ -12,6 +12,7 @@ using ComplianceTracker.Domain.Projects;
 using ComplianceTracker.Web.Filters;
 using ComplianceTracker.Web.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 namespace ComplianceTracker.Web.Controllers
 {
@@ -154,6 +155,19 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] EvidenceQueries evidenceQueries,
             CancellationToken cancellationToken)
         {
+            // US-104 R1: shared links to the old "User stories" tab still work
+            if (string.Equals(tab, ProjectTabs.OldProductRequirements, StringComparison.OrdinalIgnoreCase))
+            {
+                // RedirectToAction keeps the redirect inside the app (US-094 R4); the filters in the address go along
+                var values = new RouteValueDictionary(Request.Query.ToDictionary(q => q.Key, q => (object?)q.Value.ToString()))
+                {
+                    ["id"] = id,
+                    ["tab"] = ProjectTabs.ProductRequirements,
+                    ["sub"] = sub
+                };
+                return RedirectToActionPermanent(nameof(Details), values);
+            }
+
             var activeTab = ProjectTabs.Find(tab);
             var project = await _projects.GetAsync(id, cancellationToken);
             var organization = await _organizations.MineAsync(cancellationToken);
@@ -172,7 +186,7 @@ namespace ComplianceTracker.Web.Controllers
                 : null;
 
             // Requirements and links: for the Compliance tab, the overview's summary and the user stories' requirements
-            var compliance = activeTab is ProjectTabs.Compliance or ProjectTabs.Overview or ProjectTabs.UserStories
+            var compliance = activeTab is ProjectTabs.Compliance or ProjectTabs.Overview or ProjectTabs.ProductRequirements
                 ? await _complianceQueries.ForProjectAsync(id, cancellationToken)
                 : null;
 
@@ -205,7 +219,7 @@ namespace ComplianceTracker.Web.Controllers
                 _clock.Today())
             {
                 // US-032: the requirement specifications, for the User stories tab
-                Documents = activeTab == ProjectTabs.UserStories ? await _workItems.DocumentsAsync(id, cancellationToken) : [],
+                Documents = activeTab == ProjectTabs.ProductRequirements ? await _workItems.DocumentsAsync(id, cancellationToken) : [],
                 Tab = activeTab,
                 Organization = organization,
                 Activity = activity,
@@ -255,7 +269,7 @@ namespace ComplianceTracker.Web.Controllers
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(MaxDocumentRequestSize)]
         [RequestFormLimits(MultipartBodyLengthLimit = MaxDocumentRequestSize)]
-        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.ProductRequirements)]
         // US-033: idPattern says how IDs look in a Word document. US-034: kind is requirements or use cases.
         public async Task<IActionResult> UploadRequirementDocument(
             Guid projectId, IFormFile? file, Guid? documentId, string? idPattern, Domain.WorkItems.DocumentKind? kind,
@@ -270,7 +284,7 @@ namespace ComplianceTracker.Web.Controllers
             await file.CopyToAsync(buffer, cancellationToken);
             await _documents.UploadAsync(projectId, file.FileName, buffer.ToArray(), documentId, idPattern,
                 kind ?? Domain.WorkItems.DocumentKind.RequirementSpecification, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.ProductRequirements });
         }
 
         // GET /Projects/RequirementDocumentFile/{id}?versionId=...: R7, for anyone in the organisation (R8: 404 for others)
@@ -291,41 +305,41 @@ namespace ComplianceTracker.Web.Controllers
         // POST /Projects/LinkGitHub: R1
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.ProductRequirements)]
         public async Task<IActionResult> LinkGitHub(Guid projectId, string? repository, string? label, CancellationToken cancellationToken)
         {
             await _sync.LinkGitHubAsync(projectId, repository ?? "", label, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.ProductRequirements });
         }
 
         // POST /Projects/SetGitHubToken: US-031 R1-R3. A refused token is shown as an error and never sent back to the page.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.ProductRequirements)]
         public async Task<IActionResult> SetGitHubToken(Guid projectId, string? token, CancellationToken cancellationToken)
         {
             await _sync.SetGitHubTokenAsync(projectId, token ?? "", cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.ProductRequirements });
         }
 
         // POST /Projects/RemoveGitHubToken: US-031 R3
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.ProductRequirements)]
         public async Task<IActionResult> RemoveGitHubToken(Guid projectId, CancellationToken cancellationToken)
         {
             await _sync.RemoveGitHubTokenAsync(projectId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.ProductRequirements });
         }
 
         // POST /Projects/SyncNow: R5. A failed sync is shown on the page from the project's GitHub link.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.ProductRequirements)]
         public async Task<IActionResult> SyncNow(Guid projectId, CancellationToken cancellationToken)
         {
             await _sync.SyncNowAsync(projectId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.ProductRequirements });
         }
 
         // ---------------------------------------------------------- Requirements and user stories (US-021)
@@ -495,6 +509,11 @@ namespace ComplianceTracker.Web.Controllers
             {
                 TempData["EvidenceAiUnavailable"] = $"No suggestions: {added.AiUnavailable}";
             }
+            else if (added.Suggestions == 0)
+            {
+                // US-105 R3: nothing reached the limit, so nothing weak is shown
+                TempData["EvidenceAiUnavailable"] = "No requirement looks like a match; link it by hand.";
+            }
 
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
         }
@@ -599,6 +618,19 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId });
         }
 
+        // ---------------------------------------------------------- Methods (US-104)
+
+        // POST /Projects/ChooseRequirementMethods: R2, R4. The checkboxes send the methods that are ticked.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.ProductRequirements)]
+        public async Task<IActionResult> ChooseRequirementMethods(Guid projectId, List<RequirementMethods> methods, CancellationToken cancellationToken)
+        {
+            var chosen = methods.Aggregate(Domain.Projects.RequirementMethods.None, (all, method) => all | method);
+            await _service.ChangeRequirementMethodsAsync(projectId, chosen, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.ProductRequirements });
+        }
+
         // ---------------------------------------------------------- Technical documentation (US-056)
 
         // GET /Projects/TechnicalDocumentation/{id}: a DOCX draft with the headings of CRA Annex VII.
@@ -656,21 +688,21 @@ namespace ComplianceTracker.Web.Controllers
         // POST /Projects/SuggestMappings: R1, R8
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.ProductRequirements)]
         public async Task<IActionResult> SuggestMappings(Guid projectId, CancellationToken cancellationToken)
         {
             await _suggestions.SuggestAsync(projectId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.ProductRequirements });
         }
 
         // POST /Projects/ShowMoreSuggestions: US-036 R2
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.ProductRequirements)]
         public async Task<IActionResult> ShowMoreSuggestions(Guid projectId, Guid workItemId, CancellationToken cancellationToken)
         {
             await _suggestions.ShowMoreAsync(projectId, workItemId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.ProductRequirements });
         }
 
         // POST /Projects/SuggestForNotCovered: US-044 R3, R8. Only the open framework's not-covered requirements.

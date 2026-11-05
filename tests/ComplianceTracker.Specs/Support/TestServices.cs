@@ -70,6 +70,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<IInvitationRepository, InvitationRepository>(); // US-009
                 services.AddScoped<IGetStartedReadModel, GetStartedReadModel>(); // US-096
                 services.AddSingleton<FakeAi>();
+                services.AddSingleton<IAiLimits>(provider => provider.GetRequiredService<FakeAi>()); // US-105
                 services.AddSingleton<IEmbeddingModel>(provider => provider.GetRequiredService<FakeAi>());
                 services.AddSingleton<IRationaleWriter>(provider => provider.GetRequiredService<FakeAi>());
                 services.AddSingleton<IRationaleQueue, NoRationaleQueue>();

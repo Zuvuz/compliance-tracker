@@ -30,7 +30,7 @@ namespace ComplianceTracker.Domain.ActivityLog
             ActivityAction.ProjectCreated or ActivityAction.ProjectUpdated or ActivityAction.ProjectPhaseChanged
                 or ActivityAction.ProjectClassified
                 or ActivityAction.ProjectFrameworkAdded or ActivityAction.ProjectFrameworkRemoved
-                or ActivityAction.ProjectFrameworkVersionChanged => ActivityGroup.Projects,
+                or ActivityAction.ProjectFrameworkVersionChanged or ActivityAction.ProjectMethodsChanged => ActivityGroup.Projects,
             ActivityAction.RepositoryConnected or ActivityAction.WorkItemsSynced or ActivityAction.AccessTokenChanged
                 or ActivityAction.RequirementDocumentUploaded => ActivityGroup.WorkItems,
             ActivityAction.RequirementLinked or ActivityAction.RequirementUnlinked or ActivityAction.RequirementMarkedNotApplicable

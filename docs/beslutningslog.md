@@ -531,6 +531,35 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At hente testresultater fra GitHub Actions automatisk (kræver `actions: read` på tokenet; senere).
   - At gemme hele resultatfilen som evidens. Filtyperne fra US-057 tillader ikke XML, og en kort Markdown-fil er lettere at læse for en auditor.
 
+### B46 – Fanen "Product requirements" og projektets metoder
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-104)
+  - Fanen "User stories" hedder "Product requirements" (`/product-requirements`), fordi den rummer alle måder at beskrive produktets krav på. Den gamle adresse `/user-stories` sender videre (301), så delte links virker.
+  - Projektet gemmer, hvilke metoder det bruger: GitHub user stories, kravspecifikation og use cases. Det er en eller flere, valgt med afkrydsningsfelter af roller med `EditProjects`, og ændringen logges med før og efter.
+  - Kun de valgte metoders afsnit og elementer vises på fanen. At slå en metode fra sletter intet: links, dækning og evidens bliver og vises stadig på Compliance-fanen.
+  - Et nyt projekt bruger alle tre, indtil nogen vælger. Mindst én metode skal altid være valgt. Eksisterende projekter får de metoder, de allerede bruger (et GitHub-repository, en uploadet kravspecifikation eller use cases); et projekt, der ikke bruger nogen, får alle tre.
+- **Begrundelse:** Holdene arbejder forskelligt (B02), og fanen skal kun vise det, holdet bruger. Valget gemmes på projektet, så alle ser det samme, og det kan senere bruges af den tekniske dokumentation (CRA bilag VII (2)(a)) og af AI-udkast til nye krav (US-106).
+- **Fravalgt:**
+  - At et nyt projekt starter uden metoder og spørger først (som issuet foreslog). Det ville give en tom fane, før man kan komme i gang.
+  - Et valg pr. bruger i browseren. Så ville to personer på samme projekt se forskellige faner.
+  - At omdøbe `WorkItem` i koden.
+
+### B47 – Minimumsscore for AI-forslag
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-105)
+  - Et AI-forslag under en minimumsscore laves ikke og vises ikke. Story-forslag (US-020, US-044) og evidensforslag (US-059) har hver sin grænse: `Ai:MinimumScoreForStories` og `Ai:MinimumScoreForEvidence`, begge 0,5 som udgangspunkt.
+  - Driften sætter grænserne i indstillingerne, ikke organisationens admin i appen. Hvert forslag gemmer den grænse, det blev lavet med (sammen med model og prompt-version), så gamle og nye forslag kan sammenlignes (AI Act art. 12).
+  - Når intet når grænsen, siger Evidence-fanen "No requirement looks like a match; link it by hand." Grænsen står over forslagene.
+  - Svage forslag skjules helt; de foldes ikke væk.
+  - Én embeddings-model og én chat-model bruges stadig til alt. En egen model til udkast kommer med US-106, hvor den første opgave har brug for det.
+- **Begrundelse:** Forslag med score omkring 0,45 viste sig at være støj: AI'ens egen begrundelse sagde, at evidensen ikke beviste kravet. Et menneske skal kun bruge tid på forslag, der kan være rigtige (AI Act art. 14).
+- **Fravalgt:**
+  - At lade godkendte og afviste forslag justere scoren automatisk (læring). Senere, når der er data nok.
+  - At logge ændringer af grænserne i appen: de ændres i driftens indstillinger, og hvert forslag gemmer grænsen.
+  - Startværdien er et skøn. Den justeres ud fra scorerne i US-036's eksport af godkendte og afviste forslag.
+
 ### B50 – Klassificering af et projekt under hvert regulativ
 
 - **Status:** Vedtaget

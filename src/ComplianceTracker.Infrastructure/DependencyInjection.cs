@@ -121,6 +121,7 @@ namespace ComplianceTracker.Infrastructure
         private static void AddAi(IServiceCollection services)
         {
             // US-083 R4: an unknown provider stops the app at start, instead of silently using Ollama
+            services.AddSingleton<IAiLimits, Ai.ConfiguredAiLimits>(); // US-105
             services.AddOptions<AiOptions>()
                 .BindConfiguration(AiOptions.Section)
                 .Validate(options => AiProviders.Key(options.Provider) is not null, AiProviders.UnknownMessage)
