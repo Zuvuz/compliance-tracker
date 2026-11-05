@@ -78,6 +78,25 @@ namespace ComplianceTracker.Domain.Mappings
             return evidence;
         }
 
+        // US-069 R6: the same evidence on the requirement with the same code in the version the project moves to.
+        // A file's content is copied by the caller.
+        public Evidence CarryTo(Guid requirementId)
+            => new()
+            {
+                ProjectId = ProjectId,
+                RequirementId = requirementId,
+                Title = Title,
+                Url = Url,
+                FileName = FileName,
+                ContentType = ContentType,
+                SizeInBytes = SizeInBytes,
+                Sha256 = Sha256,
+                ValidUntil = ValidUntil,
+                AddedById = AddedById,
+                AddedRole = AddedRole,
+                AddedAt = AddedAt
+            };
+
         // R3: valid through the "valid until" day itself
         public bool IsExpiredOn(DateOnly today) => ValidUntil is { } until && until < today;
 

@@ -376,7 +376,7 @@ namespace ComplianceTracker.Specs.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 46
-    await testRunner.GivenAsync("the time is \"2026-11-01T09:00:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+    await testRunner.GivenAsync("the time is \"2026-06-01T09:00:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 47
     await testRunner.AndAsync("\"CRA – Regulation (EU) 2024/2847\" is switched on", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -386,7 +386,7 @@ namespace ComplianceTracker.Specs.Features
 #line hidden
 #line 49
     await testRunner.ThenAsync("the Frameworks tab of \"Acme Portal\" shows \"CRA – Regulation (EU) 2024/2847\" as \"A" +
-                        "pplies from 11-12-2027\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+                        "pplies from 11-09-2026\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

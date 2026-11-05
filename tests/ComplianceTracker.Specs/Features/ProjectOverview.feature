@@ -16,13 +16,13 @@ Feature: The project overview shows the status and what needs attention
     Given the project "Acme Portal" has the user story "[US-004] Sign in with Keycloak"
     And the user story "[US-004] Sign in with Keycloak" is linked to the requirement "I.2(d)"
     When I open the "Overview" tab of "Acme Portal"
-    Then the coverage of "CRA" is "5 %"
+    Then the coverage of "CRA" is "1 %"
 
   @US-048 @iso27001-9.1 @integration
   Scenario: What is not covered needs attention and links to it
     When I open the "Overview" tab of "Acme Portal"
-    Then "Needs attention" says "22 requirements not covered"
-    And "22 requirements not covered" links to the "CRA" sub-tab showing "Not covered"
+    Then "Needs attention" says "72 requirements not covered"
+    And "72 requirements not covered" links to the "CRA" sub-tab showing "Not covered"
 
   @US-048 @cra-art13 @integration
   Scenario: Risks due for review need attention
@@ -56,5 +56,5 @@ Feature: The project overview shows the status and what needs attention
   Scenario: An auditor sees the overview without the phase form
     Given "Bo" has joined "Acme ApS" as "Auditor"
     When "Bo" opens the "Overview" tab of "Acme Portal"
-    Then "Needs attention" says "22 requirements not covered"
+    Then "Needs attention" says "72 requirements not covered"
     And there is no "Change phase" button

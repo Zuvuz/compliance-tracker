@@ -198,7 +198,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I open the \"Overview\" tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 19
-    await testRunner.ThenAsync("the coverage of \"CRA\" is \"5 %\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the coverage of \"CRA\" is \"1 %\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -238,10 +238,10 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I open the \"Overview\" tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 24
-    await testRunner.ThenAsync("\"Needs attention\" says \"22 requirements not covered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("\"Needs attention\" says \"72 requirements not covered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 25
-    await testRunner.AndAsync("\"22 requirements not covered\" links to the \"CRA\" sub-tab showing \"Not covered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("\"72 requirements not covered\" links to the \"CRA\" sub-tab showing \"Not covered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -465,7 +465,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("\"Bo\" opens the \"Overview\" tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 59
-    await testRunner.ThenAsync("\"Needs attention\" says \"22 requirements not covered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("\"Needs attention\" says \"72 requirements not covered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 60
     await testRunner.AndAsync("there is no \"Change phase\" button", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

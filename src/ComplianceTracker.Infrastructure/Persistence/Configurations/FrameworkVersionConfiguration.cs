@@ -63,17 +63,19 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.HasData(
                 BuiltInVersion(BuiltInFrameworks.Cra.VersionId, BuiltInFrameworks.Cra.FrameworkId,
                     BuiltInFrameworks.Cra.PublishedAt, BuiltInFrameworks.Cra.SourceReference, BuiltInFrameworks.Cra.AppliesFrom),
+                BuiltInVersion(BuiltInFrameworks.Cra.Version2Id, BuiltInFrameworks.Cra.FrameworkId,
+                    BuiltInFrameworks.Cra.PublishedAt, BuiltInFrameworks.Cra.SourceReference, BuiltInFrameworks.Cra.Version2AppliesFrom, number: 2),
                 BuiltInVersion(BuiltInFrameworks.AiAct.VersionId, BuiltInFrameworks.AiAct.FrameworkId,
                     BuiltInFrameworks.AiAct.PublishedAt, BuiltInFrameworks.AiAct.SourceReference, BuiltInFrameworks.AiAct.AppliesFrom));
         }
 
         // Seed data for a built-in version: no file, no uploader, a link to the official text
-        private static object BuiltInVersion(Guid id, Guid frameworkId, DateTime publishedAt, string sourceReference, DateOnly appliesFrom)
+        private static object BuiltInVersion(Guid id, Guid frameworkId, DateTime publishedAt, string sourceReference, DateOnly appliesFrom, int number = 1)
             => new
             {
                 Id = id,
                 FrameworkId = frameworkId,
-                Number = 1,
+                Number = number,
                 FileName = "",
                 SizeInBytes = 0L,
                 Sha256 = "",

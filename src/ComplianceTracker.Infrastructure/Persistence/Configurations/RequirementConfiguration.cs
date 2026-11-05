@@ -39,6 +39,19 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
                 Reference = (string?)BuiltInCraRequirements.Reference
             }));
 
+            // US-069: version 2 of the CRA
+            builder.HasData(BuiltInCraRequirementsV2.All.Select(item => new
+            {
+                item.Id,
+                FrameworkVersionId = BuiltInFrameworks.Cra.Version2Id,
+                item.Code,
+                item.Title,
+                item.Description,
+                item.Position,
+                item.Group,
+                Reference = (string?)item.Reference
+            }));
+
             // A code is used once per version (the domain checks it first, the index is the safety net)
             builder.HasIndex(r => new { r.FrameworkVersionId, r.Code }).IsUnique();
         }

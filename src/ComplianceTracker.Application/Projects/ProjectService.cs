@@ -1,6 +1,7 @@
 using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
+using ComplianceTracker.Application.Compliance;
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Domain.Common;
@@ -22,6 +23,7 @@ namespace ComplianceTracker.Application.Projects
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
+        private readonly VersionCarryOver _carryOver;
 
         public ProjectService(
             IProjectRepository projects,
@@ -29,8 +31,10 @@ namespace ComplianceTracker.Application.Projects
             CurrentMember member,
             IActivityLogger log,
             IUnitOfWork unitOfWork,
-            TimeProvider clock)
+            TimeProvider clock,
+            VersionCarryOver carryOver)
         {
+            _carryOver = carryOver;
             _projects = projects;
             _frameworks = frameworks;
             _member = member;
@@ -151,9 +155,12 @@ namespace ComplianceTracker.Application.Projects
                 ? framework.RequireCurrentVersion(_clock.Today())
                 : framework.Version(frameworkVersionId.Value);
 
+            var from = project.Frameworks.FirstOrDefault(f => f.FrameworkId == framework.Id)?.FrameworkVersionId;
             if (project.ChangeFrameworkVersion(framework, version, userId, Now))
             {
-                await _log.LogAsync(ActivityAction.ProjectFrameworkVersionChanged, project.Id, cancellationToken);
+                // US-069 R6: links, "not applicable" and evidence follow to the requirements with the same code
+                var carried = await _carryOver.CarryAsync(project, framework.Id, from!.Value, version.Id, cancellationToken);
+                await _log.LogAsync(ActivityAction.ProjectFrameworkVersionChanged, project.Id, carried.Describe(framework.Name, version.Number), cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }
         }

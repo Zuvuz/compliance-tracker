@@ -15,7 +15,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // The heading's start → the built-in framework version it is about
         private static readonly Dictionary<string, Guid> Regulations = new()
         {
-            ["CRA"] = BuiltInFrameworks.Cra.VersionId,
+            ["CRA"] = BuiltInFrameworks.Cra.Version2Id, // US-069: the newest version
             ["AI Act"] = BuiltInFrameworks.AiAct.VersionId
         };
 
