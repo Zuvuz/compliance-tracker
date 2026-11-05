@@ -47,6 +47,13 @@
         attention.Add((Plural(withoutEvidence, "covered requirement without evidence", "covered requirements without evidence"),
             ComplianceUrl(SubWhere(f => f.Requirements.Any(r => r.IsApplicable && r.IsCovered && !r.HasEvidence)), null)));
     }
+    // US-058: evidence suggested from tests and pull requests
+    var evidenceSuggestions = frameworks.Sum(f => f.EvidenceSuggestionCount);
+    if (evidenceSuggestions > 0)
+    {
+        attention.Add((Plural(evidenceSuggestions, "evidence suggestion", "evidence suggestions"),
+            ComplianceUrl(SubWhere(f => f.EvidenceSuggestionCount > 0), null)));
+    }
     if (reviewDue > 0)
     {
         attention.Add((Plural(reviewDue, "risk due for review", "risks due for review"), RisksUrl(due: "1")));

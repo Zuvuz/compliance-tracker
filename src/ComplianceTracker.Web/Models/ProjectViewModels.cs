@@ -133,20 +133,10 @@ namespace ComplianceTracker.Web.Models
     // The built-in frameworks are called e.g. "CRA – Regulation (EU) 2024/2847": the part before " – " is the short name.
     public static class FrameworkNames
     {
-        public static string Short(string name) => name.Split(" – ")[0].Trim();
+        public static string Short(string name) => Application.Frameworks.FrameworkSlugs.Short(name);
 
-        // "Security policy" -> "security-policy"
-        public static string Slug(string name)
-        {
-            var chars = Short(name).ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray();
-            var slug = new string(chars);
-            while (slug.Contains("--"))
-            {
-                slug = slug.Replace("--", "-");
-            }
-
-            return slug.Trim('-');
-        }
+        // "Security policy" -> "security-policy" (US-058: also the start of a requirement's test tag)
+        public static string Slug(string name) => Application.Frameworks.FrameworkSlugs.Slug(name);
     }
 
     // One framework a project follows, with the version it uses (US-011 R6) and who added it (US-022 R4)

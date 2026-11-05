@@ -89,6 +89,36 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
         }
     }
 
+    // US-058: suggestions from tests and pull requests, in "EvidenceSuggestions"
+    public class EvidenceSuggestionConfiguration : IEntityTypeConfiguration<EvidenceSuggestion>
+    {
+        public void Configure(EntityTypeBuilder<EvidenceSuggestion> builder)
+        {
+            builder.ToTable("EvidenceSuggestions");
+            builder.HasKey(s => s.Id);
+            builder.Property(s => s.Id).ValueGeneratedNever();
+            builder.Property(s => s.Source).HasConversion<string>().HasMaxLength(50);
+            builder.Property(s => s.Title).IsRequired().HasMaxLength(EvidenceSuggestion.MaxTitleLength);
+            builder.Property(s => s.Url).HasMaxLength(Evidence.MaxUrlLength);
+            builder.Property(s => s.ExternalId).IsRequired().HasMaxLength(500);
+            builder.Property(s => s.PassingScenarios).HasMaxLength(EvidenceSuggestion.MaxScenariosLength);
+            builder.Property(s => s.FailingScenarios).HasMaxLength(EvidenceSuggestion.MaxScenariosLength);
+            builder.Property(s => s.ResultsFileName).HasMaxLength(200);
+            builder.Property(s => s.Status).HasConversion<string>().HasMaxLength(50);
+            builder.Property(s => s.DecidedRole).HasConversion<string>().HasMaxLength(50);
+            builder.Property(s => s.RejectionReason).HasMaxLength(1000);
+            builder.Ignore(s => s.IsPending);
+
+            builder.HasOne<Project>().WithMany().HasForeignKey(s => s.ProjectId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<Requirement>().WithMany().HasForeignKey(s => s.RequirementId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<User>().WithMany().HasForeignKey(s => s.DecidedById).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<Evidence>().WithMany().HasForeignKey(s => s.EvidenceId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+
+            // R5: the same source is suggested once per requirement
+            builder.HasIndex(s => new { s.ProjectId, s.RequirementId, s.ExternalId }).IsUnique();
+        }
+    }
+
     public class EvidenceDocumentConfiguration : IEntityTypeConfiguration<EvidenceDocument>
     {
         public void Configure(EntityTypeBuilder<EvidenceDocument> builder)

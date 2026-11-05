@@ -78,6 +78,33 @@ namespace ComplianceTracker.Specs.Support
                 // repos/{owner}/{name}/issues?labels=...&state=all&per_page=100&page=1
                 var path = request.RequestUri!.AbsolutePath.Trim('/').Split('/');
 
+                // US-058: repos/{owner}/{name}/issues/{number}/timeline, with the pull request that closed the issue
+                if (request.Method == HttpMethod.Get && path.Length == 6 && path[0] == "repos" && path[3] == "issues" && path[5] == "timeline"
+                    && _repositories.TryGetValue($"{path[1]}/{path[2]}", out var timelineIssues))
+                {
+                    var closedBy = timelineIssues.FirstOrDefault(i => i.Number.ToString() == path[4])?.ClosedBy;
+                    var events = closedBy is null
+                        ? "[]"
+                        : JsonSerializer.Serialize(new[]
+                        {
+                            new
+                            {
+                                @event = "cross-referenced",
+                                source = new
+                                {
+                                    issue = new
+                                    {
+                                        number = closedBy.Value.Number,
+                                        title = closedBy.Value.Title,
+                                        html_url = $"https://github.com/{path[1]}/{path[2]}/pull/{closedBy.Value.Number}",
+                                        pull_request = new { merged_at = "2026-11-03T10:00:00Z" }
+                                    }
+                                }
+                            }
+                        });
+                    return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(events, Encoding.UTF8, "application/json") };
+                }
+
                 // US-063: POST repos/{owner}/{name}/issues creates an issue, with the feedback token only
                 if (request.Method == HttpMethod.Post && path.Length == 4 && path[0] == "repos" && path[3] == "issues")
                 {
@@ -167,5 +194,8 @@ namespace ComplianceTracker.Specs.Support
         public string Body { get; set; } = "";
         public List<string> Labels { get; set; } = new();
         public string State { get; set; } = "open";
+
+        // US-058: the merged pull request that closed the issue, if any
+        public (int Number, string Title)? ClosedBy { get; set; }
     }
 }

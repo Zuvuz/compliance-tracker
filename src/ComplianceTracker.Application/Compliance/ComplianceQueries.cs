@@ -20,6 +20,7 @@ namespace ComplianceTracker.Application.Compliance
         private readonly IRequirementApplicabilityRepository _applicability;
         private readonly IMappingSuggestionRepository _suggestions;
         private readonly IEvidenceRepository _evidence;
+        private readonly IEvidenceSuggestionRepository _evidenceSuggestions;
         private readonly CurrentMember _member;
         private readonly TimeProvider _clock;
 
@@ -31,9 +32,11 @@ namespace ComplianceTracker.Application.Compliance
             IRequirementApplicabilityRepository applicability,
             IMappingSuggestionRepository suggestions,
             IEvidenceRepository evidence,
+            IEvidenceSuggestionRepository evidenceSuggestions,
             CurrentMember member,
             TimeProvider clock)
         {
+            _evidenceSuggestions = evidenceSuggestions;
             _projects = projects;
             _frameworks = frameworks;
             _workItems = workItems;
@@ -89,6 +92,12 @@ namespace ComplianceTracker.Application.Compliance
             var evidenceLinks = (await _evidence.ListActiveLinksAsync(project.Id, cancellationToken))
                 .ToLookup(l => l.RequirementId, l => l.EvidenceId);
 
+            // US-058: suggestions from tests and pull requests that wait for a person, and the newest run's failing tests
+            var evidenceSuggestions = (await _evidenceSuggestions.ListAsync(project.Id, cancellationToken))
+                .Where(s => s.Status is Domain.Mappings.EvidenceSuggestionStatus.Pending or Domain.Mappings.EvidenceSuggestionStatus.Blocked)
+                .OrderByDescending(s => s.CreatedAt)
+                .ToLookup(s => s.RequirementId);
+
             var result = new List<FrameworkCompliance>();
             foreach (var used in project.Frameworks)
             {
@@ -115,7 +124,8 @@ namespace ComplianceTracker.Application.Compliance
                             .ToList(),
                         Evidence = evidence.Where(e => evidenceLinks[requirement.Id].Contains(e.Id))
                             .Select(e => new EvidenceItem(e, e.IsExpiredOn(today)))
-                            .ToList()
+                            .ToList(),
+                        EvidenceSuggestions = evidenceSuggestions[requirement.Id].ToList()
                     })
                     .ToList();
 
@@ -174,6 +184,9 @@ namespace ComplianceTracker.Application.Compliance
         // US-057 R4: applicable requirements with at least one evidence that has not expired
         public int WithEvidence => Requirements.Count(r => r.HasEvidence);
 
+        // US-058: suggestions from tests and pull requests that wait for a person
+        public int EvidenceSuggestionCount => Requirements.Sum(r => r.PendingEvidenceSuggestions.Count());
+
         // e.g. "12 of 20 requirements covered (60 %), 2 not applicable"
         public string CoverageText
             => $"{Covered} of {Total} requirements covered ({Percent} %)" + (NotApplicable > 0 ? $", {NotApplicable} not applicable" : "");
@@ -199,6 +212,16 @@ namespace ComplianceTracker.Application.Compliance
         public IReadOnlyList<EvidenceItem> Evidence { get; init; } = [];
 
         public bool HasEvidence => IsApplicable && Evidence.Any(e => !e.IsExpired);
+
+        // US-058 R6: pending suggestions from tests and pull requests, and blocked ones (failing tests); none when not applicable
+        public IReadOnlyList<Domain.Mappings.EvidenceSuggestion> EvidenceSuggestions { get; init; } = [];
+
+        public IEnumerable<Domain.Mappings.EvidenceSuggestion> PendingEvidenceSuggestions
+            => IsApplicable ? EvidenceSuggestions.Where(s => s.IsPending) : [];
+
+        // R2: the failing tests of the newest blocked run, e.g. "1 failing test"
+        public int FailingTests
+            => IsApplicable ? EvidenceSuggestions.Where(s => s.Status == Domain.Mappings.EvidenceSuggestionStatus.Blocked).Select(s => s.FailingCount).FirstOrDefault() : 0;
     }
 
     public record EvidenceItem(Domain.Mappings.Evidence Evidence, bool IsExpired);

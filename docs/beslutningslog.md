@@ -444,6 +444,32 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** Trackerens brugere er dem, der laver produkterne. En liste med grunde viser en auditor, at intet er glemt, og hvorfor noget mangler (ISO 27001 A.5.31). Gennemgangen viste, at CRA's dokumentation og overensstemmelse også står i artikel 28–32, ikke kun i artikel 13.
 - **Fravalgt:** at indbygge hele regulativet, også myndighedernes pligter.
 
+### B40 – Aktivitetsloggen kan ikke ændres
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-091)
+  - Databasen nægter `UPDATE`, `DELETE` og `TRUNCATE` på `ActivityLog` med triggere, også fra SQL uden om trackeren.
+  - Hver post får et fingeraftryk (SHA-256) af sit indhold og af den forrige posts fingeraftryk i samme organisation. Kæden lægges, når posten gemmes, i én transaktion med en lås pr. organisation, så to samtidige requests ikke deler kæden.
+  - Admins og Auditors kan på `/LogCheck` få kæden gennemgået. Siden viser den første post, der ikke passer.
+  - Poster fra før kæden har intet fingeraftryk og godtages kun i starten af loggen.
+- **Begrundelse:** Loggen er bevis over for en auditor (ISO 27001 A.8.15, CRA bilag I del I (2)(l)). Triggerne stopper fejl og almindelige brugere. Kæden opdager det, triggerne ikke kan stoppe: en ejer af tabellen kan slå triggerne fra, men kan ikke ændre en post uden at bryde kæden fra det punkt.
+- **Fravalgt:**
+  - At gemme fingeraftrykket uden for databasen (fx i en ekstern tidsstempeltjeneste). Senere, hvis en auditor kræver det, for en ejer kan stadig skrive hele kæden om.
+  - En særskilt databasebruger uden rettigheder til at ændre tabellen. Det kræver ændringer i udviklingsmiljøet og deployment.
+
+### B41 – CRA version 2, og hvad der følger med, når et projekt skifter version
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-069)
+  - CRA version 2 har bilag I uændret (samme koder, titler og tekster) plus producentens pligter i art. 13, 14 og 28–32 og bilag II og VII. Version 1 ændres ikke.
+  - Version 2 gælder fra 11-09-2026, hvor art. 14 begynder at gælde (art. 71). Derfor er det den version, nye projekter får. Et projekt på version 1 ser "Newer version available".
+  - Når et projekt skifter version, følger links, "ikke relevant"-afgørelser og evidens med til kravet med samme kode. Hvem der besluttede det, og hvornår, bevares. En evidensfil kopieres. En kode, der ikke findes i den nye version, bliver på den gamle som historik. Loggen siger, hvor meget der fulgte med.
+  - Bilag II og VII får koderne `Annex II.n` og `Annex VII.n`, fordi `II.n` allerede er bilag I, del II.
+- **Begrundelse:** En version har én startdato, men CRA gælder i trin. Den tidligste dato gør de nye pligter synlige, mens art. 14 allerede gælder. Uden overførsel ville et versionsskifte nulstille projektets dækning og bevismateriale (ISO 27001 A.8.32).
+- **Fravalgt:**
+  - Startdato pr. krav (ville kræve en ændring af domænemodellen fra US-035).
+  - At lade links pege på en kode i stedet for et krav-id.
+
 ### B42 – Feedback fra brugerne bliver issues i trackerens eget repository
 
 - **Status:** Vedtaget
@@ -458,30 +484,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At uploade skærmbilledet til GitHub.
   - At bruge projekternes GitHub-tokens (de må kun læse).
   - En liste over brugerens egen feedback (senere).
-### B40 – Aktivitetsloggen kan ikke ændres
+
+### B43 – Udkast til CRA's tekniske dokumentation som DOCX
 
 - **Status:** Vedtaget
-- **Beslutning:** (US-091)
-  - Databasen nægter `UPDATE`, `DELETE` og `TRUNCATE` på `ActivityLog` med triggere, også fra SQL uden om trackeren.
-  - Hver post får et fingeraftryk (SHA-256) af sit indhold og af den forrige posts fingeraftryk i samme organisation. Kæden lægges, når posten gemmes, i én transaktion med en lås pr. organisation, så to samtidige requests ikke deler kæden.
-  - Admins og Auditors kan på `/LogCheck` få kæden gennemgået. Siden viser den første post, der ikke passer.
-  - Poster fra før kæden har intet fingeraftryk og godtages kun i starten af loggen.
-- **Begrundelse:** Loggen er bevis over for en auditor (ISO 27001 A.8.15, CRA bilag I del I (2)(l)). Triggerne stopper fejl og almindelige brugere. Kæden opdager det, triggerne ikke kan stoppe: en ejer af tabellen kan slå triggerne fra, men kan ikke ændre en post uden at bryde kæden fra det punkt.
+- **Beslutning:** (US-056)
+  - Trackeren laver et udkast med de otte punkter fra CRA bilag VII som DOCX, så det kan gøres færdigt i Word eller LibreOffice. Udkastet kan laves igen når som helst (art. 31, stk. 2).
+  - Trackeren udfylder: projektets navn, beskrivelse, fase, scope og tilsigtede formål (punkt 1), user stories (punkt 2(a)), risikoregistret og hvordan hvert krav i bilag I er opfyldt eller hvorfor det ikke gælder (punkt 3), og de andre rammeværker projektet følger (punkt 5).
+  - Resten står som "To be completed" med en kort vejledning: supportperioden, softwareversioner, billeder, brugerinformation, arkitektur, sårbarhedshåndtering, produktion, standarder, testrapporter, overensstemmelseserklæringen og SBOM.
+  - Kun projekter, der følger CRA, kan lave udkastet. Linket står under "Reports" på projektets Overview-fane.
+- **Begrundelse:** Producenten skal udarbejde den tekniske dokumentation før markedsføring (art. 13, stk. 12, og art. 31). Et udkast fra trackerens data sparer arbejde og holder dokumentet i takt med trackeren. DOCX er det format, de fleste kan redigere videre i.
 - **Fravalgt:**
-  - At gemme fingeraftrykket uden for databasen (fx i en ekstern tidsstempeltjeneste). Senere, hvis en auditor kræver det, for en ejer kan stadig skrive hele kæden om.
-  - En særskilt databasebruger uden rettigheder til at ændre tabellen. Det kræver ændringer i udviklingsmiljøet og deployment.
-### B41 – CRA version 2, og hvad der følger med, når et projekt skifter version
-
-- **Status:** Vedtaget
-- **Beslutning:** (US-069)
-  - CRA version 2 har bilag I uændret (samme koder, titler og tekster) plus producentens pligter i art. 13, 14 og 28–32 og bilag II og VII. Version 1 ændres ikke.
-  - Version 2 gælder fra 11-09-2026, hvor art. 14 begynder at gælde (art. 71). Derfor er det den version, nye projekter får. Et projekt på version 1 ser "Newer version available".
-  - Når et projekt skifter version, følger links, "ikke relevant"-afgørelser og evidens med til kravet med samme kode. Hvem der besluttede det, og hvornår, bevares. En evidensfil kopieres. En kode, der ikke findes i den nye version, bliver på den gamle som historik. Loggen siger, hvor meget der fulgte med.
-  - Bilag II og VII får koderne `Annex II.n` og `Annex VII.n`, fordi `II.n` allerede er bilag I, del II.
-- **Begrundelse:** En version har én startdato, men CRA gælder i trin. Den tidligste dato gør de nye pligter synlige, mens art. 14 allerede gælder. Uden overførsel ville et versionsskifte nulstille projektets dækning og bevismateriale (ISO 27001 A.8.32).
-- **Fravalgt:**
-  - Startdato pr. krav (ville kræve en ændring af domænemodellen fra US-035).
-  - At lade links pege på en kode i stedet for et krav-id.
+  - At vente på US-050, US-051 og US-054. Risikoafsnittet bygges direkte fra risikoregistret, og låsning kommer med US-050.
+  - Udkastet pr. release i stedet for pr. projekt (senere, når releases findes, B07).
+  - AI-skrevet tekst i udkastet.
 
 ### B44 – Evidens hører til projektet og kobles til mange krav
 
@@ -498,19 +514,22 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - Evidens delt mellem projekter eller på organisationsniveau (senere, med kontroller, B33).
   - At AI'en kun foreslår, når man trykker på en knap. Upload er det øjeblik, hvor man forventer forslagene.
-### B43 – Udkast til CRA's tekniske dokumentation som DOCX
+
+### B45 – Evidensforslag fra tests og pull requests
 
 - **Status:** Vedtaget
-- **Beslutning:** (US-056)
-  - Trackeren laver et udkast med de otte punkter fra CRA bilag VII som DOCX, så det kan gøres færdigt i Word eller LibreOffice. Udkastet kan laves igen når som helst (art. 31, stk. 2).
-  - Trackeren udfylder: projektets navn, beskrivelse, fase, scope og tilsigtede formål (punkt 1), user stories (punkt 2(a)), risikoregistret og hvordan hvert krav i bilag I er opfyldt eller hvorfor det ikke gælder (punkt 3), og de andre rammeværker projektet følger (punkt 5).
-  - Resten står som "To be completed" med en kort vejledning: supportperioden, softwareversioner, billeder, brugerinformation, arkitektur, sårbarhedshåndtering, produktion, standarder, testrapporter, overensstemmelseserklæringen og SBOM.
-  - Kun projekter, der følger CRA, kan lave udkastet. Linket står under "Reports" på projektets Overview-fane.
-- **Begrundelse:** Producenten skal udarbejde den tekniske dokumentation før markedsføring (art. 13, stk. 12, og art. 31). Et udkast fra trackerens data sparer arbejde og holder dokumentet i takt med trackeren. DOCX er det format, de fleste kan redigere videre i.
+- **Beslutning:** (US-058)
+  - Et scenarie tagget `@<regulativ>-<kode>` (fx `@cra-I.2(d)`) er bevis for kravet. Regulativ-delen er den korte adresse fra Compliance-fanen (`cra`), og koden skrives præcis som i trackeren, med parenteser.
+  - Testresultater uploades på Evidence-fanen som TRX eller JUnit XML (højst 10 MB). Filens SHA-256 gemmes. Ét forslag pr. krav og testkørsel. Et fejlende scenarie med samme tag blokerer forslaget og vises som "1 failing test". Ukendte tags vises og ignoreres.
+  - Tags læses fra `TestCategory` (TRX), `property name="Category"` (JUnit) og en linje `Requirement tags: …` i testens output. xUnit skriver ingen tags i TRX-filen, så trackerens egne specs skriver linjen med en hook (`RequirementTagsHook`).
+  - Når en lukket story er koblet til et krav, foreslås den mergede pull request, der refererer til issuet i GitHub's tidslinje ("cross-referenced"). Det sker ved hver synkronisering, højst 20 stories ad gangen, kun med læseadgang.
+  - Intet bliver evidens, før en person med `LinkWork` accepterer. En pull request bliver et link. En testkørsel bliver en Markdown-fil med de beståede scenarier og resultatfilens SHA-256. Afvisning kræver en grund, og samme kilde foreslås aldrig igen. Krav, der ikke gælder, får ingen forslag.
+  - Ingen AI: tags og links afgør det. AI-resuméet (R7, valgfrit) er ikke bygget.
+- **Begrundelse:** Beståede tests og mergede pull requests er det bevis, teamet allerede har (ISO 27001 8.29, CRA bilag VII (2) og (6)). Tags er entydige, så der er intet at gætte.
 - **Fravalgt:**
-  - At vente på US-050, US-051 og US-054. Risikoafsnittet bygges direkte fra risikoregistret, og låsning kommer med US-050.
-  - Udkastet pr. release i stedet for pr. projekt (senere, når releases findes, B07).
-  - AI-skrevet tekst i udkastet.
+  - `@cra-I.2.d` uden parenteser. Reqnroll tillader parenteser, og koden er så den samme som i trackeren.
+  - At hente testresultater fra GitHub Actions automatisk (kræver `actions: read` på tokenet; senere).
+  - At gemme hele resultatfilen som evidens. Filtyperne fra US-057 tillader ikke XML, og en kort Markdown-fil er lettere at læse for en auditor.
 
 ## Åbne spørgsmål til klassediagrammet
 
