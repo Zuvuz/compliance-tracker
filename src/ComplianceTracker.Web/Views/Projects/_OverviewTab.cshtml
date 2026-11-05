@@ -298,6 +298,61 @@
             </div>
         }
 
+        @* US-026: how each built-in regulation the project follows applies to it (R5), with a guide (R6) and the history (R4) *@
+        @if (Model.Classifications.Count > 0)
+        {
+            var canClassify = !project.IsClosed && await Permissions.CanAsync(Permission.DecideCompliance);
+            <div class="card mb-3" id="classification">
+                <div class="card-body small">
+                    <h2 class="h6 card-title">Classification</h2>
+                    @foreach (var item in Model.Classifications)
+                    {
+                        <div class="classification border-top pt-2 mt-2" data-framework="@item.Framework.Name">
+                            <div>
+                                <span class="fw-semibold">@FrameworkNames.Short(item.Framework.Name):</span>
+                                <span class="classification-class">@(item.Current is { } current ? item.Regulation.TitleOf(current.Class) : "Not classified")</span>
+                            </div>
+                            @if (item.Current is { } now)
+                            {
+                                <div class="text-muted classification-reason">@now.Reason (@Model.NameOf(now.ClassifiedById), @now.ClassifiedAt.ToLocalTime().ToString("dd-MM-yyyy"))</div>
+                            }
+                            @if (item.History.Count > 1)
+                            {
+                                <details class="mt-1">
+                                    <summary>Earlier classifications</summary>
+                                    <ol class="classification-history mb-0">
+                                        @foreach (var earlier in item.History)
+                                        {
+                                            <li data-class="@earlier.Class">@item.Regulation.TitleOf(earlier.Class) – @earlier.Reason (@Model.NameOf(earlier.ClassifiedById), @earlier.ClassifiedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm"))</li>
+                                        }
+                                    </ol>
+                                </details>
+                            }
+                            @if (canClassify)
+                            {
+                                <details class="mt-1">
+                                    <summary class="link-primary">@(item.Current is null ? "Classify" : "Change class")</summary>
+                                    <p class="text-muted mt-1 mb-1 classification-guide">@item.Regulation.Guide</p>
+                                    <form asp-action="Classify" method="post" class="d-flex flex-column gap-1 classify-form">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="frameworkId" value="@item.Framework.Id" />
+                                        <select name="classCode" class="form-select form-select-sm" aria-label="Class under @item.Framework.Name">
+                                            @foreach (var option in item.Regulation.Classes)
+                                            {
+                                                <option value="@option.Code" selected="@(item.Current?.Class == option.Code)">@option.Title</option>
+                                            }
+                                        </select>
+                                        <textarea name="reason" class="form-control form-control-sm" rows="2" maxlength="2000" placeholder="Why, e.g. the article or annex point" aria-label="Reason"></textarea>
+                                        <button type="submit" class="btn btn-sm btn-outline-primary align-self-start">Save</button>
+                                    </form>
+                                </details>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
         @* US-048 R6: folded, but open while the project has no frameworks *@
         <details id="about-project" open="@(frameworks.Count == 0)">
             <summary class="h6">About the project</summary>

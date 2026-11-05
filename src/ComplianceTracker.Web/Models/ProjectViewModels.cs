@@ -233,6 +233,8 @@ namespace ComplianceTracker.Web.Models
         public IReadOnlyList<Risk> Risks { get; init; } = [];
         public IReadOnlyList<Risk> AllRisks { get; init; } = [];
 
+        // US-026: each built-in regulation the project follows, with its class (Overview tab)
+        public IReadOnlyList<Application.Projects.RegulationClassification> Classifications { get; init; } = [];
         // US-073: the project's security events (CRA Art. 14), for their tab and the Overview's deadlines
         public IReadOnlyList<Domain.Security.SecurityEvent> SecurityEvents { get; init; } = [];
         public string? RiskStatusFilter { get; init; }
