@@ -29,6 +29,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             // Stored as text, like all enums
             builder.Property(p => p.Phase).HasConversion<string>().HasMaxLength(50);
 
+            // US-104: e.g. "GitHubUserStories, UseCases"; new projects use all three
+            builder.Property(p => p.RequirementMethods).HasConversion<string>().HasMaxLength(100)
+                .HasDefaultValue(Domain.Projects.RequirementMethods.All).HasSentinel(Domain.Projects.RequirementMethods.None);
+
             // US-025: the support period
             builder.Property(p => p.SupportPeriodReason).HasMaxLength(Project.MaxSupportReasonLength);
 

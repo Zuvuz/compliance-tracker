@@ -22,8 +22,8 @@
     case ProjectTabs.Risks:
         <partial name="_RisksTab" model="Model" />
         break;
-    case ProjectTabs.UserStories:
-        <partial name="_UserStoriesTab" model="Model" />
+    case ProjectTabs.ProductRequirements:
+        <partial name="_ProductRequirementsTab" model="Model" />
         break;
     case ProjectTabs.Activity:
         <partial name="_ActivityTab" model="Model" />
@@ -35,7 +35,7 @@
 
 @section Scripts {
     @* US-018 R7: live updates, only on the tab that shows the user stories *@
-    @if (Model.Tab == ProjectTabs.UserStories && Model.Project.GitHub is not null)
+    @if (Model.Tab == ProjectTabs.ProductRequirements && Model.Project.GitHub is not null)
     {
         <script src="~/lib/microsoft-signalr/signalr.min.js"></script>
         <script src="~/js/work-items.js" asp-append-version="true"></script>

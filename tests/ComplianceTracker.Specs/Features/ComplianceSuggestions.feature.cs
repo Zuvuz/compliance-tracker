@@ -482,19 +482,19 @@ namespace ComplianceTracker.Specs.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="The User stories tab links to the suggestions")]
+        [global::Xunit.SkippableFactAttribute(DisplayName="The Product requirements tab links to the suggestions")]
         [global::Xunit.TraitAttribute("FeatureTitle", "AI suggestions and coverage on the Compliance tab")]
-        [global::Xunit.TraitAttribute("Description", "The User stories tab links to the suggestions")]
+        [global::Xunit.TraitAttribute("Description", "The Product requirements tab links to the suggestions")]
         [global::Xunit.TraitAttribute("Category", "US-044")]
         [global::Xunit.TraitAttribute("Category", "integration")]
-        public async global::System.Threading.Tasks.Task TheUserStoriesTabLinksToTheSuggestions()
+        public async global::System.Threading.Tasks.Task TheProductRequirementsTabLinksToTheSuggestions()
         {
             string[] tagsOfScenario = new string[] {
                     "US-044",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "7";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The User stories tab links to the suggestions", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The Product requirements tab links to the suggestions", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 66
@@ -515,7 +515,7 @@ namespace ComplianceTracker.Specs.Features
                         "eycloak\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 68
-    await testRunner.WhenAsync("I open the \"User stories\" tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.WhenAsync("I open the \"Product requirements\" tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 69
     await testRunner.ThenAsync("the user story \"[US-004] Sign in with Keycloak\" links to its AI suggestions on th" +

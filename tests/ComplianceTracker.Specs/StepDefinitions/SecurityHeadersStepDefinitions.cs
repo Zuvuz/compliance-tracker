@@ -11,7 +11,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
     [Binding]
     public class SecurityHeadersStepDefinitions
     {
-        private static readonly string[] Tabs = ["overview", "frameworks", "compliance", "risks", "user-stories", "activity"];
+        private static readonly string[] Tabs = ["overview", "frameworks", "compliance", "risks", "product-requirements", "activity"];
 
         private readonly WebScenario _web;
         private readonly List<(string Path, IDocument Page)> _pages = new();

@@ -116,6 +116,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         EvidenceSuggestionAccepted,
         EvidenceSuggestionRejected,
 
+        // US-104: the methods a project uses to describe its requirements changed. SubjectId points at the project;
+        // Details holds e.g. "Methods: GitHub user stories → GitHub user stories, Use cases".
+        ProjectMethodsChanged,
+
         // US-025: the support end date was set or moved later. SubjectId points at the project; Details holds e.g.
         // "Support until: 01-11-2031 → 01-11-2032".
         SupportPeriodSet
