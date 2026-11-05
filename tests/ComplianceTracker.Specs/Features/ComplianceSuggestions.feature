@@ -17,7 +17,7 @@ Feature: AI suggestions and coverage on the Compliance tab
     Given the user story "[US-004] Sign in with Keycloak" is linked to the requirement "I.2(d)"
     And "I.2(k)" is not applicable for "Acme Portal"
     When I open the "CRA" sub-tab of "Acme Portal"
-    Then the summary shows 1 covered of 21, 20 not covered and 1 not applicable
+    Then the summary shows 1 covered of 71, 70 not covered and 1 not applicable
 
   @US-044 @integration
   Scenario: Filter on not covered

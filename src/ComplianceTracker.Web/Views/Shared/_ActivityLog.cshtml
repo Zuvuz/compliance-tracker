@@ -1,0 +1,161 @@
+@* US-101, US-102: search, filters, sorting and pages over the activity log; the filters stand in the address (a GET form).
+   Used by the project's Activity tab (#project-activity) and the organisation's Activity page (#organisation-activity).
+   Ids and classes used by the tests: rows activity-row, cells activity-time, activity-user, activity-action,
+   activity-details, activity-about (a link on the organisation page), #no-activity, #activity-filters
+   (inputs q, from, to, group, user, sort, project), #activity-count, #activity-no-match, #activity-ignored li,
+   a#activity-previous, a#activity-next, a#activity-clear. *@
+@using ComplianceTracker.Application.ActivityLog
+@using ComplianceTracker.Domain.ActivityLog
+@model ActivityLogViewModel
+@{
+    var query = Model.Query;
+    var result = Model.Page;
+}
+
+<section id="@Model.SectionId">
+    <form method="get" action="@Model.Address" class="row g-2 align-items-end mb-3" id="activity-filters">
+        <div class="col-md-3">
+            <label class="form-label small mb-0" for="activity-q">Search</label>
+            <input id="activity-q" name="q" value="@query.Search" class="form-control form-control-sm" placeholder="@(Model.IsOrganisationLog ? "Details, user, project or framework" : "Details or user")" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-0" for="activity-from">From</label>
+            <input id="activity-from" name="from" type="date" value="@query.From?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-0" for="activity-to">To</label>
+            <input id="activity-to" name="to" type="date" value="@query.To?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-0" for="activity-group">Action</label>
+            <select id="activity-group" name="group" class="form-select form-select-sm">
+                <option value="">All actions</option>
+                @foreach (var group in Enum.GetValues<ActivityGroup>())
+                {
+                    <option value="@ActivityFilters.Slug(group)" selected="@(query.Group == group)">@ActivityGroups.Title(group)</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-0" for="activity-user">User</label>
+            <select id="activity-user" name="user" class="form-select form-select-sm">
+                <option value="">Everyone</option>
+                <option value="@ActivityFilters.System" selected="@query.SystemOnly">System</option>
+                @foreach (var member in Model.Organization?.Users.OrderBy(u => u.Name) ?? Enumerable.Empty<ComplianceTracker.Domain.Users.User>())
+                {
+                    <option value="@member.Id" selected="@(query.UserId == member.Id)">@member.Name@(member.IsActive ? "" : " (removed)")</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-1">
+            <label class="form-label small mb-0" for="activity-sort">Sort</label>
+            <select id="activity-sort" name="sort" class="form-select form-select-sm">
+                @foreach (var (sort, slug, title) in ActivityFilters.Sorts)
+                {
+                    <option value="@slug" selected="@(query.Sort == sort)">@title</option>
+                }
+            </select>
+        </div>
+        @if (Model.Projects is { } projects)
+        {
+            @* US-102 R3 *@
+            <div class="col-md-3">
+                <label class="form-label small mb-0" for="activity-project">Project</label>
+                <select id="activity-project" name="project" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    <option value="@ActivityLogViewModel.NotAboutAProject" selected="@(Model.ProjectFilter == ActivityLogViewModel.NotAboutAProject)">Not about a project</option>
+                    @foreach (var project in projects.OrderBy(p => p.Name))
+                    {
+                        <option value="@project.Id" selected="@(Model.ProjectFilter == project.Id.ToString())">@project.Name</option>
+                    }
+                </select>
+            </div>
+        }
+        <div class="col-12 d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-primary">Show</button>
+            @if (Model.HasFilters || query.Sort != ActivitySort.Newest)
+            {
+                <a id="activity-clear" class="btn btn-sm btn-outline-secondary" href="@Model.Address">Clear filters</a>
+            }
+        </div>
+    </form>
+
+    @if (Model.Ignored.Count > 0)
+    {
+        <ul class="alert alert-warning small" id="activity-ignored">
+            @foreach (var message in Model.Ignored)
+            {
+                <li>@message</li>
+            }
+        </ul>
+    }
+
+    @if (result is null || result.Total == 0)
+    {
+        if (Model.HasFilters)
+        {
+            <p class="text-muted" id="activity-no-match">No entries match the filters</p>
+        }
+        else
+        {
+            <p class="text-muted" id="no-activity">No activity yet</p>
+        }
+    }
+    else
+    {
+        <p class="small text-muted" id="activity-count">@result.First–@result.Last of @result.Total entries</p>
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    @if (Model.IsOrganisationLog)
+                    {
+                        <th>About</th>
+                    }
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var entry in result.Entries)
+                {
+                    <tr class="activity-row">
+                        @* Stored in UTC, shown in local time *@
+                        <td class="activity-time text-nowrap">@entry.OccurredAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
+                        <td class="activity-user">@Model.NameOf(entry.UserId)</td>
+                        <td class="activity-action">@entry.Action</td>
+                        @if (Model.IsOrganisationLog)
+                        {
+                            <td class="activity-about">
+                                @switch (Model.About(entry))
+                                {
+                                    case { Kind: "Project" } project:
+                                        <a href="@Url.Action("Details", "Projects", new { id = project.Id })">@project.Name</a>
+                                        break;
+                                    case { Kind: "Framework" } framework:
+                                        <a href="@Url.Action("Versions", "Frameworks", new { id = framework.Id })">@framework.Name</a>
+                                        break;
+                                    case { } other:
+                                        @other.Name
+                                        break;
+                                }
+                            </td>
+                        }
+                        <td class="activity-details small">@entry.Details</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <nav class="d-flex gap-2" aria-label="Activity pages">
+            @if (result.HasPrevious)
+            {
+                <a id="activity-previous" class="btn btn-sm btn-outline-primary" href="@Model.PageLink(result.Page - 1)">Previous</a>
+            }
+            @if (result.HasNext)
+            {
+                <a id="activity-next" class="btn btn-sm btn-outline-primary" href="@Model.PageLink(result.Page + 1)">Next</a>
+            }
+        </nav>
+    }
+</section>

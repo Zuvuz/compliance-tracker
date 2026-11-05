@@ -30,6 +30,23 @@ namespace ComplianceTracker.Domain.ActivityLog
         // What changed, in plain text, e.g. "Phase: Planning → Development" (US-024 R3). Null for most actions.
         public string? Details { get; }
 
+        // US-091: the previous entry's fingerprint (of the same organisation) and this entry's own, set once when it is
+        // saved (ActivityLogChain). Null on entries written before the chain existed.
+        public string? PreviousHash { get; private set; }
+        public string? Hash { get; private set; }
+
+        // Links the entry to the previous one; only once
+        public void Seal(string? previousHash)
+        {
+            if (Hash is not null)
+            {
+                throw new InvalidOperationException("The log entry is already sealed");
+            }
+
+            PreviousHash = previousHash;
+            Hash = ActivityLogChain.HashOf(this, previousHash);
+        }
+
         // EF Core also uses this constructor when it reads entries from the database
         public ActivityLogEntry(Guid organizationId, Guid? userId, ActivityAction action, DateTime occurredAt, Guid? subjectId = null, string? details = null, UserRole? role = null)
         {

@@ -90,6 +90,17 @@ namespace ComplianceTracker.Specs.StepDefinitions
             var originalLog = await original.ActivityLog.CountAsync();
             Assert.True(originalLog > 0);
             Assert.Equal(originalLog, await restored.ActivityLog.CountAsync());
+
+            // US-091 R6: the restored log keeps its chain of fingerprints
+            var restoredLog = await restored.ActivityLog.OrderBy(e => EF.Property<long>(e, "Id")).ToListAsync();
+            Assert.Equal(
+                await original.ActivityLog.OrderBy(e => EF.Property<long>(e, "Id")).Select(e => e.Hash).ToListAsync(),
+                restoredLog.Select(e => e.Hash).ToList());
+            Assert.All(restoredLog.GroupBy(e => e.OrganizationId), organization =>
+            {
+                var check = Domain.ActivityLog.ActivityLogChain.Verify(organization);
+                Assert.True(check.IsIntact && check.WithoutFingerprint == 0, $"The restored chain is broken at {check.FirstBroken?.Action}.");
+            });
             Assert.Equal(
                 (await original.Organizations.SingleAsync(o => o.Name == organisation)).Users.Select(u => u.Name).Order(),
                 (await restored.Organizations.SingleAsync(o => o.Name == organisation)).Users.Select(u => u.Name).Order());

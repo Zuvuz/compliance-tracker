@@ -20,6 +20,14 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
             => await _db.ActivityLog.AddAsync(entry, cancellationToken);
 
         // The shadow key "Id" is a running number, so it breaks ties between entries with the same time
+        // US-091: the running number is the order the entries were written in
+        public async Task<IReadOnlyList<ActivityLogEntry>> ListInOrderWrittenAsync(Guid organizationId, CancellationToken cancellationToken = default)
+            => await _db.ActivityLog
+                .AsNoTracking()
+                .Where(e => e.OrganizationId == organizationId)
+                .OrderBy(e => EF.Property<long>(e, "Id"))
+                .ToListAsync(cancellationToken);
+
         public async Task<IReadOnlyList<ActivityLogEntry>> ListAboutAsync(Guid organizationId, Guid subjectId, CancellationToken cancellationToken = default)
             => await _db.ActivityLog
                 .AsNoTracking()
@@ -42,8 +50,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
                 // R1: in the details or the user's name, without regard to case; % and _ in the text are not wildcards
                 var pattern = "%" + search.Text.Trim().Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
                 var users = search.UsersNamed;
+                var subjects = search.SubjectsNamed ?? [];
                 entries = entries.Where(e => (e.Details != null && EF.Functions.ILike(e.Details, pattern, "\\"))
-                                             || (e.UserId != null && users.Contains(e.UserId.Value)));
+                                             || (e.UserId != null && users.Contains(e.UserId.Value))
+                                             || (e.SubjectId != null && subjects.Contains(e.SubjectId.Value)));
+            }
+
+            if (search.NotSubjects is { } notSubjects)
+            {
+                entries = entries.Where(e => e.SubjectId == null || !notSubjects.Contains(e.SubjectId.Value));
             }
 
             if (search.FromUtc is { } from)

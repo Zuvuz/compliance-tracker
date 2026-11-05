@@ -1,0 +1,56 @@
+name: CodeQL
+
+# US-093: static analysis (SAST) of the tracker's C# and JavaScript on every pull request and on main.
+# An alert with a high or critical security severity makes the run red (R3).
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: "27 3 * * 1" # every Monday, so new queries also find old code
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # to show the alerts under Security → Code scanning
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ csharp, javascript-typescript ]
+
+    steps:
+      - name: Hent koden
+        uses: actions/checkout@v7
+
+      - name: Start CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          queries: security-extended
+
+      - name: Analyser
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}
+          output: sarif
+
+      - name: Stop på alvorlige fund
+        # security-severity 7.0 or more is "high", 9.0 or more "critical"
+        run: |
+          found=$(jq -r '[.runs[] as $run | $run.results[]?
+                    | . as $result
+                    | ($run.tool.driver.rules[]? | select(.id == $result.ruleId) | .properties."security-severity" // "0" | tonumber) as $severity
+                    | select($severity >= 7.0)
+                    | "\($severity) \($result.ruleId): \($result.locations[0].physicalLocation.artifactLocation.uri):\($result.locations[0].physicalLocation.region.startLine)"]
+                  | .[]' sarif/*.sarif)
+          if [ -n "$found" ]; then
+            echo "CodeQL found high or critical problems:"; echo "$found"; exit 1
+          fi
+          echo "No high or critical CodeQL findings"

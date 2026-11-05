@@ -17,6 +17,9 @@ namespace ComplianceTracker.Specs.Support
             return Task.CompletedTask;
         }
 
+        public Task<IReadOnlyList<ActivityLogEntry>> ListInOrderWrittenAsync(Guid organizationId, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<ActivityLogEntry>>(_entries.Where(e => e.OrganizationId == organizationId).ToList());
+
         public Task<IReadOnlyList<ActivityLogEntry>> ListAboutAsync(Guid organizationId, Guid subjectId, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<ActivityLogEntry>>(_entries
                 .Where(e => e.OrganizationId == organizationId && e.SubjectId == subjectId)

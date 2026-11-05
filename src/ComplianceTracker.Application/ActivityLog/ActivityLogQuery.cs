@@ -51,5 +51,9 @@ namespace ComplianceTracker.Application.ActivityLog
         bool SystemOnly,
         ActivitySort Sort,
         int Skip,
-        int Take);
+        int Take,
+        // US-102: entries about these (projects, members, frameworks whose name matches the text) also match the text
+        IReadOnlyList<Guid>? SubjectsNamed = null,
+        // US-102 R3: leave out entries about these, e.g. every project for "not about a project"
+        IReadOnlyList<Guid>? NotSubjects = null);
 }
