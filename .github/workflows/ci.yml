@@ -40,6 +40,19 @@ jobs:
       - name: Gendan pakker
         run: dotnet restore
 
+      - name: Stop på sårbare pakker (US-093)
+        # En NuGet-pakke med en kendt High- eller Critical-sårbarhed, også indirekte, gør kørslen rød
+        run: |
+          dotnet list package --vulnerable --include-transitive --format json > vulnerable.json
+          jq -r '[.projects[].frameworks[]? | (.topLevelPackages[]?, .transitivePackages[]?)
+                  | select(any(.vulnerabilities[]?; .severity == "High" or .severity == "Critical"))
+                  | "\(.id) \(.resolvedVersion): " + ([.vulnerabilities[] | "\(.severity) \(.advisoryurl)"] | join(", "))]
+                 | unique | .[]' vulnerable.json > vulnerable.txt
+          if [ -s vulnerable.txt ]; then
+            echo "Packages with a known high or critical vulnerability:"; cat vulnerable.txt; exit 1
+          fi
+          echo "No package has a known high or critical vulnerability"
+
       - name: Byg
         run: dotnet build --no-restore --configuration Release
 
@@ -156,6 +169,22 @@ jobs:
       - name: Stop systemet
         if: always()
         run: docker compose --profile full down --volumes
+
+      - name: Lav SBOM af web-imaget (US-093)
+        # CycloneDX-liste over alle komponenter i imaget, gemt med kørslen (CRA bilag I, del II, punkt 1)
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/syft:v1.18.1 \
+            compliance-tracker-web:local -o cyclonedx-json > sbom-web.cdx.json
+          components=$(jq '.components | length' sbom-web.cdx.json)
+          echo "Components in the SBOM: $components"
+          test "$components" -gt 0
+
+      - name: Gem SBOM'en (US-093)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-web-${{ github.sha }}
+          path: sbom-web.cdx.json
+          retention-days: 90
 
       - name: Udgiv til GitHub Container Registry (R5)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

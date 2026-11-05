@@ -19,6 +19,11 @@ namespace ComplianceTracker.Infrastructure.Persistence
 
             // US-035: Article 71(2), the day the regulation applies from (some articles apply earlier)
             public static readonly DateOnly AppliesFrom = new(2027, 12, 11);
+
+            // US-069: version 2 adds the manufacturer's obligations beyond Annex I (BuiltInCraRequirementsV2).
+            // It applies from the first of them, Art. 14 (Article 71(2)), so it is the version new projects get (B41).
+            public static readonly Guid Version2Id = Guid.Parse("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c05");
+            public static readonly DateOnly Version2AppliesFrom = new(2026, 9, 11);
         }
 
         public static class AiAct

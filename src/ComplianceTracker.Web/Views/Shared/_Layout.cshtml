@@ -43,6 +43,13 @@
                                     <a class="nav-link @Active("Users")" id="nav-users" asp-area="" asp-controller="Users" asp-action="Index">Users</a>
                                 </li>
                             }
+                            @if (await Permissions.CanSeeOrganisationLogAsync())
+                            {
+                                @* US-102: the whole organisation's activity log *@
+                                <li class="nav-item">
+                                    <a class="nav-link @Active("Activity")" id="nav-activity" asp-area="" asp-controller="Activity" asp-action="Index">Activity</a>
+                                </li>
+                            }
                             @if (await Permissions.CanAsync(Permission.ManageAiSharing))
                             {
                                 <li class="nav-item">

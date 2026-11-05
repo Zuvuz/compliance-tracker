@@ -47,6 +47,20 @@ namespace ComplianceTracker.Domain.Mappings
                 LinkedAt = at
             };
 
+        // US-069 R6: the same link on the requirement with the same code in the version the project moves to.
+        // Who linked it, with which role and when, is kept, so the history still says who decided.
+        public RequirementLink CarryTo(Guid requirementId)
+            => new()
+            {
+                ProjectId = ProjectId,
+                RequirementId = requirementId,
+                WorkItemId = WorkItemId,
+                Source = Source,
+                LinkedById = LinkedById,
+                LinkedRole = LinkedRole,
+                LinkedAt = LinkedAt
+            };
+
         public void Remove(Guid userId, DateTime at)
         {
             if (!IsActive)

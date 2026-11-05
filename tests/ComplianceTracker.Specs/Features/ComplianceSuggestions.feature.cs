@@ -201,7 +201,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I open the \"CRA\" sub-tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 20
-    await testRunner.ThenAsync("the summary shows 1 covered of 21, 20 not covered and 1 not applicable", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the summary shows 1 covered of 71, 70 not covered and 1 not applicable", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

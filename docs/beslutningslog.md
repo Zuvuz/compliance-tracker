@@ -443,6 +443,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** Trackerens brugere er dem, der laver produkterne. En liste med grunde viser en auditor, at intet er glemt, og hvorfor noget mangler (ISO 27001 A.5.31). Gennemgangen viste, at CRA's dokumentation og overensstemmelse også står i artikel 28–32, ikke kun i artikel 13.
 - **Fravalgt:** at indbygge hele regulativet, også myndighedernes pligter.
 
+### B41 – CRA version 2, og hvad der følger med, når et projekt skifter version
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-069)
+  - CRA version 2 har bilag I uændret (samme koder, titler og tekster) plus producentens pligter i art. 13, 14 og 28–32 og bilag II og VII. Version 1 ændres ikke.
+  - Version 2 gælder fra 11-09-2026, hvor art. 14 begynder at gælde (art. 71). Derfor er det den version, nye projekter får. Et projekt på version 1 ser "Newer version available".
+  - Når et projekt skifter version, følger links, "ikke relevant"-afgørelser og evidens med til kravet med samme kode. Hvem der besluttede det, og hvornår, bevares. En evidensfil kopieres. En kode, der ikke findes i den nye version, bliver på den gamle som historik. Loggen siger, hvor meget der fulgte med.
+  - Bilag II og VII får koderne `Annex II.n` og `Annex VII.n`, fordi `II.n` allerede er bilag I, del II.
+- **Begrundelse:** En version har én startdato, men CRA gælder i trin. Den tidligste dato gør de nye pligter synlige, mens art. 14 allerede gælder. Uden overførsel ville et versionsskifte nulstille projektets dækning og bevismateriale (ISO 27001 A.8.32).
+- **Fravalgt:**
+  - Startdato pr. krav (ville kræve en ændring af domænemodellen fra US-035).
+  - At lade links pege på en kode i stedet for et krav-id.
+
 ### B43 – Udkast til CRA's tekniske dokumentation som DOCX
 
 - **Status:** Vedtaget

@@ -17,7 +17,7 @@ Feature: The CRA's requirements come with the tracker
     Then I see the group "Part I – Essential cybersecurity requirements" with 14 requirements, starting with "I.1"
     And I see the group "Part II – Vulnerability handling" with 8 requirements, starting with "II.1"
     And each requirement links to the official text
-    And the coverage says "0 of 22 requirements covered (0 %)"
+    And the coverage says "0 of 72 requirements covered (0 %)"
 
   @US-043 @integration
   Scenario: The CRA's requirements cannot be changed
@@ -30,7 +30,7 @@ Feature: The CRA's requirements come with the tracker
     And the user story "[US-004] Sign in" is linked to the requirement "I.2(d)"
     When I mark "I.2(k)" as not applicable for "Acme Portal" with the reason "No network-facing interface"
     Then the row "I.2(k)" is "Not applicable" with the reason "No network-facing interface"
-    And the coverage says "1 of 21 requirements covered (5 %), 1 not applicable"
+    And the coverage says "1 of 71 requirements covered (1 %), 1 not applicable"
 
   @US-043 @integration
   Scenario: Not applicable needs a reason
