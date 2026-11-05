@@ -94,6 +94,12 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // A requirement specification was uploaded to a project as a new version (US-032).
         // SubjectId points at the project; Details holds the file name, the version and what it changed.
-        RequirementDocumentUploaded
+        RequirementDocumentUploaded,
+
+        // US-063: a member sent feedback, and the system admin made a GitHub issue of it or dismissed it.
+        // SubjectId points at the feedback; Details holds its title, the issue's number or the reason.
+        FeedbackSent,
+        FeedbackIssueCreated,
+        FeedbackDismissed
     }
 }

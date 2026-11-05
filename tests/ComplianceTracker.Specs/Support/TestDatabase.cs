@@ -92,6 +92,8 @@ namespace ComplianceTracker.Specs.Support
                 DELETE FROM "RequirementDocumentVersions";
                 DELETE FROM "RequirementDocuments";
                 DELETE FROM "SkippedIssues";
+                DELETE FROM "FeedbackScreenshots";
+                DELETE FROM "Feedback";
                 DELETE FROM "Projects";
                 DELETE FROM "Users";
                 DELETE FROM "Organizations";

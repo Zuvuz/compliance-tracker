@@ -90,6 +90,11 @@
     </header>
     <div class="container">
         <main role="main" class="pb-3">
+            @if (TempData["FeedbackSent"] is string thanks)
+            {
+                @* US-063 R4 *@
+                <div class="alert alert-success mt-3" id="feedback-thanks" role="status">@thanks</div>
+            }
             @RenderBody()
         </main>
     </div>
@@ -97,6 +102,11 @@
     <footer class="border-top footer text-muted">
         <div class="container">
             &copy; 2026 - <span id="footer-product-name">@Branding.Value.Name</span> - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                @* US-063 R1 *@
+                <text> - </text><a id="send-feedback" asp-area="" asp-controller="Feedback" asp-action="Index" asp-route-page="@(Context.Request.Path + Context.Request.QueryString)">Send feedback</a>
+            }
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
