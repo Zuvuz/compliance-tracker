@@ -545,6 +545,26 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Påmindelser før supporten slutter.
   - At kræve en dato, når et projekt oprettes direkte som "Released". Det vises i stedet under "Needs attention".
 
+### B49 – Sikkerhedshændelser og fristerne i CRA art. 14
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-073)
+  - En aktivt udnyttet sårbarhed eller en alvorlig hændelse registreres på projektets fane "Security events" med tidspunktet, hvor producenten fik kendskab til den. Fristerne regnes derfra, tjekket mod den officielle tekst (EUR-Lex, 05-11-2026):
+    - Early warning: 24 timer (art. 14, stk. 2, litra a, og stk. 4, litra a).
+    - Notifikation: 72 timer (stk. 2, litra b, og stk. 4, litra b).
+    - Slutrapport for en sårbarhed: 14 dage efter, at en korrigerende eller afhjælpende foranstaltning er tilgængelig (stk. 2, litra c).
+    - Slutrapport for en hændelse: én måned efter, at notifikationen er indsendt (stk. 4, litra c).
+  - Trackeren sender ikke rapporterne. En person markerer hver som sendt med tidspunkt og den reference, platformen gav. En rapport sendt efter fristen vises som "Sent late".
+  - Overview viser frister inden for 24 timer og overskredne frister (i rødt) under "Needs attention", og supportperiodens slutning 90 dage før.
+  - En hændelse kan kun lukkes, når alle tre rapporter er sendt. Et projekt kan ikke gå til "End of support", mens en hændelse er åben.
+  - Tider gemmes i UTC og vises i lokal tid.
+  - Samme roller som risikoregistret (`ManageRisks`) kan registrere og markere. Alle i organisationen kan se fanen.
+- **Begrundelse:** Art. 14 har gældet siden 11-09-2026, og fristerne er korte. En overskredet frist skal kunne ses med det samme (ISO 27001 A.5.24–A.5.26).
+- **Fravalgt:**
+  - At sende rapporterne til ENISA's fælles platform eller en CSIRT (uden for scope).
+  - At give brugerne besked (art. 14, stk. 8) fra trackeren; kravet ligger på Compliance-fanen.
+  - Porte mellem faserne (US-071, US-072). Kun "End of support"-reglen er med her.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

@@ -12,7 +12,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         Requirements,
         Evidence,
         Risks,
-        Ai
+        Ai,
+
+        // US-073
+        SecurityEvents
     }
 
     public static class ActivityGroups
@@ -40,6 +43,8 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.EvidenceLinkRejected or ActivityAction.EvidenceSuggested or ActivityAction.EvidenceSuggestionAccepted
                 or ActivityAction.EvidenceSuggestionRejected => ActivityGroup.Evidence,
             ActivityAction.RiskAdded or ActivityAction.RiskUpdated or ActivityAction.RiskReviewed => ActivityGroup.Risks,
+            ActivityAction.VulnerabilityRecorded or ActivityAction.IncidentRecorded or ActivityAction.SecurityReportSent
+                or ActivityAction.SecurityFixAvailable or ActivityAction.SecurityEventClosed => ActivityGroup.SecurityEvents,
             ActivityAction.MappingsSuggested or ActivityAction.MappingApproved or ActivityAction.MappingRejected
                 or ActivityAction.AiFeedbackSharingChanged or ActivityAction.AiFeedbackExported => ActivityGroup.Ai,
             _ => throw new ArgumentOutOfRangeException(nameof(action), action, "The action has no group; add it in ActivityGroups.Of")
@@ -59,6 +64,7 @@ namespace ComplianceTracker.Domain.ActivityLog
             ActivityGroup.Requirements => "Requirements and links",
             ActivityGroup.Evidence => "Evidence",
             ActivityGroup.Risks => "Risks",
+            ActivityGroup.SecurityEvents => "Security events",
             _ => "AI"
         };
     }

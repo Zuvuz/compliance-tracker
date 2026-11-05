@@ -79,6 +79,7 @@ namespace ComplianceTracker.Web.Models
         public const string Compliance = "compliance";
         public const string Evidence = "evidence";
         public const string Risks = "risks";
+        public const string SecurityEvents = "security-events";
         public const string UserStories = "user-stories";
         public const string Activity = "activity";
 
@@ -90,6 +91,7 @@ namespace ComplianceTracker.Web.Models
             (Compliance, "Compliance"),
             (Evidence, "Evidence"),
             (Risks, "Risks"),
+            (SecurityEvents, "Security events"),
             (UserStories, "User stories"),
             (Activity, "Activity")
         ];
@@ -217,6 +219,9 @@ namespace ComplianceTracker.Web.Models
         // US-042: the Risks tab's register (already filtered), the filters and the time for "Review due"
         public IReadOnlyList<Risk> Risks { get; init; } = [];
         public IReadOnlyList<Risk> AllRisks { get; init; } = [];
+
+        // US-073: the project's security events (CRA Art. 14), for their tab and the Overview's deadlines
+        public IReadOnlyList<Domain.Security.SecurityEvent> SecurityEvents { get; init; } = [];
         public string? RiskStatusFilter { get; init; }
         public string? RiskLevelFilter { get; init; }
         public bool OnlyReviewDue { get; init; }
