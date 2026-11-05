@@ -28,6 +28,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public Task WhenIReleaseWithReason(string project, string date, string reason)
             => ReleaseAsync(project, date, reason);
 
+        [Given("I set the support end date of {string} to {string}")]
         [When("I set the support end date of {string} to {string}")]
         public async Task WhenISetTheSupportEndDate(string project, string date)
         {

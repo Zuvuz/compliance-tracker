@@ -565,6 +565,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At give brugerne besked (art. 14, stk. 8) fra trackeren; kravet ligger på Compliance-fanen.
   - Porte mellem faserne (US-071, US-072). Kun "End of support"-reglen er med her.
 
+### B51 – End of support og opbevaring
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-074)
+  - Når et projekt går til "End of support", angiver man den sidste dag, produktet blev bragt i omsætning (som standard i dag). Projektet og dets dokumentation opbevares derefter mindst 10 år efter den dag, eller til supportperiodens slutning, hvis den er senere (CRA art. 13, stk. 13, tjekket mod EUR-Lex 05-11-2026). En senere dato kan vælges, aldrig en tidligere.
+  - Headeren viser "End of support since … · kept until …". Fasen logges med opbevaringsdatoen.
+  - Projektet er skrivebeskyttet (US-024), men kan stadig læses og eksporteres af alle i organisationen, også Auditor.
+  - `Project.EnsureMayBeRemoved` afviser arkivering og sletning før opbevaringsdatoen. Arkivering kommer med US-028, som skal bruge reglen.
+  - Evidensfiler og kravdokumenter slettes aldrig (de var allerede kun markeret som fjernet).
+- **Begrundelse:** Markedsovervågningen kan bede om dokumentationen i årevis efter, at produktet er udgået (ISO 27001 A.5.33, A.8.10).
+- **Fravalgt:**
+  - At kræve en låst teknisk dokumentation (US-050) før end of support. Udkastet (US-056) kan altid laves; låsning kommer med US-050.
+  - At slette projekter efter opbevaringsdatoen (en senere story).
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

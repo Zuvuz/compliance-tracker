@@ -1981,9 +1981,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateOnly?>("EndOfSupportOn")
+                        .HasColumnType("date");
+
                     b.Property<string>("IntendedPurpose")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateOnly?>("LastPlacedOnMarketOn")
+                        .HasColumnType("date");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1999,6 +2005,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.Property<DateOnly?>("ReleasedOn")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("RetainUntil")
                         .HasColumnType("date");
 
                     b.Property<string>("Scope")

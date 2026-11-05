@@ -210,6 +210,9 @@ classDiagram
     -supportEndsOn: DateOnly?
     -supportPeriodReason: string?
     -releasedOn: DateOnly?
+    -endOfSupportOn: DateOnly?
+    -lastPlacedOnMarketOn: DateOnly?
+    -retainUntil: DateOnly?
     -craClass: CraClass
     -releases: List~Release~
     -workItems: List~WorkItem~
@@ -224,6 +227,8 @@ classDiagram
     +Update(name: string, description: string?, intendedPurpose: string, scope: string?) IReadOnlyList~ProjectChange~
     +ChangePhase(phase: LifecyclePhase, today: DateOnly?) ProjectChange?
     +SetSupportPeriod(endsOn: DateOnly, reason: string?, today: DateOnly) ProjectChange?
+    +EndSupport(lastPlacedOnMarket: DateOnly, keepUntil: DateOnly?, today: DateOnly) ProjectChange
+    +EnsureMayBeRemoved(today: DateOnly)
   }
   class ProjectChange {
     <<record>>

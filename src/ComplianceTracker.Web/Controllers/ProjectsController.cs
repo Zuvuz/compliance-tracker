@@ -788,9 +788,11 @@ namespace ComplianceTracker.Web.Controllers
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId")]
         public async Task<IActionResult> ChangePhase(
-            Guid projectId, LifecyclePhase phase, DateOnly? supportEndsOn, string? supportReason, CancellationToken cancellationToken)
+            Guid projectId, LifecyclePhase phase, DateOnly? supportEndsOn, string? supportReason,
+            DateOnly? lastPlacedOnMarket, DateOnly? keepUntil, CancellationToken cancellationToken)
         {
-            await _service.ChangePhaseAsync(projectId, phase, supportEndsOn, supportReason, cancellationToken);
+            // US-074: for End of support, the last day on the market and an optional later retention date
+            await _service.ChangePhaseAsync(projectId, phase, supportEndsOn, supportReason, cancellationToken, lastPlacedOnMarket, keepUntil);
             return RedirectToAction(nameof(Details), new { id = projectId });
         }
 

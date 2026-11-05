@@ -21,7 +21,12 @@
             <span id="project-phase" class="badge @phaseBadge fs-6 align-middle">@project.Phase</span>
         </h1>
         <p class="text-muted mb-1" id="project-intended-purpose">@project.IntendedPurpose</p>
-        @if (project.SupportEndsOn is { } supportEnds)
+        @if (project.IsClosed && project.RetainUntil is { } keptUntil)
+        {
+            @* US-074 R1, R5 *@
+            <p class="small mb-3" id="project-retention">End of support since @project.EndOfSupportOn?.ToString("dd-MM-yyyy") · kept until @keptUntil.ToString("dd-MM-yyyy")</p>
+        }
+        else if (project.SupportEndsOn is { } supportEnds)
         {
             @* US-025 R4, CRA Art. 13(19) *@
             <p class="small mb-3" id="project-support">Supported until @supportEnds.ToString("dd-MM-yyyy")</p>
