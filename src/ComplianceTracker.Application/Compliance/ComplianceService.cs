@@ -44,6 +44,11 @@ namespace ComplianceTracker.Application.Compliance
         Task AddAsync(Evidence evidence, byte[]? content, CancellationToken cancellationToken = default);
 
         Task<byte[]?> GetContentAsync(Guid evidenceId, CancellationToken cancellationToken = default);
+
+        // US-059: which requirements each evidence proves. Only links that are not removed.
+        Task<IReadOnlyList<EvidenceLink>> ListActiveLinksAsync(Guid projectId, CancellationToken cancellationToken = default);
+
+        Task AddLinkAsync(EvidenceLink link, CancellationToken cancellationToken = default);
     }
 
     // US-021: links a project's user story to one of its requirements by hand, or removes the link.
@@ -163,7 +168,7 @@ namespace ComplianceTracker.Application.Compliance
         public Task AddEvidenceLinkAsync(
             Guid projectId, Guid requirementId, string title, string url, DateOnly? validUntil, CancellationToken cancellationToken = default)
             => AddEvidenceAsync(projectId, requirementId,
-                (userId, role, at) => (Evidence.ForLink(projectId, requirementId, title, url, validUntil, userId, role, at), null),
+                (userId, role, at) => (Evidence.ForLink(projectId, title, url, validUntil, userId, role, at), null),
                 cancellationToken);
 
         // US-057 R2: a file as evidence; EvidenceFile checks the size, type and name
@@ -174,20 +179,51 @@ namespace ComplianceTracker.Application.Compliance
                 (userId, role, at) =>
                 {
                     var file = EvidenceFile.Create(fileName, content);
-                    return (Evidence.ForFile(projectId, requirementId, title, file, validUntil, userId, role, at), file.Content);
+                    return (Evidence.ForFile(projectId, title, file, validUntil, userId, role, at), file.Content);
                 },
                 cancellationToken);
 
-        // US-057 R5: kept as history with the time it was removed
-        public async Task RemoveEvidenceAsync(Guid projectId, Guid evidenceId, CancellationToken cancellationToken = default)
+        // US-059: the cross on a Compliance tab row takes the evidence off that requirement (history kept). When it proved
+        // nothing else, the evidence itself is removed too, as in US-057 R5; otherwise it stays on the Evidence tab.
+        public async Task RemoveEvidenceAsync(Guid projectId, Guid evidenceId, Guid requirementId, CancellationToken cancellationToken = default)
         {
             var (organizationId, userId, project) = await OpenProjectAsync(projectId, cancellationToken);
             var evidence = await _evidence.GetAsync(project.Id, evidenceId, cancellationToken)
                 ?? throw new DomainException("Evidence not found");
+            var links = (await _evidence.ListActiveLinksAsync(project.Id, cancellationToken)).Where(l => l.EvidenceId == evidence.Id).ToList();
+            var link = links.FirstOrDefault(l => l.RequirementId == requirementId)
+                ?? throw new DomainException("The evidence is not linked to the requirement");
 
-            evidence.Remove(userId, Now);
-            var requirement = await RequirementOfProjectAsync(organizationId, project, evidence.RequirementId, cancellationToken);
-            await _log.LogAsync(ActivityAction.EvidenceRemoved, project.Id, $"{requirement?.Code ?? "?"}: {evidence.Title}", cancellationToken);
+            link.Remove(userId, Now);
+            var requirement = await RequirementOfProjectAsync(organizationId, project, requirementId, cancellationToken);
+            if (links.Count == 1)
+            {
+                evidence.Remove(userId, Now);
+                await _log.LogAsync(ActivityAction.EvidenceRemoved, project.Id, $"{requirement?.Code ?? "?"}: {evidence.Title}", cancellationToken);
+            }
+            else
+            {
+                await _log.LogAsync(ActivityAction.EvidenceUnlinked, project.Id, $"{requirement?.Code ?? "?"}: {evidence.Title}", cancellationToken);
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-059: "Pick existing evidence" on a Compliance tab row
+        public async Task LinkExistingEvidenceAsync(Guid projectId, Guid requirementId, Guid evidenceId, CancellationToken cancellationToken = default)
+        {
+            var (organizationId, userId, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var requirement = await ApplicableRequirementAsync(organizationId, project, requirementId, cancellationToken);
+            var evidence = await _evidence.GetAsync(project.Id, evidenceId, cancellationToken)
+                ?? throw new DomainException("Evidence not found");
+            if ((await _evidence.ListActiveLinksAsync(project.Id, cancellationToken)).Any(l => l.EvidenceId == evidence.Id && l.RequirementId == requirement.Id))
+            {
+                throw new DomainException($"{evidence.Title} is already linked to {requirement.Code}");
+            }
+
+            var role = (await _member.RequireAsync(cancellationToken)).User.Role;
+            await _evidence.AddLinkAsync(EvidenceLink.Create(project.Id, evidence.Id, requirement.Id, userId, role, Now), cancellationToken);
+            await _log.LogAsync(ActivityAction.EvidenceLinked, project.Id, $"{requirement.Code}: {evidence.Title}", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
@@ -196,6 +232,19 @@ namespace ComplianceTracker.Application.Compliance
             CancellationToken cancellationToken)
         {
             var (organizationId, userId, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var requirement = await ApplicableRequirementAsync(organizationId, project, requirementId, cancellationToken);
+
+            var role = (await _member.RequireAsync(cancellationToken)).User.Role;
+            var (evidence, content) = create(userId, role, Now);
+            await _evidence.AddAsync(evidence, content, cancellationToken);
+            await _evidence.AddLinkAsync(EvidenceLink.Create(project.Id, evidence.Id, requirement.Id, userId, role, Now), cancellationToken);
+            await _log.LogAsync(ActivityAction.EvidenceAdded, project.Id, $"{requirement.Code}: {evidence.Title}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // A requirement of a version the project follows, which applies to it (US-043, US-059 R5)
+        private async Task<Requirement> ApplicableRequirementAsync(Guid organizationId, Project project, Guid requirementId, CancellationToken cancellationToken)
+        {
             var requirement = await RequirementOfProjectAsync(organizationId, project, requirementId, cancellationToken)
                 ?? throw new DomainException("The requirement is not in a framework version the project follows");
 
@@ -204,11 +253,7 @@ namespace ComplianceTracker.Application.Compliance
                 throw new DomainException($"{requirement.Code} does not apply to the project");
             }
 
-            var role = (await _member.RequireAsync(cancellationToken)).User.Role;
-            var (evidence, content) = create(userId, role, Now);
-            await _evidence.AddAsync(evidence, content, cancellationToken);
-            await _log.LogAsync(ActivityAction.EvidenceAdded, project.Id, $"{requirement.Code}: {evidence.Title}", cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return requirement;
         }
 
         // The member's own project; US-024 R4: nothing changes at end of support

@@ -150,6 +150,7 @@ namespace ComplianceTracker.Web.Controllers
             string? status, string? level, string? due,
             // US-101: the Activity tab's filters (q is the search there too)
             string? from, string? to, string? group, string? user, string? sort, string? page,
+            [FromServices] EvidenceQueries evidenceQueries,
             CancellationToken cancellationToken)
         {
             var activeTab = ProjectTabs.Find(tab);
@@ -172,6 +173,11 @@ namespace ComplianceTracker.Web.Controllers
             // Requirements and links: for the Compliance tab, the overview's summary and the user stories' requirements
             var compliance = activeTab is ProjectTabs.Compliance or ProjectTabs.Overview or ProjectTabs.UserStories
                 ? await _complianceQueries.ForProjectAsync(id, cancellationToken)
+                : null;
+
+            // US-059: the Evidence tab, and the evidence that can be picked on the Compliance tab
+            var evidenceTab = activeTab is ProjectTabs.Evidence or ProjectTabs.Compliance
+                ? await evidenceQueries.ForProjectAsync(id, cancellationToken)
                 : null;
 
             // US-042: the register, sorted by level; closed risks only when asked for (R7). US-048 R3: the overview counts them.
@@ -205,6 +211,7 @@ namespace ComplianceTracker.Web.Controllers
                 ActivityQuery = activityQuery,
                 ActivityIgnored = activityIgnored,
                 Compliance = compliance,
+                EvidenceTab = evidenceTab,
                 Sub = sub,
                 Search = q,
                 ComplianceFilter = ComplianceFilters.Find(show),
@@ -394,14 +401,124 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
         }
 
-        // POST /Projects/RemoveEvidence: R5, kept as history
+        // POST /Projects/RemoveEvidence: R5, kept as history. US-059: off this requirement; removed when it proved nothing else.
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
-        public async Task<IActionResult> RemoveEvidence(Guid projectId, Guid evidenceId, string? sub, CancellationToken cancellationToken)
+        public async Task<IActionResult> RemoveEvidence(Guid projectId, Guid evidenceId, Guid requirementId, string? sub, CancellationToken cancellationToken)
         {
-            await _compliance.RemoveEvidenceAsync(projectId, evidenceId, cancellationToken);
+            await _compliance.RemoveEvidenceAsync(projectId, evidenceId, requirementId, cancellationToken);
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // POST /Projects/LinkExistingEvidence: US-059, "Pick existing evidence" on a Compliance tab row
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> LinkExistingEvidence(Guid projectId, Guid requirementId, Guid evidenceId, string? sub, CancellationToken cancellationToken)
+        {
+            await _compliance.LinkExistingEvidenceAsync(projectId, requirementId, evidenceId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // ---------------------------------------------------------- Evidence tab (US-059)
+
+        // POST /Projects/UploadEvidence: R1, then the AI suggests requirements (R3)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(MaxEvidenceRequestSize)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaxEvidenceRequestSize)]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
+        public async Task<IActionResult> UploadEvidence(
+            Guid projectId, string? title, string? url, IFormFile? file, DateOnly? validUntil,
+            [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
+        {
+            byte[]? content = null;
+            if (file is { Length: > 0 })
+            {
+                using var buffer = new MemoryStream();
+                await file.CopyToAsync(buffer, cancellationToken);
+                content = buffer.ToArray();
+            }
+
+            var added = await evidence.AddAsync(projectId, title ?? "", url, file?.FileName, content, validUntil, cancellationToken);
+            if (added.AiUnavailable is not null)
+            {
+                TempData["EvidenceAiUnavailable"] = $"No suggestions: {added.AiUnavailable}";
+            }
+
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+        }
+
+        // POST /Projects/LinkEvidence: R2, one evidence to one or more requirements
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
+        public async Task<IActionResult> LinkEvidence(
+            Guid projectId, Guid evidenceId, List<Guid> requirementIds, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
+        {
+            await evidence.LinkAsync(projectId, evidenceId, requirementIds, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+        }
+
+        // POST /Projects/UnlinkEvidence: R7, kept as history
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
+        public async Task<IActionResult> UnlinkEvidence(Guid projectId, Guid linkId, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
+        {
+            await evidence.UnlinkAsync(projectId, linkId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+        }
+
+        // POST /Projects/RemoveProjectEvidence: R7, off every requirement
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
+        public async Task<IActionResult> RemoveProjectEvidence(Guid projectId, Guid evidenceId, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
+        {
+            await evidence.RemoveAsync(projectId, evidenceId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+        }
+
+        // POST /Projects/MoreEvidenceSuggestions: R3, "Show more"
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
+        public async Task<IActionResult> MoreEvidenceSuggestions(Guid projectId, Guid evidenceId, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await evidence.ShowMoreAsync(projectId, evidenceId, cancellationToken);
+            }
+            catch (Application.Ai.AiUnavailableException e)
+            {
+                TempData["EvidenceAiUnavailable"] = $"No suggestions: {e.Message}";
+            }
+
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+        }
+
+        // POST /Projects/ApproveEvidenceSuggestion: R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
+        public async Task<IActionResult> ApproveEvidenceSuggestion(Guid projectId, Guid suggestionId, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
+        {
+            await evidence.ApproveAsync(projectId, suggestionId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+        }
+
+        // POST /Projects/RejectEvidenceSuggestion: R4, with a reason
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
+        public async Task<IActionResult> RejectEvidenceSuggestion(
+            Guid projectId, Guid suggestionId, Domain.Mappings.RejectionReason? reason, string? comment,
+            [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
+        {
+            await evidence.RejectAsync(projectId, suggestionId, reason, comment, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
         }
 
         // GET /Projects/EvidenceFile/{id}?evidenceId=...: R6, for anyone in the organisation

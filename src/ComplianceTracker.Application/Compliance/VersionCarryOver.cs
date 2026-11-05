@@ -59,15 +59,15 @@ namespace ComplianceTracker.Application.Compliance
                 }
             }
 
-            var evidence = await _evidence.ListActiveAsync(project.Id, cancellationToken);
+            // US-059: the evidence is stored once; only its links move
+            var evidenceLinks = await _evidence.ListActiveLinksAsync(project.Id, cancellationToken);
             var evidenceCarried = 0;
-            foreach (var item in evidence.Where(e => sameCode.ContainsKey(e.RequirementId)))
+            foreach (var link in evidenceLinks.Where(l => sameCode.ContainsKey(l.RequirementId)))
             {
-                var to = sameCode[item.RequirementId];
-                if (!evidence.Any(e => e.RequirementId == to && e.Title == item.Title && e.Url == item.Url && e.Sha256 == item.Sha256))
+                var to = sameCode[link.RequirementId];
+                if (!evidenceLinks.Any(l => l.RequirementId == to && l.EvidenceId == link.EvidenceId))
                 {
-                    var content = item.IsFile ? await _evidence.GetContentAsync(item.Id, cancellationToken) : null;
-                    await _evidence.AddAsync(item.CarryTo(to), content, cancellationToken);
+                    await _evidence.AddLinkAsync(link.CarryTo(to), cancellationToken);
                     evidenceCarried++;
                 }
             }

@@ -31,6 +31,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
             }
         }
 
+        // US-059
+        public async Task<IReadOnlyList<EvidenceLink>> ListActiveLinksAsync(Guid projectId, CancellationToken cancellationToken = default)
+            => await _db.EvidenceLinks
+                .Where(l => l.ProjectId == projectId && l.RemovedAt == null)
+                .ToListAsync(cancellationToken);
+
+        public async Task AddLinkAsync(EvidenceLink link, CancellationToken cancellationToken = default)
+            => await _db.EvidenceLinks.AddAsync(link, cancellationToken);
+
         public Task<byte[]?> GetContentAsync(Guid evidenceId, CancellationToken cancellationToken = default)
             => _db.EvidenceDocuments
                 .Where(d => d.EvidenceId == evidenceId)

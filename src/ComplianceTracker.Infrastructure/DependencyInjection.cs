@@ -70,6 +70,8 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<IRequirementLinkRepository, RequirementLinkRepository>();
             services.AddScoped<IRequirementApplicabilityRepository, RequirementApplicabilityRepository>();
             services.AddScoped<IEvidenceRepository, EvidenceRepository>();
+            services.AddScoped<IEvidenceLinkSuggestionRepository, EvidenceLinkSuggestionRepository>(); // US-059
+            services.AddSingleton<IEvidenceTextReader, Compliance.EvidenceTextReader>();
             services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();
             services.AddScoped<IRiskRepository, RiskRepository>();
             services.AddScoped<IInvitationRepository, InvitationRepository>();

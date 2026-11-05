@@ -94,6 +94,14 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // A requirement specification was uploaded to a project as a new version (US-032).
         // SubjectId points at the project; Details holds the file name, the version and what it changed.
-        RequirementDocumentUploaded
+        RequirementDocumentUploaded,
+
+        // US-059: evidence was linked to or unlinked from a requirement, the AI suggested links, and a person approved or
+        // rejected one. SubjectId points at the project; Details holds e.g. "I.2(d): Access policy 2026".
+        EvidenceLinked,
+        EvidenceUnlinked,
+        EvidenceLinkSuggested,
+        EvidenceLinkApproved,
+        EvidenceLinkRejected
     }
 }

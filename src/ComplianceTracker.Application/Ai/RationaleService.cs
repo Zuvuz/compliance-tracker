@@ -1,4 +1,5 @@
 using ComplianceTracker.Application.Common;
+using ComplianceTracker.Application.Compliance;
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.WorkItems;
 
@@ -14,6 +15,9 @@ namespace ComplianceTracker.Application.Ai
         private readonly IRationaleWriter _writer;
         private readonly IWorkItemNotifier _notifier;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IEvidenceLinkSuggestionRepository _evidenceSuggestions;
+        private readonly IEvidenceRepository _evidence;
+        private readonly IEvidenceTextReader _evidenceText;
 
         public RationaleService(
             IMappingSuggestionRepository suggestions,
@@ -21,8 +25,14 @@ namespace ComplianceTracker.Application.Ai
             IWorkItemRepository workItems,
             IRationaleWriter writer,
             IWorkItemNotifier notifier,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IEvidenceLinkSuggestionRepository evidenceSuggestions,
+            IEvidenceRepository evidence,
+            IEvidenceTextReader evidenceText)
         {
+            _evidenceSuggestions = evidenceSuggestions;
+            _evidence = evidence;
+            _evidenceText = evidenceText;
             _suggestions = suggestions;
             _frameworks = frameworks;
             _workItems = workItems;
@@ -53,6 +63,28 @@ namespace ComplianceTracker.Application.Ai
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _notifier.WorkItemsChangedAsync(suggestion.ProjectId, cancellationToken);
+                written++;
+            }
+
+            // US-059 R3: then the evidence suggestions, in what is left of the batch
+            foreach (var suggestion in await _evidenceSuggestions.ListWithoutRationaleAsync(Math.Max(0, take - written), cancellationToken))
+            {
+                var requirement = await _frameworks.GetRequirementAsync(suggestion.RequirementId, cancellationToken);
+                var evidence = await _evidence.GetAsync(suggestion.ProjectId, suggestion.EvidenceId, cancellationToken);
+                if (requirement is null || evidence is null)
+                {
+                    suggestion.SetRationale("(The evidence or the requirement no longer exists.)", _writer.Name);
+                }
+                else
+                {
+                    var content = evidence.IsFile ? await _evidence.GetContentAsync(evidence.Id, cancellationToken) : null;
+                    var text = content is not null && evidence.ContentType is not null ? _evidenceText.Read(evidence.ContentType, content) : null;
+                    var prompt = EvidenceRationalePrompt.For(evidence.Title, EvidenceService.EvidenceText(evidence, text),
+                        requirement.Code, MappingSuggestionService.RequirementText(requirement));
+                    suggestion.SetRationale(await _writer.WriteAsync(prompt, cancellationToken), _writer.Name);
+                }
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
                 written++;
             }
 
