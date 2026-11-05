@@ -144,6 +144,9 @@ builder.Services
         }
     });
 
+// US-093: where to report a vulnerability in the tracker (/.well-known/security.txt)
+builder.Services.AddOptions<SecurityContactOptions>().BindConfiguration(SecurityContactOptions.Section);
+
 // US-017: /health for Docker and CI; only says whether the database can be reached
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
 
@@ -183,6 +186,9 @@ app.MapStaticAssets().AllowAnonymous();
 
 // US-017: Docker and CI ask this before they send traffic; it answers without sign-in
 app.MapHealthChecks("/health").AllowAnonymous();
+
+// US-093: the security contact (RFC 9116), without sign-in
+app.MapSecurityTxt();
 
 // URLs map to controller/action/id, e.g. /Frameworks/Versions/{id}. "/" goes to Home/Index.
 app.MapControllerRoute(
