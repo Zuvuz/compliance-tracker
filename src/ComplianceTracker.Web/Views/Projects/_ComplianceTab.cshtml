@@ -187,7 +187,10 @@
                         group = requirement.Group;
                         <tr class="requirement-group table-light"><th colspan="4">@group</th></tr>
                     }
-                    <tr class="requirement-row @(row.IsApplicable ? "" : "text-muted")" data-code="@requirement.Code" data-group="@requirement.Group">
+                    var rowFoldKey = $"requirement:{project.Id}:{requirement.Id}";
+                    @* #52: the row can be folded; it is never folded while something needs attention *@
+                    var rowAttention = row.HasSuggestions || row.PendingEvidenceSuggestions.Any() || row.FailingTests > 0;
+                    <tr class="requirement-row @(row.IsApplicable ? "" : "text-muted")" data-code="@requirement.Code" data-group="@requirement.Group" data-attention="@(rowAttention ? "true" : "false")">
                         <td class="requirement-code text-nowrap align-top">@requirement.Code</td>
                         <td class="requirement-title align-top">
                             @requirement.Title
@@ -213,6 +216,10 @@
                             }
                         </td>
                         <td class="align-top">
+                            <span class="small text-muted fold-summary" data-fold-summary="@rowFoldKey" hidden>
+                                @row.Links.Count @(row.Links.Count == 1 ? "story" : "stories") · @row.Evidence.Count evidence
+                            </span>
+                            <div class="fold-part" data-fold-key="@rowFoldKey">
                             @foreach (var link in row.Links)
                             {
                                 @* US-021 R7: each story links to its issue *@
@@ -431,8 +438,10 @@
                                     }
                                 </div>
                             }
+                            </div>
                         </td>
                         <td class="align-top">
+                            <button type="button" class="btn btn-sm btn-link p-0 fold-toggle d-block mb-1" data-fold-target="@rowFoldKey" aria-expanded="true" hidden>Fold</button>
                             @if (!row.IsApplicable)
                             {
                                 @* US-043 R5, R6 *@
