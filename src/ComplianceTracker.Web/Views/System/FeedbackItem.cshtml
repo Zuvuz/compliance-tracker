@@ -1,0 +1,74 @@
+@* US-063: one feedback, for the system admin, with "Create GitHub issue" (R6, R7) and "Dismiss" (R8).
+   Ids used by the tests: #feedback-status, #feedback-issue, #feedback-screenshot, #create-feedback-issue (title, body),
+   #dismiss-feedback (reason). *@
+@model ComplianceTracker.Domain.Feedback.Feedback
+@{
+    ViewData["Title"] = "System – Feedback";
+}
+
+<p class="mb-1"><a asp-action="Feedback">← All feedback</a></p>
+<h1 class="h3">@Model.SuggestedIssueTitle()</h1>
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+<dl class="row">
+    <dt class="col-sm-3">Sent</dt>
+    <dd class="col-sm-9">@Model.SentAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm"), from the page <code>@Model.Page</code></dd>
+    <dt class="col-sm-3">User story</dt>
+    <dd class="col-sm-9">As a @Model.AsA, I want @Model.IWant, so that @Model.SoThat.</dd>
+    @if (Model.Rules is not null)
+    {
+        <dt class="col-sm-3">Rules</dt>
+        <dd class="col-sm-9 ct-pre-wrap">@Model.Rules</dd>
+    }
+    @if (Model.Examples is not null)
+    {
+        <dt class="col-sm-3">Examples</dt>
+        <dd class="col-sm-9 ct-pre-wrap">@Model.Examples</dd>
+    }
+    <dt class="col-sm-3">Status</dt>
+    <dd class="col-sm-9" id="feedback-status">@Model.Status</dd>
+    @if (Model.IssueNumber is { } number)
+    {
+        <dt class="col-sm-3">GitHub issue</dt>
+        <dd class="col-sm-9"><a id="feedback-issue" href="@Model.IssueUrl" rel="noopener">#@number</a> (by @Model.DecidedBy)</dd>
+    }
+    @if (Model.DismissReason is not null)
+    {
+        <dt class="col-sm-3">Dismissed</dt>
+        <dd class="col-sm-9" id="feedback-dismissed">@Model.DismissReason (by @Model.DecidedBy)</dd>
+    }
+</dl>
+
+@if (Model.HasScreenshot)
+{
+    <p>
+        <a id="feedback-screenshot" asp-action="FeedbackScreenshot" asp-route-id="@Model.Id">@Model.ScreenshotFileName</a>
+        <span class="text-muted small">SHA-256 @Model.ScreenshotSha256</span>
+    </p>
+}
+
+@if (Model.Status == ComplianceTracker.Domain.Feedback.FeedbackStatus.New)
+{
+    <h2 class="h5 mt-4">Create GitHub issue</h2>
+    <p class="small text-muted">
+        The issue gets the labels @string.Join(", ", ComplianceTracker.Application.Feedback.FeedbackService.IssueLabels).
+        It never contains the sender, the organisation or the screenshot. Check the text before you create it.
+    </p>
+    <form asp-action="CreateFeedbackIssue" asp-route-id="@Model.Id" method="post" id="create-feedback-issue">
+        <div class="mb-2">
+            <label for="issue-title" class="form-label">Title</label>
+            <input id="issue-title" name="title" class="form-control" value="@Model.SuggestedIssueTitle()" required />
+        </div>
+        <div class="mb-2">
+            <label for="issue-body" class="form-label">Text</label>
+            <textarea id="issue-body" name="body" class="form-control" rows="14" required>@Model.SuggestedIssueBody()</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Create GitHub issue</button>
+    </form>
+
+    <h2 class="h5 mt-4">Dismiss</h2>
+    <form asp-action="DismissFeedback" asp-route-id="@Model.Id" method="post" id="dismiss-feedback" class="d-flex gap-2">
+        <input name="reason" class="form-control" placeholder="Reason, e.g. Already planned in US-049" required aria-label="Reason" />
+        <button type="submit" class="btn btn-outline-secondary">Dismiss</button>
+    </form>
+}

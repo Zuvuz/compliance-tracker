@@ -72,6 +72,12 @@ namespace ComplianceTracker.Specs.Support
                 services.AddSingleton<IWorkItemSource>(new GitHubWorkItemSource(new HttpClient { BaseAddress = new Uri("http://github.invalid/") }));
                 services.AddSingleton<IWorkItemNotifier, NoWorkItemNotifier>();
 
+                // US-063: not used by these tests, but the use cases must be creatable. Never reaches a network.
+                services.AddScoped<ComplianceTracker.Application.Feedback.IFeedbackRepository, FeedbackRepository>();
+                services.AddSingleton<ComplianceTracker.Application.Feedback.IFeedbackIssueWriter>(new ComplianceTracker.Infrastructure.Feedback.GitHubFeedbackIssueWriter(
+                    new HttpClient { BaseAddress = new Uri("http://github.invalid/") },
+                    Microsoft.Extensions.Options.Options.Create(new ComplianceTracker.Infrastructure.Feedback.FeedbackOptions())));
+
                 // US-031: real encryption, with keys that only live while the test runs
                 services.AddDataProtection().UseEphemeralDataProtectionProvider();
                 services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();

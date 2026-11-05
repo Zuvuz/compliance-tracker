@@ -64,6 +64,7 @@ namespace ComplianceTracker.Specs.Support
             return new ComplianceTrackerDbContext(options);
         }
 
+        // US-091: the activity log refuses DELETE (a trigger); the reset turns the triggers off for that one table, as its owner.
         // Empties the database before each scenario, but keeps the built-in frameworks (CRA, AI Act)
         // that the migrations add (US-006). TRUNCATE ... CASCADE would delete those too, so the tables
         // are emptied one by one, children before parents. A new table must be added here.
@@ -82,7 +83,9 @@ namespace ComplianceTracker.Specs.Support
                 DELETE FROM "Evidence";
                 DELETE FROM "RequirementLinks";
                 DELETE FROM "RequirementApplicability";
+                ALTER TABLE "ActivityLog" DISABLE TRIGGER USER;
                 DELETE FROM "ActivityLog";
+                ALTER TABLE "ActivityLog" ENABLE TRIGGER USER;
                 DELETE FROM "OrganizationFrameworks";
                 DELETE FROM "ProjectFrameworks";
                 DELETE FROM "CatalogDocuments";
@@ -94,6 +97,8 @@ namespace ComplianceTracker.Specs.Support
                 DELETE FROM "RequirementDocumentVersions";
                 DELETE FROM "RequirementDocuments";
                 DELETE FROM "SkippedIssues";
+                DELETE FROM "FeedbackScreenshots";
+                DELETE FROM "Feedback";
                 DELETE FROM "Projects";
                 DELETE FROM "Users";
                 DELETE FROM "Organizations";

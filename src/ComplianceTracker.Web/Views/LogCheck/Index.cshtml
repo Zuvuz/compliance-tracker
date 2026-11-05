@@ -1,0 +1,33 @@
+@* US-091 R3: the result of checking the organisation's chain of log entries.
+   Ids used by the tests: #log-check-result (with data-intact), #log-check-broken. *@
+@model ComplianceTracker.Domain.ActivityLog.ChainCheck
+@{
+    var organization = (ComplianceTracker.Domain.Organizations.Organization)ViewData["Organization"]!;
+}
+
+<partial name="_OrganizationHeader" model="organization" />
+
+<h1 class="h4">Check the activity log</h1>
+<p class="small text-muted">
+    Every log entry holds a fingerprint of itself and of the entry before it. A changed, removed or added entry
+    breaks the chain from that point. The database also refuses to change or delete entries.
+</p>
+
+@if (Model.IsIntact)
+{
+    <div class="alert alert-success" id="log-check-result" data-intact="true">
+        The log is intact (@Model.Checked entries)
+        @if (Model.WithoutFingerprint > 0)
+        {
+            <text>; @Model.WithoutFingerprint older entries from before the fingerprints have no fingerprint</text>
+        }
+    </div>
+}
+else
+{
+    var broken = Model.FirstBroken!;
+    <div class="alert alert-danger" id="log-check-result" data-intact="false">
+        <span id="log-check-broken">The log is broken at the entry of @broken.OccurredAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</span>
+        (@broken.Action). @Model.Checked entries before it are intact.
+    </div>
+}

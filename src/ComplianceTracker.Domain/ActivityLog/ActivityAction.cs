@@ -96,6 +96,12 @@ namespace ComplianceTracker.Domain.ActivityLog
         // SubjectId points at the project; Details holds the file name, the version and what it changed.
         RequirementDocumentUploaded,
 
+        // US-063: a member sent feedback, and the system admin made a GitHub issue of it or dismissed it.
+        // SubjectId points at the feedback; Details holds its title, the issue's number or the reason.
+        FeedbackSent,
+        FeedbackIssueCreated,
+        FeedbackDismissed,
+
         // US-059: evidence was linked to or unlinked from a requirement, the AI suggested links, and a person approved or
         // rejected one. SubjectId points at the project; Details holds e.g. "I.2(d): Access policy 2026".
         EvidenceLinked,

@@ -20,6 +20,11 @@ namespace ComplianceTracker.Specs.Support
         // US-031: private repositories and the one token each accepts. Like GitHub: without a token 404, a wrong one 401.
         public Dictionary<string, string> PrivateRepositories { get; } = new(StringComparer.OrdinalIgnoreCase);
 
+        // US-063: the token the app's feedback writer is given (TestApp), and the issues it created
+        public const string FeedbackToken = "test-feedback-token";
+
+        public List<CreatedFeedbackIssue> CreatedIssues { get; } = new();
+
         public List<FakeIssue> Repository(string name)
         {
             if (!_repositories.TryGetValue(name, out var issues))
@@ -72,6 +77,30 @@ namespace ComplianceTracker.Specs.Support
 
                 // repos/{owner}/{name}/issues?labels=...&state=all&per_page=100&page=1
                 var path = request.RequestUri!.AbsolutePath.Trim('/').Split('/');
+
+                // US-063: POST repos/{owner}/{name}/issues creates an issue, with the feedback token only
+                if (request.Method == HttpMethod.Post && path.Length == 4 && path[0] == "repos" && path[3] == "issues")
+                {
+                    if (request.Headers.Authorization is not { Scheme: "Bearer", Parameter: FeedbackToken })
+                    {
+                        return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+                    }
+
+                    using var sent = JsonDocument.Parse(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
+                    var number = 130 + CreatedIssues.Count;
+                    CreatedIssues.Add(new CreatedFeedbackIssue(
+                        $"{path[1]}/{path[2]}",
+                        number,
+                        sent.RootElement.GetProperty("title").GetString()!,
+                        sent.RootElement.GetProperty("body").GetString()!,
+                        sent.RootElement.GetProperty("labels").EnumerateArray().Select(l => l.GetString()!).ToList()));
+                    return new HttpResponseMessage(HttpStatusCode.Created)
+                    {
+                        Content = new StringContent(
+                            JsonSerializer.Serialize(new { number, html_url = $"https://github.com/{path[1]}/{path[2]}/issues/{number}" }),
+                            Encoding.UTF8, "application/json")
+                    };
+                }
                 if (request.Method != HttpMethod.Get || path.Length != 4 || path[0] != "repos" || path[3] != "issues"
                     || !_repositories.TryGetValue($"{path[1]}/{path[2]}", out var issues))
                 {
@@ -127,6 +156,9 @@ namespace ComplianceTracker.Specs.Support
                 => Task.FromResult(_github.Answer(request));
         }
     }
+
+    // US-063: an issue the feedback writer created
+    public sealed record CreatedFeedbackIssue(string Repository, int Number, string Title, string Body, List<string> Labels);
 
     public sealed class FakeIssue
     {

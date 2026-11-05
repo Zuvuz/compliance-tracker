@@ -238,3 +238,12 @@ main {
 .ct-progress-xs {
   height: 0.5rem;
 }
+
+/* US-063: the feedback form and texts kept as written */
+.ct-form-narrow {
+    max-width: 48rem;
+}
+
+.ct-pre-wrap {
+    white-space: pre-wrap;
+}
