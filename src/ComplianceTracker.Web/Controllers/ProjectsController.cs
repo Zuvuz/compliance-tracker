@@ -32,6 +32,7 @@ namespace ComplianceTracker.Web.Controllers
         private readonly MappingSuggestionService _suggestions;
         private readonly RiskQueries _risks;
         private readonly RequirementDocumentService _documents;
+        private readonly GetStartedService _getStarted;
 
         public ProjectsController(
             ProjectService service,
@@ -45,8 +46,10 @@ namespace ComplianceTracker.Web.Controllers
             MappingSuggestionService suggestions,
             RiskQueries risks,
             RequirementDocumentService documents,
+            GetStartedService getStarted,
             TimeProvider clock)
         {
+            _getStarted = getStarted;
             _documents = documents;
             _risks = risks;
             _suggestions = suggestions;
@@ -76,7 +79,27 @@ namespace ComplianceTracker.Web.Controllers
                 organization,
                 await _projects.ListAsync(cancellationToken),
                 await _frameworks.ListAsync(cancellationToken),
-                _clock.Today()));
+                _clock.Today())
+            {
+                GetStarted = await _getStarted.ForMeAsync(cancellationToken) // US-096
+            });
+        }
+
+        // POST /Projects/HideGetStarted and /Projects/ShowGetStarted: US-096 R4, for the signed-in member only
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> HideGetStarted(CancellationToken cancellationToken)
+        {
+            await _getStarted.SetHiddenAsync(true, cancellationToken);
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ShowGetStarted(CancellationToken cancellationToken)
+        {
+            await _getStarted.SetHiddenAsync(false, cancellationToken);
+            return RedirectToAction(nameof(Index));
         }
 
         // GET /Projects/Create: the empty form (the framework checkboxes come from the FrameworkChoices view component)

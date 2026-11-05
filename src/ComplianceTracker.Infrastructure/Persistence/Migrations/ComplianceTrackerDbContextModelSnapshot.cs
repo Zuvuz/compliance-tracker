@@ -1075,6 +1075,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<bool>("HidesGetStarted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");

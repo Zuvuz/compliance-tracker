@@ -281,6 +281,9 @@ namespace ComplianceTracker.Web.Models
         IReadOnlyList<Framework> Frameworks,
         DateOnly Today)
     {
+        // US-096: the "Get started" card, or null
+        public Application.Organizations.GetStartedChecklist? GetStarted { get; init; }
+
         // Per framework: the newest version (even with no projects yet), then every older version in use
         public IReadOnlyList<FrameworkUsageRow> FrameworkUsage { get; } = Frameworks
             .SelectMany(framework => framework.Versions
