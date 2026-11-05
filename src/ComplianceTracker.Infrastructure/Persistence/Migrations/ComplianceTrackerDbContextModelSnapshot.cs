@@ -2047,6 +2047,48 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("Projects", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Projects.ProjectClassification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Class")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("ClassifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ClassifiedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ClassifiedRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("FrameworkId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClassifiedById");
+
+                    b.HasIndex("FrameworkId");
+
+                    b.HasIndex("ProjectId", "FrameworkId", "ClassifiedAt");
+
+                    b.ToTable("ProjectClassifications", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Projects.ProjectFramework", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2995,6 +3037,27 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("GitHub");
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Projects.ProjectClassification", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ClassifiedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Frameworks.Framework", null)
+                        .WithMany()
+                        .HasForeignKey("FrameworkId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Projects.ProjectFramework", b =>
