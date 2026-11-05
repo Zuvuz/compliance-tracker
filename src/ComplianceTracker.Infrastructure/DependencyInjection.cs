@@ -71,6 +71,7 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<IRequirementApplicabilityRepository, RequirementApplicabilityRepository>();
             services.AddScoped<IEvidenceRepository, EvidenceRepository>();
             services.AddSingleton<Application.Reports.IDocumentWriter, Reports.OpenXmlDocumentWriter>(); // US-056
+            services.AddScoped<Application.Feedback.IFeedbackRepository, FeedbackRepository>(); // US-063
             services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();
             services.AddScoped<IRiskRepository, RiskRepository>();
             services.AddScoped<IInvitationRepository, InvitationRepository>();
@@ -84,6 +85,18 @@ namespace ComplianceTracker.Infrastructure
                 client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
             });
             services.AddTransient<IWorkItemSource>(provider => provider.GetRequiredService<GitHubWorkItemSource>());
+
+            // US-063: feedback becomes an issue in the tracker's own repository, with its own token (B42)
+            services.AddOptions<Feedback.FeedbackOptions>().BindConfiguration(Feedback.FeedbackOptions.Section);
+            services.AddHttpClient<Feedback.GitHubFeedbackIssueWriter>(client =>
+            {
+                client.BaseAddress = new Uri(GitHubApiAddress);
+                client.Timeout = TimeSpan.FromSeconds(20);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("compliance-tracker");
+                client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+                client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
+            });
+            services.AddTransient<Application.Feedback.IFeedbackIssueWriter>(provider => provider.GetRequiredService<Feedback.GitHubFeedbackIssueWriter>());
 
             // US-031: encryption of stored tokens. The keys are kept in the database (DataProtectionKeys).
             // The same keys protect the sign-in cookie and antiforgery tokens, so they also survive restarts.

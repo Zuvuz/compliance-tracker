@@ -40,11 +40,19 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(4000)
                         .HasColumnType("character varying(4000)");
 
+                    b.Property<string>("Hash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<DateTime>("OccurredAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("PreviousHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("Role")
                         .HasMaxLength(50)
@@ -65,6 +73,99 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrganizationId", "SubjectId", "OccurredAt");
 
                     b.ToTable("ActivityLog", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Feedback.Feedback", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AsA")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DecidedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("DismissReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Examples")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("IWant")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int?>("IssueNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("IssueUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Page")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Role")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Rules")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("ScreenshotContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ScreenshotFileName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ScreenshotSha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<long?>("ScreenshotSizeInBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SoThat")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("UserId", "SentAt");
+
+                    b.ToTable("Feedback", (string)null);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.Framework", b =>
@@ -2115,6 +2216,20 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("CatalogDocuments", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.Configurations.FeedbackScreenshot", b =>
+                {
+                    b.Property<Guid>("FeedbackId")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("FeedbackId");
+
+                    b.ToTable("FeedbackScreenshots", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.EvidenceDocument", b =>
                 {
                     b.Property<Guid>("EvidenceId")
@@ -2174,6 +2289,21 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Feedback.Feedback", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.Framework", b =>
@@ -2627,6 +2757,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasOne("ComplianceTracker.Domain.Frameworks.FrameworkVersion", null)
                         .WithOne()
                         .HasForeignKey("ComplianceTracker.Infrastructure.Persistence.CatalogDocument", "FrameworkVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.Configurations.FeedbackScreenshot", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Feedback.Feedback", null)
+                        .WithOne()
+                        .HasForeignKey("ComplianceTracker.Infrastructure.Persistence.Configurations.FeedbackScreenshot", "FeedbackId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

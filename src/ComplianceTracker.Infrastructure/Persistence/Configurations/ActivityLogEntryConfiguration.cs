@@ -13,6 +13,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
         {
             builder.ToTable("ActivityLog");
 
+            // US-091: SHA-256 as 64 hex characters; null on entries from before the chain
+            builder.Property(e => e.PreviousHash).HasMaxLength(64);
+            builder.Property(e => e.Hash).HasMaxLength(64);
+
             // US-101 R8: the project's log by time, and (US-102) the organisation's log by time
             builder.HasIndex(e => new { e.OrganizationId, e.SubjectId, e.OccurredAt });
             builder.HasIndex(e => new { e.OrganizationId, e.OccurredAt });

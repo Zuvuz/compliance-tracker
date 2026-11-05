@@ -13,10 +13,47 @@ namespace ComplianceTracker.Web.Controllers
     public class SystemController : Controller
     {
         private readonly SystemAdminService _system;
+        private readonly Application.Feedback.FeedbackService _feedback;
 
-        public SystemController(SystemAdminService system)
+        public SystemController(SystemAdminService system, Application.Feedback.FeedbackService feedback)
         {
             _system = system;
+            _feedback = feedback;
+        }
+
+        // US-063 R5: feedback from every organisation; the one thing from an organisation the system admin sees (B42)
+        [HttpGet]
+        public async Task<IActionResult> Feedback(CancellationToken cancellationToken)
+            => View(await _feedback.ListAsync(cancellationToken));
+
+        [HttpGet]
+        public async Task<IActionResult> FeedbackItem(Guid id, CancellationToken cancellationToken)
+            => await _feedback.GetAsync(id, cancellationToken) is { } feedback ? View(feedback) : NotFound();
+
+        [HttpGet]
+        public async Task<IActionResult> FeedbackScreenshot(Guid id, CancellationToken cancellationToken)
+            => await _feedback.ScreenshotAsync(id, cancellationToken) is { } shot
+                ? File(shot.Content, shot.Feedback.ScreenshotContentType!, shot.Feedback.ScreenshotFileName)
+                : NotFound();
+
+        // R6, R7, R10
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(FeedbackItem), IdFrom = "id")]
+        public async Task<IActionResult> CreateFeedbackIssue(Guid id, string title, string body, CancellationToken cancellationToken)
+        {
+            await _feedback.CreateIssueAsync(id, title, body, cancellationToken);
+            return RedirectToAction(nameof(FeedbackItem), new { id });
+        }
+
+        // R8
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(FeedbackItem), IdFrom = "id")]
+        public async Task<IActionResult> DismissFeedback(Guid id, string reason, CancellationToken cancellationToken)
+        {
+            await _feedback.DismissAsync(id, reason, cancellationToken);
+            return RedirectToAction(nameof(FeedbackItem), new { id });
         }
 
         [HttpGet]

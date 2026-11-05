@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Domain.Common;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +26,33 @@ namespace ComplianceTracker.Infrastructure.Persistence
 
         public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
+            // US-091: new log entries are chained to their organisation's last entry, in one transaction with a lock per
+            // organisation, so two requests at the same moment cannot fork the chain
+            var added = _db.ChangeTracker.Entries<ActivityLogEntry>()
+                .Where(e => e.State == EntityState.Added)
+                .Select(e => e.Entity)
+                .ToList();
+            await using var transaction = added.Count > 0 && _db.Database.CurrentTransaction is null
+                ? await _db.Database.BeginTransactionAsync(cancellationToken)
+                : null;
+
+            foreach (var organization in added.GroupBy(e => e.OrganizationId).OrderBy(g => g.Key))
+            {
+                var key = organization.Key.ToString("D");
+                await _db.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({key}, 0))", cancellationToken);
+                var previous = await _db.ActivityLog
+                    .Where(e => e.OrganizationId == organization.Key && e.Hash != null)
+                    .OrderByDescending(e => EF.Property<long>(e, "Id"))
+                    .Select(e => e.Hash)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                foreach (var entry in organization)
+                {
+                    entry.Seal(previous);
+                    previous = entry.Hash;
+                }
+            }
+
             try
             {
                 await _db.SaveChangesAsync(cancellationToken);
@@ -42,6 +70,11 @@ namespace ComplianceTracker.Infrastructure.Persistence
                 // R2: the transaction is rolled back, so nothing from this attempt is saved.
                 // R3: other database errors are not caught here and end on the general error page.
                 throw new DomainException(message);
+            }
+
+            if (transaction is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
             }
         }
     }

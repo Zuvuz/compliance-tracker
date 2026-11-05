@@ -1,0 +1,32 @@
+@* US-063 R5: feedback from every organisation, for the system admin. Ids used by the tests: #system-feedback-list
+   (rows data-feedback with the title, feedback-status). *@
+@model IReadOnlyList<ComplianceTracker.Domain.Feedback.Feedback>
+@{
+    ViewData["Title"] = "System – Feedback";
+}
+
+<p class="mb-1"><a asp-action="Index">← System</a></p>
+<h1>Feedback</h1>
+<p class="text-muted">What users chose to send from the footer. Newest first.</p>
+
+@if (Model.Count == 0)
+{
+    <p id="no-feedback">No feedback yet.</p>
+}
+else
+{
+    <table class="table" id="system-feedback-list">
+        <thead><tr><th>Sent</th><th>Feedback</th><th>Screenshot</th><th>Status</th></tr></thead>
+        <tbody>
+            @foreach (var feedback in Model)
+            {
+                <tr data-feedback="@feedback.IWant">
+                    <td>@feedback.SentAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
+                    <td><a asp-action="FeedbackItem" asp-route-id="@feedback.Id">@feedback.SuggestedIssueTitle()</a></td>
+                    <td>@(feedback.HasScreenshot ? "Yes" : "")</td>
+                    <td class="feedback-status">@feedback.Status</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

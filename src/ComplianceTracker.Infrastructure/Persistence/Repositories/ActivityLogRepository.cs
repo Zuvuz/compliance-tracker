@@ -20,6 +20,14 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
             => await _db.ActivityLog.AddAsync(entry, cancellationToken);
 
         // The shadow key "Id" is a running number, so it breaks ties between entries with the same time
+        // US-091: the running number is the order the entries were written in
+        public async Task<IReadOnlyList<ActivityLogEntry>> ListInOrderWrittenAsync(Guid organizationId, CancellationToken cancellationToken = default)
+            => await _db.ActivityLog
+                .AsNoTracking()
+                .Where(e => e.OrganizationId == organizationId)
+                .OrderBy(e => EF.Property<long>(e, "Id"))
+                .ToListAsync(cancellationToken);
+
         public async Task<IReadOnlyList<ActivityLogEntry>> ListAboutAsync(Guid organizationId, Guid subjectId, CancellationToken cancellationToken = default)
             => await _db.ActivityLog
                 .AsNoTracking()

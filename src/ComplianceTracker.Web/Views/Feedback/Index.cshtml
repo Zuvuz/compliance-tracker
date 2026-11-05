@@ -1,0 +1,48 @@
+@* US-063: the feedback form behind "Send feedback" in the footer, shaped like a user story (R2), with an optional
+   screenshot (R3). Ids used by the tests: #feedback-form, fields AsA, IWant, SoThat, Rules, Examples, screenshot. *@
+@model ComplianceTracker.Web.Controllers.FeedbackForm
+@{
+    ViewData["Title"] = "Send feedback";
+}
+
+<h1 class="h3">Send feedback</h1>
+<div class="alert alert-info small" id="feedback-note">
+    Your feedback goes to the owner of the tracker and may become a user story on GitHub, without your name or your
+    organisation. Do not write confidential data, and only add a screenshot that shows nothing confidential.
+</div>
+
+<form asp-action="Index" method="post" enctype="multipart/form-data" id="feedback-form" class="ct-form-narrow">
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    <input type="hidden" asp-for="Page" />
+
+    <div class="mb-3">
+        <label asp-for="AsA" class="form-label">As a</label>
+        <input asp-for="AsA" class="form-control" placeholder="e.g. Developer" maxlength="1000" required />
+    </div>
+    <div class="mb-3">
+        <label asp-for="IWant" class="form-label">I want</label>
+        <input asp-for="IWant" class="form-control" placeholder="e.g. to filter the risks by owner" maxlength="1000" required />
+    </div>
+    <div class="mb-3">
+        <label asp-for="SoThat" class="form-label">so that</label>
+        <input asp-for="SoThat" class="form-control" placeholder="e.g. I see my own risks" maxlength="1000" required />
+    </div>
+    <div class="mb-3">
+        <label asp-for="Rules" class="form-label">Rules (optional)</label>
+        <textarea asp-for="Rules" class="form-control" rows="3" maxlength="4000"></textarea>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Examples" class="form-label">Examples (optional)</label>
+        <textarea asp-for="Examples" class="form-control" rows="3" maxlength="4000"></textarea>
+    </div>
+    <div class="mb-3">
+        <label for="screenshot" class="form-label">Add a screenshot (optional, PNG or JPG, at most 5 MB)</label>
+        <input type="file" id="screenshot" name="screenshot" class="form-control" accept=".png,.jpg,.jpeg" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Send feedback</button>
+    @if (!string.IsNullOrEmpty(Model.Page) && Model.Page.StartsWith('/') && !Model.Page.StartsWith("//"))
+    {
+        <a href="@Model.Page" class="btn btn-link">Cancel</a>
+    }
+</form>
