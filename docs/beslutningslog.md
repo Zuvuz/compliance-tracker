@@ -531,6 +531,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At hente testresultater fra GitHub Actions automatisk (kræver `actions: read` på tokenet; senere).
   - At gemme hele resultatfilen som evidens. Filtyperne fra US-057 tillader ikke XML, og en kort Markdown-fil er lettere at læse for en auditor.
 
+### B46 – Fanen "Product requirements" og projektets metoder
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-104)
+  - Fanen "User stories" hedder "Product requirements" (`/product-requirements`), fordi den rummer alle måder at beskrive produktets krav på. Den gamle adresse `/user-stories` sender videre (301), så delte links virker.
+  - Projektet gemmer, hvilke metoder det bruger: GitHub user stories, kravspecifikation og use cases. Det er en eller flere, valgt med afkrydsningsfelter af roller med `EditProjects`, og ændringen logges med før og efter.
+  - Kun de valgte metoders afsnit og elementer vises på fanen. At slå en metode fra sletter intet: links, dækning og evidens bliver og vises stadig på Compliance-fanen.
+  - Et nyt projekt bruger alle tre, indtil nogen vælger. Mindst én metode skal altid være valgt. Eksisterende projekter får de metoder, de allerede bruger (et GitHub-repository, en uploadet kravspecifikation eller use cases); et projekt, der ikke bruger nogen, får alle tre.
+- **Begrundelse:** Holdene arbejder forskelligt (B02), og fanen skal kun vise det, holdet bruger. Valget gemmes på projektet, så alle ser det samme, og det kan senere bruges af den tekniske dokumentation (CRA bilag VII (2)(a)) og af AI-udkast til nye krav (US-106).
+- **Fravalgt:**
+  - At et nyt projekt starter uden metoder og spørger først (som issuet foreslog). Det ville give en tom fane, før man kan komme i gang.
+  - Et valg pr. bruger i browseren. Så ville to personer på samme projekt se forskellige faner.
+  - At omdøbe `WorkItem` i koden.
+
 ### B47 – Minimumsscore for AI-forslag
 
 - **Status:** Vedtaget
@@ -545,19 +559,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At lade godkendte og afviste forslag justere scoren automatisk (læring). Senere, når der er data nok.
   - At logge ændringer af grænserne i appen: de ændres i driftens indstillinger, og hvert forslag gemmer grænsen.
   - Startværdien er et skøn. Den justeres ud fra scorerne i US-036's eksport af godkendte og afviste forslag.
-### B46 – Fanen "Product requirements" og projektets metoder
+
+### B48 – Supportperiode på projektet
 
 - **Status:** Vedtaget
-- **Beslutning:** (US-104)
-  - Fanen "User stories" hedder "Product requirements" (`/product-requirements`), fordi den rummer alle måder at beskrive produktets krav på. Den gamle adresse `/user-stories` sender videre (301), så delte links virker.
-  - Projektet gemmer, hvilke metoder det bruger: GitHub user stories, kravspecifikation og use cases. Det er en eller flere, valgt med afkrydsningsfelter af roller med `EditProjects`, og ændringen logges med før og efter.
-  - Kun de valgte metoders afsnit og elementer vises på fanen. At slå en metode fra sletter intet: links, dækning og evidens bliver og vises stadig på Compliance-fanen.
-  - Et nyt projekt bruger alle tre, indtil nogen vælger. Mindst én metode skal altid være valgt. Eksisterende projekter får de metoder, de allerede bruger (et GitHub-repository, en uploadet kravspecifikation eller use cases); et projekt, der ikke bruger nogen, får alle tre.
-- **Begrundelse:** Holdene arbejder forskelligt (B02), og fanen skal kun vise det, holdet bruger. Valget gemmes på projektet, så alle ser det samme, og det kan senere bruges af den tekniske dokumentation (CRA bilag VII (2)(a)) og af AI-udkast til nye krav (US-106).
+- **Beslutning:** (US-025)
+  - Et projekt kan ikke skifte til "Released" uden en slutdato for supporten (CRA art. 13, stk. 8). Datoen gives i samme formular som fasen. Projektet husker udgivelsesdagen, og de fem år regnes fra den.
+  - En slutdato under fem år efter udgivelsen kræver en skriftlig grund. Datoen kan kun flyttes senere, aldrig tidligere. Hver ændring logges som `SupportPeriodSet` med gammel og ny dato.
+  - Headeren viser "Supported until dd-MM-yyyy" (art. 13, stk. 19). Overview-fanen har et kort til at flytte datoen og viser "No support end date" under "Needs attention" for et udgivet projekt uden dato (fx et, der blev udgivet før US-025).
+  - Udkastet til den tekniske dokumentation (US-056) viser datoen og en eventuel grund under bilag VII (1) og (4).
+- **Begrundelse:** Supportperioden er en pligt i CRA, og brugerne skal kende slutdatoen ved køb. At den ikke kan flyttes tidligere, beskytter brugerne mod kortere support, end de blev lovet.
 - **Fravalgt:**
-  - At et nyt projekt starter uden metoder og spørger først (som issuet foreslog). Det ville give en tom fane, før man kan komme i gang.
-  - Et valg pr. bruger i browseren. Så ville to personer på samme projekt se forskellige faner.
-  - At omdøbe `WorkItem` i koden.
+  - At flytte et projekt til "EndOfSupport" automatisk på slutdatoen (issuets åbne spørgsmål; det kommer med US-074).
+  - Påmindelser før supporten slutter.
+  - At kræve en dato, når et projekt oprettes direkte som "Released". Det vises i stedet under "Needs attention".
 
 ## Åbne spørgsmål til klassediagrammet
 

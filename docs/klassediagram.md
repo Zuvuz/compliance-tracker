@@ -168,7 +168,8 @@ classDiagram
     +UseNewestVersionAsync(projectId: Guid, frameworkId: Guid) Task
     +RemoveFrameworkAsync(projectId: Guid, frameworkId: Guid) Task
     +UpdateAsync(projectId: Guid, name: string, description: string?, intendedPurpose: string, scope: string?) Task
-    +ChangePhaseAsync(projectId: Guid, phase: LifecyclePhase) Task
+    +ChangePhaseAsync(projectId: Guid, phase: LifecyclePhase, supportEndsOn: DateOnly?, supportReason: string?) Task
+    +SetSupportPeriodAsync(projectId: Guid, endsOn: DateOnly, reason: string?) Task
     +ChangeRequirementMethodsAsync(projectId: Guid, methods: RequirementMethods) Task
   }
   class IProjectRepository {
@@ -208,6 +209,9 @@ classDiagram
     -scope: string
     -phase: LifecyclePhase
     -requirementMethods: RequirementMethods
+    -supportEndsOn: DateOnly?
+    -supportPeriodReason: string?
+    -releasedOn: DateOnly?
     -craClass: CraClass
     -releases: List~Release~
     -workItems: List~WorkItem~
@@ -220,7 +224,8 @@ classDiagram
     +ChangeFrameworkVersion(framework: Framework, version: FrameworkVersion, userId: Guid, at: DateTime) bool
     +RemoveFramework(framework: Framework, userId: Guid, at: DateTime)
     +Update(name: string, description: string?, intendedPurpose: string, scope: string?) IReadOnlyList~ProjectChange~
-    +ChangePhase(phase: LifecyclePhase) ProjectChange?
+    +ChangePhase(phase: LifecyclePhase, today: DateOnly?) ProjectChange?
+    +SetSupportPeriod(endsOn: DateOnly, reason: string?, today: DateOnly) ProjectChange?
     +ChangeRequirementMethods(methods: RequirementMethods) ProjectChange?
   }
   class ProjectChange {

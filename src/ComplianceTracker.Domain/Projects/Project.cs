@@ -32,6 +32,16 @@ namespace ComplianceTracker.Domain.Projects
 
         public LifecyclePhase Phase { get; private set; }
 
+        // US-025: the end of the support period (CRA Art. 13(8), (19)), why it is shorter than five years if it is,
+        // and the day the project was released, from which the five years count
+        public DateOnly? SupportEndsOn { get; private set; }
+        public string? SupportPeriodReason { get; private set; }
+        public DateOnly? ReleasedOn { get; private set; }
+
+        // CRA Art. 13(8): at least five years, unless the product is expected to be in use for less
+        public const int MinimumSupportYears = 5;
+        public const int MaxSupportReasonLength = 1000;
+
         // US-018: the GitHub repository the project reads its user stories from, or null
         public GitHubLink? GitHub { get; private set; }
 
@@ -115,7 +125,8 @@ namespace ComplianceTracker.Domain.Projects
 
         // R2: any of the four phases, also backwards. EndOfSupport is final (R4).
         // Returns the change, or null if the project is already in that phase.
-        public ProjectChange? ChangePhase(LifecyclePhase phase)
+        // US-025 R1: moving to Released needs a support end date first (SetSupportPeriod). "today" is the release day.
+        public ProjectChange? ChangePhase(LifecyclePhase phase, DateOnly? today = null)
         {
             EnsureOpen();
             EnsureKnown(phase);
@@ -125,8 +136,59 @@ namespace ComplianceTracker.Domain.Projects
                 return null;
             }
 
+            if (phase == LifecyclePhase.Released)
+            {
+                if (SupportEndsOn is null)
+                {
+                    throw new DomainException("Set the support end date before release");
+                }
+
+                ReleasedOn ??= today;
+            }
+
             var change = new ProjectChange("Phase", Phase.ToString(), phase.ToString());
             Phase = phase;
+            return change;
+        }
+
+        // ---------------------------------------------------------- Support period (US-025)
+
+        // R2: under five years after release needs a reason. R3: the date can only move later. Returns the change, or
+        // null when nothing changed. "today" is the release day while the project is not released yet.
+        public ProjectChange? SetSupportPeriod(DateOnly endsOn, string? reason, DateOnly today)
+        {
+            EnsureOpen();
+            if (endsOn <= today)
+            {
+                throw new DomainException("The support end date must be in the future");
+            }
+
+            if (SupportEndsOn is { } current && endsOn < current)
+            {
+                throw new DomainException("The support end date cannot be moved earlier");
+            }
+
+            var cleaned = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+            if (cleaned?.Length > MaxSupportReasonLength)
+            {
+                throw new DomainException($"The reason must be {MaxSupportReasonLength} characters or fewer");
+            }
+
+            var from = ReleasedOn ?? today;
+            if (endsOn < from.AddYears(MinimumSupportYears) && cleaned is null)
+            {
+                throw new DomainException("A support period under five years needs a reason");
+            }
+
+            if (endsOn == SupportEndsOn && cleaned == SupportPeriodReason)
+            {
+                return null;
+            }
+
+            var change = new ProjectChange("Support until",
+                SupportEndsOn?.ToString("dd-MM-yyyy") ?? "", endsOn.ToString("dd-MM-yyyy"));
+            SupportEndsOn = endsOn;
+            SupportPeriodReason = cleaned;
             return change;
         }
 
