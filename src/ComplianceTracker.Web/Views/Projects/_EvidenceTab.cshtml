@@ -7,6 +7,7 @@
    and form .more-evidence-suggestions. #52: .fold-toggle[data-fold-target], .fold-part[data-fold-key], .fold-summary,
    and data-attention on the card. *@
 @using ComplianceTracker.Application.Compliance
+@inject ComplianceTracker.Application.Ai.IAiLimits AiLimits
 @model ProjectDetailsViewModel
 @{
     var project = Model.Project;
@@ -139,6 +140,8 @@
                             @if (row.Suggestions.Count > 0)
                             {
                                 <h3 class="h6 mt-3 mb-1">Suggested by the AI</h3>
+                                @* US-105 R1 *@
+                                <p class="small text-muted mb-1 ai-limit">Only suggestions with a score of @AiLimits.MinimumScoreForEvidence.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) or more are shown.</p>
                                 <ul class="list-unstyled small mb-1">
                                     @foreach (var suggested in row.Suggestions)
                                     {

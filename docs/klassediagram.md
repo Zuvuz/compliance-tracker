@@ -168,7 +168,9 @@ classDiagram
     +UseNewestVersionAsync(projectId: Guid, frameworkId: Guid) Task
     +RemoveFrameworkAsync(projectId: Guid, frameworkId: Guid) Task
     +UpdateAsync(projectId: Guid, name: string, description: string?, intendedPurpose: string, scope: string?) Task
-    +ChangePhaseAsync(projectId: Guid, phase: LifecyclePhase) Task
+    +ChangePhaseAsync(projectId: Guid, phase: LifecyclePhase, supportEndsOn: DateOnly?, supportReason: string?) Task
+    +SetSupportPeriodAsync(projectId: Guid, endsOn: DateOnly, reason: string?) Task
+    +ChangeRequirementMethodsAsync(projectId: Guid, methods: RequirementMethods) Task
   }
   class IProjectRepository {
     <<interface>>
@@ -206,6 +208,13 @@ classDiagram
     -intendedPurpose: string
     -scope: string
     -phase: LifecyclePhase
+    -requirementMethods: RequirementMethods
+    -supportEndsOn: DateOnly?
+    -supportPeriodReason: string?
+    -releasedOn: DateOnly?
+    -endOfSupportOn: DateOnly?
+    -lastPlacedOnMarketOn: DateOnly?
+    -retainUntil: DateOnly?
     -craClass: CraClass
     -releases: List~Release~
     -workItems: List~WorkItem~
@@ -218,7 +227,11 @@ classDiagram
     +ChangeFrameworkVersion(framework: Framework, version: FrameworkVersion, userId: Guid, at: DateTime) bool
     +RemoveFramework(framework: Framework, userId: Guid, at: DateTime)
     +Update(name: string, description: string?, intendedPurpose: string, scope: string?) IReadOnlyList~ProjectChange~
-    +ChangePhase(phase: LifecyclePhase) ProjectChange?
+    +ChangePhase(phase: LifecyclePhase, today: DateOnly?) ProjectChange?
+    +SetSupportPeriod(endsOn: DateOnly, reason: string?, today: DateOnly) ProjectChange?
+    +ChangeRequirementMethods(methods: RequirementMethods) ProjectChange?
+    +EndSupport(lastPlacedOnMarket: DateOnly, keepUntil: DateOnly?, today: DateOnly) ProjectChange
+    +EnsureMayBeRemoved(today: DateOnly)
   }
   class ProjectChange {
     <<record>>
@@ -319,6 +332,13 @@ classDiagram
     +Enable(organizationId: Guid, frameworkVersionId: Guid, enabledById: Guid, enabledAt: DateTime)$ OrganizationFramework
     +Disable(disabledById: Guid, disabledAt: DateTime)
   }
+  class RequirementMethods {
+    <<enumeration>>
+    GitHubUserStories
+    RequirementSpecification
+    UseCases
+  }
+  Project --> RequirementMethods
   class ProjectFramework {
     -id: Guid
     -projectId: Guid
@@ -672,6 +692,15 @@ classDiagram
     +Replace()
     +SetRationale(rationale: string, model: string)
   }
+  class IAiLimits {
+    <<interface>>
+    +MinimumScoreForStories: double
+    +MinimumScoreForEvidence: double
+  }
+  class ConfiguredAiLimits
+  IAiLimits <|.. ConfiguredAiLimits
+  MappingSuggestionService --> IAiLimits
+  EvidenceService --> IAiLimits
   class IEmbeddingModel {
     <<interface>>
     +Name: string
@@ -853,6 +882,50 @@ classDiagram
   FeedbackService --> IFeedbackRepository
   FeedbackService --> IFeedbackIssueWriter
   IFeedbackIssueWriter <|.. GitHubFeedbackIssueWriter
+
+  %% ================= Security events (US-073) =================
+  class SecurityEvent {
+    -id: Guid
+    -projectId: Guid
+    -kind: SecurityEventKind
+    -title: string
+    -awareAt: DateTime
+    -fixAvailableAt: DateTime?
+    -earlyWarningSentAt: DateTime?
+    -notificationSentAt: DateTime?
+    -finalReportSentAt: DateTime?
+    -closedAt: DateTime?
+    +Record(...)$ SecurityEvent
+    +DueAt(report: SecurityReportKind) DateTime?
+    +Status(report: SecurityReportKind, now: DateTime) SecurityReportStatus
+    +MarkSent(report: SecurityReportKind, sentAt: DateTime, reference: string, now: DateTime)
+    +MarkFixAvailable(at: DateTime, now: DateTime)
+    +Close(userId: Guid, now: DateTime)
+  }
+  class SecurityEventKind {
+    <<enumeration>>
+    ActivelyExploitedVulnerability
+    SevereIncident
+  }
+  class SecurityReportKind {
+    <<enumeration>>
+    EarlyWarning
+    Notification
+    FinalReport
+  }
+  class SecurityEventService {
+    +RecordAsync(...) Task~SecurityEvent~
+    +MarkSentAsync(...) Task
+    +MarkFixAvailableAsync(...) Task
+    +CloseAsync(...) Task
+  }
+  class ISecurityEventRepository {
+    <<interface>>
+  }
+  SecurityEvent --> SecurityEventKind
+  SecurityEvent ..> SecurityReportKind
+  SecurityEventService --> ISecurityEventRepository
+  ProjectService --> ISecurityEventRepository : end of support
 
   %% ================= Log =================
   class ActivityGroup {
@@ -1167,7 +1240,7 @@ classDiagram
 
 - **User stories læses fra teamets eget værktøj.** `IWorkItemSource` er adapteren (B11); `GitHubWorkItemSource` læser issues med projektets label via GitHubs REST API uden nøgle og forstår BDD-skabelonen (`### Rules`, `### Examples`, `### Gherkin`). `WorkItemSyncService` tilføjer, opdaterer og markerer (`Closed`, `Removed`) og sletter aldrig. "Sync now" og en baggrundsjob (`ScheduledWorkItemSync`, hvert 15. minut) kører den samme sync, og åbne projektsider får besked via SignalR (`IWorkItemNotifier`). En planlagt sync logges uden bruger (`userId` er null = systemet) (B25). (US-018)
 - **Private repositories læses med en krypteret nøgle.** Domænet ser kun den krypterede tekst (`GitHubLink.EncryptedToken`). `ISecretProtector` krypterer med ASP.NET Core Data Protection, og nøglerne ligger i tabellen `DataProtectionKeys`. Nøglen tjekkes hos GitHub, før den gemmes, og den vises, logges og sendes aldrig tilbage til siden (B26). (US-031)
-- **Projektsiden har faner.** Overview, Frameworks, User stories og Activity har hver sin adresse (`/Projects/Details/{id}/{tab}`) og samme header. Activity viser projektets logposter (alle med projektet som `subjectId`), nyeste først, med `details`. En handling, der fejler, sender brugeren tilbage til sin egen fane (`[OnDomainError(Tab = ...)]`). (US-022)
+- **Projektsiden har faner.** Overview, Frameworks, Product requirements (indtil US-104 "User stories") og Activity har hver sin adresse (`/Projects/Details/{id}/{tab}`) og samme header. Activity viser projektets logposter (alle med projektet som `subjectId`), nyeste først, med `details`. En handling, der fejler, sender brugeren tilbage til sin egen fane (`[OnDomainError(Tab = ...)]`). (US-022)
 - **En version kan gælde fra en dato.** `AppliesFrom` sættes på kladden og låses ved aktivering. `CurrentVersion(today)` er den aktive version, der senest begyndte at gælde. Har ingen version startet endnu, bruges den første kommende. "I dag" kommer fra appens ur (`TimeProvider.Today()`), så testene kan styre datoen. Projekter flyttes ikke automatisk, men kan forberede sig ved at vælge en kommende version (B27). (US-035)
 - **Krav og user stories kobles pr. projekt.** `RequirementLink` er sit eget aggregat og laves i hånden indtil videre. Senere skal godkendte AI-forslag lave samme slags kobling (US-020). En kobling slettes aldrig, den får `removedAt`. Kun aktive koblinger tæller som dækning. Compliance-fanen har én under-fane pr. framework (`/Projects/Details/{id}/compliance/{slug}`) med krav, koblede stories og dækning. (US-019, US-021, US-041)
 - **CRA's krav følger med trackeren.** Bilag I (del I og II, 22 krav) er seed-data på den indbyggede CRA-version 1, med faste id'er, den officielle tekst fra EUR-Lex, en `group` pr. del og en `reference` til bilaget. Et krav kan markeres "Not applicable" for et projekt med en begrundelse (`RequirementApplicability`) og tæller så ikke med i dækningen. (US-043)

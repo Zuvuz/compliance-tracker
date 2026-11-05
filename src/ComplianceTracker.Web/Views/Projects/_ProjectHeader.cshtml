@@ -1,6 +1,6 @@
 @* US-022 R1: the top of every tab: name, phase badge, intended purpose, the tabs and the page's error messages.
    Ids used by the tests: #project-name, #project-phase, #project-intended-purpose, #project-tabs (links with data-tab),
-   #edit-project-link, #project-closed. *@
+   #edit-project-link, #project-closed, #project-support (US-025). *@
 @model ProjectDetailsViewModel
 @{
     var project = Model.Project;
@@ -20,7 +20,21 @@
             <span id="project-name">@project.Name</span>
             <span id="project-phase" class="badge @phaseBadge fs-6 align-middle">@project.Phase</span>
         </h1>
-        <p class="text-muted mb-3" id="project-intended-purpose">@project.IntendedPurpose</p>
+        <p class="text-muted mb-1" id="project-intended-purpose">@project.IntendedPurpose</p>
+        @if (project.IsClosed && project.RetainUntil is { } keptUntil)
+        {
+            @* US-074 R1, R5 *@
+            <p class="small mb-3" id="project-retention">End of support since @project.EndOfSupportOn?.ToString("dd-MM-yyyy") · kept until @keptUntil.ToString("dd-MM-yyyy")</p>
+        }
+        else if (project.SupportEndsOn is { } supportEnds)
+        {
+            @* US-025 R4, CRA Art. 13(19) *@
+            <p class="small mb-3" id="project-support">Supported until @supportEnds.ToString("dd-MM-yyyy")</p>
+        }
+        else
+        {
+            <div class="mb-3"></div>
+        }
     </div>
     @* US-024 R4: a project at end of support can only be viewed *@
     @if (!project.IsClosed && await Permissions.CanAsync(Permission.EditProjects))

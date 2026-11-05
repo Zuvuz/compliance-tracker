@@ -79,7 +79,10 @@ namespace ComplianceTracker.Web.Models
         public const string Compliance = "compliance";
         public const string Evidence = "evidence";
         public const string Risks = "risks";
-        public const string UserStories = "user-stories";
+        public const string SecurityEvents = "security-events";
+        // US-104 R1: was "User stories" at "user-stories"; the old address redirects (OldProductRequirements)
+        public const string ProductRequirements = "product-requirements";
+        public const string OldProductRequirements = "user-stories";
         public const string Activity = "activity";
 
         // In the order they are shown, with the text on the tab
@@ -90,7 +93,8 @@ namespace ComplianceTracker.Web.Models
             (Compliance, "Compliance"),
             (Evidence, "Evidence"),
             (Risks, "Risks"),
-            (UserStories, "User stories"),
+            (SecurityEvents, "Security events"),
+            (ProductRequirements, "Product requirements"),
             (Activity, "Activity")
         ];
 
@@ -179,6 +183,17 @@ namespace ComplianceTracker.Web.Models
     public record WorkItemsViewModel(
         Project Project, IReadOnlyList<WorkItem> WorkItems, ProjectCompliance? Compliance = null, IReadOnlyList<RequirementDocument>? Documents = null)
     {
+        // US-104 R3: only the items of the methods the project uses; the others are kept and still count (R5)
+        public IReadOnlyList<WorkItem> VisibleWorkItems
+            => WorkItems.Where(item => item.Source switch
+            {
+                WorkItemSource.GitHub => Project.RequirementMethods.HasFlag(RequirementMethods.GitHubUserStories),
+                _ => Documents?.FirstOrDefault(d => d.Id == item.DocumentId) is not { } document
+                     || Project.RequirementMethods.HasFlag(document.Kind == DocumentKind.UseCases
+                         ? RequirementMethods.UseCases
+                         : RequirementMethods.RequirementSpecification)
+            }).ToList();
+
         // US-032: e.g. "kravspec.xlsx", for a requirement read from a document
         public string DocumentName(WorkItem item)
             => Documents?.FirstOrDefault(d => d.Id == item.DocumentId)?.Name ?? "Document";
@@ -217,6 +232,9 @@ namespace ComplianceTracker.Web.Models
         // US-042: the Risks tab's register (already filtered), the filters and the time for "Review due"
         public IReadOnlyList<Risk> Risks { get; init; } = [];
         public IReadOnlyList<Risk> AllRisks { get; init; } = [];
+
+        // US-073: the project's security events (CRA Art. 14), for their tab and the Overview's deadlines
+        public IReadOnlyList<Domain.Security.SecurityEvent> SecurityEvents { get; init; } = [];
         public string? RiskStatusFilter { get; init; }
         public string? RiskLevelFilter { get; init; }
         public bool OnlyReviewDue { get; init; }

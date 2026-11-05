@@ -98,7 +98,16 @@ namespace ComplianceTracker.Application.Reports
             Add(DocumentBlockKind.Paragraph, $"Lifecycle phase: {project.Phase}");
             Add(DocumentBlockKind.Paragraph, $"Scope: {Or(project.Scope, "–")}");
             Add(DocumentBlockKind.Heading2, "Support period");
-            Missing("state the support period and its end date (Art. 13(8), (19)); the tracker has no support period yet.");
+            if (project.SupportEndsOn is { } supportEnds)
+            {
+                // US-025: CRA Art. 13(8), (19)
+                Add(DocumentBlockKind.Paragraph, $"Supported until {supportEnds:dd-MM-yyyy}"
+                    + (project.ReleasedOn is { } released ? $" (released {released:dd-MM-yyyy})" : "") + ".");
+            }
+            else
+            {
+                Missing("state the support period and its end date (Art. 13(8), (19)).");
+            }
             Add(DocumentBlockKind.Heading2, "(a) Intended purpose");
             Add(DocumentBlockKind.Paragraph, Or(project.IntendedPurpose, "–"));
             Add(DocumentBlockKind.Heading2, "(b) Versions of software affecting compliance");
@@ -160,7 +169,12 @@ namespace ComplianceTracker.Application.Reports
 
             // ------------------------------------------------------------ 4–8 (R5)
             Add(DocumentBlockKind.Heading1, "4. Information used to determine the support period");
-            Missing("the information taken into account to determine the support period (Art. 13(8)).");
+            if (project.SupportPeriodReason is { } supportReason)
+            {
+                Add(DocumentBlockKind.Paragraph, $"The support period is shorter than five years because: {supportReason}");
+            }
+
+            Missing("the information taken into account to determine the support period (Art. 13(8)): expected use time, user expectations and the support of integrated components.");
 
             Add(DocumentBlockKind.Heading1, "5. Harmonised standards, common specifications and certification schemes applied");
             var others = compliance.Frameworks.Where(f => !IsCra(f.Framework)).ToList();

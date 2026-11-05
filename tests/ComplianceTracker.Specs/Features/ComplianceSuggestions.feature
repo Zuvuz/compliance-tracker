@@ -63,7 +63,7 @@ Feature: AI suggestions and coverage on the Compliance tab
     And no suggestions are saved
 
   @US-044 @integration
-  Scenario: The User stories tab links to the suggestions
+  Scenario: The Product requirements tab links to the suggestions
     Given the row "I.2(d)" on the "CRA" sub-tab has the suggestion "[US-004] Sign in with Keycloak"
-    When I open the "User stories" tab of "Acme Portal"
+    When I open the "Product requirements" tab of "Acme Portal"
     Then the user story "[US-004] Sign in with Keycloak" links to its AI suggestions on the "CRA" sub-tab
