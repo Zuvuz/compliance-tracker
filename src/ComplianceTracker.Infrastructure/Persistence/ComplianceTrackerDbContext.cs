@@ -42,6 +42,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<EvidenceSuggestion> EvidenceSuggestions => Set<EvidenceSuggestion>(); // US-058
         public DbSet<MappingSuggestion> MappingSuggestions => Set<MappingSuggestion>();
         public DbSet<Risk> Risks => Set<Risk>();
+        public DbSet<Domain.Security.SecurityEvent> SecurityEvents => Set<Domain.Security.SecurityEvent>(); // US-073
         public DbSet<Invitation> Invitations => Set<Invitation>();
         public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
         public DbSet<OrganizationFramework> OrganizationFrameworks => Set<OrganizationFramework>();

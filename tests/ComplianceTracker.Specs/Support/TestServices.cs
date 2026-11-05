@@ -67,9 +67,11 @@ namespace ComplianceTracker.Specs.Support
                 // US-020: not used by these tests, but the use cases must be creatable
                 services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();
                 services.AddScoped<IRiskRepository, RiskRepository>(); // US-042
+                services.AddScoped<ComplianceTracker.Application.Security.ISecurityEventRepository, SecurityEventRepository>(); // US-073
                 services.AddScoped<IInvitationRepository, InvitationRepository>(); // US-009
                 services.AddScoped<IGetStartedReadModel, GetStartedReadModel>(); // US-096
                 services.AddSingleton<FakeAi>();
+                services.AddSingleton<IAiLimits>(provider => provider.GetRequiredService<FakeAi>()); // US-105
                 services.AddSingleton<IEmbeddingModel>(provider => provider.GetRequiredService<FakeAi>());
                 services.AddSingleton<IRationaleWriter>(provider => provider.GetRequiredService<FakeAi>());
                 services.AddSingleton<IRationaleQueue, NoRationaleQueue>();

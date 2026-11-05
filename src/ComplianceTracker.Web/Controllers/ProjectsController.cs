@@ -151,6 +151,7 @@ namespace ComplianceTracker.Web.Controllers
             string? status, string? level, string? due,
             // US-101: the Activity tab's filters (q is the search there too)
             string? from, string? to, string? group, string? user, string? sort, string? page,
+            [FromServices] Application.Security.SecurityEventQueries securityEventQueries,
             [FromServices] EvidenceQueries evidenceQueries,
             CancellationToken cancellationToken)
         {
@@ -196,6 +197,9 @@ namespace ComplianceTracker.Web.Controllers
 
             // US-042: the register, sorted by level; closed risks only when asked for (R7). US-048 R3: the overview counts them.
             var allRisks = activeTab is ProjectTabs.Risks or ProjectTabs.Overview ? await _risks.ForProjectAsync(id, cancellationToken) ?? [] : [];
+            var securityEvents = activeTab is ProjectTabs.SecurityEvents or ProjectTabs.Overview
+                ? await securityEventQueries.ForProjectAsync(id, cancellationToken) ?? []
+                : [];
             var now = _clock.GetUtcNow().UtcDateTime;
             var risks = allRisks
                 .Where(r => string.IsNullOrEmpty(status) ? r.Status != RiskStatus.Closed : r.DisplayStatus.Equals(status, StringComparison.OrdinalIgnoreCase))
@@ -235,6 +239,7 @@ namespace ComplianceTracker.Web.Controllers
                 ComplianceFilter = ComplianceFilters.Find(show),
                 Risks = risks,
                 AllRisks = allRisks,
+                SecurityEvents = securityEvents,
                 RiskStatusFilter = status,
                 RiskLevelFilter = level,
                 OnlyReviewDue = due == "1",
@@ -521,6 +526,11 @@ namespace ComplianceTracker.Web.Controllers
             {
                 TempData["EvidenceAiUnavailable"] = $"No suggestions: {added.AiUnavailable}";
             }
+            else if (added.Suggestions == 0)
+            {
+                // US-105 R3: nothing reached the limit, so nothing weak is shown
+                TempData["EvidenceAiUnavailable"] = "No requirement looks like a match; link it by hand.";
+            }
 
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
         }
@@ -609,6 +619,65 @@ namespace ComplianceTracker.Web.Controllers
             // ASVS V5.4.1: always a download with the stored content type and our cleaned name; nosniff stops guessing
             Response.Headers["X-Content-Type-Options"] = "nosniff";
             return File(file.Value.Content, file.Value.Evidence.ContentType!, file.Value.Evidence.FileName);
+        }
+
+        // ---------------------------------------------------------- Security events (US-073)
+
+        // The forms send local times (datetime-local); the domain keeps UTC
+        private static DateTime Utc(DateTime local) => DateTime.SpecifyKind(local, DateTimeKind.Local).ToUniversalTime();
+
+        // POST /Projects/RecordSecurityEvent: R2
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.SecurityEvents)]
+        public async Task<IActionResult> RecordSecurityEvent(
+            Guid projectId, Domain.Security.SecurityEventKind kind, string? title, string? description, DateTime? awareAt,
+            [FromServices] Application.Security.SecurityEventService events, CancellationToken cancellationToken)
+        {
+            if (awareAt is not { } aware)
+            {
+                throw new Domain.Common.DomainException("Give the time you became aware of it");
+            }
+
+            await events.RecordAsync(projectId, kind, title ?? "", description, Utc(aware), cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
+        }
+
+        // POST /Projects/MarkSecurityReportSent: R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.SecurityEvents)]
+        public async Task<IActionResult> MarkSecurityReportSent(
+            Guid projectId, Guid eventId, Domain.Security.SecurityReportKind report, DateTime? sentAt, string? reference,
+            [FromServices] Application.Security.SecurityEventService events, CancellationToken cancellationToken)
+        {
+            var at = sentAt is { } sent ? Utc(sent) : _clock.GetUtcNow().UtcDateTime;
+            await events.MarkSentAsync(projectId, eventId, report, at, reference, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
+        }
+
+        // POST /Projects/MarkSecurityFixAvailable: Art. 14(2)(c)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.SecurityEvents)]
+        public async Task<IActionResult> MarkSecurityFixAvailable(
+            Guid projectId, Guid eventId, DateTime? fixAvailableAt,
+            [FromServices] Application.Security.SecurityEventService events, CancellationToken cancellationToken)
+        {
+            var at = fixAvailableAt is { } fix ? Utc(fix) : _clock.GetUtcNow().UtcDateTime;
+            await events.MarkFixAvailableAsync(projectId, eventId, at, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
+        }
+
+        // POST /Projects/CloseSecurityEvent: R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.SecurityEvents)]
+        public async Task<IActionResult> CloseSecurityEvent(
+            Guid projectId, Guid eventId, [FromServices] Application.Security.SecurityEventService events, CancellationToken cancellationToken)
+        {
+            await events.CloseAsync(projectId, eventId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
         }
 
         // ---------------------------------------------------------- Methods (US-104)
@@ -761,13 +830,32 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = model.Id }); // Post/Redirect/Get
         }
 
-        // POST /Projects/ChangePhase: R2, R4
+        // POST /Projects/ChangePhase: R2, R4. US-025 R1: releasing sends the support end date (and a reason when short).
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId")]
-        public async Task<IActionResult> ChangePhase(Guid projectId, LifecyclePhase phase, CancellationToken cancellationToken)
+        public async Task<IActionResult> ChangePhase(
+            Guid projectId, LifecyclePhase phase, DateOnly? supportEndsOn, string? supportReason,
+            DateOnly? lastPlacedOnMarket, DateOnly? keepUntil, CancellationToken cancellationToken)
         {
-            await _service.ChangePhaseAsync(projectId, phase, cancellationToken);
+            // US-074: for End of support, the last day on the market and an optional later retention date
+            await _service.ChangePhaseAsync(projectId, phase, supportEndsOn, supportReason, cancellationToken, lastPlacedOnMarket, keepUntil);
+            return RedirectToAction(nameof(Details), new { id = projectId });
+        }
+
+        // POST /Projects/SetSupportPeriod: US-025 R2, R3, R5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId")]
+        public async Task<IActionResult> SetSupportPeriod(
+            Guid projectId, DateOnly? supportEndsOn, string? supportReason, CancellationToken cancellationToken)
+        {
+            if (supportEndsOn is not { } endsOn)
+            {
+                throw new Domain.Common.DomainException("Choose the support end date");
+            }
+
+            await _service.SetSupportPeriodAsync(projectId, endsOn, supportReason, cancellationToken);
             return RedirectToAction(nameof(Details), new { id = projectId });
         }
 

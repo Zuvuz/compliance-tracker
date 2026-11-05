@@ -118,6 +118,18 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-104: the methods a project uses to describe its requirements changed. SubjectId points at the project;
         // Details holds e.g. "Methods: GitHub user stories → GitHub user stories, Use cases".
-        ProjectMethodsChanged
+        ProjectMethodsChanged,
+
+        // US-025: the support end date was set or moved later. SubjectId points at the project; Details holds e.g.
+        // "Support until: 01-11-2031 → 01-11-2032".
+        SupportPeriodSet,
+
+        // US-073: a security event of a product on the market (CRA Art. 14). SubjectId points at the project; Details
+        // holds the event's title and what happened, e.g. "CVE-2026-1234: Early warning sent, ref. ENISA 4711".
+        VulnerabilityRecorded,
+        IncidentRecorded,
+        SecurityReportSent,
+        SecurityFixAvailable,
+        SecurityEventClosed
     }
 }

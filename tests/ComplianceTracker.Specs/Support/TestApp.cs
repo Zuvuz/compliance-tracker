@@ -67,6 +67,7 @@ namespace ComplianceTracker.Specs.Support
 
                 // US-020: the pretend AI replaces the Ollama adapters (the last registration wins)
                 services.AddSingleton<IEmbeddingModel>(ai);
+                services.AddSingleton<IAiLimits>(ai); // US-105
                 services.AddSingleton<IRationaleWriter>(ai);
 
                 // US-015: lets a scenario save something at the same moment as the app

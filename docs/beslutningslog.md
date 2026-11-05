@@ -545,6 +545,69 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Et valg pr. bruger i browseren. Så ville to personer på samme projekt se forskellige faner.
   - At omdøbe `WorkItem` i koden.
 
+### B47 – Minimumsscore for AI-forslag
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-105)
+  - Et AI-forslag under en minimumsscore laves ikke og vises ikke. Story-forslag (US-020, US-044) og evidensforslag (US-059) har hver sin grænse: `Ai:MinimumScoreForStories` og `Ai:MinimumScoreForEvidence`, begge 0,5 som udgangspunkt.
+  - Driften sætter grænserne i indstillingerne, ikke organisationens admin i appen. Hvert forslag gemmer den grænse, det blev lavet med (sammen med model og prompt-version), så gamle og nye forslag kan sammenlignes (AI Act art. 12).
+  - Når intet når grænsen, siger Evidence-fanen "No requirement looks like a match; link it by hand." Grænsen står over forslagene.
+  - Svage forslag skjules helt; de foldes ikke væk.
+  - Én embeddings-model og én chat-model bruges stadig til alt. En egen model til udkast kommer med US-106, hvor den første opgave har brug for det.
+- **Begrundelse:** Forslag med score omkring 0,45 viste sig at være støj: AI'ens egen begrundelse sagde, at evidensen ikke beviste kravet. Et menneske skal kun bruge tid på forslag, der kan være rigtige (AI Act art. 14).
+- **Fravalgt:**
+  - At lade godkendte og afviste forslag justere scoren automatisk (læring). Senere, når der er data nok.
+  - At logge ændringer af grænserne i appen: de ændres i driftens indstillinger, og hvert forslag gemmer grænsen.
+  - Startværdien er et skøn. Den justeres ud fra scorerne i US-036's eksport af godkendte og afviste forslag.
+
+### B48 – Supportperiode på projektet
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-025)
+  - Et projekt kan ikke skifte til "Released" uden en slutdato for supporten (CRA art. 13, stk. 8). Datoen gives i samme formular som fasen. Projektet husker udgivelsesdagen, og de fem år regnes fra den.
+  - En slutdato under fem år efter udgivelsen kræver en skriftlig grund. Datoen kan kun flyttes senere, aldrig tidligere. Hver ændring logges som `SupportPeriodSet` med gammel og ny dato.
+  - Headeren viser "Supported until dd-MM-yyyy" (art. 13, stk. 19). Overview-fanen har et kort til at flytte datoen og viser "No support end date" under "Needs attention" for et udgivet projekt uden dato (fx et, der blev udgivet før US-025).
+  - Udkastet til den tekniske dokumentation (US-056) viser datoen og en eventuel grund under bilag VII (1) og (4).
+- **Begrundelse:** Supportperioden er en pligt i CRA, og brugerne skal kende slutdatoen ved køb. At den ikke kan flyttes tidligere, beskytter brugerne mod kortere support, end de blev lovet.
+- **Fravalgt:**
+  - At flytte et projekt til "EndOfSupport" automatisk på slutdatoen (issuets åbne spørgsmål; det kommer med US-074).
+  - Påmindelser før supporten slutter.
+  - At kræve en dato, når et projekt oprettes direkte som "Released". Det vises i stedet under "Needs attention".
+
+### B49 – Sikkerhedshændelser og fristerne i CRA art. 14
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-073)
+  - En aktivt udnyttet sårbarhed eller en alvorlig hændelse registreres på projektets fane "Security events" med tidspunktet, hvor producenten fik kendskab til den. Fristerne regnes derfra, tjekket mod den officielle tekst (EUR-Lex, 05-11-2026):
+    - Early warning: 24 timer (art. 14, stk. 2, litra a, og stk. 4, litra a).
+    - Notifikation: 72 timer (stk. 2, litra b, og stk. 4, litra b).
+    - Slutrapport for en sårbarhed: 14 dage efter, at en korrigerende eller afhjælpende foranstaltning er tilgængelig (stk. 2, litra c).
+    - Slutrapport for en hændelse: én måned efter, at notifikationen er indsendt (stk. 4, litra c).
+  - Trackeren sender ikke rapporterne. En person markerer hver som sendt med tidspunkt og den reference, platformen gav. En rapport sendt efter fristen vises som "Sent late".
+  - Overview viser frister inden for 24 timer og overskredne frister (i rødt) under "Needs attention", og supportperiodens slutning 90 dage før.
+  - En hændelse kan kun lukkes, når alle tre rapporter er sendt. Et projekt kan ikke gå til "End of support", mens en hændelse er åben.
+  - Tider gemmes i UTC og vises i lokal tid.
+  - Samme roller som risikoregistret (`ManageRisks`) kan registrere og markere. Alle i organisationen kan se fanen.
+- **Begrundelse:** Art. 14 har gældet siden 11-09-2026, og fristerne er korte. En overskredet frist skal kunne ses med det samme (ISO 27001 A.5.24–A.5.26).
+- **Fravalgt:**
+  - At sende rapporterne til ENISA's fælles platform eller en CSIRT (uden for scope).
+  - At give brugerne besked (art. 14, stk. 8) fra trackeren; kravet ligger på Compliance-fanen.
+  - Porte mellem faserne (US-071, US-072). Kun "End of support"-reglen er med her.
+
+### B51 – End of support og opbevaring
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-074)
+  - Når et projekt går til "End of support", angiver man den sidste dag, produktet blev bragt i omsætning (som standard i dag). Projektet og dets dokumentation opbevares derefter mindst 10 år efter den dag, eller til supportperiodens slutning, hvis den er senere (CRA art. 13, stk. 13, tjekket mod EUR-Lex 05-11-2026). En senere dato kan vælges, aldrig en tidligere.
+  - Headeren viser "End of support since … · kept until …". Fasen logges med opbevaringsdatoen.
+  - Projektet er skrivebeskyttet (US-024), men kan stadig læses og eksporteres af alle i organisationen, også Auditor.
+  - `Project.EnsureMayBeRemoved` afviser arkivering og sletning før opbevaringsdatoen. Arkivering kommer med US-028, som skal bruge reglen.
+  - Evidensfiler og kravdokumenter slettes aldrig (de var allerede kun markeret som fjernet).
+- **Begrundelse:** Markedsovervågningen kan bede om dokumentationen i årevis efter, at produktet er udgået (ISO 27001 A.5.33, A.8.10).
+- **Fravalgt:**
+  - At kræve en låst teknisk dokumentation (US-050) før end of support. Udkastet (US-056) kan altid laves; låsning kommer med US-050.
+  - At slette projekter efter opbevaringsdatoen (en senere story).
+
 ### B52 – Et projekt kan kobles til ét GitHub Project i en organisation
 
 - **Status:** Vedtaget

@@ -33,6 +33,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(p => p.RequirementMethods).HasConversion<string>().HasMaxLength(100)
                 .HasDefaultValue(Domain.Projects.RequirementMethods.All).HasSentinel(Domain.Projects.RequirementMethods.None);
 
+            // US-025: the support period
+            builder.Property(p => p.SupportPeriodReason).HasMaxLength(Project.MaxSupportReasonLength);
+
             // Belongs to exactly one organisation (R5).
             // Restrict: an organisation cannot be deleted while it has projects.
             builder.HasOne<Organization>()

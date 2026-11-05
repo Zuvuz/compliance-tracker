@@ -168,7 +168,8 @@ classDiagram
     +UseNewestVersionAsync(projectId: Guid, frameworkId: Guid) Task
     +RemoveFrameworkAsync(projectId: Guid, frameworkId: Guid) Task
     +UpdateAsync(projectId: Guid, name: string, description: string?, intendedPurpose: string, scope: string?) Task
-    +ChangePhaseAsync(projectId: Guid, phase: LifecyclePhase) Task
+    +ChangePhaseAsync(projectId: Guid, phase: LifecyclePhase, supportEndsOn: DateOnly?, supportReason: string?) Task
+    +SetSupportPeriodAsync(projectId: Guid, endsOn: DateOnly, reason: string?) Task
     +ChangeRequirementMethodsAsync(projectId: Guid, methods: RequirementMethods) Task
   }
   class IProjectRepository {
@@ -208,6 +209,12 @@ classDiagram
     -scope: string
     -phase: LifecyclePhase
     -requirementMethods: RequirementMethods
+    -supportEndsOn: DateOnly?
+    -supportPeriodReason: string?
+    -releasedOn: DateOnly?
+    -endOfSupportOn: DateOnly?
+    -lastPlacedOnMarketOn: DateOnly?
+    -retainUntil: DateOnly?
     -craClass: CraClass
     -releases: List~Release~
     -workItems: List~WorkItem~
@@ -220,8 +227,11 @@ classDiagram
     +ChangeFrameworkVersion(framework: Framework, version: FrameworkVersion, userId: Guid, at: DateTime) bool
     +RemoveFramework(framework: Framework, userId: Guid, at: DateTime)
     +Update(name: string, description: string?, intendedPurpose: string, scope: string?) IReadOnlyList~ProjectChange~
-    +ChangePhase(phase: LifecyclePhase) ProjectChange?
+    +ChangePhase(phase: LifecyclePhase, today: DateOnly?) ProjectChange?
+    +SetSupportPeriod(endsOn: DateOnly, reason: string?, today: DateOnly) ProjectChange?
     +ChangeRequirementMethods(methods: RequirementMethods) ProjectChange?
+    +EndSupport(lastPlacedOnMarket: DateOnly, keepUntil: DateOnly?, today: DateOnly) ProjectChange
+    +EnsureMayBeRemoved(today: DateOnly)
   }
   class ProjectChange {
     <<record>>
@@ -695,6 +705,15 @@ classDiagram
     +Replace()
     +SetRationale(rationale: string, model: string)
   }
+  class IAiLimits {
+    <<interface>>
+    +MinimumScoreForStories: double
+    +MinimumScoreForEvidence: double
+  }
+  class ConfiguredAiLimits
+  IAiLimits <|.. ConfiguredAiLimits
+  MappingSuggestionService --> IAiLimits
+  EvidenceService --> IAiLimits
   class IEmbeddingModel {
     <<interface>>
     +Name: string
@@ -876,6 +895,50 @@ classDiagram
   FeedbackService --> IFeedbackRepository
   FeedbackService --> IFeedbackIssueWriter
   IFeedbackIssueWriter <|.. GitHubFeedbackIssueWriter
+
+  %% ================= Security events (US-073) =================
+  class SecurityEvent {
+    -id: Guid
+    -projectId: Guid
+    -kind: SecurityEventKind
+    -title: string
+    -awareAt: DateTime
+    -fixAvailableAt: DateTime?
+    -earlyWarningSentAt: DateTime?
+    -notificationSentAt: DateTime?
+    -finalReportSentAt: DateTime?
+    -closedAt: DateTime?
+    +Record(...)$ SecurityEvent
+    +DueAt(report: SecurityReportKind) DateTime?
+    +Status(report: SecurityReportKind, now: DateTime) SecurityReportStatus
+    +MarkSent(report: SecurityReportKind, sentAt: DateTime, reference: string, now: DateTime)
+    +MarkFixAvailable(at: DateTime, now: DateTime)
+    +Close(userId: Guid, now: DateTime)
+  }
+  class SecurityEventKind {
+    <<enumeration>>
+    ActivelyExploitedVulnerability
+    SevereIncident
+  }
+  class SecurityReportKind {
+    <<enumeration>>
+    EarlyWarning
+    Notification
+    FinalReport
+  }
+  class SecurityEventService {
+    +RecordAsync(...) Task~SecurityEvent~
+    +MarkSentAsync(...) Task
+    +MarkFixAvailableAsync(...) Task
+    +CloseAsync(...) Task
+  }
+  class ISecurityEventRepository {
+    <<interface>>
+  }
+  SecurityEvent --> SecurityEventKind
+  SecurityEvent ..> SecurityReportKind
+  SecurityEventService --> ISecurityEventRepository
+  ProjectService --> ISecurityEventRepository : end of support
 
   %% ================= Log =================
   class ActivityGroup {

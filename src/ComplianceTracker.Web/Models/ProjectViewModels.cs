@@ -79,6 +79,7 @@ namespace ComplianceTracker.Web.Models
         public const string Compliance = "compliance";
         public const string Evidence = "evidence";
         public const string Risks = "risks";
+        public const string SecurityEvents = "security-events";
         // US-104 R1: was "User stories" at "user-stories"; the old address redirects (OldProductRequirements)
         public const string ProductRequirements = "product-requirements";
         public const string OldProductRequirements = "user-stories";
@@ -92,6 +93,7 @@ namespace ComplianceTracker.Web.Models
             (Compliance, "Compliance"),
             (Evidence, "Evidence"),
             (Risks, "Risks"),
+            (SecurityEvents, "Security events"),
             (ProductRequirements, "Product requirements"),
             (Activity, "Activity")
         ];
@@ -230,6 +232,9 @@ namespace ComplianceTracker.Web.Models
         // US-042: the Risks tab's register (already filtered), the filters and the time for "Review due"
         public IReadOnlyList<Risk> Risks { get; init; } = [];
         public IReadOnlyList<Risk> AllRisks { get; init; } = [];
+
+        // US-073: the project's security events (CRA Art. 14), for their tab and the Overview's deadlines
+        public IReadOnlyList<Domain.Security.SecurityEvent> SecurityEvents { get; init; } = [];
 
         // US-107 R3: the organisation's GitHub Projects to choose from
         public IReadOnlyList<Application.WorkItems.GitHubProjectInfo> GitHubProjectChoices { get; init; } = [];
