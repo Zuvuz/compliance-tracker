@@ -719,13 +719,30 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = model.Id }); // Post/Redirect/Get
         }
 
-        // POST /Projects/ChangePhase: R2, R4
+        // POST /Projects/ChangePhase: R2, R4. US-025 R1: releasing sends the support end date (and a reason when short).
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId")]
-        public async Task<IActionResult> ChangePhase(Guid projectId, LifecyclePhase phase, CancellationToken cancellationToken)
+        public async Task<IActionResult> ChangePhase(
+            Guid projectId, LifecyclePhase phase, DateOnly? supportEndsOn, string? supportReason, CancellationToken cancellationToken)
         {
-            await _service.ChangePhaseAsync(projectId, phase, cancellationToken);
+            await _service.ChangePhaseAsync(projectId, phase, supportEndsOn, supportReason, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId });
+        }
+
+        // POST /Projects/SetSupportPeriod: US-025 R2, R3, R5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId")]
+        public async Task<IActionResult> SetSupportPeriod(
+            Guid projectId, DateOnly? supportEndsOn, string? supportReason, CancellationToken cancellationToken)
+        {
+            if (supportEndsOn is not { } endsOn)
+            {
+                throw new Domain.Common.DomainException("Choose the support end date");
+            }
+
+            await _service.SetSupportPeriodAsync(projectId, endsOn, supportReason, cancellationToken);
             return RedirectToAction(nameof(Details), new { id = projectId });
         }
 

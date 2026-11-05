@@ -114,6 +114,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         // a suggestion. SubjectId points at the project; Details holds the source and the requirement.
         EvidenceSuggested,
         EvidenceSuggestionAccepted,
-        EvidenceSuggestionRejected
+        EvidenceSuggestionRejected,
+
+        // US-025: the support end date was set or moved later. SubjectId points at the project; Details holds e.g.
+        // "Support until: 01-11-2031 → 01-11-2032".
+        SupportPeriodSet
     }
 }

@@ -20,9 +20,20 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         // ---------------------------------------------------------- Given
 
+        // US-025 R1: a release needs a support end date, so Released gets one far enough ahead
         [Given("{string} is in phase {string}")]
-        public Task GivenIsInPhase(string projectName, string phase)
-            => WhenIChangeThePhase(projectName, phase);
+        public async Task GivenIsInPhase(string projectName, string phase)
+        {
+            var id = await ProjectIdAsync(projectName);
+            await _web.OpenAsync($"/Projects/Details/{id}");
+            var fields = new Dictionary<string, string> { ["projectId"] = id.ToString(), ["phase"] = phase };
+            if (phase == "Released")
+            {
+                fields["supportEndsOn"] = DateTime.UtcNow.AddYears(6).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            await _web.PostFormAsync("/Projects/ChangePhase", fields);
+        }
 
         // ---------------------------------------------------------- When
 

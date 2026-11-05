@@ -114,19 +114,49 @@ namespace ComplianceTracker.Application.Projects
         }
 
         // US-024 R2, R3, R4: moves the project to another phase; EndOfSupport is final
-        public async Task ChangePhaseAsync(Guid projectId, LifecyclePhase phase, CancellationToken cancellationToken = default)
+        // US-025 R1: releasing can set the support end date in the same step
+        public async Task ChangePhaseAsync(
+            Guid projectId, LifecyclePhase phase, DateOnly? supportEndsOn = null, string? supportReason = null,
+            CancellationToken cancellationToken = default)
         {
             var project = await ProjectAsync(projectId, cancellationToken);
+            var today = _clock.Today();
 
-            var change = project.ChangePhase(phase);
+            if (phase == LifecyclePhase.Released && supportEndsOn is { } endsOn && project.Phase != LifecyclePhase.Released)
+            {
+                if (project.SetSupportPeriod(endsOn, supportReason, today) is { } support)
+                {
+                    await _log.LogAsync(ActivityAction.SupportPeriodSet, project.Id, Describe(support, project), cancellationToken);
+                }
+            }
+
+            var change = project.ChangePhase(phase, today);
             if (change is null)
             {
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
                 return;
             }
 
             await _log.LogAsync(ActivityAction.ProjectPhaseChanged, project.Id, change.ToString(), cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
+
+        // US-025 R2, R3, R5: set or move the support end date, logged with old and new
+        public async Task SetSupportPeriodAsync(Guid projectId, DateOnly endsOn, string? reason, CancellationToken cancellationToken = default)
+        {
+            var project = await ProjectAsync(projectId, cancellationToken);
+            var change = project.SetSupportPeriod(endsOn, reason, _clock.Today());
+            if (change is null)
+            {
+                return;
+            }
+
+            await _log.LogAsync(ActivityAction.SupportPeriodSet, project.Id, Describe(change, project), cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        private static string Describe(ProjectChange change, Project project)
+            => change + (project.SupportPeriodReason is { } reason ? $" ({reason})" : "");
 
         // US-011 R2, R3: adds a framework to an existing project.
         // Without a version, the newest one is used.
