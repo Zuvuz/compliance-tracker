@@ -560,6 +560,41 @@ classDiagram
     +Approve(userId: Guid, at: DateTime, role: UserRole?)
     +Reject(reason: RejectionReason?, comment: string?, userId: Guid, at: DateTime, role: UserRole?)
   }
+  class EvidenceSuggestion {
+    -id: Guid
+    -projectId: Guid
+    -requirementId: Guid
+    -source: EvidenceSourceKind
+    -title: string
+    -url: string?
+    -externalId: string
+    -passingCount: int
+    -failingCount: int
+    -status: EvidenceSuggestionStatus
+    -evidenceId: Guid?
+    +FromTestRun(...)$ EvidenceSuggestion
+    +FromPullRequest(...)$ EvidenceSuggestion
+    +Accept(evidenceId: Guid, userId: Guid, role: UserRole?, at: DateTime)
+    +Reject(reason: string, userId: Guid, role: UserRole?, at: DateTime)
+  }
+  class EvidenceSuggestionService {
+    +UploadTestResultsAsync(projectId: Guid, fileName: string, content: byte[]) Task~TestRunResult~
+    +SuggestFromPullRequestsAsync(project: Project, token: string?) Task~int~
+    +AcceptAsync(projectId: Guid, suggestionId: Guid) Task
+    +RejectAsync(projectId: Guid, suggestionId: Guid, reason: string) Task
+  }
+  class ITestResultsReader {
+    <<interface>>
+    +Read(content: byte[]) TestCaseResult[]
+  }
+  class IPullRequestReader {
+    <<interface>>
+    +ClosingPullRequestsAsync(repository: string, issueNumber: int, token: string?) Task
+  }
+  EvidenceSuggestionService --> ITestResultsReader
+  EvidenceSuggestionService --> IPullRequestReader
+  EvidenceSuggestion ..> Evidence : becomes
+  WorkItemSyncService --> EvidenceSuggestionService
   class EvidenceService {
     +AddAsync(projectId, title, url, fileName, content, validUntil) Task~EvidenceAdded~
     +LinkAsync(projectId: Guid, evidenceId: Guid, requirementIds: Guid[]) Task

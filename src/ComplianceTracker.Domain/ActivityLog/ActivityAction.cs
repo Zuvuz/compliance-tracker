@@ -108,6 +108,12 @@ namespace ComplianceTracker.Domain.ActivityLog
         EvidenceUnlinked,
         EvidenceLinkSuggested,
         EvidenceLinkApproved,
-        EvidenceLinkRejected
+        EvidenceLinkRejected,
+
+        // US-058: the tracker suggested evidence from test results or pull requests, and a person accepted or rejected
+        // a suggestion. SubjectId points at the project; Details holds the source and the requirement.
+        EvidenceSuggested,
+        EvidenceSuggestionAccepted,
+        EvidenceSuggestionRejected
     }
 }

@@ -24,6 +24,7 @@ namespace ComplianceTracker.Application.WorkItems
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
+        private readonly Compliance.EvidenceSuggestionService _evidenceSuggestions;
 
         public WorkItemSyncService(
             IProjectRepository projects,
@@ -34,8 +35,10 @@ namespace ComplianceTracker.Application.WorkItems
             CurrentMember member,
             IActivityLogger log,
             IUnitOfWork unitOfWork,
-            TimeProvider clock)
+            TimeProvider clock,
+            Compliance.EvidenceSuggestionService evidenceSuggestions)
         {
+            _evidenceSuggestions = evidenceSuggestions;
             _projects = projects;
             _workItems = workItems;
             _github = sources.Single(s => s.Source == WorkItemSource.GitHub);
@@ -203,6 +206,12 @@ namespace ComplianceTracker.Application.WorkItems
             }
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            // US-058 R3: the pull requests that closed linked stories become evidence suggestions
+            if (await _evidenceSuggestions.SuggestFromPullRequestsAsync(project, Token(link), cancellationToken) > 0)
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
 
             // R7: open project pages update themselves
             if (result.HasChanges)

@@ -96,6 +96,16 @@ $env:Feedback__GitHubToken = "<the token>"
 
 The repository is `Zuvuz/compliance-tracker` unless `Feedback__Repository` says otherwise. Without a token, the feedback is kept and the page says so.
 
+### Evidence from tests (US-058)
+
+Tag a scenario with the requirement it proves, e.g. `@cra-I.2(d)`. Run the tests with a TRX logger and upload the file on the project's **Evidence** tab (**Upload test results**):
+
+```bash
+dotnet test tests/ComplianceTracker.Specs --logger "trx;LogFileName=results.trx"
+```
+
+Passing scenarios become suggested evidence on the Compliance tab; a person accepts or rejects them. The tracker's own specs write their tags into the TRX file (`RequirementTagsHook`), because xUnit leaves them out.
+
 ## The local AI (optional)
 
 AI suggestions (US-020) need a local model server. Without one, the app works, and "Suggest mappings" says the AI is not available.

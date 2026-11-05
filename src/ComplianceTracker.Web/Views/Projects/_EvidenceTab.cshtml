@@ -200,6 +200,26 @@
                     </form>
                 </div>
             </div>
+
+            @* US-058: passing tests tagged with a requirement, e.g. @cra-I.2(d), become suggested evidence on the Compliance tab *@
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h2 class="h6 card-title">Upload test results</h2>
+                    @if (TempData["TestResults"] is string testResults)
+                    {
+                        <div class="alert alert-info small py-2" id="test-results-summary">@testResults</div>
+                    }
+                    <form asp-action="UploadTestResults" method="post" enctype="multipart/form-data" id="test-results-upload" class="d-flex flex-column gap-2">
+                        <input type="hidden" name="projectId" value="@project.Id" />
+                        <input name="file" type="file" class="form-control form-control-sm" accept=".trx,.xml" aria-label="Test results (TRX or JUnit XML, max 10 MB)" required />
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Upload test results</button>
+                        <p class="small text-muted mb-0">
+                            TRX or JUnit XML. A scenario tagged <code>@@&lt;framework&gt;-&lt;code&gt;</code>, e.g. <code>@@cra-I.2(d)</code>, that passed is
+                            suggested as evidence for that requirement; a failing one blocks it.
+                        </p>
+                    </form>
+                </div>
+            </div>
         </div>
     }
 </div>

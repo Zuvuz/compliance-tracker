@@ -37,6 +37,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<ComplianceService>();
             services.AddScoped<EvidenceService>(); // US-059
             services.AddScoped<EvidenceQueries>();
+            services.AddScoped<EvidenceSuggestionService>(); // US-058
             services.AddScoped<VersionCarryOver>(); // US-069 R6
             services.AddScoped<MappingSuggestionService>();
             services.AddScoped<RationaleService>();

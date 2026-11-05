@@ -421,6 +421,52 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
         }
 
+        // ---------------------------------------------------------- Evidence suggestions (US-058)
+
+        // POST /Projects/UploadTestResults: R1, R2, R9
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(MaxEvidenceRequestSize)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaxEvidenceRequestSize)]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
+        public async Task<IActionResult> UploadTestResults(
+            Guid projectId, IFormFile? file, [FromServices] EvidenceSuggestionService suggestions, CancellationToken cancellationToken)
+        {
+            if (file is not { Length: > 0 })
+            {
+                throw new Domain.Common.DomainException("Choose a test results file");
+            }
+
+            using var buffer = new MemoryStream();
+            await file.CopyToAsync(buffer, cancellationToken);
+            var result = await suggestions.UploadTestResultsAsync(projectId, file.FileName, buffer.ToArray(), cancellationToken);
+            TempData["TestResults"] = $"{result.Suggested} suggested, {result.Blocked} blocked by failing tests"
+                + (result.UnknownTags.Count > 0 ? $"; unknown tags ignored: {string.Join(", ", result.UnknownTags)}" : "");
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+        }
+
+        // POST /Projects/AcceptSuggestedEvidence: R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> AcceptSuggestedEvidence(
+            Guid projectId, Guid suggestionId, string? sub, [FromServices] EvidenceSuggestionService suggestions, CancellationToken cancellationToken)
+        {
+            await suggestions.AcceptAsync(projectId, suggestionId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // POST /Projects/RejectSuggestedEvidence: R5, with a reason
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> RejectSuggestedEvidence(
+            Guid projectId, Guid suggestionId, string? reason, string? sub, [FromServices] EvidenceSuggestionService suggestions, CancellationToken cancellationToken)
+        {
+            await suggestions.RejectAsync(projectId, suggestionId, reason, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
         // ---------------------------------------------------------- Evidence tab (US-059)
 
         // POST /Projects/UploadEvidence: R1, then the AI suggests requirements (R3)

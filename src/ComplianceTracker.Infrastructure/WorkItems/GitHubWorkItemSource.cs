@@ -10,7 +10,8 @@ namespace ComplianceTracker.Infrastructure.WorkItems
     // Reads user stories from a public GitHub repository through GitHub's REST API, without a key (US-018).
     // Only GET requests: the tracker never writes to GitHub (R2, decision B12).
     // The HttpClient is set up in AddInfrastructure (base address, headers, timeout).
-    public class GitHubWorkItemSource : IWorkItemSource
+    // US-058: also reads which merged pull requests closed an issue (the issue's timeline), still only GET
+    public class GitHubWorkItemSource : IWorkItemSource, Application.Compliance.IPullRequestReader
     {
         public const string NoAcceptanceCriteria = "no acceptance criteria";
 
@@ -63,6 +64,68 @@ namespace ComplianceTracker.Infrastructure.WorkItems
             }
 
             return new WorkItemReadResult(items, skipped);
+        }
+
+        // US-058 R3: the merged pull requests that refer to the issue in its timeline ("cross-referenced"), e.g. with
+        // "Closes #4". GitHub's REST API has no field for "closed by", so a merged pull request that mentions the issue counts.
+        public async Task<IReadOnlyList<Application.Compliance.ClosingPullRequest>> ClosingPullRequestsAsync(
+            string repository, int issueNumber, string? token, CancellationToken cancellationToken = default)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"repos/{repository}/issues/{issueNumber}/timeline?per_page={PageSize}");
+            if (token is not null)
+            {
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            }
+
+            HttpResponseMessage response;
+            try
+            {
+                response = await _http.SendAsync(request, cancellationToken);
+            }
+            catch (Exception error) when (error is HttpRequestException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
+            {
+                throw new WorkItemSourceException("GitHub could not be reached. Try again later", error);
+            }
+
+            using (response)
+            {
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new WorkItemSourceException($"GitHub answered with an error ({(int)response.StatusCode})");
+                }
+
+                var events = await response.Content.ReadFromJsonAsync<List<TimelineEvent>>(cancellationToken) ?? [];
+                return events
+                    .Where(e => e.Event == "cross-referenced" && e.Source?.Issue?.PullRequest?.MergedAt is not null)
+                    .Select(e => e.Source!.Issue!)
+                    .DistinctBy(i => i.Number)
+                    .Select(i => new Application.Compliance.ClosingPullRequest(i.Number, i.Title, i.HtmlUrl))
+                    .ToList();
+            }
+        }
+
+        private sealed class TimelineEvent
+        {
+            [JsonPropertyName("event")] public string? Event { get; set; }
+            [JsonPropertyName("source")] public TimelineSource? Source { get; set; }
+        }
+
+        private sealed class TimelineSource
+        {
+            [JsonPropertyName("issue")] public TimelineIssue? Issue { get; set; }
+        }
+
+        private sealed class TimelineIssue
+        {
+            [JsonPropertyName("number")] public int Number { get; set; }
+            [JsonPropertyName("title")] public string Title { get; set; } = "";
+            [JsonPropertyName("html_url")] public string HtmlUrl { get; set; } = "";
+            [JsonPropertyName("pull_request")] public TimelinePullRequest? PullRequest { get; set; }
+        }
+
+        private sealed class TimelinePullRequest
+        {
+            [JsonPropertyName("merged_at")] public DateTime? MergedAt { get; set; }
         }
 
         private async Task<List<GitHubIssue>> PageAsync(WorkItemQuery query, int page, CancellationToken cancellationToken)

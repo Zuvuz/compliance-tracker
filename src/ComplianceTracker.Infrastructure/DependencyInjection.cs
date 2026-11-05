@@ -72,6 +72,8 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<IEvidenceRepository, EvidenceRepository>();
             services.AddScoped<Application.Feedback.IFeedbackRepository, FeedbackRepository>(); // US-063
             services.AddScoped<IEvidenceLinkSuggestionRepository, EvidenceLinkSuggestionRepository>(); // US-059
+            services.AddScoped<IEvidenceSuggestionRepository, EvidenceSuggestionRepository>(); // US-058
+            services.AddSingleton<ITestResultsReader, Compliance.TestResultsReader>();
             services.AddSingleton<IEvidenceTextReader, Compliance.EvidenceTextReader>();
             services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();
             services.AddScoped<IRiskRepository, RiskRepository>();
@@ -86,6 +88,7 @@ namespace ComplianceTracker.Infrastructure
                 client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
             });
             services.AddTransient<IWorkItemSource>(provider => provider.GetRequiredService<GitHubWorkItemSource>());
+            services.AddTransient<IPullRequestReader>(provider => provider.GetRequiredService<GitHubWorkItemSource>()); // US-058
 
             // US-063: feedback becomes an issue in the tracker's own repository, with its own token (B42)
             services.AddOptions<Feedback.FeedbackOptions>().BindConfiguration(Feedback.FeedbackOptions.Section);

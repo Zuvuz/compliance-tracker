@@ -499,6 +499,22 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Evidens delt mellem projekter eller på organisationsniveau (senere, med kontroller, B33).
   - At AI'en kun foreslår, når man trykker på en knap. Upload er det øjeblik, hvor man forventer forslagene.
 
+### B45 – Evidensforslag fra tests og pull requests
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-058)
+  - Et scenarie tagget `@<regulativ>-<kode>` (fx `@cra-I.2(d)`) er bevis for kravet. Regulativ-delen er den korte adresse fra Compliance-fanen (`cra`), og koden skrives præcis som i trackeren, med parenteser.
+  - Testresultater uploades på Evidence-fanen som TRX eller JUnit XML (højst 10 MB). Filens SHA-256 gemmes. Ét forslag pr. krav og testkørsel. Et fejlende scenarie med samme tag blokerer forslaget og vises som "1 failing test". Ukendte tags vises og ignoreres.
+  - Tags læses fra `TestCategory` (TRX), `property name="Category"` (JUnit) og en linje `Requirement tags: …` i testens output. xUnit skriver ingen tags i TRX-filen, så trackerens egne specs skriver linjen med en hook (`RequirementTagsHook`).
+  - Når en lukket story er koblet til et krav, foreslås den mergede pull request, der refererer til issuet i GitHub's tidslinje ("cross-referenced"). Det sker ved hver synkronisering, højst 20 stories ad gangen, kun med læseadgang.
+  - Intet bliver evidens, før en person med `LinkWork` accepterer. En pull request bliver et link. En testkørsel bliver en Markdown-fil med de beståede scenarier og resultatfilens SHA-256. Afvisning kræver en grund, og samme kilde foreslås aldrig igen. Krav, der ikke gælder, får ingen forslag.
+  - Ingen AI: tags og links afgør det. AI-resuméet (R7, valgfrit) er ikke bygget.
+- **Begrundelse:** Beståede tests og mergede pull requests er det bevis, teamet allerede har (ISO 27001 8.29, CRA bilag VII (2) og (6)). Tags er entydige, så der er intet at gætte.
+- **Fravalgt:**
+  - `@cra-I.2.d` uden parenteser. Reqnroll tillader parenteser, og koden er så den samme som i trackeren.
+  - At hente testresultater fra GitHub Actions automatisk (kræver `actions: read` på tokenet; senere).
+  - At gemme hele resultatfilen som evidens. Filtyperne fra US-057 tillader ikke XML, og en kort Markdown-fil er lettere at læse for en auditor.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
