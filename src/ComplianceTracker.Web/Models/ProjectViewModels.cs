@@ -217,6 +217,9 @@ namespace ComplianceTracker.Web.Models
         // US-042: the Risks tab's register (already filtered), the filters and the time for "Review due"
         public IReadOnlyList<Risk> Risks { get; init; } = [];
         public IReadOnlyList<Risk> AllRisks { get; init; } = [];
+
+        // US-026: each built-in regulation the project follows, with its class (Overview tab)
+        public IReadOnlyList<Application.Projects.RegulationClassification> Classifications { get; init; } = [];
         public string? RiskStatusFilter { get; init; }
         public string? RiskLevelFilter { get; init; }
         public bool OnlyReviewDue { get; init; }

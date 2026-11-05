@@ -23,7 +23,7 @@ Listen gennemgås igen, når et regulativ får en ny version (US-035).
 |---|---|---|---|
 | Art. 1–5 | Formål, anvendelsesområde, definitioner, fri bevægelighed og offentlige indkøb | Udeladt | Ingen pligt i sig selv. Anvendelsesområdet bruges, når regulativet slås til for organisationen |
 | Art. 6 | Produkter skal opfylde de væsentlige krav i bilag I | I trackeren | Se bilag I nedenfor |
-| Art. 7–8 | Vigtige og kritiske produkter (bilag III og IV) | Mangler | [#58](https://github.com/Zuvuz/compliance-tracker/issues/58) (US-026, klassificering) |
+| Art. 7–8 | Vigtige og kritiske produkter (bilag III og IV) | I trackeren | Se projektets klassificering (US-026, B50) |
 | Art. 9–11 | Høring, kompetencer og generel produktsikkerhed | Udeladt | Pligter for Kommissionen og medlemsstaterne |
 | Art. 12 | Højrisiko-AI-systemer, der også er produkter med digitale elementer | Udeladt | Samspillet med AI Act håndteres under AI Act nedenfor |
 | Art. 13(1) | Produktet er designet, udviklet og produceret efter bilag I, del I | I trackeren | Se bilag I, del I |
@@ -67,7 +67,7 @@ Listen gennemgås igen, når et regulativ får en ny version (US-035).
 | Bilag I, del I | Væsentlige cybersikkerhedskrav | I trackeren | I.1, I.2(a), I.2(b), I.2(c), I.2(d), I.2(e), I.2(f), I.2(g), I.2(h), I.2(i), I.2(j), I.2(k), I.2(l), I.2(m) |
 | Bilag I, del II | Håndtering af sårbarheder | I trackeren | II.1, II.2, II.3, II.4, II.5, II.6, II.7, II.8 |
 | Bilag II | Information og vejledning til brugeren (9 punkter) | I trackeren | Annex II.1, Annex II.2, Annex II.3, Annex II.4, Annex II.5, Annex II.6, Annex II.7, Annex II.8, Annex II.9 |
-| Bilag III–IV | Vigtige og kritiske produkter | Mangler | [#58](https://github.com/Zuvuz/compliance-tracker/issues/58) (US-026, klassificering) |
+| Bilag III–IV | Vigtige og kritiske produkter | I trackeren | Se projektets klassificering (US-026, B50) |
 | Bilag V–VI | Indholdet af EU-overensstemmelseserklæringen og den forenklede udgave | I trackeren | Art.28 |
 | Bilag VII | Indholdet af den tekniske dokumentation (8 punkter) | I trackeren | Annex VII.1, Annex VII.2, Annex VII.3, Annex VII.4, Annex VII.5, Annex VII.6, Annex VII.7, Annex VII.8 |
 | Bilag VIII | Procedurerne for overensstemmelsesvurdering | I trackeren | Art.32 |
@@ -92,7 +92,7 @@ AI Act er indbygget, men har **ingen krav endnu**. De kommer med US-062 ([#117](
 | Art. 1–3 | Formål, anvendelsesområde og definitioner | Udeladt | Ingen pligt i sig selv |
 | Art. 4 | AI-færdigheder hos dem, der udvikler og bruger AI | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
 | Art. 5 | Forbudt AI-praksis | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
-| Art. 6–7 | Klassificering som højrisiko | Mangler | [#58](https://github.com/Zuvuz/compliance-tracker/issues/58) (US-026) og [#116](https://github.com/Zuvuz/compliance-tracker/issues/116) (US-061) |
+| Art. 6–7 | Klassificering som højrisiko | I trackeren | Se projektets klassificering (US-026, B50). At AI'en bruger klassen, kommer med [#116](https://github.com/Zuvuz/compliance-tracker/issues/116) (US-061) |
 | Art. 8–15 | Krav til højrisiko-AI-systemer: risikostyring, data, teknisk dokumentation, logning, gennemsigtighed, menneskeligt tilsyn, nøjagtighed, robusthed og cybersikkerhed | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
 | Art. 16–21 | Udbyderens pligter: kvalitetsstyring, opbevaring af dokumentation, logs, korrigerende handlinger og samarbejde med myndigheder | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
 | Art. 22–25 | Bemyndigede repræsentanter, importører, distributører og værdikæden | Udeladt | Trackeren følger udbyderens og idriftsætterens pligter |
@@ -111,7 +111,7 @@ AI Act er indbygget, men har **ingen krav endnu**. De kommer med US-062 ([#117](
 | Art. 74–94 | Markedsovervågning, klageadgang og tilsyn med modeller til almene formål | Udeladt | Pligter for myndighederne |
 | Art. 95–113 | Adfærdskodekser, vejledning, sanktioner og afsluttende bestemmelser | Udeladt | Frivilligt, Kommissionen og konsekvenser |
 | Bilag I–II | Lister over EU-lovgivning og strafbare handlinger | Udeladt | Opslagslister, ingen pligt |
-| Bilag III | Højrisiko-områder | Mangler | [#58](https://github.com/Zuvuz/compliance-tracker/issues/58) (US-026) |
+| Bilag III | Højrisiko-områder | I trackeren | Se projektets klassificering (US-026, B50) |
 | Bilag IV | Indholdet af den tekniske dokumentation | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
 | Bilag V–VII | Overensstemmelseserklæring og procedurer for overensstemmelsesvurdering | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
 | Bilag VIII | Oplysninger ved registrering af højrisiko-systemer | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |

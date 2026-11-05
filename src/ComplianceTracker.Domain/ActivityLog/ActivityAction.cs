@@ -114,6 +114,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         // a suggestion. SubjectId points at the project; Details holds the source and the requirement.
         EvidenceSuggested,
         EvidenceSuggestionAccepted,
-        EvidenceSuggestionRejected
+        EvidenceSuggestionRejected,
+
+        // US-026: a project was classified under a regulation. SubjectId points at the project; Details holds e.g.
+        // "CRA: Important, class I (Annex III, class I, point 2: a password manager)".
+        ProjectClassified
     }
 }

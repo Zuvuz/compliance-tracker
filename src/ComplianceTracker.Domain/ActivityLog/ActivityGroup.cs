@@ -28,6 +28,7 @@ namespace ComplianceTracker.Domain.ActivityLog
             ActivityAction.CatalogImported or ActivityAction.CatalogActivated or ActivityAction.FrameworkEnabled
                 or ActivityAction.FrameworkDisabled => ActivityGroup.Frameworks,
             ActivityAction.ProjectCreated or ActivityAction.ProjectUpdated or ActivityAction.ProjectPhaseChanged
+                or ActivityAction.ProjectClassified
                 or ActivityAction.ProjectFrameworkAdded or ActivityAction.ProjectFrameworkRemoved
                 or ActivityAction.ProjectFrameworkVersionChanged => ActivityGroup.Projects,
             ActivityAction.RepositoryConnected or ActivityAction.WorkItemsSynced or ActivityAction.AccessTokenChanged

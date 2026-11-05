@@ -531,6 +531,22 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At hente testresultater fra GitHub Actions automatisk (kræver `actions: read` på tokenet; senere).
   - At gemme hele resultatfilen som evidens. Filtyperne fra US-057 tillader ikke XML, og en kort Markdown-fil er lettere at læse for en auditor.
 
+### B50 – Klassificering af et projekt under hvert regulativ
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-026)
+  - Et projekt klassificeres under hvert indbygget regulativ, det følger. Hvert regulativ har sine egne klasser plus "Not applicable":
+    - CRA: Default, Important class I, Important class II, Critical (art. 7–8, bilag III–IV).
+    - AI Act: Prohibited, High-risk, Limited risk, Minimal risk (art. 5, 6, 50, bilag I og III).
+  - En begrundelse er påkrævet. En ny klassificering erstatter den gamle; alle gemmes og kan ses med hvem, hvornår og hvorfor. Hver klassificering logges som `ProjectClassified`.
+  - Klassificeringen står på Overview-fanen med en kort vejledning pr. regulativ, der nævner de artikler og bilag, som afgør klassen. Kun roller med `DecideCompliance` kan klassificere.
+  - Klasserne står i koden (`RegulationClasses`, fundet ud fra regulativets korte navn), ikke som seed-data, fordi de følger forordningens tekst og ikke ændres af brugerne.
+  - `Project.craClass` i klassediagrammet er erstattet af `ProjectClassification`.
+- **Begrundelse:** Klassen afgør, hvilken overensstemmelsesprocedure der gælder (CRA art. 32) og hvilke krav der gælder (AI Act). En auditor skal kunne se, hvorfor (ISO 27001 A.5.31).
+- **Fravalgt:**
+  - MDR (klasse I, IIa, IIb, III). Den kommer med US-023, når MDR bliver et indbygget regulativ.
+  - At klassen styrer, hvilke krav der vises. Det kommer med US-061 og US-080.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
