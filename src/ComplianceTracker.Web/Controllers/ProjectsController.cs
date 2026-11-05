@@ -419,6 +419,27 @@ namespace ComplianceTracker.Web.Controllers
             return File(file.Value.Content, file.Value.Evidence.ContentType!, file.Value.Evidence.FileName);
         }
 
+        // ---------------------------------------------------------- Technical documentation (US-056)
+
+        // GET /Projects/TechnicalDocumentation/{id}: a DOCX draft with the headings of CRA Annex VII.
+        // For anyone in the organisation; 404 for other organisations and for projects that do not follow the CRA (R6).
+        [HttpGet]
+        public async Task<IActionResult> TechnicalDocumentation(
+            Guid id,
+            [FromServices] Application.Reports.TechnicalDocumentationQueries drafts,
+            [FromServices] Application.Reports.IDocumentWriter writer,
+            CancellationToken cancellationToken)
+        {
+            var draft = await drafts.DraftAsync(id, cancellationToken);
+            if (draft is null)
+            {
+                return NotFound();
+            }
+
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+            return File(writer.ToDocx(draft), "application/vnd.openxmlformats-officedocument.wordprocessingml.document", draft.FileName);
+        }
+
         // ---------------------------------------------------------- Traceability matrix (US-052)
 
         // GET /Projects/Traceability/{id}?sub=cra: the matrix as CSV, for one regulation or all of them.

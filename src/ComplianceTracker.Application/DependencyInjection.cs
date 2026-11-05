@@ -50,6 +50,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<WorkItemQueries>();
             services.AddScoped<ComplianceQueries>();
             services.AddScoped<RiskQueries>();
+            services.AddScoped<Reports.TechnicalDocumentationQueries>(); // US-056
             services.AddScoped<MemberQueries>();
 
             return services;
