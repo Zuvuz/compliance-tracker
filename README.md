@@ -144,6 +144,10 @@ How it works:
 
 CI builds both images on every pull request. It starts the whole system and checks that sign-in sends you to Keycloak over HTTPS. It also scans the images with Trivy. When a change is merged to `main`, the web image is published as `ghcr.io/zuvuz/compliance-tracker` with the commit SHA and `latest`.
 
+## Reporting a vulnerability
+
+See [SECURITY.md](SECURITY.md). Each installation also serves the contact at `/.well-known/security.txt`; an installation run by someone else sets its own in the `SecurityContact` settings (US-093).
+
 ## Running the tests
 
 ```bash

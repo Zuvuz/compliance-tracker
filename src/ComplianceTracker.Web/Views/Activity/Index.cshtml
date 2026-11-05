@@ -1,0 +1,9 @@
+@* US-102: the whole organisation's activity log. The filter bar and table are Views/Shared/_ActivityLog.cshtml. *@
+@model ActivityLogViewModel
+
+<partial name="_OrganizationHeader" model="Model.Organization" />
+
+<h1 class="h4 mb-3">Activity</h1>
+<p class="small text-muted">Everything that happened in the organisation: sign-ins, members, frameworks and every project.</p>
+
+<partial name="_ActivityLog" model="Model" />

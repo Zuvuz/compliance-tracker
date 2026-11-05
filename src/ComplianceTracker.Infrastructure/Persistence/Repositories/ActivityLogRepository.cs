@@ -50,8 +50,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
                 // R1: in the details or the user's name, without regard to case; % and _ in the text are not wildcards
                 var pattern = "%" + search.Text.Trim().Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
                 var users = search.UsersNamed;
+                var subjects = search.SubjectsNamed ?? [];
                 entries = entries.Where(e => (e.Details != null && EF.Functions.ILike(e.Details, pattern, "\\"))
-                                             || (e.UserId != null && users.Contains(e.UserId.Value)));
+                                             || (e.UserId != null && users.Contains(e.UserId.Value))
+                                             || (e.SubjectId != null && subjects.Contains(e.SubjectId.Value)));
+            }
+
+            if (search.NotSubjects is { } notSubjects)
+            {
+                entries = entries.Where(e => e.SubjectId == null || !notSubjects.Contains(e.SubjectId.Value));
             }
 
             if (search.FromUtc is { } from)

@@ -162,6 +162,7 @@ classDiagram
     -log: IActivityLogger
     -unitOfWork: IUnitOfWork
     -clock: TimeProvider
+    -carryOver: VersionCarryOver
     +CreateAsync(name: string, description: string?, intendedPurpose: string, scope: string?, phase: LifecyclePhase, frameworkIds: Guid[]?) Task~Project~
     +AddFrameworkAsync(projectId: Guid, frameworkId: Guid, frameworkVersionId: Guid?) Task
     +UseNewestVersionAsync(projectId: Guid, frameworkId: Guid) Task
@@ -303,6 +304,7 @@ classDiagram
     -revokedAt: DateTime?
     +IsActive: bool
     +NotApplicable(projectId: Guid, requirementId: Guid, reason: string, userId: Guid, at: DateTime)$ RequirementApplicability
+    +CarryTo(requirementId: Guid) RequirementApplicability
     +Revoke(userId: Guid, at: DateTime)
   }
   class OrganizationFramework {
@@ -366,6 +368,7 @@ classDiagram
     +IsFile: bool
     +ForLink(projectId, requirementId, title, url, validUntil, addedById, role, at)$ Evidence
     +ForFile(projectId, requirementId, title, file: EvidenceFile, validUntil, addedById, role, at)$ Evidence
+    +CarryTo(requirementId: Guid) Evidence
     +IsExpiredOn(today: DateOnly) bool
     +Remove(userId: Guid, at: DateTime)
   }
@@ -541,8 +544,16 @@ classDiagram
     -removedAt: DateTime?
     +IsActive: bool
     +Create(projectId: Guid, requirementId: Guid, workItemId: Guid, linkedById: Guid, at: DateTime)$ RequirementLink
+    +CarryTo(requirementId: Guid) RequirementLink
     +Remove(userId: Guid, at: DateTime)
   }
+  class VersionCarryOver {
+    +CarryAsync(project: Project, frameworkId: Guid, fromVersionId: Guid, toVersionId: Guid) Task~CarriedOver~
+  }
+  ProjectService --> VersionCarryOver
+  VersionCarryOver ..> RequirementLink
+  VersionCarryOver ..> RequirementApplicability
+  VersionCarryOver ..> Evidence
   class ComplianceService {
     +LinkAsync(projectId: Guid, requirementId: Guid, workItemId: Guid) Task
     +UnlinkAsync(projectId: Guid, linkId: Guid) Task

@@ -35,6 +35,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<WorkItemSyncService>();
             services.AddScoped<RequirementDocumentService>();
             services.AddScoped<ComplianceService>();
+            services.AddScoped<VersionCarryOver>(); // US-069 R6
             services.AddScoped<MappingSuggestionService>();
             services.AddScoped<RationaleService>();
             services.AddScoped<AiFeedbackService>();
@@ -48,6 +49,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<FrameworkQueries>();
             services.AddScoped<ProjectQueries>();
             services.AddScoped<ActivityLog.ActivityLogIntegrityQueries>(); // US-091
+            services.AddScoped<ActivityLog.ActivityLogQueries>(); // US-102
             services.AddScoped<WorkItemQueries>();
             services.AddScoped<ComplianceQueries>();
             services.AddScoped<RiskQueries>();

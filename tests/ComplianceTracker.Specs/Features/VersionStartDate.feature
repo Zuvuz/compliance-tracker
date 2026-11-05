@@ -43,10 +43,10 @@ Feature: Framework versions with a start date
 
   @US-035 @integration
   Scenario: A built-in regulation that has not started yet can be used
-    Given the time is "2026-11-01T09:00:00Z"
+    Given the time is "2026-06-01T09:00:00Z"
     And "CRA – Regulation (EU) 2024/2847" is switched on
     When I add "CRA – Regulation (EU) 2024/2847" to the project "Acme Portal"
-    Then the Frameworks tab of "Acme Portal" shows "CRA – Regulation (EU) 2024/2847" as "Applies from 11-12-2027"
+    Then the Frameworks tab of "Acme Portal" shows "CRA – Regulation (EU) 2024/2847" as "Applies from 11-09-2026"
 
   @US-035 @iso27001-A.8.15 @integration
   Scenario: Activating a version with a date is logged
