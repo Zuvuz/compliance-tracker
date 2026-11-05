@@ -6,8 +6,12 @@ namespace ComplianceTracker.Specs.Support
     // The scenario sets how similar a story and a requirement are; the vectors are made so the cosine similarity
     // is exactly that score: each requirement code is its own axis, and a story points along the axes of its scores.
     // Reqnroll creates one per scenario and gives the same instance to WebScenario and the steps.
-    public sealed class FakeAi : IEmbeddingModel, IRationaleWriter
+    // US-105: it also holds the limits, 0 unless a scenario sets them, so older scenarios see every suggestion
+    public sealed class FakeAi : IEmbeddingModel, IRationaleWriter, IAiLimits
     {
+        public double MinimumScoreForStories { get; set; }
+        public double MinimumScoreForEvidence { get; set; }
+
         private const int Dimensions = 256;
 
         private readonly Dictionary<(string Story, string Code), double> _scores = new();

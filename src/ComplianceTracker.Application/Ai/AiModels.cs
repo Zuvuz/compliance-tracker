@@ -22,6 +22,17 @@ namespace ComplianceTracker.Application.Ai
         Task<string> WriteAsync(string prompt, CancellationToken cancellationToken = default);
     }
 
+    // US-105: how good a suggestion must be before a person sees it (R1, R2). The operator sets them (Ai:*), and every
+    // suggestion keeps the limit it was made with (R5).
+    public interface IAiLimits
+    {
+        // US-020, US-044: user story <-> requirement
+        double MinimumScoreForStories { get; }
+
+        // US-059: evidence <-> requirement
+        double MinimumScoreForEvidence { get; }
+    }
+
     // The local AI cannot be reached or answered with an error. The message is shown to the user.
     public class AiUnavailableException : Exception
     {
@@ -50,6 +61,11 @@ namespace ComplianceTracker.Application.Ai
 
         // A small model on a laptop CPU can take a while per rationale
         public int TimeoutSeconds { get; set; } = 120;
+
+        // US-105 R1, R2: suggestions below these cosine scores are not made (B47). A starting point, to be tuned from
+        // the scores of approved and rejected suggestions (US-036 export).
+        public double MinimumScoreForStories { get; set; } = 0.5;
+        public double MinimumScoreForEvidence { get; set; } = 0.5;
     }
 
     // The prompt for a rationale. Its version is stored with every suggestion, so results from different prompts

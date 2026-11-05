@@ -1575,6 +1575,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("EvidenceId")
                         .HasColumnType("uuid");
 
+                    b.Property<double>("MinimumScore")
+                        .HasColumnType("double precision");
+
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
 
@@ -1735,6 +1738,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<double>("MinimumScore")
+                        .HasColumnType("double precision");
 
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
