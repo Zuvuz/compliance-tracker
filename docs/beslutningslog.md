@@ -498,6 +498,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - Evidens delt mellem projekter eller på organisationsniveau (senere, med kontroller, B33).
   - At AI'en kun foreslår, når man trykker på en knap. Upload er det øjeblik, hvor man forventer forslagene.
+### B43 – Udkast til CRA's tekniske dokumentation som DOCX
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-056)
+  - Trackeren laver et udkast med de otte punkter fra CRA bilag VII som DOCX, så det kan gøres færdigt i Word eller LibreOffice. Udkastet kan laves igen når som helst (art. 31, stk. 2).
+  - Trackeren udfylder: projektets navn, beskrivelse, fase, scope og tilsigtede formål (punkt 1), user stories (punkt 2(a)), risikoregistret og hvordan hvert krav i bilag I er opfyldt eller hvorfor det ikke gælder (punkt 3), og de andre rammeværker projektet følger (punkt 5).
+  - Resten står som "To be completed" med en kort vejledning: supportperioden, softwareversioner, billeder, brugerinformation, arkitektur, sårbarhedshåndtering, produktion, standarder, testrapporter, overensstemmelseserklæringen og SBOM.
+  - Kun projekter, der følger CRA, kan lave udkastet. Linket står under "Reports" på projektets Overview-fane.
+- **Begrundelse:** Producenten skal udarbejde den tekniske dokumentation før markedsføring (art. 13, stk. 12, og art. 31). Et udkast fra trackerens data sparer arbejde og holder dokumentet i takt med trackeren. DOCX er det format, de fleste kan redigere videre i.
+- **Fravalgt:**
+  - At vente på US-050, US-051 og US-054. Risikoafsnittet bygges direkte fra risikoregistret, og låsning kommer med US-050.
+  - Udkastet pr. release i stedet for pr. projekt (senere, når releases findes, B07).
+  - AI-skrevet tekst i udkastet.
 
 ## Åbne spørgsmål til klassediagrammet
 

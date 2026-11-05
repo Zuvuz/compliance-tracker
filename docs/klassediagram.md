@@ -736,6 +736,29 @@ classDiagram
     +ChangeRoleAsync(organizationId: Guid, memberId: Guid, role: UserRole) Task
   }
 
+  %% ================= Reports (US-056) =================
+  class TechnicalDocumentationQueries {
+    +DraftAsync(projectId: Guid) Task~GeneratedDocument?~
+    +CraOf(compliance: ProjectCompliance)$ FrameworkCompliance?
+  }
+  class GeneratedDocument {
+    +FileName: string
+    +Blocks: DocumentBlock[]
+  }
+  class DocumentBlock {
+    +Kind: DocumentBlockKind
+    +Text: string
+  }
+  class IDocumentWriter {
+    <<interface>>
+    +ToDocx(document: GeneratedDocument) byte[]
+  }
+  class OpenXmlDocumentWriter
+  TechnicalDocumentationQueries --> ComplianceQueries
+  TechnicalDocumentationQueries --> RiskQueries
+  TechnicalDocumentationQueries ..> GeneratedDocument
+  GeneratedDocument *-- DocumentBlock
+  IDocumentWriter <|.. OpenXmlDocumentWriter
   %% ================= Feedback (US-063) =================
   class Feedback {
     -id: Guid
