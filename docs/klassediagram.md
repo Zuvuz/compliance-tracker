@@ -189,6 +189,7 @@ classDiagram
     <<interface>>
     +AppendAsync(entry: ActivityLogEntry) Task
     +ListAboutAsync(organizationId: Guid, subjectId: Guid) Task~IReadOnlyList~ActivityLogEntry~~
+    +ListInOrderWrittenAsync(organizationId: Guid) Task~IReadOnlyList~ActivityLogEntry~~
   }
   class IUnitOfWork {
     <<interface>>
@@ -719,7 +720,23 @@ classDiagram
     -subjectId: Guid?
     -details: string?
     -occurredAt: DateTime
+    -previousHash: string?
+    -hash: string?
+    +Seal(previousHash: string?) void
   }
+  class ActivityLogChain {
+    <<static>>
+    +HashOf(entry: ActivityLogEntry, previousHash: string?) string
+    +Verify(entriesInOrder: IEnumerable~ActivityLogEntry~) ChainCheck
+  }
+  class ChainCheck {
+    +Checked: int
+    +WithoutFingerprint: int
+    +FirstBroken: ActivityLogEntry?
+    +IsIntact: bool
+  }
+  ActivityLogChain ..> ActivityLogEntry
+  ActivityLogChain ..> ChainCheck
 
   %% ================= Enums =================
   class Sector {

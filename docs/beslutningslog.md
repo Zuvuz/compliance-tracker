@@ -432,6 +432,7 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - MFA kun for Admins.
   - Passkeys/WebAuthn (senere).
   - Log-ind med kundens egen identitetsudbyder (senere).
+
 ### B38 – Trackeren følger producentens og udbyderens pligter
 
 - **Status:** Vedtaget
@@ -443,6 +444,18 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** Trackerens brugere er dem, der laver produkterne. En liste med grunde viser en auditor, at intet er glemt, og hvorfor noget mangler (ISO 27001 A.5.31). Gennemgangen viste, at CRA's dokumentation og overensstemmelse også står i artikel 28–32, ikke kun i artikel 13.
 - **Fravalgt:** at indbygge hele regulativet, også myndighedernes pligter.
 
+### B40 – Aktivitetsloggen kan ikke ændres
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-091)
+  - Databasen nægter `UPDATE`, `DELETE` og `TRUNCATE` på `ActivityLog` med triggere, også fra SQL uden om trackeren.
+  - Hver post får et fingeraftryk (SHA-256) af sit indhold og af den forrige posts fingeraftryk i samme organisation. Kæden lægges, når posten gemmes, i én transaktion med en lås pr. organisation, så to samtidige requests ikke deler kæden.
+  - Admins og Auditors kan på `/LogCheck` få kæden gennemgået. Siden viser den første post, der ikke passer.
+  - Poster fra før kæden har intet fingeraftryk og godtages kun i starten af loggen.
+- **Begrundelse:** Loggen er bevis over for en auditor (ISO 27001 A.8.15, CRA bilag I del I (2)(l)). Triggerne stopper fejl og almindelige brugere. Kæden opdager det, triggerne ikke kan stoppe: en ejer af tabellen kan slå triggerne fra, men kan ikke ændre en post uden at bryde kæden fra det punkt.
+- **Fravalgt:**
+  - At gemme fingeraftrykket uden for databasen (fx i en ekstern tidsstempeltjeneste). Senere, hvis en auditor kræver det, for en ejer kan stadig skrive hele kæden om.
+  - En særskilt databasebruger uden rettigheder til at ændre tabellen. Det kræver ændringer i udviklingsmiljøet og deployment.
 ### B41 – CRA version 2, og hvad der følger med, når et projekt skifter version
 
 - **Status:** Vedtaget
