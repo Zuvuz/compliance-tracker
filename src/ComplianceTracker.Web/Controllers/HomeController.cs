@@ -10,7 +10,7 @@ namespace ComplianceTracker.Web.Controllers;
 [AllowAnonymous]
 public class HomeController : Controller
 {
-    // The front page is public (US-004 R1). Signed-in users are sent on to their organisation.
+    // The front page is public (US-004 R1). Signed-in users are sent on to their projects (US-045 R4).
     public IActionResult Index()
     {
         if (User.Identity?.IsAuthenticated == true)

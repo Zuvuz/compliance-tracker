@@ -1,5 +1,6 @@
 using ComplianceTracker.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Testcontainers.PostgreSql;
 
 namespace ComplianceTracker.Specs.Support
@@ -38,22 +39,63 @@ namespace ComplianceTracker.Specs.Support
             }
         }
 
-        public static ComplianceTrackerDbContext CreateContext(string connectionString)
+        // US-014: runs a command inside the PostgreSQL container, e.g. the backup script. Started first if needed.
+        public static async Task<DotNet.Testcontainers.Containers.ExecResult> ExecAsync(params string[] command)
+        {
+            await GetConnectionStringAsync();
+            return await _container!.ExecAsync(command);
+        }
+
+        // US-014: copies a file into the PostgreSQL container
+        public static async Task CopyAsync(byte[] content, string path)
+        {
+            await GetConnectionStringAsync();
+            await _container!.CopyAsync(content, path);
+        }
+
+        // Interceptors let a test change what happens in the database, e.g. make saving fail (US-016)
+        public static ComplianceTrackerDbContext CreateContext(string connectionString, params IInterceptor[] interceptors)
         {
             var options = new DbContextOptionsBuilder<ComplianceTrackerDbContext>()
                 .UseNpgsql(connectionString)
+                .AddInterceptors(interceptors)
                 .Options;
 
             return new ComplianceTrackerDbContext(options);
         }
 
-        // Empties the database before each scenario. CASCADE also empties every table that
-        // points at these (users, frameworks, versions, documents ...).
+        // Empties the database before each scenario, but keeps the built-in frameworks (CRA, AI Act)
+        // that the migrations add (US-006). TRUNCATE ... CASCADE would delete those too, so the tables
+        // are emptied one by one, children before parents. A new table must be added here.
         public static async Task ResetAsync(string connectionString)
         {
             await using var db = CreateContext(connectionString);
             await db.Database.ExecuteSqlRawAsync(
-                """TRUNCATE "ActivityLog", "Users", "Organizations" RESTART IDENTITY CASCADE""");
+                """
+                DELETE FROM "Invitations";
+                DELETE FROM "RiskMeasures";
+                DELETE FROM "Risks";
+                DELETE FROM "MappingSuggestions";
+                DELETE FROM "EvidenceDocuments";
+                DELETE FROM "Evidence";
+                DELETE FROM "RequirementLinks";
+                DELETE FROM "RequirementApplicability";
+                DELETE FROM "ActivityLog";
+                DELETE FROM "OrganizationFrameworks";
+                DELETE FROM "ProjectFrameworks";
+                DELETE FROM "CatalogDocuments";
+                DELETE FROM "FrameworkVersions"
+                    WHERE "FrameworkId" IN (SELECT "Id" FROM "Frameworks" WHERE "OwnerOrganizationId" IS NOT NULL);
+                DELETE FROM "Frameworks" WHERE "OwnerOrganizationId" IS NOT NULL;
+                DELETE FROM "WorkItems";
+                DELETE FROM "RequirementDocumentFiles";
+                DELETE FROM "RequirementDocumentVersions";
+                DELETE FROM "RequirementDocuments";
+                DELETE FROM "SkippedIssues";
+                DELETE FROM "Projects";
+                DELETE FROM "Users";
+                DELETE FROM "Organizations";
+                """);
         }
 
         public static async Task DisposeAsync()

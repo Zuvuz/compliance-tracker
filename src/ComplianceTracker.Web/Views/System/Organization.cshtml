@@ -1,0 +1,36 @@
+@* US-010: one organisation's members, for the system admin, who can change any role.
+   Ids used by the tests: #system-members rows data-member with system-change-role forms. *@
+@model ComplianceTracker.Domain.Organizations.Organization
+@{
+    ViewData["Title"] = $"System – {Model.Name}";
+}
+
+<p class="mb-1"><a asp-action="Index">← All organisations</a></p>
+<h1>@Model.Name</h1>
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+<table class="table align-middle" id="system-members">
+    <thead><tr><th>Name</th><th>E-mail</th><th>Role</th><th></th></tr></thead>
+    <tbody>
+        @foreach (var user in Model.Users.OrderBy(u => u.Name))
+        {
+            <tr data-member="@user.Name">
+                <td>@user.Name</td>
+                <td>@user.Email</td>
+                <td class="member-role">@user.Role</td>
+                <td>
+                    <form asp-action="ChangeRole" asp-route-id="@Model.Id" method="post" class="d-flex gap-1 system-change-role">
+                        <input type="hidden" name="memberId" value="@user.Id" />
+                        <select name="role" class="form-select form-select-sm" aria-label="New role for @user.Name">
+                            @foreach (var role in Enum.GetValues<UserRole>())
+                            {
+                                <option value="@role" selected="@(role == user.Role)">@RolePermissions.Title(role)</option>
+                            }
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

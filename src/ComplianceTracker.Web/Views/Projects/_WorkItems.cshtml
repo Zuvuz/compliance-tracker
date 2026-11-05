@@ -1,0 +1,194 @@
+@* US-018: the project's user stories from GitHub, the sync button and what the last sync skipped.
+   US-032: also the requirements from uploaded requirement specifications, in the same list, marked with their document.
+   Also returned alone by /Projects/WorkItems/{id}, so the page can replace it when SignalR says it changed.
+   The ids and classes (#sync-now, #last-synced, #sync-error, #skipped-issues, .skipped-issue, #work-items,
+   .work-item, .work-item-title, .work-item-state, .work-item-rules, .work-item-examples, .work-item-gherkin,
+   .work-item-link, .ai-suggestion-badge, .work-item-type, .work-item-source, .work-item-description,
+   .work-item-acceptance, .use-case-actor, .use-case-steps li) are used by the tests. *@
+@using ComplianceTracker.Domain.WorkItems
+@model WorkItemsViewModel
+@{
+    var project = Model.Project;
+    var link = project.GitHub;
+}
+
+@if (link is null)
+{
+    <p class="text-muted" id="not-linked">Link a public GitHub repository to read the project's user stories.</p>
+}
+else
+{
+    <div class="d-flex align-items-center gap-3 mb-2">
+        @if (!project.IsClosed)
+        {
+            <form asp-controller="Projects" asp-action="SyncNow" method="post" id="sync-now">
+                <input type="hidden" name="projectId" value="@project.Id" />
+                <button type="submit" class="btn btn-primary">Sync now</button>
+            </form>
+        }
+        <span class="small text-muted">
+            <a href="https://github.com/@link.Repository" target="_blank" rel="noopener noreferrer">@link.Repository</a>,
+            label <code>@link.Label</code> ·
+            <span id="last-synced">Last synced: @(link.LastSyncedAt?.ToLocalTime().ToString("dd-MM-yyyy HH:mm") ?? "never")</span>
+        </span>
+    </div>
+
+    @if (link.LastSyncError is { } error)
+    {
+        <div class="alert alert-warning" id="sync-error">Sync failed: @error</div>
+    }
+
+    @if (link.Skipped.Count > 0)
+    {
+        @* R3: issues with the label that do not follow the BDD template *@
+        <details class="mb-3" id="skipped-issues">
+            <summary class="small">@link.Skipped.Count skipped</summary>
+            <ul class="small mb-0">
+                @foreach (var skipped in link.Skipped)
+                {
+                    <li class="skipped-issue" data-reference="@skipped.ExternalReference">@skipped.ExternalReference @skipped.Title: Skipped: @skipped.Reason</li>
+                }
+            </ul>
+        </details>
+    }
+}
+
+@if (Model.WorkItems.Count == 0)
+{
+    <p class="text-muted">No work items read yet.</p>
+}
+else
+{
+    <div id="work-items">
+        @foreach (var item in Model.WorkItems)
+        {
+            var fromDocument = item.Source == WorkItemSource.Document;
+            var active = item.State == WorkItemState.Open;
+            @* R4: title, state and the template's sections, with a link to the issue *@
+            <details class="work-item border rounded p-2 mb-2" data-reference="@item.ExternalReference" data-source="@item.Source">
+                <summary>
+                    @if (fromDocument)
+                    {
+                        <span class="work-item-reference fw-semibold">@item.ExternalReference</span>
+                    }
+                    <span class="work-item-title">@item.Title</span>
+                    @if (item.Type != WorkItemType.UserStory)
+                    {
+                        <span class="work-item-type badge text-bg-light border">@(item.Type == WorkItemType.UseCase ? "Use case" : item.Type.ToString())</span>
+                    }
+                    <span class="work-item-state badge @(active ? "text-bg-success" : "text-bg-secondary")">@WorkItemsViewModel.StateText(item)</span>
+                </summary>
+                <p class="small mb-2">
+                    @if (fromDocument)
+                    {
+                        @* US-032: the requirement specification and the newest version that has it, e.g. "kravspec.xlsx · Document v2" *@
+                        <span class="work-item-source">@Model.DocumentName(item) · Document v@(item.DocumentVersion)</span>
+                    }
+                    else
+                    {
+                        <a class="work-item-link" href="@item.Url" target="_blank" rel="noopener noreferrer">@item.ExternalReference on GitHub</a>
+                    }
+                    @if (!string.IsNullOrEmpty(item.Labels))
+                    {
+                        <text> · @item.Labels</text>
+                    }
+                </p>
+                @if (Model.Compliance is { } suggestionData)
+                {
+                    @* US-044 R9: the decisions are made on the Compliance tab; here a badge links to them *@
+                    var pending = suggestionData.SuggestionsFor(item.Id).ToList();
+                    <div class="ai-suggestions d-flex flex-wrap align-items-center gap-2 mb-2" data-reference="@item.ExternalReference">
+                        @if (pending.Count > 0 && suggestionData.FrameworkOf(pending[0].Requirement) is { } first)
+                        {
+                            <a class="badge text-bg-info text-decoration-none ai-suggestion-badge"
+                               href="@Url.Action("Details", "Projects", new { id = project.Id, tab = ProjectTabs.Compliance, sub = FrameworkNames.Slug(first.Framework.Name), show = ComplianceFilters.HasSuggestions })">@pending.Count AI suggestion@(pending.Count == 1 ? "" : "s")</a>
+                        }
+                        @if (!project.IsClosed && await Permissions.CanAsync(Permission.LinkWork))
+                        {
+                            @* US-036 R2: the next suggestions for this story *@
+                            <form asp-controller="Projects" asp-action="ShowMoreSuggestions" method="post" class="show-more-suggestions">
+                                <input type="hidden" name="projectId" value="@project.Id" />
+                                <input type="hidden" name="workItemId" value="@item.Id" />
+                                <button type="submit" class="btn btn-sm btn-link p-0">@(pending.Count == 0 ? "Suggest requirements" : "Show more")</button>
+                            </form>
+                        }
+                    </div>
+                }
+                @if (Model.Compliance is { } compliance)
+                {
+                    @* US-021 R3: the requirements the story is linked to *@
+                    var codes = compliance.RequirementCodesOf(item.Id);
+                    <p class="small mb-2">
+                        Requirements:
+                        <span class="work-item-requirements">@(codes.Count == 0 ? "none yet" : string.Join(", ", codes))</span>
+                    </p>
+                }
+                @if (!string.IsNullOrEmpty(item.Description))
+                {
+                    <h3 class="h6">Description</h3>
+                    <pre class="work-item-description small">@item.Description</pre>
+                }
+                @if (item.UseCase is { } useCase)
+                {
+                    @* US-034 R3: the use case's sections, with the main success scenario as numbered steps *@
+                    <dl class="use-case small mb-2">
+                        @if (useCase.PrimaryActor.Length > 0)
+                        {
+                            <dt>Primary actor</dt>
+                            <dd class="use-case-actor">@useCase.PrimaryActor</dd>
+                        }
+                        @if (useCase.Preconditions.Length > 0)
+                        {
+                            <dt>Preconditions</dt>
+                            <dd><pre class="use-case-preconditions mb-0">@useCase.Preconditions</pre></dd>
+                        }
+                        <dt>Main success scenario</dt>
+                        <dd>
+                            <ol class="use-case-steps mb-0">
+                                @foreach (var step in useCase.Steps)
+                                {
+                                    <li>@step</li>
+                                }
+                            </ol>
+                        </dd>
+                        @if (useCase.Extensions.Length > 0)
+                        {
+                            <dt>Extensions</dt>
+                            <dd><pre class="use-case-extensions mb-0">@useCase.Extensions</pre></dd>
+                        }
+                        @if (useCase.Postconditions.Length > 0)
+                        {
+                            <dt>Postconditions</dt>
+                            <dd><pre class="use-case-postconditions mb-0">@useCase.Postconditions</pre></dd>
+                        }
+                    </dl>
+                    @* R5: what the mapping reads as its acceptance criteria *@
+                    <details class="small mb-2">
+                        <summary>Acceptance criteria used for mapping</summary>
+                        <pre class="work-item-acceptance small mb-0">@item.AcceptanceCriteria</pre>
+                    </details>
+                }
+                else if (!string.IsNullOrEmpty(item.AcceptanceCriteria))
+                {
+                    <h3 class="h6">Acceptance criteria</h3>
+                    <pre class="work-item-acceptance small">@item.AcceptanceCriteria</pre>
+                }
+                @if (!fromDocument)
+                {
+                    <h3 class="h6">Rules</h3>
+                    <pre class="work-item-rules small">@item.Rules</pre>
+                }
+                @if (!string.IsNullOrEmpty(item.Examples))
+                {
+                    <h3 class="h6">Examples</h3>
+                    <pre class="work-item-examples small">@item.Examples</pre>
+                }
+                @if (!string.IsNullOrEmpty(item.Gherkin))
+                {
+                    <h3 class="h6">Gherkin</h3>
+                    <pre class="work-item-gherkin small">@item.Gherkin</pre>
+                }
+            </details>
+        }
+    </div>
+}

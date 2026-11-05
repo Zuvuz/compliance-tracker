@@ -11,6 +11,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
         {
             builder.ToTable("Organizations");
 
+            // US-090: the current members are worked out from Users, not stored
+            builder.Ignore(o => o.Members);
+
             // The id is set by the domain (Guid.NewGuid), not by the database
             builder.HasKey(o => o.Id);
             builder.Property(o => o.Id).ValueGeneratedNever();

@@ -1,4 +1,4 @@
-﻿using ComplianceTracker.Domain.Organizations;
+using ComplianceTracker.Domain.Organizations;
 
 namespace ComplianceTracker.Application.Organizations
 {
@@ -10,7 +10,13 @@ namespace ComplianceTracker.Application.Organizations
         Task AddAsync(Organization organization, CancellationToken cancellationToken = default);
         Task<Organization?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
+        // US-010: every organisation, for the system admin only
+        Task<IReadOnlyList<Organization>> ListAllAsync(CancellationToken cancellationToken = default);
+
         // The organisation the user with this sign-in id is a member of (null if none)
         Task<Organization?> GetByMemberAsync(string externalId, CancellationToken cancellationToken = default);
+
+        // US-090 R3: the name of the organisation the person was last removed from, or null
+        Task<string?> FormerOrganizationNameAsync(string externalId, CancellationToken cancellationToken = default);
     }
 }

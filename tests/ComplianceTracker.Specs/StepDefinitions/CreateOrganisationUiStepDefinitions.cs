@@ -55,6 +55,11 @@ namespace ComplianceTracker.Specs.StepDefinitions
             });
         }
 
+        // US-016 R1: the "-- Choose size --" option sends an empty value
+        [When("I submit the form with name {string}, CVR {string}, sector {string} and no size")]
+        public Task WhenISubmitTheFormWithNoSize(string name, string cvr, string sector)
+            => WhenISubmitTheForm(name, cvr, sector, "");
+
         [When("I post the form without an antiforgery token")]
         public async Task WhenIPostTheFormWithoutAnAntiforgeryToken()
         {
@@ -109,6 +114,14 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.Equal(name, _web.Page!.QuerySelector<IHtmlInputElement>("input[name='Name']")?.Value);
         }
 
+        // US-016 R4: the form comes back with an error instead of a new organisation
+        [Then("the form is shown again with an error")]
+        public void ThenTheFormIsShownAgainWithAnError()
+        {
+            Assert.Equal(CreatePath, _web.CurrentPath);
+            Assert.NotEmpty(_web.Page!.QuerySelectorAll(".validation-summary-errors li"));
+        }
+
         [Then("the request is rejected with status {int}")]
         public void ThenTheRequestIsRejectedWithStatus(int statusCode)
         {
@@ -123,13 +136,13 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         // The rows of the users table: name, e-mail, role.
-        // The users are on their own tab, so the test clicks "Users" on the organisation page first, like a user would.
+        // The users are on their own page, so the test clicks "Users" in the top bar first, like a user would (US-045).
         private async Task<IEnumerable<string[]>> UserRowsAsync()
         {
-            var usersTab = _web.Page!.QuerySelector("a#users-tab")?.GetAttribute("href")
-                ?? throw new Xunit.Sdk.XunitException($"The page {_web.CurrentPath} has no Users tab.");
+            var usersLink = _web.Page!.QuerySelector("#top-bar a#nav-users")?.GetAttribute("href")
+                ?? throw new Xunit.Sdk.XunitException($"The page {_web.CurrentPath} has no Users link in the top bar.");
 
-            await _web.OpenAsync(usersTab);
+            await _web.OpenAsync(usersLink);
 
             return _web.Page!.QuerySelectorAll("#organisation-users tbody tr")
                 .Select(row => row.QuerySelectorAll("td").Select(cell => cell.TextContent.Trim()).ToArray())

@@ -13,6 +13,13 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
         {
             builder.ToTable("ActivityLog");
 
+            // US-101 R8: the project's log by time, and (US-102) the organisation's log by time
+            builder.HasIndex(e => new { e.OrganizationId, e.SubjectId, e.OccurredAt });
+            builder.HasIndex(e => new { e.OrganizationId, e.OccurredAt });
+
+            // US-010: the role when the decision was made; never changed afterwards
+            builder.Property(e => e.Role).HasConversion<string>().HasMaxLength(50);
+
             // ActivityLogEntry has no Id in the domain. The database gives each entry
             // a running number that only exists in the database (a "shadow key").
             builder.Property<long>("Id").UseIdentityAlwaysColumn();
@@ -26,15 +33,20 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(e => e.OccurredAt);
             builder.Property(e => e.SubjectId);
 
+            // US-024: old and new values; long enough for a changed intended purpose
+            builder.Property(e => e.Details).HasMaxLength(4000);
+
             // Restrict: an organisation or user cannot be deleted while log entries point at it
             builder.HasOne<Organization>()
                 .WithMany()
                 .HasForeignKey(e => e.OrganizationId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Optional: null means the system did it (US-018)
             builder.HasOne<User>()
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

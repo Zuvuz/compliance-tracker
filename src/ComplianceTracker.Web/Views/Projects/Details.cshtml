@@ -1,29 +1,40 @@
-@* US-008: the project's own page. The id #project-name is used by the tests.
-   The project's frameworks (US-011) and user stories (US-018) will be added here later. *@
-@using ComplianceTracker.Domain.Projects
-@model Project
+@* US-008: the project's own page. US-022: split into tabs, each with its own address (/Projects/Details/{id}/{tab}).
+   The header (_ProjectHeader) is the same on every tab; each tab is a partial of its own.
+   The ids and classes used by the tests are listed in each partial. *@
+@model ProjectDetailsViewModel
 @{
-    ViewData["Title"] = Model.Name;
+    ViewData["Title"] = Model.Project.Name;
 }
 
-<p class="mb-1"><a asp-controller="Organizations" asp-action="Mine">← Back to the organisation</a></p>
-<h1 id="project-name" class="mb-0">@Model.Name</h1>
-<p class="text-muted small mb-4">Lifecycle phase: <span id="project-phase">@Model.Phase</span></p>
+<partial name="_ProjectHeader" model="Model" />
 
-<dl class="row">
-    <dt class="col-sm-3">Intended purpose</dt>
-    <dd class="col-sm-9" id="project-intended-purpose">@Model.IntendedPurpose</dd>
+@switch (Model.Tab)
+{
+    case ProjectTabs.Frameworks:
+        <partial name="_FrameworksTab" model="Model" />
+        break;
+    case ProjectTabs.Compliance:
+        <partial name="_ComplianceTab" model="Model" />
+        break;
+    case ProjectTabs.Risks:
+        <partial name="_RisksTab" model="Model" />
+        break;
+    case ProjectTabs.UserStories:
+        <partial name="_UserStoriesTab" model="Model" />
+        break;
+    case ProjectTabs.Activity:
+        <partial name="_ActivityTab" model="Model" />
+        break;
+    default:
+        <partial name="_OverviewTab" model="Model" />
+        break;
+}
 
-    @* Optional fields are only shown when they have a value *@
-    @if (!string.IsNullOrEmpty(Model.Description))
+@section Scripts {
+    @* US-018 R7: live updates, only on the tab that shows the user stories *@
+    @if (Model.Tab == ProjectTabs.UserStories && Model.Project.GitHub is not null)
     {
-        <dt class="col-sm-3">Description</dt>
-        <dd class="col-sm-9">@Model.Description</dd>
+        <script src="~/lib/microsoft-signalr/signalr.min.js"></script>
+        <script src="~/js/work-items.js" asp-append-version="true"></script>
     }
-
-    @if (!string.IsNullOrEmpty(Model.Scope))
-    {
-        <dt class="col-sm-3">Scope</dt>
-        <dd class="col-sm-9">@Model.Scope</dd>
-    }
-</dl>
+}

@@ -1,4 +1,5 @@
 using ComplianceTracker.Domain.Common;
+using ComplianceTracker.Domain.Frameworks;
 
 namespace ComplianceTracker.Domain.Projects
 {
@@ -7,7 +8,14 @@ namespace ComplianceTracker.Domain.Projects
     // Belongs to exactly one organisation and is invisible to all others.
     public class Project
     {
+        // Every framework version the project has used, also removed ones (the history, US-011 R7)
+        private readonly List<ProjectFramework> _frameworks = new();
+
         public Guid Id { get; } = Guid.NewGuid();
+
+        // US-092: the row's version, set by the database (PostgreSQL's xmin). A form carries it, so a save
+        // can tell that someone else changed the row after the form was opened.
+        public uint Version { get; private set; }
         public Guid OrganizationId { get; private set; }
 
         // Unique within the organisation (checked in ProjectService, because it needs the database)
@@ -24,6 +32,17 @@ namespace ComplianceTracker.Domain.Projects
 
         public LifecyclePhase Phase { get; private set; }
 
+        // US-018: the GitHub repository the project reads its user stories from, or null
+        public GitHubLink? GitHub { get; private set; }
+
+        // US-024 R4: a project at end of support is kept as it was and cannot be changed
+        public bool IsClosed => Phase == LifecyclePhase.EndOfSupport;
+
+        public IReadOnlyList<ProjectFramework> FrameworkHistory => _frameworks;
+
+        // The framework versions the project follows now, one per framework (US-011 R3)
+        public IEnumerable<ProjectFramework> Frameworks => _frameworks.Where(f => f.IsActive);
+
         // For EF Core only. Everyone else must use Create, so the rules always run.
         private Project() { }
 
@@ -35,16 +54,8 @@ namespace ComplianceTracker.Domain.Projects
             string? scope,
             LifecyclePhase phase)
         {
-            // R2: name and intended purpose are required
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new DomainException("Project name is required");
-            }
-
-            if (string.IsNullOrWhiteSpace(intendedPurpose))
-            {
-                throw new DomainException("Intended purpose is required");
-            }
+            EnsureRequired(name, intendedPurpose);
+            EnsureKnown(phase);
 
             return new Project
             {
@@ -55,6 +66,172 @@ namespace ComplianceTracker.Domain.Projects
                 Scope = scope?.Trim() ?? "",
                 Phase = phase
             };
+        }
+
+        // ---------------------------------------------------------- Editing (US-024)
+
+        // R1: the details, with the same rules as Create. Returns what changed (empty if nothing did),
+        // so the caller can log the old and new values (R3).
+        // The rule that names are unique needs the database and lives in ProjectService.
+        public IReadOnlyList<ProjectChange> Update(string name, string? description, string intendedPurpose, string? scope)
+        {
+            EnsureOpen();
+            EnsureRequired(name, intendedPurpose);
+
+            var changes = new List<ProjectChange>();
+            Name = Changed("Name", Name, name.Trim(), changes);
+            Description = Changed("Description", Description, description?.Trim() ?? "", changes);
+            IntendedPurpose = Changed("Intended purpose", IntendedPurpose, intendedPurpose.Trim(), changes);
+            Scope = Changed("Scope", Scope, scope?.Trim() ?? "", changes);
+            return changes;
+        }
+
+        // R2: any of the four phases, also backwards. EndOfSupport is final (R4).
+        // Returns the change, or null if the project is already in that phase.
+        public ProjectChange? ChangePhase(LifecyclePhase phase)
+        {
+            EnsureOpen();
+            EnsureKnown(phase);
+
+            if (phase == Phase)
+            {
+                return null;
+            }
+
+            var change = new ProjectChange("Phase", Phase.ToString(), phase.ToString());
+            Phase = phase;
+            return change;
+        }
+
+        private static string Changed(string field, string oldValue, string newValue, List<ProjectChange> changes)
+        {
+            if (oldValue != newValue)
+            {
+                changes.Add(new ProjectChange(field, oldValue, newValue));
+            }
+
+            return newValue;
+        }
+
+        // US-008 R2: name and intended purpose are required
+        private static void EnsureRequired(string name, string intendedPurpose)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new DomainException("Project name is required");
+            }
+
+            if (string.IsNullOrWhiteSpace(intendedPurpose))
+            {
+                throw new DomainException("Intended purpose is required");
+            }
+        }
+
+        // Only the four phases the system knows, also if someone sends a number
+        private static void EnsureKnown(LifecyclePhase phase)
+        {
+            if (!Enum.IsDefined(phase))
+            {
+                throw new DomainException("Unknown lifecycle phase");
+            }
+        }
+
+        // US-024 R4: nothing about a project at end of support changes, also not its frameworks
+        private void EnsureOpen()
+        {
+            if (IsClosed)
+            {
+                throw new DomainException("A project at end of support cannot be changed");
+            }
+        }
+
+        // ---------------------------------------------------------- GitHub (US-018)
+
+        // R1: links the project to a public repository, or moves it to another one.
+        // Returns false when nothing changed. Work items from a previous repository are marked
+        // "Removed" by the next sync, because their references name the old repository.
+        public bool LinkGitHub(string repository, string? label, Guid userId, DateTime at)
+        {
+            EnsureOpen();
+            var link = new GitHubLink(repository, label, userId, at, previous: GitHub);
+
+            if (GitHub is not null
+                && string.Equals(GitHub.Repository, link.Repository, StringComparison.OrdinalIgnoreCase)
+                && GitHub.Label == link.Label)
+            {
+                return false;
+            }
+
+            GitHub = link;
+            return true;
+        }
+
+        // ---------------------------------------------------------- Frameworks (US-011)
+
+        // The version of this framework the project follows now, or null
+        public ProjectFramework? FrameworkInUse(Guid frameworkId)
+            => Frameworks.FirstOrDefault(f => f.FrameworkId == frameworkId);
+
+        // R1, R2: the project starts following a version of a framework.
+        // The caller makes sure the organisation may use the framework.
+        public ProjectFramework UseFramework(Framework framework, FrameworkVersion version, Guid userId, DateTime at)
+        {
+            EnsureOpen();
+            EnsureVersionOf(framework, version);
+
+            // R3: never two versions of the same framework
+            if (FrameworkInUse(framework.Id) is not null)
+            {
+                throw new DomainException($"The project already uses {framework.Name}");
+            }
+
+            var link = new ProjectFramework(Id, framework.Id, version.Id, userId, at);
+            _frameworks.Add(link);
+            return link;
+        }
+
+        // R4, R6: moves the project to another version of a framework it already uses.
+        // The old link is kept as history. Returns false if the project already uses that version.
+        public bool ChangeFrameworkVersion(Framework framework, FrameworkVersion version, Guid userId, DateTime at)
+        {
+            EnsureOpen();
+            EnsureVersionOf(framework, version);
+
+            var current = FrameworkInUse(framework.Id)
+                ?? throw new DomainException($"The project does not use {framework.Name}");
+
+            if (current.FrameworkVersionId == version.Id)
+            {
+                return false;
+            }
+
+            current.Remove(userId, at);
+            _frameworks.Add(new ProjectFramework(Id, framework.Id, version.Id, userId, at));
+            return true;
+        }
+
+        // R7: the project stops following a framework; the link is kept as history
+        public void RemoveFramework(Framework framework, Guid userId, DateTime at)
+        {
+            EnsureOpen();
+            var current = FrameworkInUse(framework.Id)
+                ?? throw new DomainException($"The project does not use {framework.Name}");
+
+            current.Remove(userId, at);
+        }
+
+        private static void EnsureVersionOf(Framework framework, FrameworkVersion version)
+        {
+            if (version.FrameworkId != framework.Id)
+            {
+                throw new DomainException("The version does not belong to the framework");
+            }
+
+            // US-007: a draft can still change, so projects only follow active versions
+            if (!version.IsActive)
+            {
+                throw new DomainException("Only active versions can be used");
+            }
         }
     }
 }

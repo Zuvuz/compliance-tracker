@@ -1,0 +1,23 @@
+@* US-010: every organisation, for the system admin. Ids used by the tests: #system-organisations (rows data-organisation). *@
+@model IReadOnlyList<ComplianceTracker.Domain.Organizations.Organization>
+@{
+    ViewData["Title"] = "System";
+}
+
+<h1>System</h1>
+<p class="text-muted">All organisations and their members. Their projects and compliance data are not shown here.</p>
+
+<table class="table" id="system-organisations">
+    <thead><tr><th>Organisation</th><th>CVR</th><th>Members</th><th>Organisation admins</th></tr></thead>
+    <tbody>
+        @foreach (var organization in Model)
+        {
+            <tr data-organisation="@organization.Name">
+                <td><a asp-action="Organization" asp-route-id="@organization.Id">@organization.Name</a></td>
+                <td>@organization.Cvr</td>
+                <td>@organization.Members.Count</td>
+                <td>@string.Join(", ", organization.Members.Where(u => u.Role == UserRole.Admin).Select(u => u.Name))</td>
+            </tr>
+        }
+    </tbody>
+</table>

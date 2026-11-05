@@ -1,34 +1,113 @@
+using ComplianceTracker.Application.Risks;
+using ComplianceTracker.Domain.Risks;
+using ComplianceTracker.Application.Ai;
+using ComplianceTracker.Domain.Mappings;
+using ComplianceTracker.Application.Compliance;
+using ComplianceTracker.Application.Common;
+using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Application.Projects;
-using ComplianceTracker.Domain.Common;
-using ComplianceTracker.Domain.Organizations;
+using ComplianceTracker.Application.WorkItems;
+using ComplianceTracker.Domain.Projects;
+using ComplianceTracker.Web.Filters;
 using ComplianceTracker.Web.Models;
-using ComplianceTracker.Web.Security;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ComplianceTracker.Web.Controllers
 {
-    // US-008: the organisation's projects. Requires sign-in (FallbackPolicy in Program.cs).
-    // Thin controller: the rules live in ProjectService and the domain.
+    // US-008, US-011 and US-024: the organisation's projects, their frameworks, editing and lifecycle phase. Requires sign-in (FallbackPolicy in Program.cs).
+    // Thin controller: use cases (ProjectService) change data, queries read it. A broken rule is shown
+    // by DomainExceptionFilter: forms are shown again, other actions go back to the project page.
     public class ProjectsController : Controller
     {
         private readonly ProjectService _service;
-        private readonly IProjectRepository _projects;
-        private readonly IOrganizationRepository _organizations;
+        private readonly ProjectQueries _projects;
+        private readonly FrameworkQueries _frameworks;
+        private readonly OrganizationQueries _organizations;
+        private readonly WorkItemSyncService _sync;
+        private readonly WorkItemQueries _workItems;
+        private readonly TimeProvider _clock;
+        private readonly ComplianceService _compliance;
+        private readonly ComplianceQueries _complianceQueries;
+        private readonly MappingSuggestionService _suggestions;
+        private readonly RiskQueries _risks;
+        private readonly RequirementDocumentService _documents;
+        private readonly GetStartedService _getStarted;
 
-        public ProjectsController(ProjectService service, IProjectRepository projects, IOrganizationRepository organizations)
+        public ProjectsController(
+            ProjectService service,
+            ProjectQueries projects,
+            FrameworkQueries frameworks,
+            OrganizationQueries organizations,
+            WorkItemSyncService sync,
+            WorkItemQueries workItems,
+            ComplianceService compliance,
+            ComplianceQueries complianceQueries,
+            MappingSuggestionService suggestions,
+            RiskQueries risks,
+            RequirementDocumentService documents,
+            GetStartedService getStarted,
+            TimeProvider clock)
         {
+            _getStarted = getStarted;
+            _documents = documents;
+            _risks = risks;
+            _suggestions = suggestions;
+            _compliance = compliance;
+            _complianceQueries = complianceQueries;
+            _clock = clock;
             _service = service;
             _projects = projects;
+            _frameworks = frameworks;
             _organizations = organizations;
+            _sync = sync;
+            _workItems = workItems;
         }
 
-        // GET /Projects/Create: the empty form
+        // GET /Projects: the front page after sign-in (US-045 R4). The organisation's projects (US-008 R4)
+        // and which framework versions they use (US-011 R5).
+        [HttpGet]
+        public async Task<IActionResult> Index(CancellationToken cancellationToken)
+        {
+            var organization = await _organizations.MineAsync(cancellationToken);
+            if (organization is null)
+            {
+                return RedirectToAction("Create", "Organizations");
+            }
+
+            return View(new OrganizationOverviewViewModel(
+                organization,
+                await _projects.ListAsync(cancellationToken),
+                await _frameworks.ListAsync(cancellationToken),
+                _clock.Today())
+            {
+                GetStarted = await _getStarted.ForMeAsync(cancellationToken) // US-096
+            });
+        }
+
+        // POST /Projects/HideGetStarted and /Projects/ShowGetStarted: US-096 R4, for the signed-in member only
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> HideGetStarted(CancellationToken cancellationToken)
+        {
+            await _getStarted.SetHiddenAsync(true, cancellationToken);
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ShowGetStarted(CancellationToken cancellationToken)
+        {
+            await _getStarted.SetHiddenAsync(false, cancellationToken);
+            return RedirectToAction(nameof(Index));
+        }
+
+        // GET /Projects/Create: the empty form (the framework checkboxes come from the FrameworkChoices view component)
         [HttpGet]
         public async Task<IActionResult> Create(CancellationToken cancellationToken)
         {
             // Users without an organisation must create one first
-            if (await MyOrganizationAsync(cancellationToken) is null)
+            if (await _organizations.MineAsync(cancellationToken) is null)
             {
                 return RedirectToAction("Create", "Organizations");
             }
@@ -47,44 +126,456 @@ namespace ComplianceTracker.Web.Controllers
                 return View(model);
             }
 
-            try
-            {
-                var project = await _service.CreateAsync(
-                    User.ExternalId(),
-                    model.Name ?? "",
-                    model.Description,
-                    model.IntendedPurpose ?? "",
-                    model.Scope,
-                    model.LifecyclePhase,
-                    cancellationToken);
+            var project = await _service.CreateAsync(
+                model.Name ?? "",
+                model.Description,
+                model.IntendedPurpose ?? "",
+                model.Scope,
+                model.LifecyclePhase,
+                model.FrameworkIds,
+                cancellationToken);
 
-                // Post/Redirect/Get: show the new project, and a reload does not create it again
-                return RedirectToAction(nameof(Details), new { id = project.Id });
-            }
-            catch (DomainException ex)
-            {
-                // R2, R3: show the rule that was broken and keep what the user typed
-                ModelState.AddModelError(string.Empty, ex.Message);
-                return View(model);
-            }
+            // Post/Redirect/Get: show the new project, and a reload does not create it again
+            return RedirectToAction(nameof(Details), new { id = project.Id });
         }
 
-        // GET /Projects/Details/{id}: the project's own page
-        [HttpGet]
-        public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
+        // GET /Projects/Details/{id}/{tab?}: the project's own page (US-008), split into tabs (US-022).
+        // Each tab has its own address (R6), e.g. /Projects/Details/{id}/frameworks. Without a tab: Overview.
+        // US-041: the Compliance tab has one sub-tab per framework, e.g. /Projects/Details/{id}/compliance/cra.
+        // q searches the requirements (US-019 R3); show filters them (US-021 R6, US-044 R2: ComplianceFilters).
+        [HttpGet("Projects/Details/{id:guid}/{tab?}/{sub?}")]
+        // US-042: on the Risks tab, status, level and due=1 filter the register (R8)
+        public async Task<IActionResult> Details(
+            Guid id, string? tab, string? sub, string? q, string? show,
+            string? status, string? level, string? due,
+            // US-101: the Activity tab's filters (q is the search there too)
+            string? from, string? to, string? group, string? user, string? sort, string? page,
+            CancellationToken cancellationToken)
         {
-            var organization = await MyOrganizationAsync(cancellationToken);
-            var project = organization is null ? null : await _projects.GetAsync(organization.Id, id, cancellationToken);
+            var activeTab = ProjectTabs.Find(tab);
+            var project = await _projects.GetAsync(id, cancellationToken);
+            var organization = await _organizations.MineAsync(cancellationToken);
+            if (project is null || organization is null || activeTab is null)
+            {
+                return NotFound(); // US-008 R5: also when the project belongs to another organisation
+            }
+
+            // The Overview shows the latest entries (US-048 R5); the Activity tab searches the log (US-101)
+            var activity = activeTab is ProjectTabs.Overview
+                ? await _projects.ActivityAsync(id, cancellationToken)
+                : [];
+            var (activityQuery, activityIgnored) = ActivityFilters.Parse(q, from, to, group, user, sort, page);
+            var activityPage = activeTab is ProjectTabs.Activity
+                ? await _projects.SearchActivityAsync(id, activityQuery, cancellationToken)
+                : null;
+
+            // Requirements and links: for the Compliance tab, the overview's summary and the user stories' requirements
+            var compliance = activeTab is ProjectTabs.Compliance or ProjectTabs.Overview or ProjectTabs.UserStories
+                ? await _complianceQueries.ForProjectAsync(id, cancellationToken)
+                : null;
+
+            // US-042: the register, sorted by level; closed risks only when asked for (R7). US-048 R3: the overview counts them.
+            var allRisks = activeTab is ProjectTabs.Risks or ProjectTabs.Overview ? await _risks.ForProjectAsync(id, cancellationToken) ?? [] : [];
+            var now = _clock.GetUtcNow().UtcDateTime;
+            var risks = allRisks
+                .Where(r => string.IsNullOrEmpty(status) ? r.Status != RiskStatus.Closed : r.DisplayStatus.Equals(status, StringComparison.OrdinalIgnoreCase))
+                .Where(r => string.IsNullOrEmpty(level) || r.Level.ToString().Equals(level, StringComparison.OrdinalIgnoreCase))
+                .Where(r => due != "1" || r.IsReviewDue(now))
+                .ToList();
+
+            // An unknown sub-tab is "not found", like an unknown tab
+            if (activeTab == ProjectTabs.Compliance && sub is not null
+                && compliance?.Frameworks.Any(f => FrameworkNames.Slug(f.Framework.Name) == sub) != true)
+            {
+                return NotFound();
+            }
+
+            return View(new ProjectDetailsViewModel(
+                project,
+                await _frameworks.ListAsync(cancellationToken),
+                await _workItems.ListAsync(id, cancellationToken) ?? [],
+                _clock.Today())
+            {
+                // US-032: the requirement specifications, for the User stories tab
+                Documents = activeTab == ProjectTabs.UserStories ? await _workItems.DocumentsAsync(id, cancellationToken) : [],
+                Tab = activeTab,
+                Organization = organization,
+                Activity = activity,
+                ActivityPage = activityPage,
+                ActivityQuery = activityQuery,
+                ActivityIgnored = activityIgnored,
+                Compliance = compliance,
+                Sub = sub,
+                Search = q,
+                ComplianceFilter = ComplianceFilters.Find(show),
+                Risks = risks,
+                AllRisks = allRisks,
+                RiskStatusFilter = status,
+                RiskLevelFilter = level,
+                OnlyReviewDue = due == "1",
+                Now = now
+            });
+        }
+
+        // ---------------------------------------------------------- User stories from GitHub (US-018)
+
+        // GET /Projects/WorkItems/{id}: only the work items section, fetched again by the page when SignalR says it changed (R7)
+        [HttpGet]
+        public async Task<IActionResult> WorkItems(Guid id, CancellationToken cancellationToken)
+        {
+            var project = await _projects.GetAsync(id, cancellationToken);
+            var workItems = await _workItems.ListAsync(id, cancellationToken);
+            if (project is null || workItems is null)
+            {
+                return NotFound(); // R9
+            }
+
+            return PartialView("_WorkItems", new WorkItemsViewModel(
+                project, workItems, await _complianceQueries.ForProjectAsync(id, cancellationToken), await _workItems.DocumentsAsync(id, cancellationToken)));
+        }
+
+        // ---------------------------------------------------------- Requirement specifications (US-032)
+
+        // Room for a 10 MB file and the form (RequirementFile refuses anything larger with a clear message)
+        private const long MaxDocumentRequestSize = 25 * 1024 * 1024;
+
+        // POST /Projects/UploadRequirementDocument: R1-R10. documentId: the specification this is a new version of;
+        // empty means "the one with the same file name, or a new one".
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(MaxDocumentRequestSize)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaxDocumentRequestSize)]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        // US-033: idPattern says how IDs look in a Word document. US-034: kind is requirements or use cases.
+        public async Task<IActionResult> UploadRequirementDocument(
+            Guid projectId, IFormFile? file, Guid? documentId, string? idPattern, Domain.WorkItems.DocumentKind? kind,
+            CancellationToken cancellationToken)
+        {
+            if (file is not { Length: > 0 })
+            {
+                throw new Domain.Common.DomainException("Choose a file to upload");
+            }
+
+            using var buffer = new MemoryStream();
+            await file.CopyToAsync(buffer, cancellationToken);
+            await _documents.UploadAsync(projectId, file.FileName, buffer.ToArray(), documentId, idPattern,
+                kind ?? Domain.WorkItems.DocumentKind.RequirementSpecification, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+        }
+
+        // GET /Projects/RequirementDocumentFile/{id}?versionId=...: R7, for anyone in the organisation (R8: 404 for others)
+        [HttpGet]
+        public async Task<IActionResult> RequirementDocumentFile(Guid id, Guid versionId, CancellationToken cancellationToken)
+        {
+            var file = await _workItems.DocumentFileAsync(id, versionId, cancellationToken);
+            if (file is null)
+            {
+                return NotFound();
+            }
+
+            // ASVS V5.4.1: always a download with the stored content type and our cleaned name; nosniff stops guessing
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+            return File(file.Value.Content, file.Value.Version.ContentType, file.Value.Version.FileName);
+        }
+
+        // POST /Projects/LinkGitHub: R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        public async Task<IActionResult> LinkGitHub(Guid projectId, string? repository, string? label, CancellationToken cancellationToken)
+        {
+            await _sync.LinkGitHubAsync(projectId, repository ?? "", label, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+        }
+
+        // POST /Projects/SetGitHubToken: US-031 R1-R3. A refused token is shown as an error and never sent back to the page.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        public async Task<IActionResult> SetGitHubToken(Guid projectId, string? token, CancellationToken cancellationToken)
+        {
+            await _sync.SetGitHubTokenAsync(projectId, token ?? "", cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+        }
+
+        // POST /Projects/RemoveGitHubToken: US-031 R3
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        public async Task<IActionResult> RemoveGitHubToken(Guid projectId, CancellationToken cancellationToken)
+        {
+            await _sync.RemoveGitHubTokenAsync(projectId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+        }
+
+        // POST /Projects/SyncNow: R5. A failed sync is shown on the page from the project's GitHub link.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        public async Task<IActionResult> SyncNow(Guid projectId, CancellationToken cancellationToken)
+        {
+            await _sync.SyncNowAsync(projectId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+        }
+
+        // ---------------------------------------------------------- Requirements and user stories (US-021)
+
+        // POST /Projects/LinkRequirement: links one of the project's user stories to a requirement, by hand
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> LinkRequirement(Guid projectId, Guid requirementId, Guid workItemId, string? sub, CancellationToken cancellationToken)
+        {
+            await _compliance.LinkAsync(projectId, requirementId, workItemId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // POST /Projects/UnlinkRequirement: the link is kept as history
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> UnlinkRequirement(Guid projectId, Guid linkId, string? sub, CancellationToken cancellationToken)
+        {
+            await _compliance.UnlinkAsync(projectId, linkId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // POST /Projects/MarkNotApplicable: US-043 R5. The reason is required.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> MarkNotApplicable(Guid projectId, Guid requirementId, string? reason, string? sub, CancellationToken cancellationToken)
+        {
+            await _compliance.MarkNotApplicableAsync(projectId, requirementId, reason ?? "", cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // POST /Projects/MarkApplicable: US-043 R5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> MarkApplicable(Guid projectId, Guid requirementId, string? sub, CancellationToken cancellationToken)
+        {
+            await _compliance.MarkApplicableAsync(projectId, requirementId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // ---------------------------------------------------------- Evidence (US-057)
+
+        // Room for a 10 MB file and the form (EvidenceFile refuses anything larger with a clear message)
+        private const long MaxEvidenceRequestSize = 25 * 1024 * 1024;
+
+        // POST /Projects/AddEvidence: R1, R2. A link, or a file if one is chosen.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(MaxEvidenceRequestSize)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaxEvidenceRequestSize)]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> AddEvidence(
+            Guid projectId, Guid requirementId, string? title, string? url, IFormFile? file, DateOnly? validUntil, string? sub,
+            CancellationToken cancellationToken)
+        {
+            if (file is { Length: > 0 })
+            {
+                if (!string.IsNullOrWhiteSpace(url))
+                {
+                    throw new Domain.Common.DomainException("Give a link or a file, not both");
+                }
+
+                using var buffer = new MemoryStream();
+                await file.CopyToAsync(buffer, cancellationToken);
+                await _compliance.AddEvidenceFileAsync(projectId, requirementId, title ?? "", file.FileName, buffer.ToArray(), validUntil, cancellationToken);
+            }
+            else
+            {
+                await _compliance.AddEvidenceLinkAsync(projectId, requirementId, title ?? "", url ?? "", validUntil, cancellationToken);
+            }
+
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // POST /Projects/RemoveEvidence: R5, kept as history
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> RemoveEvidence(Guid projectId, Guid evidenceId, string? sub, CancellationToken cancellationToken)
+        {
+            await _compliance.RemoveEvidenceAsync(projectId, evidenceId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // GET /Projects/EvidenceFile/{id}?evidenceId=...: R6, for anyone in the organisation
+        [HttpGet]
+        public async Task<IActionResult> EvidenceFile(Guid id, Guid evidenceId, CancellationToken cancellationToken)
+        {
+            var file = await _complianceQueries.EvidenceFileAsync(id, evidenceId, cancellationToken);
+            if (file is null)
+            {
+                return NotFound(); // also for another organisation's evidence
+            }
+
+            // ASVS V5.4.1: always a download with the stored content type and our cleaned name; nosniff stops guessing
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+            return File(file.Value.Content, file.Value.Evidence.ContentType!, file.Value.Evidence.FileName);
+        }
+
+        // ---------------------------------------------------------- Traceability matrix (US-052)
+
+        // GET /Projects/Traceability/{id}?sub=cra: the matrix as CSV, for one regulation or all of them.
+        // R5: for anyone in the organisation, also the Auditor; 404 for other organisations and unknown regulations.
+        [HttpGet]
+        public async Task<IActionResult> Traceability(Guid id, string? sub, CancellationToken cancellationToken)
+        {
+            var project = await _projects.GetAsync(id, cancellationToken);
+            var organization = await _organizations.MineAsync(cancellationToken);
+            var compliance = await _complianceQueries.ForProjectAsync(id, cancellationToken);
+            if (project is null || organization is null || compliance is null)
+            {
+                return NotFound();
+            }
+
+            var frameworks = compliance.Frameworks
+                .Where(f => sub is null || FrameworkNames.Slug(f.Framework.Name) == sub)
+                .ToList();
+            if (sub is not null && frameworks.Count == 0)
+            {
+                return NotFound();
+            }
+
+            var rows = TraceabilityMatrix.Rows(frameworks,
+                userId => organization.Users.FirstOrDefault(u => u.Id == userId)?.Name ?? "Unknown");
+            var name = $"traceability-{FrameworkNames.Slug(project.Name)}{(sub is null ? "" : "-" + sub)}-{_clock.Today():yyyy-MM-dd}.csv";
+
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+            return File(TraceabilityMatrix.ToCsv(rows), "text/csv; charset=utf-8", name);
+        }
+
+        // ---------------------------------------------------------- AI suggestions (US-020, US-036)
+
+        // POST /Projects/SuggestMappings: R1, R8
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        public async Task<IActionResult> SuggestMappings(Guid projectId, CancellationToken cancellationToken)
+        {
+            await _suggestions.SuggestAsync(projectId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+        }
+
+        // POST /Projects/ShowMoreSuggestions: US-036 R2
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.UserStories)]
+        public async Task<IActionResult> ShowMoreSuggestions(Guid projectId, Guid workItemId, CancellationToken cancellationToken)
+        {
+            await _suggestions.ShowMoreAsync(projectId, workItemId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.UserStories });
+        }
+
+        // POST /Projects/SuggestForNotCovered: US-044 R3, R8. Only the open framework's not-covered requirements.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> SuggestForNotCovered(Guid projectId, Guid frameworkId, string? sub, CancellationToken cancellationToken)
+        {
+            await _suggestions.SuggestForNotCoveredAsync(projectId, frameworkId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // POST /Projects/ApproveSuggestion: US-020 R6. US-044 R5: decided on the Compliance tab, back to the same view.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> ApproveSuggestion(Guid projectId, Guid suggestionId, string? sub, string? show, CancellationToken cancellationToken)
+        {
+            await _suggestions.ApproveAsync(projectId, suggestionId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub, show = string.IsNullOrEmpty(show) ? null : show });
+        }
+
+        // POST /Projects/RejectSuggestion: US-020 R7. An unknown reason binds as null and is refused by the domain.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> RejectSuggestion(
+            Guid projectId, Guid suggestionId, RejectionReason? reason, string? comment, string? sub, string? show, CancellationToken cancellationToken)
+        {
+            await _suggestions.RejectAsync(projectId, suggestionId, reason, comment, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub, show = string.IsNullOrEmpty(show) ? null : show });
+        }
+
+        // ---------------------------------------------------------- Editing (US-024)
+
+        // GET /Projects/Edit/{id}: the form, filled in with the project's details
+        [HttpGet]
+        public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
+        {
+            var project = await _projects.GetAsync(id, cancellationToken);
             if (project is null)
             {
-                return NotFound(); // R5: also when the project belongs to another organisation
+                return NotFound();
             }
 
-            return View(project);
+            // R4: a project at end of support is only shown, so the user goes back to its page with the reason
+            if (project.IsClosed)
+            {
+                TempData[DomainExceptionFilter.TempDataKey] = "A project at end of support cannot be changed";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            return View(EditProjectViewModel.From(project));
         }
 
-        // The organisation the signed-in user belongs to (null if none yet)
-        private Task<Organization?> MyOrganizationAsync(CancellationToken cancellationToken)
-            => _organizations.GetByMemberAsync(User.ExternalId(), cancellationToken);
+        // POST /Projects/Edit: R1, R3. A broken rule shows the form again with what was typed (IFormModel).
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(EditProjectViewModel model, CancellationToken cancellationToken)
+        {
+            await _service.UpdateAsync(
+                model.Id, model.Name ?? "", model.Description, model.IntendedPurpose ?? "", model.Scope, cancellationToken, model.Version);
+            return RedirectToAction(nameof(Details), new { id = model.Id }); // Post/Redirect/Get
+        }
+
+        // POST /Projects/ChangePhase: R2, R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId")]
+        public async Task<IActionResult> ChangePhase(Guid projectId, LifecyclePhase phase, CancellationToken cancellationToken)
+        {
+            await _service.ChangePhaseAsync(projectId, phase, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId });
+        }
+
+        // ---------------------------------------------------------- Frameworks (US-011)
+
+        // POST /Projects/AddFramework: R2, R3. Without a version, the newest is used.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Frameworks)]
+        public async Task<IActionResult> AddFramework(Guid projectId, Guid frameworkId, Guid? frameworkVersionId, CancellationToken cancellationToken)
+        {
+            await _service.AddFrameworkAsync(projectId, frameworkId, frameworkVersionId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Frameworks }); // Post/Redirect/Get
+        }
+
+        // POST /Projects/UseNewest: R6
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Frameworks)]
+        // US-035 R5: with frameworkVersionId, the project moves to that (e.g. upcoming) version instead
+        public async Task<IActionResult> UseNewest(Guid projectId, Guid frameworkId, Guid? frameworkVersionId, CancellationToken cancellationToken)
+        {
+            await _service.UseNewestVersionAsync(projectId, frameworkId, frameworkVersionId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Frameworks });
+        }
+
+        // POST /Projects/RemoveFramework: R7
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Frameworks)]
+        public async Task<IActionResult> RemoveFramework(Guid projectId, Guid frameworkId, CancellationToken cancellationToken)
+        {
+            await _service.RemoveFrameworkAsync(projectId, frameworkId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Frameworks });
+        }
     }
 }

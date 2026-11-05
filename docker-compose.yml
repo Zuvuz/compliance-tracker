@@ -1,6 +1,15 @@
 # Navnet bliver præfiks på containere og volumes, fx compliance-tracker-postgres-1
 name: compliance-tracker
 
+# US-013: "docker compose up -d" starter kun databasen og Keycloak til lokal udvikling (http, Visual Studio).
+# US-017: "docker compose --profile full up -d" starter hele systemet over HTTPS:
+#   webappen på https://localhost:8443 og en egen Keycloak på https://keycloak.localhost:8543.
+
+# US-084: hele stakken bruger sin egen database, postgres-full, og forbinder kun over TLS.
+# VerifyFull: certifikatet skal være udstedt af den lokale CA og lyde på navnet postgres-full. Kodeordet kommer fra .env.
+x-database: &database
+  ConnectionStrings__ComplianceTracker: Host=postgres-full;Port=5432;Database=compliance_tracker;Username=postgres;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env};SSL Mode=VerifyFull;Root Certificate=/certs/ca.crt
+
 services:
   postgres:
     image: postgres:17
@@ -29,11 +38,201 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
     ports:
-      - "8180:8080"   # 8080 gemmer vi til webappen i US-017
+      - "8180:8080"   # 8080 er fri til andre ting
     volumes:
       - keycloak-data:/opt/keycloak/data   # brugere og opsætning overlever genstart
       - ./keycloak:/opt/keycloak/data/import:ro   # realm-filen fra repoet (kun læse)
 
+  # ---------------------------------------------------------- Hele systemet over HTTPS (US-017)
+
+  # Laver de certifikater, der mangler, i ./certs (aldrig i git). Dem, der findes, beholdes.
+  certs:
+    profiles: [full]
+    image: alpine:3.20
+    command: ["sh", "-c", "apk add --no-cache openssl > /dev/null && sh /scripts/make-dev-certs.sh /certs"]
+    volumes:
+      - ./certs:/certs
+      - ./docker/make-dev-certs.sh:/scripts/make-dev-certs.sh:ro
+
+  # En egen Keycloak til Docker-stakken, så udviklings-Keycloak'en ovenfor ikke ændres.
+  # Browseren og webappen bruger begge https://keycloak.localhost:8543, så tokens har én issuer.
+  # Brugere oprettes her for sig (Register), adskilt fra udviklings-Keycloak'en.
+  keycloak-full:
+    profiles: [full]
+    image: quay.io/keycloak/keycloak:26.3
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
+      KC_HOSTNAME: https://keycloak.localhost:8543
+      KC_HTTPS_PORT: "8543"
+      KC_HTTPS_CERTIFICATE_FILE: /certs/tls.crt
+      KC_HTTPS_CERTIFICATE_KEY_FILE: /certs/tls.key
+    ports:
+      - "8543:8543"
+    networks:
+      default:
+        aliases:
+          - keycloak.localhost   # webappen når Keycloak på samme adresse som browseren
+    volumes:
+      - keycloak-full-data:/opt/keycloak/data
+      - ./keycloak:/opt/keycloak/data/import:ro
+      - ./certs:/certs:ro
+    depends_on:
+      certs:
+        condition: service_completed_successfully
+    healthcheck:
+      # Keycloak-imaget har ingen curl; bash tjekker, at HTTPS-porten tager imod forbindelser
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8543"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  # US-084: hele stakkens database. Kun forbindelser over TLS (pg_hba_tls.conf); udviklingsdatabasen ovenfor røres ikke.
+  # Ingen port ud til værtsmaskinen: kun webappen, migreringerne og backuppen i Docker-netværket når den.
+  postgres-full:
+    profiles: [full]
+    image: postgres:17
+    entrypoint: ["sh", "/scripts/postgres-tls-entrypoint.sh"]
+    command: ["postgres"]
+    environment:
+      POSTGRES_DB: compliance_tracker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-full-data:/var/lib/postgresql/data
+      - ./certs:/certs:ro
+      - ./docker/postgres-tls-entrypoint.sh:/scripts/postgres-tls-entrypoint.sh:ro
+      - ./docker/pg_hba_tls.conf:/etc/postgresql/pg_hba_tls.conf:ro
+    depends_on:
+      certs:
+        condition: service_completed_successfully
+    healthcheck:
+      # Over den lokale socket inde i containeren
+      test: ["CMD-SHELL", "pg_isready -U postgres -d compliance_tracker"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # US-017 R2: kører migreringerne én gang og stopper. Fejler den, startes webappen ikke.
+  # US-084: over TLS; kan certifikatet ikke godkendes, fejler den, og webappen startes ikke.
+  migrate:
+    profiles: [full]
+    build:
+      context: .
+      target: migrate
+    image: compliance-tracker-migrate:local
+    environment:
+      <<: *database
+    volumes:
+      - ./certs:/certs:ro
+    depends_on:
+      postgres-full:
+        condition: service_healthy
+
+  # US-017 R1, R3: webappen på https://localhost:8443. Ingen hemmeligheder i imaget; de kommer fra .env.
+  web:
+    profiles: [full]
+    build:
+      context: .
+      target: web
+    image: compliance-tracker-web:local
+    environment:
+      <<: *database
+      ASPNETCORE_URLS: https://+:8443
+      ASPNETCORE_HTTPS_PORTS: "8443"
+      ASPNETCORE_Kestrel__Certificates__Default__Path: /certs/tls.crt
+      ASPNETCORE_Kestrel__Certificates__Default__KeyPath: /certs/tls.key
+      # Stoler på den lokale CA ud over de almindelige, så webappen kan tale med Keycloak over HTTPS
+      SSL_CERT_DIR: /etc/ssl/certs:/certs
+      Authentication__Keycloak__Authority: https://keycloak.localhost:8543/realms/compliance-tracker
+      Authentication__Keycloak__ClientId: compliance-tracker-web
+      # Klientens secret fra keycloak-full (Clients → compliance-tracker-web → Credentials). Mangler den, stopper appen med en besked.
+      Authentication__Keycloak__ClientSecret: ${KEYCLOAK_CLIENT_SECRET:-}
+      # Ollama på din egen computer. Den skal lytte på mere end 127.0.0.1 for at kunne nås fra Docker (se README).
+      Ai__BaseUrl: ${AI_BASE_URL:-http://host.docker.internal:11434}
+    ports:
+      - "8443:8443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # gør adressen kendt på Linux; Docker Desktop har den i forvejen
+    volumes:
+      - ./certs:/certs:ro
+    depends_on:
+      postgres-full:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      certs:
+        condition: service_completed_successfully
+      keycloak-full:
+        condition: service_started
+    healthcheck:
+      # ASP.NET-imaget har ingen curl; bash tjekker, at HTTPS-porten tager imod forbindelser.
+      # CI tjekker /health over HTTPS for sig.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8443"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  # US-014: en backup af hele stakkens database hver nat kl. 02:00 i ./backups, uden for database-containeren.
+  # Backups ældre end 30 dage slettes. US-084: over TLS med certifikatet godkendt (verify-full).
+  backup:
+    profiles: [full]
+    image: postgres:17
+    entrypoint: ["sh", "/scripts/backup-scheduler.sh"]
+    environment:
+      PGHOST: postgres-full
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      PGDATABASE: compliance_tracker
+      PGSSLMODE: verify-full
+      PGSSLROOTCERT: /certs/ca.crt
+      BACKUP_TIME: "02:00"
+      BACKUP_KEEP_DAYS: "30"
+      TZ: Europe/Copenhagen
+    volumes:
+      - ./backups:/backups
+      - ./docker:/scripts:ro
+      - ./certs:/certs:ro
+    depends_on:
+      postgres-full:
+        condition: service_healthy
+    healthcheck:
+      # Sund, når der findes en backup, der er mindre end 26 timer gammel
+      test: ["CMD-SHELL", "find /backups -name 'compliance_tracker_*.dump' -mmin -1560 | grep -q ."]
+      interval: 1h
+      timeout: 10s
+      start_period: 5m
+
+  # US-014: den samme backup af udviklingsdatabasen, startet alene med "--profile backup", i ./backups/dev
+  backup-dev:
+    profiles: [backup]
+    image: postgres:17
+    entrypoint: ["sh", "/scripts/backup-scheduler.sh"]
+    environment:
+      PGHOST: postgres
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      PGDATABASE: compliance_tracker
+      BACKUP_TIME: "02:00"
+      BACKUP_KEEP_DAYS: "30"
+      TZ: Europe/Copenhagen
+    volumes:
+      - ./backups/dev:/backups
+      - ./docker:/scripts:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "find /backups -name 'compliance_tracker_*.dump' -mmin -1560 | grep -q ."]
+      interval: 1h
+      timeout: 10s
+      start_period: 5m
+
 volumes:
   postgres-data:
+  postgres-full-data:
   keycloak-data:
+  keycloak-full-data:

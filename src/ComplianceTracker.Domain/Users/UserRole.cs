@@ -1,13 +1,13 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace ComplianceTracker.Domain.Users
 {
-    // What a member may do. Only Admin is used so far; the permissions of each role come in US-010.
+    // A member's role in the organisation (US-010). What each role may do is in RolePermissions.
     public enum UserRole
     {
-        // Manages the organisation, its members and their roles. The creator of an organisation is Admin.
+        // The organisation admin: everything, incl. members and roles. The creator of an organisation is Admin.
         Admin,
 
         // Responsible for frameworks, requirements and assessments

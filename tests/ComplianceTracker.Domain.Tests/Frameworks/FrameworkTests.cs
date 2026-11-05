@@ -82,7 +82,7 @@ public class FrameworkTests
         // Assert
         var version = Assert.Single(framework.Versions);
         Assert.Equal(1, version.Number);
-        Assert.Same(version, framework.CurrentVersion);
+        Assert.Same(version, framework.LatestVersion);
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public class FrameworkTests
         var framework = CreateFramework(file: file);
 
         // Assert
-        var version = framework.CurrentVersion;
+        var version = framework.LatestVersion;
         Assert.Equal(framework.Id, version.FrameworkId);
         Assert.Equal("iso27001.pdf", version.FileName);
         Assert.Equal(file.Content.Length, version.SizeInBytes);
@@ -123,7 +123,7 @@ public class FrameworkTests
     }
 
     [Fact]
-    public void The_newest_version_is_the_current_one()
+    public void The_newest_upload_is_the_latest_version()
     {
         // Arrange
         var framework = CreateFramework();
@@ -132,7 +132,7 @@ public class FrameworkTests
         var newest = framework.AddVersion(PdfFile("policy-v2.pdf", marker: 2), AnnaId, Monday.AddDays(1));
 
         // Assert
-        Assert.Same(newest, framework.CurrentVersion);
+        Assert.Same(newest, framework.LatestVersion);
     }
 
     [Fact]
@@ -140,7 +140,7 @@ public class FrameworkTests
     {
         // Arrange
         var framework = CreateFramework(file: PdfFile("policy-v1.pdf", marker: 1));
-        var first = framework.CurrentVersion;
+        var first = framework.LatestVersion;
         var firstFingerprint = first.Sha256;
 
         // Act
@@ -164,5 +164,36 @@ public class FrameworkTests
 
         // Assert
         Assert.NotEqual(framework.Versions[0].Id, second.Id);
+    }
+
+    // ---------------------------------------------------------- Built-in frameworks (US-006)
+
+    [Fact]
+    public void An_uploaded_framework_is_not_built_in()
+    {
+        // Arrange (the helper creates an uploaded framework)
+
+        // Act
+        var framework = CreateFramework();
+
+        // Assert
+        Assert.False(framework.IsBuiltIn);
+    }
+
+    [Fact]
+    public void A_built_in_framework_cannot_get_a_new_version()
+    {
+        // Arrange: built-in frameworks only come from the migration's seed data, so the test
+        // removes the owner the same way EF Core loads a seeded row (no owner = built-in)
+        var framework = CreateFramework();
+        typeof(Framework).GetProperty(nameof(Framework.OwnerOrganizationId))!.SetValue(framework, null);
+
+        // Act
+        var exception = Record.Exception(() => framework.AddVersion(PdfFile(marker: 1), AnnaId, Monday));
+
+        // Assert
+        Assert.True(framework.IsBuiltIn);
+        Assert.IsType<DomainException>(exception);
+        Assert.Single(framework.Versions);
     }
 }

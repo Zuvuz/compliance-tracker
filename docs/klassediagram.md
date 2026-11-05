@@ -34,7 +34,9 @@ classDiagram
     -projects: List~Project~
     -controls: List~Control~
     -frameworks: List~OrganizationFramework~
-    +Create(name: string, cvr: string, sector: Sector?, size: OrganizationSize, creator: UserIdentity)$ Organization
+    +Create(name: string, cvr: string, sector: Sector?, size: OrganizationSize?, creator: UserIdentity)$ Organization
+    +Members: List~User~
+    +RemoveMember(memberId: Guid, removedById: Guid, at: DateTime) User
   }
   class User {
     -id: Guid
@@ -43,6 +45,9 @@ classDiagram
     -name: string
     -email: string
     -role: UserRole
+    -removedAt: DateTime?
+    -removedById: Guid?
+    +IsActive: bool
   }
   class UserIdentity {
     <<record>>
@@ -52,49 +57,125 @@ classDiagram
   }
 
   %% ================= Services og repositories =================
+  class ICurrentUser {
+    <<interface>>
+    +Identity: UserIdentity
+  }
+  class CurrentMember {
+    -currentUser: ICurrentUser
+    -organizations: IOrganizationRepository
+    +FindOrganizationAsync() Task~Organization?~
+    +RequireAsync() Task~(Organization, User)~
+    +Reset()
+  }
+  class IActivityLogger {
+    <<interface>>
+    +LogAsync(action: ActivityAction, subjectId: Guid?) Task
+    +LogAsync(action: ActivityAction, subjectId: Guid?, details: string?) Task
+    +LogAsync(organizationId: Guid, userId: Guid, action: ActivityAction, subjectId: Guid?) Task
+  }
+  class ActivityLogger {
+    -log: IActivityLogRepository
+    -member: CurrentMember
+    -clock: TimeProvider
+  }
   class OrganizationService {
     -organizations: IOrganizationRepository
-    -activityLog: IActivityLogRepository
+    -currentUser: ICurrentUser
+    -member: CurrentMember
+    -log: IActivityLogger
     -unitOfWork: IUnitOfWork
-    +CreateAsync(name: string, cvr: string, sector: Sector?, size: OrganizationSize, creator: UserIdentity) Task~Organization~
+    +CreateAsync(name: string, cvr: string, sector: Sector?, size: OrganizationSize?) Task~Organization~
   }
   class UserActivityService {
     -organizations: IOrganizationRepository
-    -activityLog: IActivityLogRepository
+    -member: CurrentMember
+    -log: IActivityLogger
     -unitOfWork: IUnitOfWork
     +RecordSignInAsync(externalId: string) Task
-    +RecordSignOutAsync(externalId: string) Task
+    +RecordSignOutAsync() Task
   }
   class FrameworkService {
     -frameworks: IFrameworkRepository
-    -organizations: IOrganizationRepository
-    -activityLog: IActivityLogRepository
+    -projects: IProjectRepository
+    -extractor: IRequirementExtractor
+    -member: CurrentMember
+    -log: IActivityLogger
     -unitOfWork: IUnitOfWork
-    +AddAsync(userExternalId: string, name: string, fileName: string, content: byte[]) Task~Framework~
-    +UploadVersionAsync(userExternalId: string, frameworkId: Guid, fileName: string, content: byte[]) Task~FrameworkVersion~
+    -clock: TimeProvider
+    +AddAsync(name: string, fileName: string, content: byte[]) Task~Framework~
+    +UploadVersionAsync(frameworkId: Guid, fileName: string, content: byte[]) Task~FrameworkVersion~
+    +AddRequirementAsync(frameworkVersionId: Guid, code: string, title: string, description: string?) Task
+    +ChangeRequirementAsync(frameworkVersionId: Guid, requirementId: Guid, code: string, title: string, description: string?) Task
+    +RemoveRequirementAsync(frameworkVersionId: Guid, requirementId: Guid) Task
+    +SetAppliesFromAsync(frameworkVersionId: Guid, appliesFrom: DateOnly?) Task
+    +ActivateAsync(frameworkVersionId: Guid) Task
+    +EnableBuiltInAsync(frameworkId: Guid) Task
+    +DisableBuiltInAsync(frameworkId: Guid) Task
   }
+  class OrganizationQueries {
+    -member: CurrentMember
+    +MineAsync() Task~Organization?~
+    +GetAsync(id: Guid) Task~Organization?~
+  }
+  class FrameworkQueries {
+    -frameworks: IFrameworkRepository
+    -member: CurrentMember
+    +ListAsync() Task~IReadOnlyList~Framework~~
+    +GetOwnAsync(frameworkId: Guid) Task~Framework?~
+    +GetVersionAsync(frameworkVersionId: Guid) Task
+    +GetDocumentAsync(frameworkVersionId: Guid) Task
+    +BuiltInAsync() Task
+  }
+  class ProjectQueries {
+    -projects: IProjectRepository
+    -log: IActivityLogRepository
+    -member: CurrentMember
+    +ListAsync() Task~IReadOnlyList~Project~~
+    +GetAsync(projectId: Guid) Task~Project?~
+    +ActivityAsync(projectId: Guid) Task~IReadOnlyList~ActivityLogEntry~~
+  }
+  class IRequirementExtractor {
+    <<interface>>
+    +Extract(pdf: byte[]) IReadOnlyList~ExtractedRequirement~
+  }
+  class PdfRequirementExtractor
   class IFrameworkRepository {
     <<interface>>
     +NameExistsAsync(organizationId: Guid, name: string) Task~bool~
     +AddAsync(framework: Framework) Task
     +AddDocumentAsync(frameworkVersionId: Guid, content: byte[]) Task
     +GetAsync(organizationId: Guid, frameworkId: Guid) Task~Framework?~
+    +GetByVersionWithRequirementsAsync(organizationId: Guid, frameworkVersionId: Guid) Task~Framework?~
     +ListAsync(organizationId: Guid) Task~IReadOnlyList~Framework~~
+    +GetAvailableAsync(organizationId: Guid, frameworkId: Guid) Task~Framework?~
     +GetDocumentAsync(organizationId: Guid, frameworkVersionId: Guid) Task
+    +ListBuiltInAsync() Task~IReadOnlyList~Framework~~
+    +GetBuiltInAsync(frameworkId: Guid) Task~Framework?~
+    +GetActiveSelectionAsync(organizationId: Guid, frameworkVersionId: Guid) Task~OrganizationFramework?~
+    +AddSelectionAsync(selection: OrganizationFramework) Task
   }
   class ProjectService {
     -projects: IProjectRepository
-    -organizations: IOrganizationRepository
-    -activityLog: IActivityLogRepository
+    -frameworks: IFrameworkRepository
+    -member: CurrentMember
+    -log: IActivityLogger
     -unitOfWork: IUnitOfWork
-    +CreateAsync(userExternalId: string, name: string, description: string?, intendedPurpose: string, scope: string?, phase: LifecyclePhase) Task~Project~
+    -clock: TimeProvider
+    +CreateAsync(name: string, description: string?, intendedPurpose: string, scope: string?, phase: LifecyclePhase, frameworkIds: Guid[]?) Task~Project~
+    +AddFrameworkAsync(projectId: Guid, frameworkId: Guid, frameworkVersionId: Guid?) Task
+    +UseNewestVersionAsync(projectId: Guid, frameworkId: Guid) Task
+    +RemoveFrameworkAsync(projectId: Guid, frameworkId: Guid) Task
+    +UpdateAsync(projectId: Guid, name: string, description: string?, intendedPurpose: string, scope: string?) Task
+    +ChangePhaseAsync(projectId: Guid, phase: LifecyclePhase) Task
   }
   class IProjectRepository {
     <<interface>>
-    +NameExistsAsync(organizationId: Guid, name: string) Task~bool~
+    +NameExistsAsync(organizationId: Guid, name: string, exceptProjectId: Guid?) Task~bool~
     +AddAsync(project: Project) Task
     +GetAsync(organizationId: Guid, projectId: Guid) Task~Project?~
     +ListAsync(organizationId: Guid) Task~IReadOnlyList~Project~~
+    +ListUsingFrameworkAsync(organizationId: Guid, frameworkId: Guid) Task~IReadOnlyList~Project~~
   }
   class IOrganizationRepository {
     <<interface>>
@@ -106,6 +187,7 @@ classDiagram
   class IActivityLogRepository {
     <<interface>>
     +AppendAsync(entry: ActivityLogEntry) Task
+    +ListAboutAsync(organizationId: Guid, subjectId: Guid) Task~IReadOnlyList~ActivityLogEntry~~
   }
   class IUnitOfWork {
     <<interface>>
@@ -115,6 +197,7 @@ classDiagram
   %% ================= Projekt og releases =================
   class Project {
     -id: Guid
+    -version: uint
     -organizationId: Guid
     -name: string
     -description: string
@@ -125,7 +208,21 @@ classDiagram
     -releases: List~Release~
     -workItems: List~WorkItem~
     -frameworks: List~ProjectFramework~
+    +Frameworks: IEnumerable~ProjectFramework~
+    +IsClosed: bool
     +Create(organizationId: Guid, name: string, description: string?, intendedPurpose: string, scope: string?, phase: LifecyclePhase)$ Project
+    +FrameworkInUse(frameworkId: Guid) ProjectFramework?
+    +UseFramework(framework: Framework, version: FrameworkVersion, userId: Guid, at: DateTime) ProjectFramework
+    +ChangeFrameworkVersion(framework: Framework, version: FrameworkVersion, userId: Guid, at: DateTime) bool
+    +RemoveFramework(framework: Framework, userId: Guid, at: DateTime)
+    +Update(name: string, description: string?, intendedPurpose: string, scope: string?) IReadOnlyList~ProjectChange~
+    +ChangePhase(phase: LifecyclePhase) ProjectChange?
+  }
+  class ProjectChange {
+    <<record>>
+    +Field: string
+    +OldValue: string
+    +NewValue: string
   }
   class Release {
     -id: Guid
@@ -142,7 +239,12 @@ classDiagram
     -name: string
     -scope: FrameworkScope
     -versions: List~FrameworkVersion~
-    +CurrentVersion: FrameworkVersion
+    +LatestVersion: FrameworkVersion
+    +CurrentVersion(today: DateOnly) FrameworkVersion?
+    +UpcomingVersion(today: DateOnly) FrameworkVersion?
+    +IsBuiltIn: bool
+    +RequireCurrentVersion(today: DateOnly) FrameworkVersion
+    +Version(versionId: Guid) FrameworkVersion
     +Create(organizationId: Guid, name: string, file: CatalogFile, uploadedById: Guid, uploadedAt: DateTime)$ Framework
     +AddVersion(file: CatalogFile, uploadedById: Guid, uploadedAt: DateTime) FrameworkVersion
   }
@@ -153,13 +255,23 @@ classDiagram
     -fileName: string
     -sizeInBytes: long
     -sha256: string
-    -uploadedById: Guid
+    -uploadedById: Guid?
     -uploadedAt: DateTime
     -source: CatalogSource
-    -sourceReference: string
-    -status: CatalogStatus
+    -sourceReference: string?
+    -status: FrameworkVersionStatus
     -activatedAt: DateTime?
+    -activatedById: Guid?
+    -appliesFrom: DateOnly?
     -requirements: List~Requirement~
+    +IsActive: bool
+    +AppliesOn(today: DateOnly) bool
+    +IsUpcomingOn(today: DateOnly) bool
+    +SetAppliesFrom(appliesFrom: DateOnly?)
+    +AddRequirement(code: string, title: string, description: string?) Requirement
+    +ChangeRequirement(requirementId: Guid, code: string, title: string, description: string?)
+    +RemoveRequirement(requirementId: Guid)
+    +Activate(userId: Guid, at: DateTime)
   }
   class CatalogFile {
     <<value object>>
@@ -170,21 +282,50 @@ classDiagram
   }
   class Requirement {
     -id: Guid
+    -version: uint
     -frameworkVersionId: Guid
     -code: string
-    -category: string
     -title: string
     -description: string
+    -position: int
+    -group: string?
+    -reference: string?
+  }
+  class RequirementApplicability {
+    -id: Guid
+    -projectId: Guid
+    -requirementId: Guid
+    -reason: string
+    -decidedById: Guid
+    -decidedAt: DateTime
+    -revokedById: Guid?
+    -revokedAt: DateTime?
+    +IsActive: bool
+    +NotApplicable(projectId: Guid, requirementId: Guid, reason: string, userId: Guid, at: DateTime)$ RequirementApplicability
+    +Revoke(userId: Guid, at: DateTime)
   }
   class OrganizationFramework {
+    -id: Guid
     -organizationId: Guid
     -frameworkVersionId: Guid
-    -selectedAt: DateTime
+    -enabledAt: DateTime
+    -enabledById: Guid
+    -disabledAt: DateTime?
+    -disabledById: Guid?
+    +IsActive: bool
+    +Enable(organizationId: Guid, frameworkVersionId: Guid, enabledById: Guid, enabledAt: DateTime)$ OrganizationFramework
+    +Disable(disabledById: Guid, disabledAt: DateTime)
   }
   class ProjectFramework {
+    -id: Guid
     -projectId: Guid
+    -frameworkId: Guid
     -frameworkVersionId: Guid
-    -selectedAt: DateTime
+    -addedAt: DateTime
+    -addedById: Guid
+    -removedAt: DateTime?
+    -removedById: Guid?
+    +IsActive: bool
   }
 
   %% ================= Kontroller og evidens =================
@@ -206,14 +347,34 @@ classDiagram
   }
   class Evidence {
     -id: Guid
-    -controlId: Guid
-    -releaseId: Guid?
-    -submittedById: Guid
-    -type: EvidenceType
-    -description: string
-    -reference: string
-    -validFrom: DateOnly
-    -validTo: DateOnly?
+    -projectId: Guid
+    -requirementId: Guid
+    -title: string
+    -url: string?
+    -fileName: string?
+    -contentType: string?
+    -sizeInBytes: long?
+    -sha256: string?
+    -validUntil: DateOnly?
+    -addedById: Guid
+    -addedRole: UserRole?
+    -addedAt: DateTime
+    -removedById: Guid?
+    -removedAt: DateTime?
+    +IsActive: bool
+    +IsFile: bool
+    +ForLink(projectId, requirementId, title, url, validUntil, addedById, role, at)$ Evidence
+    +ForFile(projectId, requirementId, title, file: EvidenceFile, validUntil, addedById, role, at)$ Evidence
+    +IsExpiredOn(today: DateOnly) bool
+    +Remove(userId: Guid, at: DateTime)
+  }
+  class EvidenceFile {
+    <<value object>>
+    +FileName: string
+    +ContentType: string
+    +Content: byte[]
+    +Sha256: string
+    +Create(fileName: string, content: byte[])$ EvidenceFile
   }
 
   %% ================= Vurderinger =================
@@ -234,41 +395,318 @@ classDiagram
     -projectId: Guid
     -releaseId: Guid?
     -type: WorkItemType
-    -title: string
-    -acceptanceCriteria: string
-    -sourceSystem: SourceSystem
+    -source: WorkItemSource
     -externalReference: string
+    -url: string
+    -title: string
+    -rules: string
+    -examples: string
+    -gherkin: string
+    -description: string
+    -acceptanceCriteria: string
+    -useCase: UseCaseSections?
+    -labels: string
+    -state: WorkItemState
+    -documentId: Guid?
+    -documentVersion: int?
+    -removedInVersion: int?
+    -firstSyncedAt: DateTime
     -lastSyncedAt: DateTime
-    -requirements: List~RequirementWorkItem~
+    +Create(projectId: Guid, source: WorkItemSource, item: ExternalWorkItem, at: DateTime)$ WorkItem
+    +FromDocument(projectId: Guid, documentId: Guid, type: WorkItemType, item: DocumentWorkItem, version: int, at: DateTime)$ WorkItem
+    +Update(item: ExternalWorkItem, at: DateTime) bool
+    +UpdateFromDocument(item: DocumentWorkItem, version: int, at: DateTime) bool
+    +MarkRemoved() bool
+    +MarkRemovedIn(version: int) bool
   }
-  class RequirementWorkItem {
+  class RequirementDocument {
+    -id: Guid
+    -projectId: Guid
+    -name: string
+    -createdAt: DateTime
+    -kind: DocumentKind
+    -idPattern: string?
+    -versions: List~RequirementDocumentVersion~
+    +NextVersionNumber: int
+    +Create(projectId: Guid, name: string, at: DateTime)$ RequirementDocument
+    +AddVersion(file: RequirementFile, counts: ImportCounts, skipped: string[], userId: Guid, at: DateTime, idPattern: IdPattern?) RequirementDocumentVersion
+  }
+  class UseCaseSections {
+    <<value object>>
+    -primaryActor: string
+    -preconditions: string
+    -steps: List~string~
+    -extensions: string
+    -postconditions: string
+    +AcceptanceCriteria: string
+  }
+  class DocumentKind {
+    <<enumeration>>
+    RequirementSpecification
+    UseCases
+  }
+  class IdPattern {
+    <<value object>>
+    +Default: string$
+    -value: string
+    +Create(value: string?)$ IdPattern
+    +MatchStart(text: string) (string, string)?
+  }
+  class RequirementDocumentVersion {
+    -id: Guid
+    -number: int
+    -fileName: string
+    -contentType: string
+    -sha256: string
+    -uploadedById: Guid
+    -uploadedAt: DateTime
+    -added: int
+    -changed: int
+    -removed: int
+    -skippedRows: List~string~
+    +Summary: string
+  }
+  class IRequirementDocumentReaderFactory {
+    <<interface>>
+    +Supported: (string, DocumentKind)[]
+    +For(extension: string, kind: DocumentKind) IRequirementDocumentReader?
+  }
+  class IRequirementDocumentReader {
+    <<interface>>
+    +Extension: string
+    +Kind: DocumentKind
+    +UsesIdPattern: bool
+    +Read(content: byte[], idPattern: IdPattern) RequirementReadResult
+  }
+  class RequirementDocumentService {
+    +UploadAsync(projectId: Guid, fileName: string, content: byte[], documentId: Guid?, idPattern: string?, kind: DocumentKind) Task~RequirementDocumentVersion~
+  }
+  class GitHubLink {
+    <<owned by Project>>
+    -repository: string
+    -label: string
+    -connectedAt: DateTime
+    -connectedById: Guid
+    -lastSyncedAt: DateTime?
+    -lastSyncError: string?
+    -skipped: List~SkippedIssue~
+    -encryptedToken: string?
+    -tokenChangedAt: DateTime?
+    +HasToken: bool
+    +SetToken(encryptedToken: string, at: DateTime)
+    +RemoveToken(at: DateTime) bool
+    +RecordSuccess(at: DateTime, skipped: SkippedIssue[])
+    +RecordFailure(message: string)
+  }
+  class IWorkItemSource {
+    <<interface>>
+    +Source: WorkItemSource
+    +ReadAsync(query: WorkItemQuery) Task~WorkItemReadResult~
+  }
+  class GitHubWorkItemSource
+  class WorkItemSyncService {
+    -projects: IProjectRepository
+    -workItems: IWorkItemRepository
+    -github: IWorkItemSource
+    -notifier: IWorkItemNotifier
+    -member: CurrentMember
+    -log: IActivityLogger
+    -secrets: ISecretProtector
+    +LinkGitHubAsync(projectId: Guid, repository: string, label: string?) Task
+    +SetGitHubTokenAsync(projectId: Guid, token: string) Task
+    +RemoveGitHubTokenAsync(projectId: Guid) Task
+    +SyncNowAsync(projectId: Guid) Task~SyncResult~
+    +SyncAllAsync() Task
+  }
+  class ISecretProtector {
+    <<interface>>
+    +Protect(secret: string) string
+    +Unprotect(protectedSecret: string) string
+  }
+  class DataProtectionSecretProtector
+  class IWorkItemNotifier {
+    <<interface>>
+    +WorkItemsChangedAsync(projectId: Guid) Task
+  }
+  class RequirementLink {
+    -id: Guid
+    -projectId: Guid
     -requirementId: Guid
     -workItemId: Guid
-    -source: MappingSource
-    -createdAt: DateTime
+    -source: LinkSource
+    -linkedById: Guid
+    -linkedAt: DateTime
+    -removedById: Guid?
+    -removedAt: DateTime?
+    +IsActive: bool
+    +Create(projectId: Guid, requirementId: Guid, workItemId: Guid, linkedById: Guid, at: DateTime)$ RequirementLink
+    +Remove(userId: Guid, at: DateTime)
+  }
+  class ComplianceService {
+    +LinkAsync(projectId: Guid, requirementId: Guid, workItemId: Guid) Task
+    +UnlinkAsync(projectId: Guid, linkId: Guid) Task
+    +MarkNotApplicableAsync(projectId: Guid, requirementId: Guid, reason: string) Task
+    +MarkApplicableAsync(projectId: Guid, requirementId: Guid) Task
+    +AddEvidenceLinkAsync(projectId: Guid, requirementId: Guid, title: string, url: string, validUntil: DateOnly?) Task
+    +AddEvidenceFileAsync(projectId: Guid, requirementId: Guid, title: string, fileName: string, content: byte[], validUntil: DateOnly?) Task
+    +RemoveEvidenceAsync(projectId: Guid, evidenceId: Guid) Task
+  }
+  class ComplianceQueries {
+    +ForProjectAsync(projectId: Guid) Task~ProjectCompliance?~
+    +EvidenceFileAsync(projectId: Guid, evidenceId: Guid) Task
   }
   class MappingSuggestion {
     -id: Guid
+    -projectId: Guid
+    -workItemId: Guid
     -requirementId: Guid
-    -workItemId: Guid?
-    -controlId: Guid?
     -score: double
-    -aiRationale: string
-    -status: SuggestionStatus
-    -rejectionReason: RejectionReason?
-    -userComment: string?
+    -rank: int
+    -rationale: string?
+    -embeddingModel: string
+    -rationaleModel: string?
+    -promptVersion: string
     -createdAt: DateTime
+    -status: SuggestionStatus
     -decidedById: Guid?
     -decidedAt: DateTime?
+    -rejectionReason: RejectionReason?
+    -comment: string?
+    +Approve(userId: Guid, at: DateTime)
+    +Reject(reason: RejectionReason?, comment: string?, userId: Guid, at: DateTime)
+    +Replace()
+    +SetRationale(rationale: string, model: string)
+  }
+  class IEmbeddingModel {
+    <<interface>>
+    +Name: string
+    +EmbedAsync(texts: string[]) Task~float[][]~
+  }
+  class IRationaleWriter {
+    <<interface>>
+    +Name: string
+    +WriteAsync(prompt: string) Task~string~
+  }
+  class MappingSuggestionService {
+    +SuggestAsync(projectId: Guid) Task~int~
+    +ShowMoreAsync(projectId: Guid, workItemId: Guid) Task~int~
+    +ApproveAsync(projectId: Guid, suggestionId: Guid) Task
+    +RejectAsync(projectId: Guid, suggestionId: Guid, reason: RejectionReason?, comment: string?) Task
+  }
+  class RationaleService {
+    +WriteMissingAsync(take: int) Task~int~
+  }
+  class AiFeedbackService {
+    +SetSharingAsync(share: bool) Task
+    +ExportAsync() Task~string~
+  }
+
+  %% ================= Risici (US-042) =================
+  class Risk {
+    -id: Guid
+    -version: uint
+    -projectId: Guid
+    -title: string
+    -description: string
+    -likelihood: int
+    -impact: int
+    -residualLikelihood: int?
+    -residualImpact: int?
+    -ownerId: Guid
+    -treatment: RiskTreatment
+    -status: RiskStatus
+    -acceptedReason: string?
+    -acceptedById: Guid?
+    -closedReason: string?
+    -lastReviewedAt: DateTime?
+    -measures: List~RiskMeasure~
+    +Score: int
+    +Level: RiskLevel
+    +Update(...) IReadOnlyList~ProjectChange~
+    +Accept(reason: string, userId: Guid, at: DateTime) ProjectChange
+    +Close(reason: string, at: DateTime) ProjectChange
+    +MarkReviewed(userId: Guid, at: DateTime)
+    +IsReviewDue(now: DateTime) bool
+    +AddMeasure(requirementId: Guid?, workItemId: Guid?) RiskMeasure
+  }
+  class RiskMeasure {
+    -id: Guid
+    -riskId: Guid
+    -requirementId: Guid?
+    -workItemId: Guid?
+  }
+
+  %% ================= Roller og invitationer (US-009, US-010) =================
+  class Permission {
+    <<enumeration>>
+    ManageMembers
+    ManageAiSharing
+    ManageFrameworks
+    DecideCompliance
+    EditProjects
+    LinkWork
+    ManageRisks
+  }
+  class RolePermissions {
+    <<static>>
+    +Can(role: UserRole, permission: Permission)$ bool
+  }
+  class Invitation {
+    -id: Guid
+    -organizationId: Guid
+    -role: UserRole
+    -tokenHash: string
+    -createdById: Guid
+    -expiresAt: DateTime
+    -acceptedById: Guid?
+    -acceptedAt: DateTime?
+    -revokedAt: DateTime?
+    +EnsureUsable(now: DateTime)
+    +MarkAccepted(userId: Guid, at: DateTime)
+    +Revoke(at: DateTime)
+  }
+  class MemberService {
+    +ChangeRoleAsync(memberId: Guid, role: UserRole) Task
+    +CreateInvitationAsync(role: UserRole) Task~string~
+    +RevokeInvitationAsync(invitationId: Guid) Task
+    +AcceptInvitationAsync(token: string) Task
+  }
+  class SystemAdminService {
+    +ListOrganizationsAsync() Task
+    +ChangeRoleAsync(organizationId: Guid, memberId: Guid, role: UserRole) Task
   }
 
   %% ================= Log =================
+  class ActivityGroup {
+    <<enumeration>>
+    SignIn
+    Members
+    Organisation
+    Frameworks
+    Projects
+    WorkItems
+    Requirements
+    Evidence
+    Risks
+    Ai
+  }
+  class ActivityLogQuery {
+    -search: string?
+    -from: DateOnly?
+    -to: DateOnly?
+    -group: ActivityGroup?
+    -userId: Guid?
+    -systemOnly: bool
+    -sort: ActivitySort
+    -page: int
+  }
   class ActivityLogEntry {
     -id: Guid
     -organizationId: Guid
-    -userId: Guid
+    -userId: Guid?
     -action: ActivityAction
     -subjectId: Guid?
+    -details: string?
     -occurredAt: DateTime
   }
 
@@ -334,11 +772,10 @@ classDiagram
     BuiltIn
     Imported
   }
-  class CatalogStatus {
+  class FrameworkVersionStatus {
     <<enumeration>>
     Draft
     Active
-    Retired
   }
   class ActivityAction {
     <<enumeration>>
@@ -347,8 +784,13 @@ classDiagram
     UserSignedOut
     CatalogImported
     CatalogActivated
-    FrameworkAdded
-    FrameworkRemoved
+    FrameworkEnabled
+    FrameworkDisabled
+    ProjectFrameworkAdded
+    ProjectFrameworkRemoved
+    ProjectFrameworkVersionChanged
+    ProjectUpdated
+    ProjectPhaseChanged
   }
   class MappingSource {
     <<enumeration>>
@@ -383,15 +825,22 @@ classDiagram
   class WorkItemType {
     <<enumeration>>
     UserStory
+    Requirement
     UseCase
     Task
     Bug
     Epic
   }
-  class SourceSystem {
+  class WorkItemSource {
     <<enumeration>>
-    Manual
     GitHub
+    Document
+  }
+  class WorkItemState {
+    <<enumeration>>
+    Open
+    Closed
+    Removed
   }
   class SuggestionStatus {
     <<enumeration>>
@@ -418,19 +867,54 @@ classDiagram
   Framework "*" --> "0..1" Organization : owner
   OrganizationFramework "*" --> "1" FrameworkVersion
   Project "1" --> "*" ProjectFramework : frameworks
+  Project ..> ProjectChange : returns
   ProjectFramework "*" --> "1" FrameworkVersion
   Project "1" --> "*" Release : releases
   Project "1" --> "*" WorkItem : workItems
+  Project "1" *-- "0..1" GitHubLink : gitHub
+  GitHubWorkItemSource ..|> IWorkItemSource
+  WorkItemSyncService --> IWorkItemSource : github
+  Project "1" --> "*" RequirementDocument : requirement specifications
+  RequirementDocument "1" *-- "1..*" RequirementDocumentVersion : versions
+  WorkItem "*" --> "0..1" RequirementDocument : document
+  RequirementDocumentService --> IRequirementDocumentReaderFactory : readers
+  IRequirementDocumentReaderFactory ..> IRequirementDocumentReader : For(extension, kind)
+  IRequirementDocumentReaderFactory <|.. RequirementDocumentReaderFactory
+  IRequirementDocumentReader <|.. ExcelRequirementReader
+  IRequirementDocumentReader <|.. CsvRequirementReader
+  IRequirementDocumentReader <|.. WordRequirementReader
+  IRequirementDocumentReader <|.. UseCaseReader
+  WorkItem "1" *-- "0..1" UseCaseSections : useCase
+  WorkItemSyncService --> IWorkItemNotifier : notifier
+  WorkItemSyncService --> ISecretProtector : secrets
+  DataProtectionSecretProtector ..|> ISecretProtector
   WorkItem "*" --> "0..1" Release
   Framework "1" --> "*" FrameworkVersion : versions
   FrameworkVersion "1" --> "*" Requirement : requirements
   Control "1" --> "*" RequirementControl : requirements
   RequirementControl "*" --> "1" Requirement
   Control "*" --> "1" User : owner
-  Control "1" --> "*" Evidence : evidence
-  Evidence "*" --> "0..1" Release
-  WorkItem "1" --> "*" RequirementWorkItem : requirements
-  RequirementWorkItem "*" --> "1" Requirement
+  Evidence "*" --> "1" Project
+  Evidence "*" --> "1" Requirement
+  Evidence ..> EvidenceFile : made from
+  RequirementLink "*" --> "1" WorkItem
+  RequirementLink "*" --> "1" Requirement
+  RequirementLink "*" --> "1" Project
+  RequirementApplicability "*" --> "1" Requirement
+  Organization "1" --> "*" Invitation : invitations
+  Project "1" --> "*" Risk : risks
+  Risk "1" *-- "*" RiskMeasure : measures
+  RiskMeasure "*" --> "0..1" Requirement
+  RiskMeasure "*" --> "0..1" WorkItem
+  MappingSuggestion "*" --> "1" WorkItem
+  MappingSuggestion "*" --> "1" Requirement
+  MappingSuggestionService --> IEmbeddingModel : step 1
+  RationaleService --> IRationaleWriter : step 2
+  OllamaEmbeddingModel ..|> IEmbeddingModel
+  OpenAiCompatibleEmbeddingModel ..|> IEmbeddingModel
+  OllamaRationaleWriter ..|> IRationaleWriter
+  OpenAiCompatibleRationaleWriter ..|> IRationaleWriter
+  RequirementApplicability "*" --> "1" Project
   RequirementAssessment "*" --> "1" Requirement
   RequirementAssessment "*" --> "0..1" Release
   RequirementAssessment "*" --> "0..1" Organization
@@ -439,25 +923,42 @@ classDiagram
   MappingSuggestion "*" --> "0..1" Control
   ActivityLogEntry "*" --> "1" Organization
   ActivityLogEntry "*" --> "1" User
+  CurrentMember --> ICurrentUser : currentUser
+  CurrentMember --> IOrganizationRepository : organizations
+  ActivityLogger ..|> IActivityLogger
+  ActivityLogger --> IActivityLogRepository : log
+  ActivityLogger --> CurrentMember : member
   OrganizationService --> IOrganizationRepository : organizations
-  OrganizationService --> IActivityLogRepository : activityLog
+  OrganizationService --> ICurrentUser : currentUser
+  OrganizationService --> CurrentMember : member
+  OrganizationService --> IActivityLogger : log
   OrganizationService --> IUnitOfWork : unitOfWork
-  OrganizationService ..> UserIdentity : creator
   UserActivityService --> IOrganizationRepository : organizations
-  UserActivityService --> IActivityLogRepository : activityLog
+  UserActivityService --> CurrentMember : member
+  UserActivityService --> IActivityLogger : log
   UserActivityService --> IUnitOfWork : unitOfWork
   FrameworkService --> IFrameworkRepository : frameworks
-  FrameworkService --> IOrganizationRepository : organizations
-  FrameworkService --> IActivityLogRepository : activityLog
+  FrameworkService --> IRequirementExtractor : extractor
+  PdfRequirementExtractor ..|> IRequirementExtractor
+  FrameworkService --> CurrentMember : member
+  FrameworkService --> IActivityLogger : log
   FrameworkService --> IUnitOfWork : unitOfWork
+  OrganizationQueries --> CurrentMember : member
+  FrameworkQueries --> IFrameworkRepository : frameworks
+  FrameworkQueries --> CurrentMember : member
+  ProjectQueries --> IProjectRepository : projects
+  ProjectQueries --> CurrentMember : member
   FrameworkService ..> CatalogFile : validerer
   ProjectService --> IProjectRepository : projects
-  ProjectService --> IOrganizationRepository : organizations
-  ProjectService --> IActivityLogRepository : activityLog
+  ProjectService --> CurrentMember : member
+  ProjectService --> IActivityLogger : log
   ProjectService --> IUnitOfWork : unitOfWork
   ProjectService ..> Project : opretter
   IProjectRepository ..> Project
+  ProjectService --> IFrameworkRepository : frameworks
+  FrameworkService --> IProjectRepository : projects
   IFrameworkRepository ..> Framework
+  IFrameworkRepository ..> OrganizationFramework
   Framework ..> CatalogFile
   OrganizationService ..> Organization : opretter
   IOrganizationRepository ..> Organization
@@ -470,9 +971,20 @@ classDiagram
 
 ## Designvalg
 
-- **Koblingsklasser med data.** `RequirementControl` og `RequirementWorkItem` registrerer via `MappingSource`, om koblingen er lavet manuelt eller via et godkendt AI-forslag.
+- **User stories læses fra teamets eget værktøj.** `IWorkItemSource` er adapteren (B11); `GitHubWorkItemSource` læser issues med projektets label via GitHubs REST API uden nøgle og forstår BDD-skabelonen (`### Rules`, `### Examples`, `### Gherkin`). `WorkItemSyncService` tilføjer, opdaterer og markerer (`Closed`, `Removed`) og sletter aldrig. "Sync now" og en baggrundsjob (`ScheduledWorkItemSync`, hvert 15. minut) kører den samme sync, og åbne projektsider får besked via SignalR (`IWorkItemNotifier`). En planlagt sync logges uden bruger (`userId` er null = systemet) (B25). (US-018)
+- **Private repositories læses med en krypteret nøgle.** Domænet ser kun den krypterede tekst (`GitHubLink.EncryptedToken`). `ISecretProtector` krypterer med ASP.NET Core Data Protection, og nøglerne ligger i tabellen `DataProtectionKeys`. Nøglen tjekkes hos GitHub, før den gemmes, og den vises, logges og sendes aldrig tilbage til siden (B26). (US-031)
+- **Projektsiden har faner.** Overview, Frameworks, User stories og Activity har hver sin adresse (`/Projects/Details/{id}/{tab}`) og samme header. Activity viser projektets logposter (alle med projektet som `subjectId`), nyeste først, med `details`. En handling, der fejler, sender brugeren tilbage til sin egen fane (`[OnDomainError(Tab = ...)]`). (US-022)
+- **En version kan gælde fra en dato.** `AppliesFrom` sættes på kladden og låses ved aktivering. `CurrentVersion(today)` er den aktive version, der senest begyndte at gælde. Har ingen version startet endnu, bruges den første kommende. "I dag" kommer fra appens ur (`TimeProvider.Today()`), så testene kan styre datoen. Projekter flyttes ikke automatisk, men kan forberede sig ved at vælge en kommende version (B27). (US-035)
+- **Krav og user stories kobles pr. projekt.** `RequirementLink` er sit eget aggregat og laves i hånden indtil videre. Senere skal godkendte AI-forslag lave samme slags kobling (US-020). En kobling slettes aldrig, den får `removedAt`. Kun aktive koblinger tæller som dækning. Compliance-fanen har én under-fane pr. framework (`/Projects/Details/{id}/compliance/{slug}`) med krav, koblede stories og dækning. (US-019, US-021, US-041)
+- **CRA's krav følger med trackeren.** Bilag I (del I og II, 22 krav) er seed-data på den indbyggede CRA-version 1, med faste id'er, den officielle tekst fra EUR-Lex, en `group` pr. del og en `reference` til bilaget. Et krav kan markeres "Not applicable" for et projekt med en begrundelse (`RequirementApplicability`) og tæller så ikke med i dækningen. (US-043)
+- **AI-forslag i to trin, og modellen kan skiftes.** Trin 1: en embedding-model (`IEmbeddingModel`) scorer hvert krav mod hver story, og de 4 bedste bliver `MappingSuggestion`. Trin 2: en lille chat-model (`IRationaleWriter`) skriver begrundelsen i baggrunden (`RationaleWorker`). Hvilken server og hvilke modeller der bruges, står i `Ai:*`, og der er adaptere til Ollama og til OpenAI-kompatible servere. Hvert forslag gemmer model og prompt-version, og en godkendelse bliver til et `RequirementLink` med kilden `AiApproved` (B29). (US-020, US-036)
+- **Hvert projekt har et risikoregister.** `Risk` har sandsynlighed og konsekvens fra 1 til 5. Niveauet beregnes: 1–4 Low, 5–9 Medium, 10–16 High, 20–25 Critical. En risiko har en ejer og en behandling og kan få en valgfri restrisiko. Den kobles til de krav og user stories, der mindsker den (`RiskMeasure`). En risiko slettes aldrig, den lukkes med en begrundelse. Efter 12 måneder uden review vises "Review due" (B30). (US-042)
+- **Roller styrer, hvad et medlem må, og en beslutning husker rollen.** `RolePermissions` er rettighedstabellen, og hvert brugsscenarie spørger `CurrentMember.RequireAsync(Permission)`. Logposter, AI-beslutninger, koblinger, "not applicable", accepterede risici og aktiverede versioner gemmer rollen på beslutningstidspunktet, så en senere op- eller nedgradering ikke ændrer fortiden. System-admin er en Keycloak-rolle (`ICurrentUser.IsSystemAdmin`) og har kun adgang til organisationer og medlemmer (B31). (US-009, US-010)
+- **Evidens hører til kravet i et projekt i MVP'en.** `Evidence` er sit eget aggregat ligesom `RequirementLink`. Det er et link eller en fil (højst 10 MB, PDF/PNG/JPG/TXT/CSV/MD) med SHA-256 og eventuelt en "gyldig til"-dato. Filens indhold ligger i sin egen tabel (`EvidenceDocuments`), så listen aldrig henter filerne. Evidens slettes aldrig, den får `removedAt`. Koblingen til `Control` og `Release` kommer, når de bygges (B33). (US-057)
+- **Koblingsklasser med data.** `RequirementControl` og `RequirementLink` registrerer via `MappingSource`, om koblingen er lavet manuelt eller via et godkendt AI-forslag.
 - **Vurderinger ændres ikke.** En ny `RequirementAssessment` oprettes i stedet, og den seneste er gældende. Det giver historik til en auditor.
 - **Frameworkversioner låses ved aktivering.** Når `status` er `Active`, kan `requirements` ikke ændres. Så kan en mapping nøjes med at pege på et `Requirement`, fordi teksten bag aldrig ændrer sig. En rettelse er en ny `FrameworkVersion`.
+- **En ny upload er en kladde.** `IRequirementExtractor` (PdfPig, ingen AI) finder linjer, der starter med en nummereret kode som `A.5.15`, og lægger dem i kladden. Medlemmet retter, sletter og tilføjer krav og aktiverer så versionen (mindst ét krav). `CurrentVersion` er den senest aktiverede version og er `null`, mens frameworket kun har en kladde; `LatestVersion` er den nyeste upload. Projekter kan kun bruge aktive versioner, og en upload flytter ingen projekter (B24). (US-007)
 - **`OrganizationFramework` og `ProjectFramework` peger på en version**, ikke et framework. Klassenavnene er beholdt, fordi de stadig beskriver "hvilket framework er valgt"; versionen er detaljen.
 - **`Framework` indeholder ingen kravtekst.** Den er kun navn og niveau, så den kan seedes som fælles referencedata uden ophavsretlige problemer.
 - **`ActivityLogEntry` er append-only.** Ingen opdatering eller sletning, heller ikke for Admin.
@@ -500,6 +1012,22 @@ classDiagram
 - **Logposter kan pege på det, de handler om** via `subjectId`, fx frameworkversionen ved `CatalogImported`. (US-005)
 - **Et projekt kræver navn og tilsigtet formål.** Det tilsigtede formål afgør, hvilke krav der gælder (CRA Annex VII, punkt 1(a)). Beskrivelse og scope er valgfri, og fasen starter som `Planning`. Navnet er unikt i organisationen uden hensyn til store og små bogstaver; det tjekkes i `ProjectService`. (US-008)
 - **`LifecyclePhase` dækker hele produktets levetid**: `Planning`, `Development`, `Released` og `EndOfSupport`. De erstatter de tidligere foreslåede `Design`, `Maintenance` og `Retired` (B19). (US-008)
+- **Indbyggede frameworks har ingen ejer.** CRA og AI Act seedes af en migration med faste id'er, `ownerOrganizationId = null`, én version uden fil og uploader og et link til den officielle tekst på EUR-Lex i `sourceReference`. Kravene seedes ikke endnu (B20). (US-006)
+- **Indbyggede frameworks kan ikke ændres.** `Framework.AddVersion` afviser dem (`IsBuiltIn`), og `IFrameworkRepository.GetAsync` finder kun organisationens egne frameworks, så upload af en ny version giver en fejl. (US-006)
+- **At slå et framework til er en `OrganizationFramework`-række.** Slås det fra, sættes `disabledAt`; rækken slettes aldrig, så historikken bevares, og slås det til igen, oprettes en ny række. Begge dele logges som `FrameworkEnabled`/`FrameworkDisabled` med versionen som `subjectId`. `ListAsync` viser organisationens egne frameworks og de indbyggede, der er slået til. (US-006)
+- **Et projekt følger én version af hvert framework.** `Project` holder sine `ProjectFramework`-rækker og afviser en anden version af et framework, det allerede bruger. Databasen har samme regel som et unikt index på projekt og framework for aktive rækker. `frameworkId` gemmes ved siden af versionen, så reglen er nem at tjekke. (US-011)
+- **Versionsskift og fjernelse bevarer historikken.** Et versionsskift sætter `removedAt` på den gamle række og opretter en ny; en fjernelse sætter kun `removedAt`. Rækker slettes aldrig. (US-011)
+- **Projektet vælger blandt organisationens frameworks**: de uploadede og de indbyggede, der er slået til (`IFrameworkRepository.GetAvailableAsync`). Et indbygget framework kan ikke slås fra, mens projekter bruger det. (US-011)
+- **En ny version flytter kun de valgte projekter.** `FrameworkService.UploadVersionAsync` tager de projekter, brugeren har krydset af, og gemmer versionen og versionsskiftene i én transaktion. De andre projekter beholder deres version. (US-011)
+- **Logposter om projektets frameworks peger på projektet** (`subjectId`). Framework og versioner står i `ProjectFramework`-rækkerne med samme tidspunkt og bruger. (US-011)
+- **Services læser tiden fra `TimeProvider`**, ikke fra `DateTime.UtcNow`. Appen bruger systemets ur; testene sætter et fast tidspunkt, så de kan tjekke, at hver logpost har præcis det tidspunkt, handlingen skete (B22). (US-016)
+- **Størrelse er påkrævet ligesom sektor.** `Organization.Create` tager `OrganizationSize?` og afviser `null` med "Size is required"; formularen starter med "-- Choose size --". (US-016)
+- **Den indloggede bruger findes ét sted.** `ICurrentUser` er personen bag forespørgslen (Web læser den fra login-cookien). `CurrentMember` slår brugerens organisation op én gang pr. forespørgsel. Use cases og queries får dem via dependency injection og tager ikke længere brugeren som parameter, så ingen use case kan handle for en anden bruger ved en fejl. (US-029)
+- **Use cases ændrer, queries læser.** `...Service` ændrer data; `OrganizationQueries`, `FrameworkQueries` og `ProjectQueries` læser data til siderne og filtrerer altid på brugerens organisation. Controllere afhænger kun af disse og aldrig af repositories (testet i `ApplicationStructure.feature`). (US-029)
+- **Logposter skrives kun af `IActivityLogger`**, der udfylder bruger, organisation og tidspunkt. Domain events er fravalgt indtil videre (B23). (US-029)
+- **Hvert lag registrerer sig selv** med `AddApplication()` og `AddInfrastructure()`. Containeren tjekker ved opstart, at alle services og controllere kan oprettes. Keycloak-indstillingerne er en `KeycloakOptions`-klasse, der tjekkes ved opstart. (US-029)
+- **Ét fælles filter viser brudte regler.** `DomainExceptionFilter` viser en formular igen med det indtastede (`IFormModel`) eller sender brugeren tilbage til siden med fejlen (`[OnDomainError]`, Post/Redirect/Get via TempData). Controllerne har ingen `try/catch`. (US-029)
+- **Et projekt kan rettes og skifte fase.** `Update` og `ChangePhase` har samme regler som `Create` og returnerer, hvad der ændrede sig (`ProjectChange`). Logposten gemmer gammel og ny værdi i `Details`, fx "Phase: Planning → Development". Faserne kan skiftes frit, også baglæns, men EndOfSupport er endelig: projektet kan så hverken rettes, skifte fase eller ændre frameworks (`IsClosed`). (US-024)
 - **Projekter følger samme adgangsregel som frameworks**: `IProjectRepository` tager altid `organizationId`, og andre organisationers projekter giver 404. Oprettelse logges som `ProjectCreated` med projektet som `subjectId`. (US-008)
 
 ## Ordliste

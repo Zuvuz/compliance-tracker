@@ -1,0 +1,88 @@
+Feature: Use the organisation's frameworks in projects
+
+  Background:
+    Given an empty database
+    And "Anna" has created the organisation "Acme ApS"
+    And I am signed in as "Anna"
+    And the framework "Security policy" has been uploaded and activated
+    And the projects "Acme Portal" and "Acme App" exist
+
+  @US-011 @iso27001-A.5.31 @integration
+  Scenario: Choose frameworks when creating a project
+    When I create the project "Acme Shop" using "Security policy"
+    Then the project "Acme Shop" uses "Security policy" version 1
+
+  @US-011 @iso27001-A.5.31 @integration
+  Scenario: Add a framework to an existing project
+    When I add "Security policy" to the project "Acme Portal"
+    Then the project "Acme Portal" uses "Security policy" version 1
+
+  # Changed by US-007 and #52: an upload no longer moves projects. They keep their version
+  # until the new one is activated and they choose "Use newest" (R6).
+  @US-011 @US-007 @iso27001-7.5.3 @integration
+  Scenario: Projects keep their version when a new version is uploaded
+    Given "Acme Portal" and "Acme App" use "Security policy" version 1
+    When a new version of "Security policy" is uploaded and activated
+    Then the project "Acme Portal" uses "Security policy" version 1
+    And the project "Acme App" uses "Security policy" version 1
+
+  @US-011 @iso27001-7.5.3 @integration
+  Scenario: The organisation page shows outdated projects
+    Given "Acme Portal" uses "Security policy" version 2
+    And "Acme App" uses "Security policy" version 1
+    When I open the organisation page
+    Then I see "Security policy" version 2 used by "Acme Portal"
+    And I see "Security policy" version 1 used by "Acme App" marked "not on newest version"
+
+  @US-011 @iso27001-7.5.3 @integration
+  Scenario: Move a project to the newest version
+    Given "Acme Portal" uses "Security policy" version 2
+    And "Acme App" uses "Security policy" version 1
+    When I move "Acme App" to the newest version of "Security policy"
+    Then the organisation page shows only "Security policy" version 2, used by "Acme Portal" and "Acme App"
+
+  @US-011 @integration
+  Scenario: A project uses only one version of a framework
+    Given "Acme Portal" uses "Security policy" version 2
+    When I add "Security policy" version 1 to the project "Acme Portal"
+    Then I see the error "The project already uses Security policy"
+
+  @US-011 @integration
+  Scenario: Remove a framework from a project
+    Given "Acme App" uses "Security policy" version 1
+    When I remove "Security policy" from the project "Acme App"
+    Then the project "Acme App" does not use "Security policy"
+
+  @US-011 @integration
+  Scenario: A built-in framework in use cannot be switched off
+    Given "CRA – Regulation (EU) 2024/2847" is switched on
+    And "Acme Portal" uses "CRA – Regulation (EU) 2024/2847"
+    When I switch "CRA – Regulation (EU) 2024/2847" off
+    Then I see the error "Used by projects: Acme Portal"
+
+  @US-011 @iso27001-A.8.15 @integration
+  Scenario: Changes are logged
+    Given "Acme App" uses "Security policy" version 1
+    And a new version of "Security policy" has been uploaded and activated
+    When I move "Acme App" to the newest version of "Security policy"
+    Then the activity log for "Acme ApS" has "ProjectFrameworkVersionChanged" for "Anna" concerning "Acme App"
+
+  @US-011 @US-016 @iso27001-7.5.3 @integration
+  Scenario: The project page says when a newer version exists
+    Given "Acme App" uses "Security policy" version 1
+    And a new version of "Security policy" has been uploaded and activated
+    Then the page of "Acme App" says "Security policy" has a newer version
+
+  @US-011 @US-016 @iso27001-7.5.3 @integration
+  Scenario: Removing a framework keeps the history
+    Given "Acme App" uses "Security policy" version 1
+    When I remove "Security policy" from the project "Acme App"
+    Then the history of "Acme App" shows "Security policy" version 1 was added and then removed
+
+  @US-011 @US-016 @iso27001-A.8.15 @integration
+  Scenario: Adding and removing are logged with their time
+    Given the time is "2026-10-24T14:02:00Z"
+    When I add "Security policy" to the project "Acme App"
+    And I remove "Security policy" from the project "Acme App"
+    Then the activity log for "Acme ApS" has "ProjectFrameworkAdded" at "2026-10-24T14:02:00Z"
+    And the activity log for "Acme ApS" has "ProjectFrameworkRemoved" at "2026-10-24T14:02:00Z"

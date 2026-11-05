@@ -120,7 +120,7 @@ namespace ComplianceTracker.Specs.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/UploadFrameworks.feature.ndjson", 11);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/UploadFrameworks.feature.ndjson", 12);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -491,6 +491,51 @@ namespace ComplianceTracker.Specs.Features
 #line 57
     await testRunner.ThenAsync("the activity log for \"Acme ApS\" has \"CatalogImported\" for \"Anna\" concerning \"ISO/" +
                         "IEC 27001\" version 1", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="Uploads are logged with their time")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Upload frameworks as PDF")]
+        [global::Xunit.TraitAttribute("Description", "Uploads are logged with their time")]
+        [global::Xunit.TraitAttribute("Category", "US-005")]
+        [global::Xunit.TraitAttribute("Category", "US-016")]
+        [global::Xunit.TraitAttribute("Category", "iso27001-A.8.15")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task UploadsAreLoggedWithTheirTime()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-005",
+                    "US-016",
+                    "iso27001-A.8.15",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "9";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Uploads are logged with their time", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 60
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 3
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 61
+    await testRunner.GivenAsync("the time is \"2026-10-24T14:02:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 62
+    await testRunner.WhenAsync("I add the framework \"ISO/IEC 27001\" with the file \"iso27001.pdf\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 63
+    await testRunner.ThenAsync("the activity log for \"Acme ApS\" has \"CatalogImported\" at \"2026-10-24T14:02:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

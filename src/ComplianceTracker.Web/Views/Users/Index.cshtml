@@ -1,0 +1,129 @@
+@* Users (US-045, in the top bar): the members of the organisation and their roles (US-010), and invitations (US-009).
+   The first three columns are checked by the tests: name, e-mail, role.
+   Ids and classes used by the tests: #organisation-users rows with data-member, change-role and remove-member forms (US-090),
+   #create-invitation, #invitation-link, #open-invitations rows with revoke-invitation forms. *@
+@using ComplianceTracker.Domain.Organizations
+@model MembersViewModel
+@{
+    var organization = Model.Organization;
+    ViewData["Title"] = "Users";
+    var canManage = await Permissions.CanAsync(Permission.ManageMembers);
+    var roles = Enum.GetValues<UserRole>();
+}
+
+<partial name="_OrganizationHeader" model="organization" />
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+<table class="table align-middle" id="organisation-users">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>E-mail</th>
+            <th>Role</th>
+            @if (canManage)
+            {
+                <th>Change role</th>
+                <th></th>
+            }
+        </tr>
+    </thead>
+    <tbody>
+        @* US-090: removed members are not listed; their names stay on what they did *@
+        @foreach (var user in organization.Members.OrderBy(u => u.Name))
+        {
+            <tr data-member="@user.Name">
+                <td>@user.Name</td>
+                <td>@user.Email</td>
+                <td title="@RolePermissions.Title(user.Role)">@user.Role</td>
+                @if (canManage)
+                {
+                    <td>
+                        @* US-010 R2: earlier decisions keep the role the member had then *@
+                        <form asp-action="ChangeRole" method="post" class="d-flex gap-1 change-role">
+                            <input type="hidden" name="memberId" value="@user.Id" />
+                            <select name="role" class="form-select form-select-sm" aria-label="New role for @user.Name">
+                                @foreach (var role in roles)
+                                {
+                                    <option value="@role" selected="@(role == user.Role)">@RolePermissions.Title(role)</option>
+                                }
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                        </form>
+                    </td>
+                    <td>
+                        @* US-090 R1: asks once more before the member is removed *@
+                        <details class="remove-member-confirm">
+                            <summary class="btn btn-sm btn-outline-danger">Remove</summary>
+                            <form asp-action="Remove" method="post" class="remove-member mt-1">
+                                <input type="hidden" name="memberId" value="@user.Id" />
+                                <button type="submit" class="btn btn-sm btn-danger">Remove @user.Name now</button>
+                            </form>
+                        </details>
+                    </td>
+                }
+            </tr>
+        }
+    </tbody>
+</table>
+
+<details class="mb-4">
+    <summary class="small">What may each role do?</summary>
+    <table class="table table-sm small mt-2">
+        <thead><tr><th>Role</th><th>May</th></tr></thead>
+        <tbody>
+            @foreach (var role in roles)
+            {
+                var permissions = RolePermissions.Of(role);
+                <tr><td>@RolePermissions.Title(role)</td><td>@(permissions.Count == 0 ? "Read only, incl. the activity log" : string.Join(", ", permissions))</td></tr>
+            }
+        </tbody>
+    </table>
+</details>
+
+@if (canManage)
+{
+    <section id="invitations">
+        <h2 class="h5">Invite a colleague</h2>
+        @if (TempData["InvitationLink"] is string link)
+        {
+            @* US-009 R6: shown once; only its hash is stored *@
+            <div class="alert alert-success">
+                Send this link to the person. It works once and for @Invitation.ValidDays days, and is not shown again:
+                <input class="form-control mt-2" id="invitation-link" value="@link" readonly />
+            </div>
+        }
+        <form asp-action="CreateInvitation" method="post" class="d-flex gap-2 mb-3" id="create-invitation">
+            <select name="role" class="form-select form-select-sm w-auto" aria-label="Role for the invited person">
+                @foreach (var role in roles)
+                {
+                    <option value="@role" selected="@(role == UserRole.Developer)">@RolePermissions.Title(role)</option>
+                }
+            </select>
+            <button type="submit" class="btn btn-sm btn-primary">Create invitation link</button>
+        </form>
+
+        @if (Model.Invitations.Count > 0)
+        {
+            <table class="table table-sm" id="open-invitations">
+                <thead><tr><th>Role</th><th>Created</th><th>Expires</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var invitation in Model.Invitations)
+                    {
+                        <tr data-role="@invitation.Role">
+                            <td>@RolePermissions.Title(invitation.Role)</td>
+                            <td>@invitation.CreatedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
+                            <td>@invitation.ExpiresAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
+                            <td>
+                                <form asp-action="RevokeInvitation" method="post" class="revoke-invitation">
+                                    <input type="hidden" name="invitationId" value="@invitation.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Revoke</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+}

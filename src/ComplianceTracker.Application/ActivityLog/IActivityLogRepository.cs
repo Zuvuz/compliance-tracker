@@ -1,4 +1,4 @@
-﻿using ComplianceTracker.Domain.ActivityLog;
+using ComplianceTracker.Domain.ActivityLog;
 
 namespace ComplianceTracker.Application.ActivityLog
 {
@@ -7,5 +7,11 @@ namespace ComplianceTracker.Application.ActivityLog
     public interface IActivityLogRepository
     {
         Task AppendAsync(ActivityLogEntry entry, CancellationToken cancellationToken = default);
+
+        // US-022 R5: the organisation's entries about one thing (e.g. a project), newest first
+        Task<IReadOnlyList<ActivityLogEntry>> ListAboutAsync(Guid organizationId, Guid subjectId, CancellationToken cancellationToken = default);
+
+        // US-101: one page of the entries that match, and how many match in all. Runs in the database.
+        Task<(IReadOnlyList<ActivityLogEntry> Entries, int Total)> SearchAsync(ActivityLogSearch search, CancellationToken cancellationToken = default);
     }
 }

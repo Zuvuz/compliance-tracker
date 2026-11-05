@@ -1,4 +1,5 @@
-﻿using System;
+using ComplianceTracker.Domain.Users;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -10,8 +11,9 @@ namespace ComplianceTracker.Domain.ActivityLog
     {
         public Guid OrganizationId { get; }
 
-        // The user who performed the action
-        public Guid UserId { get; }
+        // The user who performed the action, or null when the system did it on its own,
+        // e.g. the scheduled check of GitHub (US-018 R6)
+        public Guid? UserId { get; }
 
         public ActivityAction Action { get; }
 
@@ -22,9 +24,17 @@ namespace ComplianceTracker.Domain.ActivityLog
         // Null when the action is not about anything in particular (e.g. signing in).
         public Guid? SubjectId { get; }
 
+        // US-010: the role the user had when they did it (null for the system). A later role change never alters it.
+        public UserRole? Role { get; }
+
+        // What changed, in plain text, e.g. "Phase: Planning → Development" (US-024 R3). Null for most actions.
+        public string? Details { get; }
+
         // EF Core also uses this constructor when it reads entries from the database
-        public ActivityLogEntry(Guid organizationId, Guid userId, ActivityAction action, DateTime occurredAt, Guid? subjectId = null)
+        public ActivityLogEntry(Guid organizationId, Guid? userId, ActivityAction action, DateTime occurredAt, Guid? subjectId = null, string? details = null, UserRole? role = null)
         {
+            Role = role;
+            Details = details;
             OrganizationId = organizationId;
             UserId = userId;
             Action = action;

@@ -1,0 +1,108 @@
+@* US-032: upload a requirement specification (Excel or CSV) and see its versions. US-033: or a Word document.
+   US-034: or a Word document with Unified Process use cases (select[name=kind]).
+   Each upload is a new version; its requirements appear in the work item list below.
+   Ids and classes used by the tests: #requirement-documents, #upload-requirement-document (input[name=idPattern]), .requirement-document[data-name],
+   .document-summary, .document-skipped li, .document-version[data-version] a. *@
+@using ComplianceTracker.Domain.WorkItems
+@model ProjectDetailsViewModel
+@{
+    var project = Model.Project;
+    var canUpload = !project.IsClosed && await Permissions.CanAsync(Permission.EditProjects);
+}
+
+<section id="requirement-documents" class="mb-4">
+    <h2 class="h6">Requirement specifications</h2>
+
+    @if (canUpload)
+    {
+        <form asp-action="UploadRequirementDocument" method="post" enctype="multipart/form-data" class="row g-2 mb-2" id="upload-requirement-document">
+            <input type="hidden" name="projectId" value="@project.Id" />
+            <div class="col-md-5">
+                <input type="file" name="file" accept=".xlsx,.csv,.docx" class="form-control" aria-label="Requirement specification" />
+            </div>
+            <div class="col-md-4">
+                <select name="documentId" class="form-select" aria-label="Upload as">
+                    <option value="">New specification, or new version of one with the same file name</option>
+                    @foreach (var document in Model.Documents)
+                    {
+                        <option value="@document.Id">New version of @document.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-outline-primary w-100">Upload requirement specification</button>
+            </div>
+            @* US-034 R1: what the document holds *@
+            <div class="col-md-4">
+                <select name="kind" class="form-select form-select-sm" aria-label="The document holds">
+                    <option value="@DocumentKind.RequirementSpecification">Requirement specification</option>
+                    <option value="@DocumentKind.UseCases">Use case document (.docx)</option>
+                </select>
+            </div>
+            @* US-033 R2: how IDs look in a Word document, as a regular expression *@
+            <div class="col-md-5">
+                <div class="input-group input-group-sm">
+                    <label class="input-group-text" for="id-pattern">ID pattern (Word)</label>
+                    <input type="text" name="idPattern" id="id-pattern" class="form-control font-monospace" value="@IdPattern.Default"
+                           maxlength="@IdPattern.MaxLength" spellcheck="false" />
+                </div>
+            </div>
+            <div class="col-12 form-text mt-0">
+                An .xlsx, .csv or .docx file of at most 10 MB.
+                Excel and CSV: the first row names the columns. ID and Title are required,
+                Description and Acceptance criteria are optional (Krav-ID, Titel, Beskrivelse and Acceptkriterier also work).
+                Only the first sheet is read.
+                Word: a requirement starts at a heading or paragraph that begins with an ID, e.g. "REQ-012 The user can log in".
+                The text below it is the description; after a line "Acceptance criteria:" it is the acceptance criteria.
+                Use cases: each starts at a heading such as "UC-03 Register patient" (the ID pattern is then UC-\d+ unless you change it),
+                with the sections Primary actor, Preconditions, Main success scenario, Extensions and Postconditions
+                (or Primær aktør, Forudsætninger, Hovedforløb, Udvidelser and Resultat).
+            </div>
+        </form>
+    }
+
+    @if (Model.Documents.Count == 0)
+    {
+        <p class="small text-muted mb-0">No requirement specifications uploaded.</p>
+    }
+
+    @foreach (var document in Model.Documents)
+    {
+        var latest = document.Latest!;
+        <div class="requirement-document border rounded p-2 mb-2" data-name="@document.Name">
+            <div class="fw-semibold">
+                @document.Name
+                @if (document.Kind == DocumentKind.UseCases)
+                {
+                    <span class="badge text-bg-light border">Use cases</span>
+                }
+            </div>
+            <p class="document-summary small mb-1">@latest.Summary</p>
+            <p class="small text-muted mb-1">Uploaded by @Model.NameOf(latest.UploadedById), @latest.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</p>
+            @if (latest.SkippedRows.Count > 0)
+            {
+                @* R3: the rows that did not become requirements, and why *@
+                <ul class="document-skipped small mb-1">
+                    @foreach (var skipped in latest.SkippedRows)
+                    {
+                        <li>@skipped</li>
+                    }
+                </ul>
+            }
+            <details>
+                <summary class="small">@document.Versions.Count version@(document.Versions.Count == 1 ? "" : "s")</summary>
+                <ul class="small mb-0">
+                    @foreach (var version in document.Versions.OrderByDescending(v => v.Number))
+                    {
+                        @* R7: every version's file can be downloaded *@
+                        <li class="document-version" data-version="@version.Number">
+                            <a href="@Url.Action("RequirementDocumentFile", "Projects", new { id = project.Id, versionId = version.Id })">Version @version.Number</a>
+                            · @version.FileName · @Model.NameOf(version.UploadedById), @version.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy")
+                            · <span class="text-muted" title="SHA-256 @version.Sha256">@version.Sha256[..12]</span>
+                        </li>
+                    }
+                </ul>
+            </details>
+        </div>
+    }
+</section>

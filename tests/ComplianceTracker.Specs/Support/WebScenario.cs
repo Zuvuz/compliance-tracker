@@ -4,8 +4,8 @@ using AngleSharp.Html.Dom;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Infrastructure.Persistence;
-using ComplianceTracker.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ComplianceTracker.Specs.Support
 {
@@ -14,15 +14,24 @@ namespace ComplianceTracker.Specs.Support
     public sealed class WebScenario : IDisposable
     {
         private readonly DatabaseScenario _database;
+        private readonly ScenarioClock _clock;
+        private readonly FakeGitHub _github;
+        private readonly FakeAi _ai;
         private TestApp? _app;
         private HttpClient? _client;
 
         // CVR numbers for organisations created by the tests; each one is unique in the scenario
         private int _nextCvr = 10000000;
 
-        public WebScenario(DatabaseScenario database)
+        private readonly DatabaseRace _race;
+
+        public WebScenario(DatabaseScenario database, ScenarioClock clock, FakeGitHub github, FakeAi ai, DatabaseRace race)
         {
+            _ai = ai;
+            _race = race;
             _database = database;
+            _clock = clock;
+            _github = github;
         }
 
         // The last response and its HTML, parsed so the tests can look for elements
@@ -30,7 +39,7 @@ namespace ComplianceTracker.Specs.Support
         public IDocument? Page { get; set; }
 
         // Started the first time it is used, after "Given an empty database" has set the connection string
-        public TestApp App => _app ??= TestApp.WithTestSignIn(_database.ConnectionString);
+        public TestApp App => _app ??= TestApp.WithTestSignIn(_database.ConnectionString, _clock, github: _github, ai: _ai, race: _race);
 
         // The client follows redirects and remembers cookies, like a browser
         public HttpClient Client => _client ??= App.Factory.CreateClient();
@@ -48,12 +57,17 @@ namespace ComplianceTracker.Specs.Support
         }
 
         // An extra client, e.g. an attacker or a client that must not follow redirects
-        public HttpClient CreateClient(string? signedInAs = null, bool followRedirects = true)
+        public HttpClient CreateClient(string? signedInAs = null, bool followRedirects = true, string? realmRoles = null)
         {
             var client = App.Factory.CreateClient(new WebApplicationFactoryClientOptions
             {
                 AllowAutoRedirect = followRedirects
             });
+
+            if (realmRoles is not null)
+            {
+                client.DefaultRequestHeaders.Add(TestAuthHandler.RolesHeader, realmRoles);
+            }
 
             if (signedInAs is not null)
             {
@@ -101,18 +115,16 @@ namespace ComplianceTracker.Specs.Support
         // Creates an organisation directly in the database, as if the user had done it in the app
         public async Task<Organization> CreateOrganisationAsync(string creatorName, string organisationName, string? cvr = null)
         {
-            await using var db = CreateDbContext();
-            var service = new OrganizationService(
-                new OrganizationRepository(db),
-                new ActivityLogRepository(db),
-                new UnitOfWork(db));
+            // The same use case the app runs, with the creator as the signed-in user (US-029)
+            await using var services = TestServices.Create(
+                _clock, new TestCurrentUser(TestUsers.Identity(creatorName)), TestServices.Database(_database.ConnectionString));
+            await using var scope = services.CreateAsyncScope();
 
-            return await service.CreateAsync(
+            return await scope.ServiceProvider.GetRequiredService<OrganizationService>().CreateAsync(
                 organisationName,
                 cvr ?? (_nextCvr++).ToString(),
                 Sector.Manufacturing,
-                OrganizationSize.Small,
-                TestUsers.Identity(creatorName));
+                OrganizationSize.Small);
         }
 
         // Sends a form with a file, like a browser does when uploading (multipart/form-data).

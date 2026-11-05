@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using ComplianceTracker.Application.Ai;
+using ComplianceTracker.Infrastructure.WorkItems;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -24,19 +27,49 @@ namespace ComplianceTracker.Specs.Support
         }
 
         // The web app with test sign-in instead of Keycloak (see TestAuthHandler)
-        public static TestApp WithTestSignIn(string connectionString)
+        // The clock replaces TimeProvider.System, so "Given the time is ..." also applies inside the app (US-016)
+        // overrides: settings to change, e.g. an empty ClientId to test the start-up check (US-029 R3)
+        // github: the pretend GitHub the app reads user stories from (US-018); without one, an empty one
+        // ai: the pretend local AI (US-020); without one, a new one
+        public static TestApp WithTestSignIn(string connectionString, TimeProvider clock, IDictionary<string, string?>? overrides = null, FakeGitHub? github = null, FakeAi? ai = null, DatabaseRace? race = null)
         {
+            github ??= new FakeGitHub();
+            ai ??= new FakeAi();
             var settings = new Dictionary<string, string?>
             {
                 ["ConnectionStrings:ComplianceTracker"] = connectionString,
                 // Only used when the app redirects to Keycloak on sign-out. There is no real Keycloak in these tests.
                 ["Authentication:Keycloak:Authority"] = FakeKeycloak.Issuer,
                 ["Authentication:Keycloak:ClientId"] = "compliance-tracker-web",
-                ["Authentication:Keycloak:ClientSecret"] = "not-used-in-tests"
+                ["Authentication:Keycloak:ClientSecret"] = "not-used-in-tests",
+                // The tests migrate their own database (TestDatabase); some start the app without one
+                ["Database:MigrateOnStartup"] = "false",
+                // The tests run the scheduled GitHub check themselves ("the scheduled check runs"), never on a timer
+                ["WorkItemSync:Enabled"] = "false"
             };
+            foreach (var (key, value) in overrides ?? new Dictionary<string, string?>())
+            {
+                settings[key] = value;
+            }
 
             return Create(settings, services =>
             {
+                services.AddSingleton(clock);
+
+                // US-018: the GitHub adapter talks to the pretend GitHub instead of api.github.com
+                services.AddHttpClient<GitHubWorkItemSource>().ConfigurePrimaryHttpMessageHandler(github.CreateHandler);
+
+                // US-020: the pretend AI replaces the Ollama adapters (the last registration wins)
+                services.AddSingleton<IEmbeddingModel>(ai);
+                services.AddSingleton<IRationaleWriter>(ai);
+
+                // US-015: lets a scenario save something at the same moment as the app
+                if (race is not null)
+                {
+                    services.ConfigureDbContext<ComplianceTracker.Infrastructure.Persistence.ComplianceTrackerDbContext>(
+                        options => options.AddInterceptors(race.Interceptor));
+                }
+
                 // Make the test sign-in the default, replacing the cookie + Keycloak setup from Program.cs
                 services
                     .AddAuthentication(options =>
@@ -57,6 +90,42 @@ namespace ComplianceTracker.Specs.Support
             });
         }
 
+        // US-088: the web app with its real cookie and Keycloak setup (no test sign-in), where CookieSignIn gives the
+        // cookie. The clock replaces TimeProvider.System, so a scenario can let time pass between requests.
+        public static TestApp WithCookieSignIn(string connectionString, TimeProvider clock, IDictionary<string, string?>? overrides = null)
+        {
+            var settings = new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:ComplianceTracker"] = connectionString,
+                ["Authentication:Keycloak:Authority"] = FakeKeycloak.Issuer,
+                ["Authentication:Keycloak:ClientId"] = "compliance-tracker-web",
+                ["Authentication:Keycloak:ClientSecret"] = "not-used-in-tests",
+                ["Database:MigrateOnStartup"] = "false",
+                ["WorkItemSync:Enabled"] = "false"
+            };
+            foreach (var (key, value) in overrides ?? new Dictionary<string, string?>())
+            {
+                settings[key] = value;
+            }
+
+            return Create(settings, services =>
+            {
+                services.AddSingleton(clock);
+                services.AddTransient<Microsoft.AspNetCore.Hosting.IStartupFilter, CookieSignIn>();
+
+                // A closed page sends the user to the made-up Keycloak, without asking a real one for its settings
+                services.PostConfigure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme, options =>
+                {
+                    options.Configuration = FakeKeycloak.Configuration;
+                    options.ConfigurationManager =
+                        new StaticConfigurationManager<OpenIdConnectConfiguration>(FakeKeycloak.Configuration);
+                });
+            });
+        }
+
+        // The made-up Keycloak's sign-in page, where a closed page sends a signed-out user
+        public static string FakeKeycloakSignInPage => FakeKeycloak.Configuration.AuthorizationEndpoint;
+
         // The web app with real sign-in against a Keycloak container
         public static TestApp WithKeycloak(string connectionString, string authority, string clientSecret)
         {
@@ -65,7 +134,8 @@ namespace ComplianceTracker.Specs.Support
                 ["ConnectionStrings:ComplianceTracker"] = connectionString,
                 ["Authentication:Keycloak:Authority"] = authority,
                 ["Authentication:Keycloak:ClientId"] = TestKeycloak.ClientId,
-                ["Authentication:Keycloak:ClientSecret"] = clientSecret
+                ["Authentication:Keycloak:ClientSecret"] = clientSecret,
+                ["Database:MigrateOnStartup"] = "false"
             };
 
             return Create(settings, _ => { });

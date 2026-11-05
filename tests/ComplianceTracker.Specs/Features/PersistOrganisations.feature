@@ -20,3 +20,10 @@ Feature: Persist organisations
     Given I have created the organisation "Acme ApS"
     When the application restarts
     Then an activity log entry exists for the creation of "Acme ApS"
+
+  @US-002 @US-016 @iso27001-7.5.3 @integration
+  Scenario: Nothing is saved if saving fails
+    Given saving the activity log will fail
+    When I try to create the organisation "Acme ApS"
+    Then the creation fails
+    And the organisation "Acme ApS" does not exist

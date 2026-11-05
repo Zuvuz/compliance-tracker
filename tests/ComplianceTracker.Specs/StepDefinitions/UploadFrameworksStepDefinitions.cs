@@ -30,6 +30,14 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public Task GivenTheFrameworkHasBeenUploaded(string name)
             => AddFramework(name, "upload.pdf", TestFiles.Pdf());
 
+        // US-007: projects can only use an active version
+        [Given("the framework {string} has been uploaded and activated")]
+        public async Task GivenTheFrameworkHasBeenUploadedAndActivated(string name)
+        {
+            await AddFramework(name, "upload.pdf", TestFiles.Pdf());
+            await FrameworkUi.ActivateUploadedDraftAsync(_web);
+        }
+
         [Given("{string} has created the organisation {string} with the framework {string}")]
         public async Task GivenHasCreatedTheOrganisationWithTheFramework(string userName, string organisationName, string frameworkName)
         {
@@ -48,9 +56,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
             };
             var afterUpload = await WebScenario.ParseAsync(await other.PostAsync(ListPath + "/Add", form));
 
-            // Remember the PDF's address, so Anna can try to open it
-            _otherOrganisationsPdfLinks[frameworkName] = RowFor(afterUpload, frameworkName)
-                .QuerySelector("a.open-pdf")!.GetAttribute("href")!;
+            // Remember the PDF's address, so Anna can try to open it (the page after an upload is the new draft, US-007)
+            _otherOrganisationsPdfLinks[frameworkName] = afterUpload.QuerySelector("a.open-pdf")!.GetAttribute("href")!;
         }
 
         // ---------------------------------------------------------- When

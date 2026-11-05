@@ -13,6 +13,12 @@ Tekst i *kursiv* er udkast, du kan rette til. Linjer der starter med **Spørgsm�
 
 **Dokumentstyring (ISO 27001 kap. 7.5):** Hvert dokument får ID, version, dato og ændringslog. Dokumenterne ligger som Markdown i `docs/`, så Git-historikken fungerer som ændringslog. Hvert dokument har front matter øverst og en ændringslog nederst.
 
+## Drift
+
+| Dokument | Primær reference |
+| --- | --- |
+| [Backup og gendannelse af databasen](backup-og-gendannelse.md) | ISO 27001 A.8.13; US-014 |
+
 ## Næste dokumenter
 
 Når de tre første er rettet til, følger disse i rækkefølge. Hver bygger på det forrige.

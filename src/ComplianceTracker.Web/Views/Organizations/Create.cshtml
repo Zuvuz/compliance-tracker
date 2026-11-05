@@ -11,6 +11,14 @@
 
 <h1>Create organisation</h1>
 
+@if (ViewData["FormerOrganization"] is string former)
+{
+    @* US-090 R3: a removed member who signs in again *@
+    <div class="alert alert-warning" id="former-member">
+        You are no longer a member of @former. Ask one of its admins for a new invitation, or create your own organisation.
+    </div>
+}
+
 <div class="row">
     <div class="col-md-6">
         @* The form tag helper adds the antiforgery token automatically (US-003 R5) *@
@@ -38,7 +46,9 @@
 
             <div class="mb-3">
                 <label asp-for="Size" class="form-label"></label>
-                <select asp-for="Size" asp-items="sizes" class="form-select"></select>
+                <select asp-for="Size" asp-items="sizes" class="form-select">
+                    <option value="">-- Choose size --</option>
+                </select>
             </div>
 
             <button type="submit" class="btn btn-primary">Create</button>

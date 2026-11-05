@@ -32,6 +32,14 @@ namespace ComplianceTracker.Specs.StepDefinitions
             _projectLinks[name] = await ProjectLinkAsync(name);
         }
 
+        // US-011 Background
+        [Given("the projects {string} and {string} exist")]
+        public async Task GivenTheProjectsExist(string first, string second)
+        {
+            await GivenTheProjectExists(first);
+            await GivenTheProjectExists(second);
+        }
+
         // ---------------------------------------------------------- When
 
         [When("I create the project {string} with intended purpose {string}")]
@@ -41,6 +49,21 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I create the project {string} with no intended purpose")]
         public Task WhenICreateTheProjectWithNoIntendedPurpose(string name)
             => CreateProject(name, "");
+
+        // US-016 R7: every field of the form
+        [When("I create the project {string} with description {string}, intended purpose {string}, scope {string} and phase {string}")]
+        public async Task WhenICreateTheProjectWithAllFields(string name, string description, string intendedPurpose, string scope, string phase)
+        {
+            await _web.OpenAsync(CreatePath);
+            await _web.PostFormAsync(CreatePath, new Dictionary<string, string>
+            {
+                ["Name"] = name,
+                ["Description"] = description,
+                ["IntendedPurpose"] = intendedPurpose,
+                ["Scope"] = scope,
+                ["LifecyclePhase"] = phase
+            });
+        }
 
         // Another user opens the project's address in their own "browser"
         [When("{string} opens the page of {string}")]
@@ -59,29 +82,18 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await ProjectLinkAsync(name);
         }
 
-        [Then("the activity log for {string} has {string} for {string} concerning {string}")]
-        public async Task ThenTheActivityLogHasConcerning(string organisationName, string action, string userName, string projectName)
+        // US-016 R7: read back from the project's own page
+        [Then("the page of {string} shows description {string}, scope {string} and phase {string}")]
+        public async Task ThenThePageShows(string projectName, string description, string scope, string phase)
         {
-            await using var db = _web.CreateDbContext();
+            await _web.OpenAsync(await ProjectLinkAsync(projectName));
 
-            var organisation = await db.Organizations.SingleAsync(o => o.Name == organisationName);
-            var user = organisation.Users.Single(u => u.Name == userName);
-            var projectId = await db.Projects
-                .Where(p => p.OrganizationId == organisation.Id && p.Name == projectName)
-                .Select(p => p.Id)
-                .SingleAsync();
-
-            var expectedAction = Enum.Parse<ActivityAction>(action);
-
-            // R6: who (user), what (action), where (organisation) and about what (SubjectId = the project)
-            Assert.True(
-                await db.ActivityLog.AnyAsync(e =>
-                    e.OrganizationId == organisation.Id &&
-                    e.UserId == user.Id &&
-                    e.Action == expectedAction &&
-                    e.SubjectId == projectId),
-                $"No '{action}' log entry by {userName} for the project {projectName}.");
+            Assert.Equal(description, _web.Page!.QuerySelector("#project-description")?.TextContent.Trim());
+            Assert.Equal(scope, _web.Page!.QuerySelector("#project-scope")?.TextContent.Trim());
+            Assert.Equal(phase, _web.Page!.QuerySelector("#project-phase")?.TextContent.Trim());
         }
+
+        // R6 (logging) uses the shared step in ActivityLogStepDefinitions
 
         // ---------------------------------------------------------- Helpers
 
@@ -102,7 +114,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // Opens the organisation's Overview and returns the address of the project's link
         private async Task<string> ProjectLinkAsync(string projectName)
         {
-            await _web.OpenAsync("/Organizations/Mine");
+            await _web.OpenAsync("/Projects");
 
             var link = _web.Page!.QuerySelectorAll("#organisation-projects a.project-link")
                 .FirstOrDefault(a => a.TextContent.Trim() == projectName)

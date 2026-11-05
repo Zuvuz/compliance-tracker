@@ -105,7 +105,7 @@ namespace ComplianceTracker.Specs.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/CreateOrganization.feature.ndjson", 10);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/CreateOrganization.feature.ndjson", 12);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -368,6 +368,89 @@ namespace ComplianceTracker.Specs.Features
 #line 45
     await testRunner.ThenAsync("an activity log entry exists with user \"Anna\", action \"OrganizationCreated\" and o" +
                         "rganization \"Acme\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="Size is required")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Create organization")]
+        [global::Xunit.TraitAttribute("Description", "Size is required")]
+        [global::Xunit.TraitAttribute("Category", "US-001")]
+        [global::Xunit.TraitAttribute("Category", "US-016")]
+        public async global::System.Threading.Tasks.Task SizeIsRequired()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-001",
+                    "US-016"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "8";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Size is required", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 48
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 49
+    await testRunner.GivenAsync("I am \"Anna\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 50
+    await testRunner.WhenAsync("I create the organization \"Acme\" with CVR \"12345678\", sector \"Manufacturing\" and " +
+                        "no size", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 51
+    await testRunner.ThenAsync("the creation is rejected with the reason \"Size is required\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="The log entry has the creation time")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Create organization")]
+        [global::Xunit.TraitAttribute("Description", "The log entry has the creation time")]
+        [global::Xunit.TraitAttribute("Category", "US-001")]
+        [global::Xunit.TraitAttribute("Category", "US-016")]
+        [global::Xunit.TraitAttribute("Category", "iso27001-A.8.15")]
+        public async global::System.Threading.Tasks.Task TheLogEntryHasTheCreationTime()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-001",
+                    "US-016",
+                    "iso27001-A.8.15"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "9";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The log entry has the creation time", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 54
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 55
+    await testRunner.GivenAsync("the time is \"2026-10-24T14:02:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 56
+    await testRunner.AndAsync("I am \"Anna\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 57
+    await testRunner.WhenAsync("I create the organization \"Acme\" with CVR \"12345678\", sector \"Manufacturing\" and " +
+                        "size \"Small\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 58
+    await testRunner.ThenAsync("the activity log entry for \"Acme\" has the time \"2026-10-24T14:02:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

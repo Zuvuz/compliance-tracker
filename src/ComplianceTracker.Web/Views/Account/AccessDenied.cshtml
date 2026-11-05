@@ -1,0 +1,8 @@
+@* Shown when a signed-in user opens a page their role does not allow (US-045 R2, US-010) *@
+@{
+    ViewData["Title"] = "Access denied";
+}
+
+<h1 class="h3" id="access-denied">Access denied</h1>
+<p>Your role does not give access to this page. Ask your organisation admin if you need it.</p>
+<p><a asp-controller="Projects" asp-action="Index">Go to Projects</a></p>

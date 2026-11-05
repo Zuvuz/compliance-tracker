@@ -120,7 +120,7 @@ namespace ComplianceTracker.Specs.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/CreateOrganisationUi.feature.ndjson", 6);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/CreateOrganisationUi.feature.ndjson", 11);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -315,6 +315,102 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.ThenAsync("the request is rejected with status 400", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 32
+    await testRunner.AndAsync("no organisation is saved", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="Size is required on the form")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Create organisation via web UI")]
+        [global::Xunit.TraitAttribute("Description", "Size is required on the form")]
+        [global::Xunit.TraitAttribute("Category", "US-001")]
+        [global::Xunit.TraitAttribute("Category", "US-016")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task SizeIsRequiredOnTheForm()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-001",
+                    "US-016",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "4";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Size is required on the form", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 35
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 5
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 36
+    await testRunner.WhenAsync("I submit the form with name \"Acme ApS\", CVR \"12345678\", sector \"Manufacturing\" an" +
+                        "d no size", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 37
+    await testRunner.ThenAsync("I see the error \"Size is required\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableTheoryAttribute(DisplayName="Unknown sector or size is rejected")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Create organisation via web UI")]
+        [global::Xunit.TraitAttribute("Description", "Unknown sector or size is rejected")]
+        [global::Xunit.TraitAttribute("Category", "US-003")]
+        [global::Xunit.TraitAttribute("Category", "US-016")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        [global::Xunit.InlineDataAttribute("Mining", "Small", "5", new string[0])]
+        [global::Xunit.InlineDataAttribute("99", "Small", "6", new string[0])]
+        [global::Xunit.InlineDataAttribute("Manufacturing", "Huge", "7", new string[0])]
+        [global::Xunit.InlineDataAttribute("Manufacturing", "7", "8", new string[0])]
+        public async global::System.Threading.Tasks.Task UnknownSectorOrSizeIsRejected(string sector, string size, string @__pickleIndex, string[] exampleTags)
+        {
+            string[] @__tags = new string[] {
+                    "US-003",
+                    "US-016",
+                    "integration"};
+            if ((exampleTags != null))
+            {
+                @__tags = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Concat(@__tags, exampleTags));
+            }
+            string[] tagsOfScenario = @__tags;
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            argumentsOfScenario.Add("sector", sector);
+            argumentsOfScenario.Add("size", size);
+            string pickleIndex = @__pickleIndex;
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Unknown sector or size is rejected", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 40
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 5
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 41
+    await testRunner.WhenAsync(string.Format("I submit the form with name \"Acme ApS\", CVR \"12345678\", sector \"{0}\" and size \"{1" +
+                            "}\"", sector, size), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 42
+    await testRunner.ThenAsync("the form is shown again with an error", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 43
     await testRunner.AndAsync("no organisation is saved", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }

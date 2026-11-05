@@ -1,10 +1,9 @@
-﻿using ComplianceTracker.Application.Users;
+using ComplianceTracker.Application.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace ComplianceTracker.Web.Controllers
 {
@@ -26,6 +25,14 @@ namespace ComplianceTracker.Web.Controllers
             return Challenge(new AuthenticationProperties { RedirectUri = "/" });
         }
 
+        // Where the cookie sends a signed-in user whose role does not allow a page (US-045 R2)
+        [HttpGet]
+        public IActionResult AccessDenied()
+        {
+            Response.StatusCode = StatusCodes.Status403Forbidden;
+            return View();
+        }
+
         // Signs out of both the app (deletes the cookie) and Keycloak; otherwise the next
         // "Sign in" would let the user straight back in without a password.
         // POST + antiforgery token, so another website cannot sign the user out.
@@ -33,11 +40,7 @@ namespace ComplianceTracker.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout(CancellationToken cancellationToken)
         {
-            var externalId = User.FindFirstValue("sub");
-            if (externalId is not null)
-            {
-                await _activity.RecordSignOutAsync(externalId, cancellationToken); // R6: log the sign-out
-            }
+            await _activity.RecordSignOutAsync(cancellationToken); // R6: log the sign-out
 
             // The built-in SignOut: first the cookie, then a redirect to Keycloak's sign-out page
             return SignOut(

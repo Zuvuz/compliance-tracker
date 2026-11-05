@@ -17,6 +17,13 @@ jobs:
     steps:
       - name: Hent koden
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # hele historikken, så hemmelighedsscanningen også ser gamle commits
+
+      - name: Scan for hemmeligheder (US-016 R12)
+        # Gitleaks fejler bygget, hvis et kodeord, en nøgle eller en secret er committet (US-002 R3, US-004 R7, US-013 R3).
+        # Kørt som Docker-image med fast version i stedet for en action, så der ikke kræves licens eller token.
+        run: docker run --rm -v "${{ github.workspace }}:/repo" ghcr.io/gitleaks/gitleaks:v8.21.2 detect --source /repo --redact --no-banner
 
       - name: Installer .NET
         uses: actions/setup-dotnet@v6
@@ -38,3 +45,108 @@ jobs:
 
       - name: Kør tests
         run: dotnet test --no-build --configuration Release --verbosity normal
+
+  # US-017: builds the images, starts the whole system over HTTPS, checks it and scans it. Publishes on merge to main.
+  docker:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    # packages: write only here, and only used by the publish step on main (R5)
+    permissions:
+      contents: read
+      packages: write
+
+    # Placeholders, so "${...:?}" does not stop the start. No real secrets in CI.
+    env:
+      POSTGRES_PASSWORD: ci-placeholder
+      KEYCLOAK_ADMIN_PASSWORD: ci-placeholder
+      KEYCLOAK_CLIENT_SECRET: ci-only-client-secret
+      # curl talks to Keycloak by the same name as the browser
+      KEYCLOAK: --resolve keycloak.localhost:8543:127.0.0.1
+
+    steps:
+      - name: Hent koden
+        uses: actions/checkout@v7
+
+      - name: Giv Keycloak-klienten et kendt test-secret
+        # Kun i CI's kopi af realm-filen, så webappens log-ind kan tjekkes hele vejen til Keycloak
+        run: |
+          jq '.clients |= map(if .clientId == "compliance-tracker-web" then .secret = env.KEYCLOAK_CLIENT_SECRET else . end)' \
+            keycloak/compliance-tracker-realm.json > realm.json && mv realm.json keycloak/compliance-tracker-realm.json
+
+      - name: Byg images (R4)
+        run: docker compose --profile full build
+
+      - name: Start hele systemet (R1, R2)
+        run: docker compose --profile full up -d
+
+      - name: Vent på webappen og Keycloak
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS --cacert certs/ca.crt https://localhost:8443/health > /dev/null \
+              && curl -fsS --cacert certs/ca.crt $KEYCLOAK https://keycloak.localhost:8543/realms/compliance-tracker/.well-known/openid-configuration > /dev/null; then
+              echo "Both answer over HTTPS"; exit 0
+            fi
+            sleep 5
+          done
+          echo "The web app or Keycloak never answered"; exit 1
+
+      - name: Tjek migreringer, forside, log-ind og bruger (R2, R3, R6)
+        run: |
+          test "$(docker compose ps -a migrate --format '{{.ExitCode}}')" = "0"
+          migrations=$(docker compose exec -T postgres-full psql -U postgres -d compliance_tracker -tAc 'select count(*) from "__EFMigrationsHistory"')
+          echo "Migrations applied: $migrations"
+          test "$migrations" -gt 0
+          curl -fsS --cacert certs/ca.crt https://localhost:8443/ -o /dev/null
+          location=$(curl -sS --cacert certs/ca.crt -o /dev/null -w '%{redirect_url}' https://localhost:8443/Organizations/Create)
+          echo "Sign-in goes to: ${location%%\?*}"
+          case "$location" in
+            https://keycloak.localhost:8543/realms/compliance-tracker/protocol/openid-connect/auth*) ;;
+            *) echo "The create organisation page did not send me to Keycloak"; exit 1 ;;
+          esac
+          curl -fsS --cacert certs/ca.crt $KEYCLOAK "$location" -o /dev/null
+          uid=$(docker compose exec -T web id -u)
+          echo "The web app runs as uid $uid"
+          test "$uid" != "0"
+
+      - name: Databasen kræver TLS (US-084)
+        run: |
+          # Webappens forbindelser (fra Docker-netværket) bruger TLS
+          tls=$(docker compose exec -T postgres-full psql -U postgres -d compliance_tracker -tAc \
+            "select count(*) from pg_stat_ssl s join pg_stat_activity a using (pid) where a.client_addr is not null and s.ssl")
+          echo "Connections over TLS: $tls"
+          test "$tls" -gt 0
+          # En forbindelse med TLS og godkendt certifikat virker
+          docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" postgres-full \
+            psql "host=postgres-full user=postgres dbname=compliance_tracker sslmode=verify-full sslrootcert=/certs/ca.crt" -tAc "select 1"
+          # En forbindelse uden TLS afvises
+          if docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" postgres-full \
+            psql "host=postgres-full user=postgres dbname=compliance_tracker sslmode=disable" -tAc "select 1"; then
+            echo "A connection without TLS was accepted"; exit 1
+          fi
+          echo "A connection without TLS was refused"
+
+      - name: Vis logs, hvis noget fejlede
+        if: failure()
+        run: docker compose --profile full logs --no-color
+
+      - name: Scan images for kendte sårbarheder (R7)
+        # Kritiske fund, der kan rettes, gør kørslen rød. Fast version, kørt som Docker-image ligesom Gitleaks.
+        run: |
+          for image in compliance-tracker-web:local compliance-tracker-migrate:local; do
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.58.1 \
+              image --severity CRITICAL --ignore-unfixed --exit-code 1 --no-progress "$image"
+          done
+
+      - name: Stop systemet
+        if: always()
+        run: docker compose --profile full down --volumes
+
+      - name: Udgiv til GitHub Container Registry (R5)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          for tag in "${{ github.sha }}" latest; do
+            docker tag compliance-tracker-web:local "ghcr.io/zuvuz/compliance-tracker:$tag"
+            docker push "ghcr.io/zuvuz/compliance-tracker:$tag"
+          done

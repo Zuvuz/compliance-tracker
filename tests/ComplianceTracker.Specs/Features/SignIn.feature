@@ -54,3 +54,10 @@ Feature: Sign in with OpenID Connect
     Given Keycloak has a user "anna" with e-mail "anna@acme.dk"
     When I sign in through Keycloak as "anna"
     Then I am signed in to the application as "anna"
+
+  @US-004 @US-016 @iso27001-A.8.15 @integration
+  Scenario: Sign-in is logged with its time
+    Given "Anna" has created the organisation "Acme ApS"
+    And the time is "2026-10-24T14:02:00Z"
+    When "Anna" signs in
+    Then the activity log for "Acme ApS" has "UserSignedIn" at "2026-10-24T14:02:00Z"

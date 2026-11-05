@@ -1,0 +1,91 @@
+@* Projects: the front page after sign-in (US-045). The organisation's projects (US-008 R4) and the frameworks
+   they use (US-011 R5). The ids (#organisation-name, #organisation-projects, .project-link ...) are used by the tests. *@
+@model OrganizationOverviewViewModel
+@{
+    ViewData["Title"] = "Projects";
+}
+
+<partial name="_OrganizationHeader" model="Model.Organization" />
+
+<partial name="_GetStarted" model="Model.GetStarted" />
+
+<section id="organisation-projects">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h4 mb-0">Projects</h2>
+        @if (await Permissions.CanAsync(Permission.EditProjects))
+        {
+            <a id="new-project" class="btn btn-primary btn-sm" asp-controller="Projects" asp-action="Create">New project</a>
+        }
+    </div>
+
+    @if (Model.Projects.Count == 0)
+    {
+        <p class="text-muted">No projects yet. Create the first one with "New project".</p>
+    }
+    else
+    {
+        @* One row per project, with a link to the project's own page *@
+        <div class="list-group">
+            @foreach (var project in Model.Projects)
+            {
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <a class="project-link" asp-controller="Projects" asp-action="Details" asp-route-id="@project.Id">@project.Name</a>
+                    <span class="badge text-bg-light">@project.Phase</span>
+                </div>
+            }
+        </div>
+    }
+</section>
+
+@* US-011 R5: per framework, every version in use and the projects using it. Older versions are marked.
+   The ids and classes (#organisation-frameworks, framework-usage, framework-name, framework-version,
+   usage-project, framework-outdated) are used by the tests. *@
+<section id="organisation-frameworks" class="mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h4 mb-0">Frameworks in use</h2>
+        <a class="btn btn-outline-primary btn-sm" asp-controller="Frameworks" asp-action="Index">Manage frameworks</a>
+    </div>
+
+    @if (Model.FrameworkUsage.Count == 0)
+    {
+        <p class="text-muted">No frameworks yet. Upload one or switch on a built-in one under "Manage frameworks".</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Framework</th>
+                    <th>Version</th>
+                    <th>Projects</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.FrameworkUsage)
+                {
+                    <tr class="framework-usage" data-framework-id="@row.Framework.Id">
+                        <td class="framework-name">@row.Framework.Name</td>
+                        <td class="framework-version">@row.Version.Number</td>
+                        <td class="framework-projects">
+                            @if (row.Projects.Count == 0)
+                            {
+                                <span class="text-muted">no projects yet</span>
+                            }
+                            @for (var i = 0; i < row.Projects.Count; i++)
+                            {
+                                <a class="usage-project" asp-controller="Projects" asp-action="Details" asp-route-id="@row.Projects[i].Id">@row.Projects[i].Name</a>@(i < row.Projects.Count - 1 ? ", " : "")
+                            }
+                        </td>
+                        <td>
+                            @if (!row.IsNewest)
+                            {
+                                <span class="framework-outdated badge text-bg-warning">not on newest version</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>

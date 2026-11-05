@@ -45,8 +45,11 @@
                 <select asp-for="LifecyclePhase" asp-items="phases" class="form-select"></select>
             </div>
 
+            @* US-011 R2: the frameworks the project must follow, ticked as before if the form is shown again *@
+            @await Component.InvokeAsync("FrameworkChoices", new { selected = Model.FrameworkIds })
+
             <button type="submit" class="btn btn-primary">Create project</button>
-            <a asp-controller="Organizations" asp-action="Mine" class="btn btn-link">Cancel</a>
+            <a asp-controller="Projects" asp-action="Index" class="btn btn-link">Cancel</a>
         </form>
     </div>
 </div>

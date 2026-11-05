@@ -1,10 +1,18 @@
-using ComplianceTracker.Application.Frameworks;
-using ComplianceTracker.Application.Organizations;
-using ComplianceTracker.Application.Projects;
+using ComplianceTracker.Application.Ai;
+using ComplianceTracker.Application;
+using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Users;
 using ComplianceTracker.Infrastructure;
+using ComplianceTracker.Infrastructure.Persistence;
+using ComplianceTracker.Application.WorkItems;
+using ComplianceTracker.Web.Background;
+using ComplianceTracker.Web.Filters;
+using ComplianceTracker.Web.Hubs;
+using ComplianceTracker.Web.Models;
+using ComplianceTracker.Web.Security;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.Security.Claims;
 
@@ -14,16 +22,68 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// MVC: controllers with Razor views
-builder.Services.AddControllersWithViews();
+// The DI container checks at start that every service, controller included, can be created (US-029 R5),
+// and that no scoped service is used from a singleton
+builder.Host.UseDefaultServiceProvider(options =>
+{
+    options.ValidateOnBuild = true;
+    options.ValidateScopes = true;
+});
 
-// Database, repositories and unit of work (Infrastructure) and the use cases (Application).
-// Scoped = one instance per HTTP request.
-builder.Services.AddInfrastructure();
-builder.Services.AddScoped<OrganizationService>();
-builder.Services.AddScoped<UserActivityService>();
-builder.Services.AddScoped<FrameworkService>();
-builder.Services.AddScoped<ProjectService>();
+// MVC: controllers with Razor views.
+// The filters turn a broken domain rule into an error on the page (US-029 R4).
+// AddControllersAsServices lets the container check the controllers too.
+builder.Services
+    .AddControllersWithViews(options =>
+    {
+        options.Filters.Add<DomainExceptionFilter>();
+        options.Filters.Add<DomainErrorFromTempDataFilter>();
+    })
+    // The domain checks the input (US-029 R4); no page loads the browser-side validation scripts.
+    // US-087: without it, the validation summary no longer renders a hidden <li style="display:none">,
+    // so the Content-Security-Policy can forbid inline styles.
+    .AddViewOptions(options => options.HtmlHelperOptions.ClientValidationEnabled = false)
+    .AddControllersAsServices();
+
+// Each layer registers its own services (US-029 R2):
+// Application = use cases, queries, activity logger and clock; Infrastructure = database and repositories
+builder.Services
+    .AddApplication()
+    .AddInfrastructure();
+
+// Who is signed in: read from the sign-in cookie of the current request (US-029 R1),
+// or from the SignalR connection inside a hub call (US-018)
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<CurrentPrincipal>();
+builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
+
+// US-010: lets pages hide what the member's role does not allow (the use cases check it anyway)
+builder.Services.AddScoped<PermissionView>();
+
+// US-018: open project pages update themselves (R7), and GitHub is checked at a fixed interval (R6)
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IWorkItemNotifier, SignalRWorkItemNotifier>();
+builder.Services
+    .AddOptions<WorkItemSyncOptions>()
+    .BindConfiguration(WorkItemSyncOptions.Section)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddHostedService<ScheduledWorkItemSync>();
+
+// US-020: writes the AI suggestions' rationales in the background
+builder.Services.AddSingleton<RationaleWorker>();
+builder.Services.AddSingleton<IRationaleQueue>(provider => provider.GetRequiredService<RationaleWorker>());
+builder.Services.AddHostedService(provider => provider.GetRequiredService<RationaleWorker>());
+
+// US-064 R7: the product name (Branding:ProductName), shown in the title, the top bar and the footer
+builder.Services.AddOptions<BrandingOptions>().BindConfiguration(BrandingOptions.Section);
+
+// The Keycloak settings, checked when the app starts (US-029 R3)
+builder.Services
+    .AddOptions<KeycloakOptions>()
+    .BindConfiguration(KeycloakOptions.Section)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 // Sign-in with Keycloak via OpenID Connect (US-004)
 builder.Services
@@ -36,19 +96,23 @@ builder.Services
     .AddCookie()
     .AddOpenIdConnect();
 
-// The OpenID Connect settings are read from configuration the first time sign-in is used.
+// US-088: the session ends after a while without activity, and after a working day at most
+builder.Services.AddOptions<SignInSessionOptions>().BindConfiguration(SignInSessionOptions.Section);
+builder.Services
+    .AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme)
+    .Configure<IOptions<SignInSessionOptions>>((cookie, session) => SessionLifetime.Configure(cookie, session, builder.Environment.IsDevelopment()));
+
+// OpenID Connect is set up from the checked KeycloakOptions.
 // That way the integration tests can supply their own Keycloak address and secret.
 builder.Services
     .AddOptions<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme)
-    .Configure<IConfiguration>((options, configuration) =>
+    .Configure<IOptions<KeycloakOptions>>((options, keycloakOptions) =>
     {
         // Authority and ClientId are in appsettings.Development.json; the secret only in an environment variable
-        var keycloak = configuration.GetSection("Authentication:Keycloak");
-        options.Authority = keycloak["Authority"];
-        options.ClientId = keycloak["ClientId"];
-        options.ClientSecret = keycloak["ClientSecret"]
-            ?? throw new InvalidOperationException(
-                "Set the environment variable Authentication__Keycloak__ClientSecret.");
+        var keycloak = keycloakOptions.Value;
+        options.Authority = keycloak.Authority;
+        options.ClientId = keycloak.ClientId;
+        options.ClientSecret = keycloak.ClientSecret;
 
         options.ResponseType = "code";    // authorization code flow
         options.UsePkce = true;           // ASVS V10.2.1
@@ -80,13 +144,26 @@ builder.Services
         }
     });
 
+// US-017: /health for Docker and CI; only says whether the database can be reached
+builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
+
 // Every page requires sign-in, unless it is marked [AllowAnonymous] (US-004 R1)
 builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = options.DefaultPolicy;
+
+    // US-010: the tracker's owner, given as a Keycloak realm role
+    options.AddPolicy(SystemAdmin.Policy, policy => policy.RequireClaim(SystemAdmin.ClaimType, SystemAdmin.Role));
 });
 
 var app = builder.Build();
+
+// US-087: security headers on every response, also static files and error pages
+app.UseSecurityHeaders();
+
+// Locally the database is migrated when the app starts (Database:MigrateOnStartup in appsettings.Development.json),
+// so new tables from a pull exist before the first request
+await DatabaseMigrator.MigrateIfEnabledAsync(app.Services, app.Configuration);
 
 // Outside Development: a friendly error page instead of technical details, and HSTS (always https)
 if (!app.Environment.IsDevelopment())
@@ -104,13 +181,19 @@ app.UseAuthorization();    // what may the user do?
 // CSS, JavaScript and images must be available without sign-in
 app.MapStaticAssets().AllowAnonymous();
 
+// US-017: Docker and CI ask this before they send traffic; it answers without sign-in
+app.MapHealthChecks("/health").AllowAnonymous();
+
 // URLs map to controller/action/id, e.g. /Frameworks/Versions/{id}. "/" goes to Home/Index.
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
-app.Run();
+// US-018 R7: the live updates of the project page's work items
+app.MapHub<WorkItemsHub>(WorkItemsHub.Path);
+
+await app.RunAsync();
 
 // Makes Program visible to the integration tests (WebApplicationFactory<Program>)
 public partial class Program { }

@@ -4,7 +4,7 @@ using System.Security.Claims;
 namespace ComplianceTracker.Web.Security
 {
     // Reads the signed-in user's identity from Keycloak (the claims stored in the sign-in cookie).
-    // Extension methods, so controllers can write User.ExternalId() and User.ToUserIdentity().
+    // Extension methods, used by HttpContextCurrentUser (US-029: controllers no longer read the user themselves).
     public static class ClaimsPrincipalExtensions
     {
         // Keycloak's permanent id for the user ("sub"). Every signed-in user has one.

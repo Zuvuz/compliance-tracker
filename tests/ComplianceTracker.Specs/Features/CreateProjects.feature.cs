@@ -120,7 +120,7 @@ namespace ComplianceTracker.Specs.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/CreateProjects.feature.ndjson", 7);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/CreateProjects.feature.ndjson", 10);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -353,6 +353,133 @@ namespace ComplianceTracker.Specs.Features
 #line 34
     await testRunner.ThenAsync("the activity log for \"Acme ApS\" has \"ProjectCreated\" for \"Anna\" concerning \"Acme " +
                         "Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="Project name is required")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Create projects")]
+        [global::Xunit.TraitAttribute("Description", "Project name is required")]
+        [global::Xunit.TraitAttribute("Category", "US-008")]
+        [global::Xunit.TraitAttribute("Category", "US-016")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task ProjectNameIsRequired()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-008",
+                    "US-016",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "5";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Project name is required", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 37
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 3
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 38
+    await testRunner.WhenAsync("I create the project \"\" with intended purpose \"Web portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 39
+    await testRunner.ThenAsync("I see the error \"Project name is required\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="All project fields are stored and shown")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Create projects")]
+        [global::Xunit.TraitAttribute("Description", "All project fields are stored and shown")]
+        [global::Xunit.TraitAttribute("Category", "US-008")]
+        [global::Xunit.TraitAttribute("Category", "US-016")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task AllProjectFieldsAreStoredAndShown()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-008",
+                    "US-016",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "6";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("All project fields are stored and shown", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 42
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 3
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 43
+    await testRunner.WhenAsync("I create the project \"Acme Portal\" with description \"Customer portal\", intended p" +
+                        "urpose \"Orders\", scope \"Web shop only\" and phase \"Development\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 44
+    await testRunner.ThenAsync("the page of \"Acme Portal\" shows description \"Customer portal\", scope \"Web shop on" +
+                        "ly\" and phase \"Development\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="Creating a project is logged with its time")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Create projects")]
+        [global::Xunit.TraitAttribute("Description", "Creating a project is logged with its time")]
+        [global::Xunit.TraitAttribute("Category", "US-008")]
+        [global::Xunit.TraitAttribute("Category", "US-016")]
+        [global::Xunit.TraitAttribute("Category", "iso27001-A.8.15")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task CreatingAProjectIsLoggedWithItsTime()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-008",
+                    "US-016",
+                    "iso27001-A.8.15",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "7";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Creating a project is logged with its time", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 47
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 3
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 48
+    await testRunner.GivenAsync("the time is \"2026-10-24T14:02:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 49
+    await testRunner.WhenAsync("I create the project \"Acme Portal\" with intended purpose \"Web portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 50
+    await testRunner.ThenAsync("the activity log for \"Acme ApS\" has \"ProjectCreated\" at \"2026-10-24T14:02:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
