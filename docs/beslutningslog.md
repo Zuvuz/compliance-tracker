@@ -432,6 +432,16 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - MFA kun for Admins.
   - Passkeys/WebAuthn (senere).
   - Log-ind med kundens egen identitetsudbyder (senere).
+### B38 – Trackeren følger producentens og udbyderens pligter
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-068)
+  - For hvert indbygget regulativ fører `docs/daekning-af-regulativer.md` en liste over alle artikler og bilag med status "I trackeren", "Mangler" (med issue) eller "Udeladt" (med grund).
+  - Trackeren indbygger de pligter, der ligger hos producenten (CRA) eller hos udbyderen og idriftsætteren (AI Act).
+  - Pligter for myndigheder, bemyndigede organer, Kommissionen, importører, distributører og open source-forvaltere udelades, og det samme gør frivillige ordninger og pligter, der kun opstår, når en myndighed beder om noget.
+  - En test holder listen og de indbyggede krav i takt begge veje.
+- **Begrundelse:** Trackerens brugere er dem, der laver produkterne. En liste med grunde viser en auditor, at intet er glemt, og hvorfor noget mangler (ISO 27001 A.5.31). Gennemgangen viste, at CRA's dokumentation og overensstemmelse også står i artikel 28–32, ikke kun i artikel 13.
+- **Fravalgt:** at indbygge hele regulativet, også myndighedernes pligter.
 
 ## Åbne spørgsmål til klassediagrammet
 

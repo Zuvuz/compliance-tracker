@@ -73,6 +73,7 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();
             services.AddScoped<IRiskRepository, RiskRepository>();
             services.AddScoped<IInvitationRepository, InvitationRepository>();
+            services.AddScoped<IGetStartedReadModel, GetStartedReadModel>(); // US-096
             services.AddHttpClient<GitHubWorkItemSource>(client =>
             {
                 client.BaseAddress = new Uri(GitHubApiAddress);

@@ -677,6 +677,29 @@ classDiagram
   }
 
   %% ================= Log =================
+  class ActivityGroup {
+    <<enumeration>>
+    SignIn
+    Members
+    Organisation
+    Frameworks
+    Projects
+    WorkItems
+    Requirements
+    Evidence
+    Risks
+    Ai
+  }
+  class ActivityLogQuery {
+    -search: string?
+    -from: DateOnly?
+    -to: DateOnly?
+    -group: ActivityGroup?
+    -userId: Guid?
+    -systemOnly: bool
+    -sort: ActivitySort
+    -page: int
+  }
   class ActivityLogEntry {
     -id: Guid
     -organizationId: Guid

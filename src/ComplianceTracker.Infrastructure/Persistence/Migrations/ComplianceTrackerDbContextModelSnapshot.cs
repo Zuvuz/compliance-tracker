@@ -58,9 +58,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrganizationId");
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("OrganizationId", "OccurredAt");
+
+                    b.HasIndex("OrganizationId", "SubjectId", "OccurredAt");
 
                     b.ToTable("ActivityLog", (string)null);
                 });
@@ -1074,6 +1076,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
+
+                    b.Property<bool>("HidesGetStarted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Name")
                         .IsRequired()

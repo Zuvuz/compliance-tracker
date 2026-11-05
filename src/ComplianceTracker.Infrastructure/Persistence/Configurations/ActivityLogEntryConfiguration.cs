@@ -13,6 +13,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
         {
             builder.ToTable("ActivityLog");
 
+            // US-101 R8: the project's log by time, and (US-102) the organisation's log by time
+            builder.HasIndex(e => new { e.OrganizationId, e.SubjectId, e.OccurredAt });
+            builder.HasIndex(e => new { e.OrganizationId, e.OccurredAt });
+
             // US-010: the role when the decision was made; never changed afterwards
             builder.Property(e => e.Role).HasConversion<string>().HasMaxLength(50);
 

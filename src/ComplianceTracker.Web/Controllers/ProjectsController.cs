@@ -32,6 +32,7 @@ namespace ComplianceTracker.Web.Controllers
         private readonly MappingSuggestionService _suggestions;
         private readonly RiskQueries _risks;
         private readonly RequirementDocumentService _documents;
+        private readonly GetStartedService _getStarted;
 
         public ProjectsController(
             ProjectService service,
@@ -45,8 +46,10 @@ namespace ComplianceTracker.Web.Controllers
             MappingSuggestionService suggestions,
             RiskQueries risks,
             RequirementDocumentService documents,
+            GetStartedService getStarted,
             TimeProvider clock)
         {
+            _getStarted = getStarted;
             _documents = documents;
             _risks = risks;
             _suggestions = suggestions;
@@ -76,7 +79,27 @@ namespace ComplianceTracker.Web.Controllers
                 organization,
                 await _projects.ListAsync(cancellationToken),
                 await _frameworks.ListAsync(cancellationToken),
-                _clock.Today()));
+                _clock.Today())
+            {
+                GetStarted = await _getStarted.ForMeAsync(cancellationToken) // US-096
+            });
+        }
+
+        // POST /Projects/HideGetStarted and /Projects/ShowGetStarted: US-096 R4, for the signed-in member only
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> HideGetStarted(CancellationToken cancellationToken)
+        {
+            await _getStarted.SetHiddenAsync(true, cancellationToken);
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ShowGetStarted(CancellationToken cancellationToken)
+        {
+            await _getStarted.SetHiddenAsync(false, cancellationToken);
+            return RedirectToAction(nameof(Index));
         }
 
         // GET /Projects/Create: the empty form (the framework checkboxes come from the FrameworkChoices view component)
@@ -124,7 +147,10 @@ namespace ComplianceTracker.Web.Controllers
         // US-042: on the Risks tab, status, level and due=1 filter the register (R8)
         public async Task<IActionResult> Details(
             Guid id, string? tab, string? sub, string? q, string? show,
-            string? status, string? level, string? due, CancellationToken cancellationToken)
+            string? status, string? level, string? due,
+            // US-101: the Activity tab's filters (q is the search there too)
+            string? from, string? to, string? group, string? user, string? sort, string? page,
+            CancellationToken cancellationToken)
         {
             var activeTab = ProjectTabs.Find(tab);
             var project = await _projects.GetAsync(id, cancellationToken);
@@ -134,10 +160,14 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound(); // US-008 R5: also when the project belongs to another organisation
             }
 
-            // The Activity tab reads the log; the Overview shows the latest entries (US-048 R5)
-            var activity = activeTab is ProjectTabs.Activity or ProjectTabs.Overview
+            // The Overview shows the latest entries (US-048 R5); the Activity tab searches the log (US-101)
+            var activity = activeTab is ProjectTabs.Overview
                 ? await _projects.ActivityAsync(id, cancellationToken)
                 : [];
+            var (activityQuery, activityIgnored) = ActivityFilters.Parse(q, from, to, group, user, sort, page);
+            var activityPage = activeTab is ProjectTabs.Activity
+                ? await _projects.SearchActivityAsync(id, activityQuery, cancellationToken)
+                : null;
 
             // Requirements and links: for the Compliance tab, the overview's summary and the user stories' requirements
             var compliance = activeTab is ProjectTabs.Compliance or ProjectTabs.Overview or ProjectTabs.UserStories
@@ -171,6 +201,9 @@ namespace ComplianceTracker.Web.Controllers
                 Tab = activeTab,
                 Organization = organization,
                 Activity = activity,
+                ActivityPage = activityPage,
+                ActivityQuery = activityQuery,
+                ActivityIgnored = activityIgnored,
                 Compliance = compliance,
                 Sub = sub,
                 Search = q,
