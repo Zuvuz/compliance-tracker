@@ -212,6 +212,9 @@ classDiagram
     -supportEndsOn: DateOnly?
     -supportPeriodReason: string?
     -releasedOn: DateOnly?
+    -endOfSupportOn: DateOnly?
+    -lastPlacedOnMarketOn: DateOnly?
+    -retainUntil: DateOnly?
     -craClass: CraClass
     -releases: List~Release~
     -workItems: List~WorkItem~
@@ -227,6 +230,8 @@ classDiagram
     +ChangePhase(phase: LifecyclePhase, today: DateOnly?) ProjectChange?
     +SetSupportPeriod(endsOn: DateOnly, reason: string?, today: DateOnly) ProjectChange?
     +ChangeRequirementMethods(methods: RequirementMethods) ProjectChange?
+    +EndSupport(lastPlacedOnMarket: DateOnly, keepUntil: DateOnly?, today: DateOnly) ProjectChange
+    +EnsureMayBeRemoved(today: DateOnly)
   }
   class ProjectChange {
     <<record>>

@@ -118,9 +118,10 @@ namespace ComplianceTracker.Application.Projects
 
         // US-024 R2, R3, R4: moves the project to another phase; EndOfSupport is final
         // US-025 R1: releasing can set the support end date in the same step
+        // US-074 R1: end of support takes the day the product was last placed on the market and an optional later retention date
         public async Task ChangePhaseAsync(
             Guid projectId, LifecyclePhase phase, DateOnly? supportEndsOn = null, string? supportReason = null,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default, DateOnly? lastPlacedOnMarket = null, DateOnly? keepUntil = null)
         {
             var project = await ProjectAsync(projectId, cancellationToken);
             var today = _clock.Today();
@@ -140,7 +141,9 @@ namespace ComplianceTracker.Application.Projects
                 throw new DomainException("Close every security event before end of support");
             }
 
-            var change = project.ChangePhase(phase, today);
+            var change = phase == LifecyclePhase.EndOfSupport && project.Phase != LifecyclePhase.EndOfSupport
+                ? project.EndSupport(lastPlacedOnMarket ?? today, keepUntil, today)
+                : project.ChangePhase(phase, today);
             if (change is null)
             {
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
