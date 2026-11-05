@@ -114,6 +114,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         // a suggestion. SubjectId points at the project; Details holds the source and the requirement.
         EvidenceSuggested,
         EvidenceSuggestionAccepted,
-        EvidenceSuggestionRejected
+        EvidenceSuggestionRejected,
+
+        // US-104: the methods a project uses to describe its requirements changed. SubjectId points at the project;
+        // Details holds e.g. "Methods: GitHub user stories → GitHub user stories, Use cases".
+        ProjectMethodsChanged
     }
 }

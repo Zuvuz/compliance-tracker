@@ -73,7 +73,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task WhenTheProjectIsSynced()
         {
             var projectId = await ProjectIdAsync();
-            await _web.OpenAsync($"/Projects/Details/{projectId}/user-stories");
+            await _web.OpenAsync($"/Projects/Details/{projectId}/product-requirements");
             await _web.PostFormAsync("/Projects/SyncNow", new Dictionary<string, string> { ["projectId"] = projectId.ToString() });
         }
 

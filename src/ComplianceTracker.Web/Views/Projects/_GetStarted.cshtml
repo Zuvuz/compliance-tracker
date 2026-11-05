@@ -56,7 +56,7 @@
             GetStartedStep.SwitchOnRegulation => Url.Action("BuiltIn", "Frameworks"),
             GetStartedStep.CreateProject => Url.Action("Create", "Projects"),
             GetStartedStep.AddFrameworks => Tab(ProjectTabs.Frameworks),
-            GetStartedStep.GetWorkItems => Tab(ProjectTabs.UserStories),
+            GetStartedStep.GetWorkItems => Tab(ProjectTabs.ProductRequirements),
             GetStartedStep.LinkRequirements or GetStartedStep.AddEvidence => Tab(ProjectTabs.Compliance),
             _ => null
         };

@@ -29,6 +29,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             // Stored as text, like all enums
             builder.Property(p => p.Phase).HasConversion<string>().HasMaxLength(50);
 
+            // US-104: e.g. "GitHubUserStories, UseCases"; new projects use all three
+            builder.Property(p => p.RequirementMethods).HasConversion<string>().HasMaxLength(100)
+                .HasDefaultValue(Domain.Projects.RequirementMethods.All).HasSentinel(Domain.Projects.RequirementMethods.None);
+
             // Belongs to exactly one organisation (R5).
             // Restrict: an organisation cannot be deleted while it has projects.
             builder.HasOne<Organization>()

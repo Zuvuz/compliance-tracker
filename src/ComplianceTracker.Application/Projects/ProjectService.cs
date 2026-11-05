@@ -128,6 +128,21 @@ namespace ComplianceTracker.Application.Projects
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        // US-104 R2, R4: the methods the project uses to describe its requirements (EditProjects), logged with old and new
+        public async Task ChangeRequirementMethodsAsync(Guid projectId, RequirementMethods methods, CancellationToken cancellationToken = default)
+        {
+            var project = await ProjectAsync(projectId, cancellationToken);
+
+            var change = project.ChangeRequirementMethods(methods);
+            if (change is null)
+            {
+                return;
+            }
+
+            await _log.LogAsync(ActivityAction.ProjectMethodsChanged, project.Id, change.ToString(), cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
         // US-011 R2, R3: adds a framework to an existing project.
         // Without a version, the newest one is used.
         public async Task AddFrameworkAsync(

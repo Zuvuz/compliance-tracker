@@ -272,7 +272,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         private async Task<Guid> OpenProjectAsync(string projectName)
         {
             var id = await ProjectIdAsync(projectName);
-            await _web.OpenAsync($"/Projects/Details/{id}/user-stories");
+            await _web.OpenAsync($"/Projects/Details/{id}/product-requirements");
             return id;
         }
 
