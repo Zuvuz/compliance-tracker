@@ -86,4 +86,16 @@ public class EvidenceLinkTests
         suggestion.Reject(RejectionReason.NotRelevant, null, Anna, At);
         Assert.Equal(SuggestionStatus.Rejected, suggestion.Status);
     }
+
+    [Fact]
+    public void A_suggestion_keeps_the_limit_it_was_made_with()
+    {
+        // Arrange / Act (US-105 R5)
+        var evidence = EvidenceLinkSuggestion.Create(Project, EvidenceId, Requirement, 0.8, 1, "nomic-embed-text", "evidence-v1", At, 0.55);
+        var story = MappingSuggestion.Create(Project, Guid.NewGuid(), Requirement, 0.8, 1, "nomic-embed-text", "mapping-v1", At, 0.5);
+
+        // Assert
+        Assert.Equal(0.55, evidence.MinimumScore);
+        Assert.Equal(0.5, story.MinimumScore);
+    }
 }

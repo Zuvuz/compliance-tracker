@@ -8,10 +8,28 @@
 @{
     var project = Model.Project;
     var canUpload = !project.IsClosed && await Permissions.CanAsync(Permission.EditProjects);
+
+    // US-104 R3: only the kinds of the methods the project uses
+    var useSpecification = project.RequirementMethods.HasFlag(ComplianceTracker.Domain.Projects.RequirementMethods.RequirementSpecification);
+    var useUseCases = project.RequirementMethods.HasFlag(ComplianceTracker.Domain.Projects.RequirementMethods.UseCases);
+    var documents = Model.Documents
+        .Where(d => d.Kind == DocumentKind.UseCases ? useUseCases : useSpecification)
+        .ToList();
+    var heading = useSpecification && useUseCases ? "Requirement specifications and use cases"
+        : useUseCases ? "Use cases" : "Requirement specifications";
 }
 
 <section id="requirement-documents" class="mb-4">
-    <h2 class="h6">Requirement specifications</h2>
+    @* US-104: one section for both document methods, marked with each method that is shown *@
+    @if (useSpecification)
+    {
+        <span class="method-section" data-method="Requirement specification" hidden></span>
+    }
+    @if (useUseCases)
+    {
+        <span class="method-section" data-method="Use cases" hidden></span>
+    }
+    <h2 class="h6">@heading</h2>
 
     @if (canUpload)
     {
@@ -23,7 +41,7 @@
             <div class="col-md-4">
                 <select name="documentId" class="form-select" aria-label="Upload as">
                     <option value="">New specification, or new version of one with the same file name</option>
-                    @foreach (var document in Model.Documents)
+                    @foreach (var document in documents)
                     {
                         <option value="@document.Id">New version of @document.Name</option>
                     }
@@ -35,8 +53,14 @@
             @* US-034 R1: what the document holds *@
             <div class="col-md-4">
                 <select name="kind" class="form-select form-select-sm" aria-label="The document holds">
-                    <option value="@DocumentKind.RequirementSpecification">Requirement specification</option>
-                    <option value="@DocumentKind.UseCases">Use case document (.docx)</option>
+                    @if (useSpecification)
+                    {
+                        <option value="@DocumentKind.RequirementSpecification">Requirement specification</option>
+                    }
+                    @if (useUseCases)
+                    {
+                        <option value="@DocumentKind.UseCases">Use case document (.docx)</option>
+                    }
                 </select>
             </div>
             @* US-033 R2: how IDs look in a Word document, as a regular expression *@
@@ -61,12 +85,12 @@
         </form>
     }
 
-    @if (Model.Documents.Count == 0)
+    @if (documents.Count == 0)
     {
         <p class="small text-muted mb-0">No requirement specifications uploaded.</p>
     }
 
-    @foreach (var document in Model.Documents)
+    @foreach (var document in documents)
     {
         var latest = document.Latest!;
         <div class="requirement-document border rounded p-2 mb-2" data-name="@document.Name">

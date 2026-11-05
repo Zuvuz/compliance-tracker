@@ -27,6 +27,9 @@ namespace ComplianceTracker.Domain.Mappings
         public string? RationaleModel { get; private set; }
         public string PromptVersion { get; private set; } = "";
 
+        // US-105 R5: the minimum score in force when it was made, so old and new suggestions can be compared
+        public double MinimumScore { get; private set; }
+
         public DateTime CreatedAt { get; private set; }
 
         public SuggestionStatus Status { get; private set; } = SuggestionStatus.Pending;
@@ -45,7 +48,7 @@ namespace ComplianceTracker.Domain.Mappings
 
         public static MappingSuggestion Create(
             Guid projectId, Guid workItemId, Guid requirementId, double score, int rank,
-            string embeddingModel, string promptVersion, DateTime at)
+            string embeddingModel, string promptVersion, DateTime at, double minimumScore = 0)
             => new()
             {
                 ProjectId = projectId,
@@ -55,6 +58,7 @@ namespace ComplianceTracker.Domain.Mappings
                 Rank = rank,
                 EmbeddingModel = embeddingModel,
                 PromptVersion = promptVersion,
+                MinimumScore = minimumScore,
                 CreatedAt = at
             };
 

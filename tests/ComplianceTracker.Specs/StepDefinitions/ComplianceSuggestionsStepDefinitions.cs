@@ -8,7 +8,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
     // test sign-in and a pretend AI (FakeAi).
     // UI contract: Views/Projects/_ComplianceTab.cshtml (#summary-covered, #summary-total, #summary-not-covered,
     // #summary-suggestions, #summary-not-applicable, #compliance-filters a[data-filter], form #suggest-not-covered,
-    // rows .requirement-row with .ai-suggestion[data-story] and form .approve-suggestion) and on the User stories tab
+    // rows .requirement-row with .ai-suggestion[data-story] and form .approve-suggestion) and on the Product requirements tab
     // .ai-suggestion-badge.
     [Binding]
     public class ComplianceSuggestionsStepDefinitions

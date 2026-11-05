@@ -8,7 +8,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
     // UI contract: Views/Projects/_ComplianceTab.cshtml (#compliance-tabs links with data-sub, #coverage,
     // #requirement-search, rows .requirement-row with data-code, .requirement-status, .linked-story,
     // forms .link-requirement and .unlink-requirement), #coverage-summary on Overview and
-    // .work-item-requirements on the User stories tab.
+    // .work-item-requirements on the Product requirements tab.
     [Binding]
     public class ComplianceTabStepDefinitions
     {
@@ -61,7 +61,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             });
 
             var projectId = await ProjectIdAsync(projectName);
-            await _web.OpenAsync($"/Projects/Details/{projectId}/user-stories");
+            await _web.OpenAsync($"/Projects/Details/{projectId}/product-requirements");
             await _web.PostFormAsync("/Projects/LinkGitHub", new Dictionary<string, string>
             {
                 ["projectId"] = projectId.ToString(),

@@ -104,7 +104,7 @@
     if (doneNotLinked > 0)
     {
         attention.Add((Plural(doneNotLinked, "done story not linked to a requirement", "done stories not linked to a requirement"),
-            Url.Action("Details", new { id = project.Id, tab = ProjectTabs.UserStories })!));
+            Url.Action("Details", new { id = project.Id, tab = ProjectTabs.ProductRequirements })!));
     }
 
     // e.g. "RequirementLinked" → "Requirement linked"
@@ -231,7 +231,7 @@
                     <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Frameworks" id="framework-summary">@Model.FrameworkSummary</a>
                 </p>
                 <p class="mb-0">
-                    <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.UserStories" id="work-item-summary">@Model.WorkItemSummary</a>
+                    <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.ProductRequirements" id="work-item-summary">@Model.WorkItemSummary</a>
                 </p>
             </div>
         </div>

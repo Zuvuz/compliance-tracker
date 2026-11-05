@@ -137,6 +137,9 @@ setx Ai__BaseUrl "http://my-gpu-server:8000"
 
 Every suggestion stores which models and prompt version made it, so results from different models can be compared.
 
+
+**How good a suggestion must be (US-105):** suggestions below `Ai:MinimumScoreForStories` and `Ai:MinimumScoreForEvidence` (both 0.5) are not shown. Set them as environment variables, e.g. `Ai__MinimumScoreForEvidence=0.6`. Each suggestion keeps the limit it was made with.
+
 ## Running the whole tracker in Docker
 
 The whole system starts over HTTPS with one command (US-017):
