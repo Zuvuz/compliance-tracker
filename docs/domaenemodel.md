@@ -175,7 +175,7 @@ classDiagram
 | Krav | Ét krav i en frameworkversion, fx et Annex I-krav i CRA. Kategori afspejler frameworkets egen struktur. | 1 |
 | Kontrol | Organisationens eget tiltag, der opfylder et eller flere krav. Én kontrol kan dække krav fra flere frameworks. | 1 |
 | Kravvurdering | Status for ét krav, fx opfyldt, delvist, ikke opfyldt eller ikke relevant, med begrundelse. | 1 |
-| Evidens | Bevis for, at en kontrol virker: dokument, scanningsresultat, link til PR osv. Har gyldighedsperiode. I MVP'en knyttes den til kravet i et projekt (B33, US-057). | 1 |
+| Evidens | Bevis for, at en kontrol virker: dokument, scanningsresultat, link til PR osv. Har gyldighedsperiode. Hører til projektet og gemmes én gang; den kobles til de krav, den beviser (B44, US-059). | 1 |
 | Arbejdselement | En henvisning til en user story, use case eller opgave i et eksternt system. Trackeren ejer den ikke. | 1 |
 | Mappingforslag | AI'ens forslag til en kobling mellem et krav og et arbejdselement eller en kontrol. Skal godkendes af et menneske. | 1 |
 | Logpost | En registrering af, hvem der gjorde hvad og hvornår, fx at et katalog blev importeret eller et framework valgt. Ændres og slettes aldrig. | 1 |

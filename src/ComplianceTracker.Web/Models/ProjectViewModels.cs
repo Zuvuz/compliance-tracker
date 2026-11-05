@@ -77,6 +77,7 @@ namespace ComplianceTracker.Web.Models
         public const string Overview = "overview";
         public const string Frameworks = "frameworks";
         public const string Compliance = "compliance";
+        public const string Evidence = "evidence";
         public const string Risks = "risks";
         public const string UserStories = "user-stories";
         public const string Activity = "activity";
@@ -87,6 +88,7 @@ namespace ComplianceTracker.Web.Models
             (Overview, "Overview"),
             (Frameworks, "Frameworks"),
             (Compliance, "Compliance"),
+            (Evidence, "Evidence"),
             (Risks, "Risks"),
             (UserStories, "User stories"),
             (Activity, "Activity")
@@ -215,6 +217,9 @@ namespace ComplianceTracker.Web.Models
 
         // US-019, US-021, US-041: the Compliance tab's data, the chosen sub-tab (slug), the search and the filter
         public ProjectCompliance? Compliance { get; init; }
+
+        // US-059: the Evidence tab, and the project's evidence for "Pick existing evidence" on the Compliance tab
+        public EvidenceTab? EvidenceTab { get; init; }
         public string? Sub { get; init; }
         public string? Search { get; init; }
         public string ComplianceFilter { get; init; } = ComplianceFilters.All;

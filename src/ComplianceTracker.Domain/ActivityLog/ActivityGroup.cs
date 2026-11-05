@@ -34,7 +34,9 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.RequirementDocumentUploaded => ActivityGroup.WorkItems,
             ActivityAction.RequirementLinked or ActivityAction.RequirementUnlinked or ActivityAction.RequirementMarkedNotApplicable
                 or ActivityAction.RequirementMarkedApplicable => ActivityGroup.Requirements,
-            ActivityAction.EvidenceAdded or ActivityAction.EvidenceRemoved => ActivityGroup.Evidence,
+            ActivityAction.EvidenceAdded or ActivityAction.EvidenceRemoved or ActivityAction.EvidenceLinked
+                or ActivityAction.EvidenceUnlinked or ActivityAction.EvidenceLinkSuggested or ActivityAction.EvidenceLinkApproved
+                or ActivityAction.EvidenceLinkRejected => ActivityGroup.Evidence,
             ActivityAction.RiskAdded or ActivityAction.RiskUpdated or ActivityAction.RiskReviewed => ActivityGroup.Risks,
             ActivityAction.MappingsSuggested or ActivityAction.MappingApproved or ActivityAction.MappingRejected
                 or ActivityAction.AiFeedbackSharingChanged or ActivityAction.AiFeedbackExported => ActivityGroup.Ai,

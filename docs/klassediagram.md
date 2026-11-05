@@ -351,7 +351,6 @@ classDiagram
   class Evidence {
     -id: Guid
     -projectId: Guid
-    -requirementId: Guid
     -title: string
     -url: string?
     -fileName: string?
@@ -532,6 +531,55 @@ classDiagram
     <<interface>>
     +WorkItemsChangedAsync(projectId: Guid) Task
   }
+  class EvidenceLink {
+    -id: Guid
+    -projectId: Guid
+    -evidenceId: Guid
+    -requirementId: Guid
+    -source: LinkSource
+    -linkedById: Guid
+    -linkedRole: UserRole?
+    -linkedAt: DateTime
+    -removedById: Guid?
+    -removedAt: DateTime?
+    +Create(projectId, evidenceId, requirementId, linkedById, role, at, source)$ EvidenceLink
+    +CarryTo(requirementId: Guid) EvidenceLink
+    +Remove(userId: Guid, at: DateTime)
+  }
+  class EvidenceLinkSuggestion {
+    -id: Guid
+    -projectId: Guid
+    -evidenceId: Guid
+    -requirementId: Guid
+    -score: double
+    -rank: int
+    -rationale: string?
+    -embeddingModel: string
+    -promptVersion: string
+    -status: SuggestionStatus
+    +Approve(userId: Guid, at: DateTime, role: UserRole?)
+    +Reject(reason: RejectionReason?, comment: string?, userId: Guid, at: DateTime, role: UserRole?)
+  }
+  class EvidenceService {
+    +AddAsync(projectId, title, url, fileName, content, validUntil) Task~EvidenceAdded~
+    +LinkAsync(projectId: Guid, evidenceId: Guid, requirementIds: Guid[]) Task
+    +UnlinkAsync(projectId: Guid, linkId: Guid) Task
+    +RemoveAsync(projectId: Guid, evidenceId: Guid) Task
+    +ShowMoreAsync(projectId: Guid, evidenceId: Guid) Task~int~
+    +ApproveAsync(projectId: Guid, suggestionId: Guid) Task
+    +RejectAsync(projectId: Guid, suggestionId: Guid, reason: RejectionReason?, comment: string?) Task
+  }
+  class EvidenceQueries {
+    +ForProjectAsync(projectId: Guid) Task~EvidenceTab?~
+  }
+  class IEvidenceTextReader {
+    <<interface>>
+    +Read(contentType: string, content: byte[]) string?
+  }
+  Evidence "1" -- "*" EvidenceLink
+  Evidence "1" -- "*" EvidenceLinkSuggestion
+  EvidenceService --> IEvidenceTextReader
+  EvidenceService --> IEmbeddingModel
   class RequirementLink {
     -id: Guid
     -projectId: Guid

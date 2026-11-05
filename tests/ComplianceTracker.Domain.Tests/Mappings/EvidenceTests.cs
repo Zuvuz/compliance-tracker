@@ -11,7 +11,6 @@ namespace ComplianceTracker.Domain.Tests.Mappings;
 public class EvidenceTests
 {
     private static readonly Guid Project = Guid.NewGuid();
-    private static readonly Guid Requirement = Guid.NewGuid();
     private static readonly Guid Anna = Guid.NewGuid();
     private static readonly DateTime At = new(2026, 11, 3, 10, 0, 0, DateTimeKind.Utc);
 
@@ -23,7 +22,7 @@ public class EvidenceTests
     }
 
     private static Evidence Link(string url = "https://github.com/acme/portal/pull/42", DateOnly? validUntil = null)
-        => Evidence.ForLink(Project, Requirement, "PR 42", url, validUntil, Anna, UserRole.Developer, At);
+        => Evidence.ForLink(Project, "PR 42", url, validUntil, Anna, UserRole.Developer, At);
 
     // ---------------------------------------------------------- Link (R1)
 
@@ -57,7 +56,7 @@ public class EvidenceTests
     {
         // Act and Assert
         var error = Assert.Throws<DomainException>(() =>
-            Evidence.ForLink(Project, Requirement, "  ", "https://example.com", null, Anna, null, At));
+            Evidence.ForLink(Project, "  ", "https://example.com", null, Anna, null, At));
         Assert.Equal("Give the evidence a title", error.Message);
     }
 
@@ -71,7 +70,7 @@ public class EvidenceTests
 
         // Act
         var file = EvidenceFile.Create("reports/pentest.pdf", content);
-        var evidence = Evidence.ForFile(Project, Requirement, "Pentest", file, null, Anna, UserRole.Admin, At);
+        var evidence = Evidence.ForFile(Project, "Pentest", file, null, Anna, UserRole.Admin, At);
 
         // Assert
         Assert.Equal("pentest.pdf", evidence.FileName);

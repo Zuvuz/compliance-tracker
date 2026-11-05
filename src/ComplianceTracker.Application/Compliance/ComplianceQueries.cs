@@ -82,9 +82,12 @@ namespace ComplianceTracker.Application.Compliance
 
             // US-057: the evidence that is not removed, newest first; expired evidence is shown but does not count
             var today = DateOnly.FromDateTime(_clock.GetUtcNow().UtcDateTime);
+            // US-059 R6: counted through the links
             var evidence = (await _evidence.ListActiveAsync(project.Id, cancellationToken))
                 .OrderByDescending(e => e.AddedAt)
                 .ToList();
+            var evidenceLinks = (await _evidence.ListActiveLinksAsync(project.Id, cancellationToken))
+                .ToLookup(l => l.RequirementId, l => l.EvidenceId);
 
             var result = new List<FrameworkCompliance>();
             foreach (var used in project.Frameworks)
@@ -110,7 +113,7 @@ namespace ComplianceTracker.Application.Compliance
                             .OrderByDescending(s => s.Score)
                             .Select(s => new SuggestedWorkItem(s, workItems[s.WorkItemId]))
                             .ToList(),
-                        Evidence = evidence.Where(e => e.RequirementId == requirement.Id)
+                        Evidence = evidence.Where(e => evidenceLinks[requirement.Id].Contains(e.Id))
                             .Select(e => new EvidenceItem(e, e.IsExpiredOn(today)))
                             .ToList()
                     })

@@ -3,8 +3,8 @@ using ComplianceTracker.Domain.Users;
 
 namespace ComplianceTracker.Domain.Mappings
 {
-    // Proof that a requirement of a project is met (US-057): a link (PR, CI run, document) or an uploaded file.
-    // In the MVP it belongs to the requirement in a project, not to a control (B33).
+    // Proof that requirements of a project are met (US-057): a link (PR, CI run, document) or an uploaded file.
+    // US-059: it belongs to the project and is stored once; EvidenceLink says which requirements it proves (B44).
     // Its own aggregate, like RequirementLink. Removing sets RemovedAt; evidence is never deleted, so the history is kept.
     // A file's content is stored apart from this (Infrastructure), so listing evidence never loads the files.
     public class Evidence
@@ -14,7 +14,6 @@ namespace ComplianceTracker.Domain.Mappings
 
         public Guid Id { get; } = Guid.NewGuid();
         public Guid ProjectId { get; private set; }
-        public Guid RequirementId { get; private set; }
 
         public string Title { get; private set; } = "";
 
@@ -46,7 +45,7 @@ namespace ComplianceTracker.Domain.Mappings
 
         // R1: a link must be an absolute http or https address
         public static Evidence ForLink(
-            Guid projectId, Guid requirementId, string title, string url, DateOnly? validUntil, Guid addedById, UserRole? role, DateTime at)
+            Guid projectId, string title, string url, DateOnly? validUntil, Guid addedById, UserRole? role, DateTime at)
         {
             var address = (url ?? "").Trim();
             if (address.Length == 0)
@@ -61,41 +60,22 @@ namespace ComplianceTracker.Domain.Mappings
                 throw new DomainException("The link must start with http:// or https://");
             }
 
-            var evidence = New(projectId, requirementId, title, validUntil, addedById, role, at);
+            var evidence = New(projectId, title, validUntil, addedById, role, at);
             evidence.Url = uri.ToString();
             return evidence;
         }
 
         // R2: the file has already been checked by EvidenceFile
         public static Evidence ForFile(
-            Guid projectId, Guid requirementId, string title, EvidenceFile file, DateOnly? validUntil, Guid addedById, UserRole? role, DateTime at)
+            Guid projectId, string title, EvidenceFile file, DateOnly? validUntil, Guid addedById, UserRole? role, DateTime at)
         {
-            var evidence = New(projectId, requirementId, title, validUntil, addedById, role, at);
+            var evidence = New(projectId, title, validUntil, addedById, role, at);
             evidence.FileName = file.FileName;
             evidence.ContentType = file.ContentType;
             evidence.SizeInBytes = file.Content.Length;
             evidence.Sha256 = file.Sha256;
             return evidence;
         }
-
-        // US-069 R6: the same evidence on the requirement with the same code in the version the project moves to.
-        // A file's content is copied by the caller.
-        public Evidence CarryTo(Guid requirementId)
-            => new()
-            {
-                ProjectId = ProjectId,
-                RequirementId = requirementId,
-                Title = Title,
-                Url = Url,
-                FileName = FileName,
-                ContentType = ContentType,
-                SizeInBytes = SizeInBytes,
-                Sha256 = Sha256,
-                ValidUntil = ValidUntil,
-                AddedById = AddedById,
-                AddedRole = AddedRole,
-                AddedAt = AddedAt
-            };
 
         // R3: valid through the "valid until" day itself
         public bool IsExpiredOn(DateOnly today) => ValidUntil is { } until && until < today;
@@ -113,7 +93,7 @@ namespace ComplianceTracker.Domain.Mappings
         }
 
         private static Evidence New(
-            Guid projectId, Guid requirementId, string title, DateOnly? validUntil, Guid addedById, UserRole? role, DateTime at)
+            Guid projectId, string title, DateOnly? validUntil, Guid addedById, UserRole? role, DateTime at)
         {
             var cleaned = (title ?? "").Trim();
             if (cleaned.Length == 0)
@@ -129,7 +109,6 @@ namespace ComplianceTracker.Domain.Mappings
             return new Evidence
             {
                 ProjectId = projectId,
-                RequirementId = requirementId,
                 Title = cleaned,
                 ValidUntil = validUntil,
                 AddedById = addedById,

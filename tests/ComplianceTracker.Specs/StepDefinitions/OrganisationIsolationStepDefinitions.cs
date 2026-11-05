@@ -217,6 +217,13 @@ namespace ComplianceTracker.Specs.StepDefinitions
                     continue;
                 }
 
+                // US-059: a list of ids as its own parameter, e.g. requirementIds
+                if (type == typeof(List<Guid>))
+                {
+                    hasId |= Add(values, action, parameter.Name, typeof(Guid));
+                    continue;
+                }
+
                 // A form model: its properties are the fields
                 foreach (var property in type.GetProperties().Where(p => p.CanWrite))
                 {
@@ -343,6 +350,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "measureid" => ids.Measure,
                 "documentid" => ids.Document,
                 "frameworkids" => ids.Framework,
+                "requirementids" => ids.CraRequirement,
                 _ => null
             };
         }

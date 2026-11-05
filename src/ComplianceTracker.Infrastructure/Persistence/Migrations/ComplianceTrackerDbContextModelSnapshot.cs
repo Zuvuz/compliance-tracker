@@ -1460,9 +1460,6 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("RemovedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("RequirementId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Sha256")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
@@ -1486,16 +1483,143 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("AddedById");
 
+                    b.HasIndex("ProjectId");
+
                     b.HasIndex("RemovedById");
-
-                    b.HasIndex("RequirementId");
-
-                    b.HasIndex("ProjectId", "RequirementId");
 
                     b.ToTable("Evidence", null, t =>
                         {
                             t.HasCheckConstraint("CK_Evidence_LinkOrFile", "(\"Url\" IS NULL) <> (\"FileName\" IS NULL)");
                         });
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Mappings.EvidenceLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("EvidenceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("LinkedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("LinkedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("LinkedRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("RemovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RemovedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RequirementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LinkedById");
+
+                    b.HasIndex("RemovedById");
+
+                    b.HasIndex("RequirementId");
+
+                    b.HasIndex("EvidenceId", "RequirementId")
+                        .IsUnique()
+                        .HasFilter("\"RemovedAt\" IS NULL");
+
+                    b.HasIndex("ProjectId", "RequirementId");
+
+                    b.ToTable("EvidenceLinks", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Mappings.EvidenceLinkSuggestion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DecidedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DecidedRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("EmbeddingModel")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("EvidenceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PromptVersion")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("Rank")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Rationale")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("RationaleModel")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("RequirementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<double>("Score")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DecidedById");
+
+                    b.HasIndex("EvidenceId");
+
+                    b.HasIndex("RequirementId");
+
+                    b.HasIndex("ProjectId", "EvidenceId");
+
+                    b.ToTable("EvidenceLinkSuggestions", (string)null);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Mappings.MappingSuggestion", b =>
@@ -2386,6 +2510,58 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("RemovedById")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Mappings.EvidenceLink", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Mappings.Evidence", null)
+                        .WithMany()
+                        .HasForeignKey("EvidenceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("LinkedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("RemovedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ComplianceTracker.Domain.Frameworks.Requirement", null)
+                        .WithMany()
+                        .HasForeignKey("RequirementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Mappings.EvidenceLinkSuggestion", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("DecidedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ComplianceTracker.Domain.Mappings.Evidence", null)
+                        .WithMany()
+                        .HasForeignKey("EvidenceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("ComplianceTracker.Domain.Frameworks.Requirement", null)
                         .WithMany()

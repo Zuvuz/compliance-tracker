@@ -483,6 +483,21 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Startdato pr. krav (ville kræve en ændring af domænemodellen fra US-035).
   - At lade links pege på en kode i stedet for et krav-id.
 
+### B44 – Evidens hører til projektet og kobles til mange krav
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-059)
+  - `Evidence` hører til projektet og gemmes én gang. En ny `EvidenceLink` siger, hvilke krav den beviser (mange-til-mange), med hvem der koblede den, rolle og tidspunkt. Afkobling gemmes som historik.
+  - Fanen "Evidence" på projektet: upload én gang, kobl til krav, fjern fra alle krav på én gang. Alle i organisationen ser fanen, også Auditor. Kun medlemmer med `LinkWork` kan ændre.
+  - Efter upload foreslår den lokale AI de krav, evidensen mest sandsynligt beviser (4 ad gangen, "Show more"), med score og en begrundelse mærket "AI-generated". Et forslag bliver først et link, når en person godkender det. Afviste og koblede par foreslås aldrig igen (B13). Uden AI'en virker alt andet.
+  - AI'en læser tekst fra PDF, TXT, CSV og Markdown. Billeder og links matches kun på titlen.
+  - På Compliance-fanen kan "+ Evidence" stadig uploade ny evidens, og man kan vælge eksisterende evidens. Krydset tager evidensen af det ene krav. Var det det eneste krav, den beviste, fjernes evidensen også (som i US-057).
+  - Migreringen giver hver evidens fra US-057 ét link til sit krav, med samme hvem og hvornår.
+  - Når et projekt skifter version (US-069), flyttes kun linkene. Filen kopieres ikke længere.
+- **Begrundelse:** Ét dokument (fx en adgangspolitik) beviser ofte flere krav. Det skal gemmes én gang med én SHA-256, så en auditor kan se pr. dokument, hvad det beviser, og pr. krav, hvilke dokumenter der er (ISO 27001 7.5.3 og 9.2).
+- **Fravalgt:**
+  - Evidens delt mellem projekter eller på organisationsniveau (senere, med kontroller, B33).
+  - At AI'en kun foreslår, når man trykker på en knap. Upload er det øjeblik, hvor man forventer forslagene.
 ### B43 – Udkast til CRA's tekniske dokumentation som DOCX
 
 - **Status:** Vedtaget

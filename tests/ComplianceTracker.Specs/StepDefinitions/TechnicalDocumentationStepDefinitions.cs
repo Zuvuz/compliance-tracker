@@ -26,7 +26,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             var response = await _web.Client.GetAsync(href);
             response.EnsureSuccessStatusCode();
             using var word = WordprocessingDocument.Open(new MemoryStream(await response.Content.ReadAsByteArrayAsync()), false);
-            _paragraphs = word.MainDocumentPart!.Document.Body!.Elements<Paragraph>()
+            _paragraphs = word.MainDocumentPart!.Document!.Body!.Elements<Paragraph>()
                 .Select(p => (p.ParagraphProperties?.ParagraphStyleId?.Val?.Value ?? "", p.InnerText))
                 .ToList();
         }
