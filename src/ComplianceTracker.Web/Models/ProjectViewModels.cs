@@ -80,7 +80,9 @@ namespace ComplianceTracker.Web.Models
         public const string Evidence = "evidence";
         public const string Risks = "risks";
         public const string SecurityEvents = "security-events";
-        public const string UserStories = "user-stories";
+        // US-104 R1: was "User stories" at "user-stories"; the old address redirects (OldProductRequirements)
+        public const string ProductRequirements = "product-requirements";
+        public const string OldProductRequirements = "user-stories";
         public const string Activity = "activity";
 
         // In the order they are shown, with the text on the tab
@@ -92,7 +94,7 @@ namespace ComplianceTracker.Web.Models
             (Evidence, "Evidence"),
             (Risks, "Risks"),
             (SecurityEvents, "Security events"),
-            (UserStories, "User stories"),
+            (ProductRequirements, "Product requirements"),
             (Activity, "Activity")
         ];
 
@@ -181,6 +183,17 @@ namespace ComplianceTracker.Web.Models
     public record WorkItemsViewModel(
         Project Project, IReadOnlyList<WorkItem> WorkItems, ProjectCompliance? Compliance = null, IReadOnlyList<RequirementDocument>? Documents = null)
     {
+        // US-104 R3: only the items of the methods the project uses; the others are kept and still count (R5)
+        public IReadOnlyList<WorkItem> VisibleWorkItems
+            => WorkItems.Where(item => item.Source switch
+            {
+                WorkItemSource.GitHub => Project.RequirementMethods.HasFlag(RequirementMethods.GitHubUserStories),
+                _ => Documents?.FirstOrDefault(d => d.Id == item.DocumentId) is not { } document
+                     || Project.RequirementMethods.HasFlag(document.Kind == DocumentKind.UseCases
+                         ? RequirementMethods.UseCases
+                         : RequirementMethods.RequirementSpecification)
+            }).ToList();
+
         // US-032: e.g. "kravspec.xlsx", for a requirement read from a document
         public string DocumentName(WorkItem item)
             => Documents?.FirstOrDefault(d => d.Id == item.DocumentId)?.Name ?? "Document";

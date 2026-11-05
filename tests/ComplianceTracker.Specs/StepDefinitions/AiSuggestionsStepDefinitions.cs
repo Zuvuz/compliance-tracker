@@ -8,7 +8,7 @@ using System.Text.Json;
 namespace ComplianceTracker.Specs.StepDefinitions
 {
     // US-020, US-036: AI suggestions through the web app with test sign-in and a pretend AI (FakeAi).
-    // UI contract: on the User stories tab (_UserStoriesTab.cshtml, _WorkItems.cshtml) #suggest-mappings and per story
+    // UI contract: on the Product requirements tab (_ProductRequirementsTab.cshtml, _WorkItems.cshtml) #suggest-mappings and per story
     // .show-more-suggestions; on the Compliance tab (_ComplianceTab.cshtml, US-044) .ai-suggestion with data-story and
     // data-code, .suggestion-score, .suggestion-rationale and the forms .approve-suggestion and .reject-suggestion
     // (reason, comment); on the Settings page #set-ai-sharing and #export-ai-feedback.
@@ -81,7 +81,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             await OpenUserStoriesAsync(projectName);
             var form = _web.Page!.QuerySelector("form#suggest-mappings")
-                ?? throw new Xunit.Sdk.XunitException("The User stories tab has no \"Suggest mappings\" button.");
+                ?? throw new Xunit.Sdk.XunitException("The Product requirements tab has no \"Suggest mappings\" button.");
             await _web.PostFormAsync("/Projects/SuggestMappings", HiddenFields(form));
         }
 
@@ -272,12 +272,12 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             await using var db = _web.CreateDbContext();
             var id = await db.Projects.Where(p => p.Name == projectName).Select(p => p.Id).SingleAsync();
-            await _web.OpenAsync($"/Projects/Details/{id}/user-stories");
+            await _web.OpenAsync($"/Projects/Details/{id}/product-requirements");
         }
 
         private IElement Story(string title)
             => _web.Page!.QuerySelectorAll(".work-item").FirstOrDefault(i => i.QuerySelector(".work-item-title")?.TextContent.Trim() == title)
-               ?? throw new Xunit.Sdk.XunitException($"The User stories tab shows no story '{title}'.");
+               ?? throw new Xunit.Sdk.XunitException($"The Product requirements tab shows no story '{title}'.");
 
         // US-044: the story's pending suggestions on every sub-tab of the Compliance tab, in the order shown
         private async Task<IReadOnlyList<IElement>> SuggestionsAsync(string story)

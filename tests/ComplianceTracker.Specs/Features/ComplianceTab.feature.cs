@@ -371,7 +371,7 @@ namespace ComplianceTracker.Specs.Features
                         "t \"SP-1\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 45
-    await testRunner.WhenAsync("I open the \"User stories\" tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.WhenAsync("I open the \"Product requirements\" tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 46
     await testRunner.ThenAsync("the user story \"[US-004] Sign in with OpenID Connect\" shows the requirements \"SP-" +

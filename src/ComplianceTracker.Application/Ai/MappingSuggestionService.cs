@@ -60,6 +60,7 @@ namespace ComplianceTracker.Application.Ai
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
+        private readonly IAiLimits _limits;
 
         public MappingSuggestionService(
             IProjectRepository projects,
@@ -74,8 +75,10 @@ namespace ComplianceTracker.Application.Ai
             CurrentMember member,
             IActivityLogger log,
             IUnitOfWork unitOfWork,
-            TimeProvider clock)
+            TimeProvider clock,
+            IAiLimits limits)
         {
+            _limits = limits;
             _projects = projects;
             _frameworks = frameworks;
             _workItems = workItems;
@@ -176,6 +179,7 @@ namespace ComplianceTracker.Application.Ai
                 var requirement = targets[r];
                 var best = context.Stories
                     .Select((story, s) => (Story: story, Score: Similarity.Cosine(storyVectors[s], requirementVectors[r])))
+                    .Where(c => c.Score >= _limits.MinimumScoreForStories) // US-105 R1
                     .Where(c => !excluded.Contains((c.Story.Id, requirement.Id)))
                     .OrderByDescending(c => c.Score)
                     .Take(StoriesPerRequirement);
@@ -183,7 +187,7 @@ namespace ComplianceTracker.Application.Ai
                 foreach (var (story, score) in best)
                 {
                     made.Add(MappingSuggestion.Create(context.Project.Id, story.Id, requirement.Id, score, nextRank[story.Id]++,
-                        _embeddings.Name, RationalePrompt.Version, now));
+                        _embeddings.Name, RationalePrompt.Version, now, _limits.MinimumScoreForStories));
                 }
             }
 
@@ -285,6 +289,7 @@ namespace ComplianceTracker.Application.Ai
                 var story = stories[s];
                 var best = context.Requirements
                     .Select((requirement, r) => (Requirement: requirement, Score: Similarity.Cosine(storyVectors[s], requirementVectors[r])))
+                    .Where(c => c.Score >= _limits.MinimumScoreForStories) // US-105 R1
                     .Where(c => !excluded.Contains((story.Id, c.Requirement.Id)))
                     .OrderByDescending(c => c.Score)
                     .Take(BatchSize)
@@ -294,7 +299,7 @@ namespace ComplianceTracker.Application.Ai
                 foreach (var (requirement, score) in best)
                 {
                     made.Add(MappingSuggestion.Create(context.Project.Id, story.Id, requirement.Id, score, rank++,
-                        _embeddings.Name, RationalePrompt.Version, now));
+                        _embeddings.Name, RationalePrompt.Version, now, _limits.MinimumScoreForStories));
                 }
             }
 

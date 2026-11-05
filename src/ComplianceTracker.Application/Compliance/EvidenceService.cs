@@ -71,6 +71,7 @@ namespace ComplianceTracker.Application.Compliance
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
+        private readonly IAiLimits _limits;
 
         public EvidenceService(
             IProjectRepository projects,
@@ -84,8 +85,10 @@ namespace ComplianceTracker.Application.Compliance
             CurrentMember member,
             IActivityLogger log,
             IUnitOfWork unitOfWork,
-            TimeProvider clock)
+            TimeProvider clock,
+            IAiLimits limits)
         {
+            _limits = limits;
             _projects = projects;
             _frameworks = frameworks;
             _applicability = applicability;
@@ -296,11 +299,17 @@ namespace ComplianceTracker.Application.Compliance
             var rank = existing.Select(s => s.Rank).DefaultIfEmpty(0).Max() + 1;
             var made = candidates
                 .Select((requirement, i) => (Requirement: requirement, Score: Similarity.Cosine(vectors[0], vectors[i + 1])))
+                .Where(c => c.Score >= _limits.MinimumScoreForEvidence) // US-105 R1
                 .OrderByDescending(c => c.Score)
                 .Take(BatchSize)
                 .Select(c => EvidenceLinkSuggestion.Create(project.Id, evidence.Id, c.Requirement.Id, c.Score, rank++,
-                    _embeddings.Name, EvidenceRationalePrompt.Version, Now))
+                    _embeddings.Name, EvidenceRationalePrompt.Version, Now, _limits.MinimumScoreForEvidence))
                 .ToList();
+
+            if (made.Count == 0)
+            {
+                return 0; // R3: nothing good enough; the page says so
+            }
 
             await _suggestions.AddRangeAsync(made, cancellationToken);
             await _log.LogAsync(ActivityAction.EvidenceLinkSuggested, project.Id,

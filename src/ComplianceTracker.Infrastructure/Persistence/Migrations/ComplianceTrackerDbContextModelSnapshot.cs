@@ -1575,6 +1575,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("EvidenceId")
                         .HasColumnType("uuid");
 
+                    b.Property<double>("MinimumScore")
+                        .HasColumnType("double precision");
+
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
 
@@ -1735,6 +1738,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<double>("MinimumScore")
+                        .HasColumnType("double precision");
 
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
@@ -2006,6 +2012,13 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.Property<DateOnly?>("ReleasedOn")
                         .HasColumnType("date");
+
+                    b.Property<string>("RequirementMethods")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasDefaultValue("All");
 
                     b.Property<DateOnly?>("RetainUntil")
                         .HasColumnType("date");
