@@ -15,5 +15,10 @@ namespace ComplianceTracker.Web.Security
         }
 
         public Task<bool> CanAsync(Permission permission) => _member.CanAsync(permission);
+
+        // US-102 R6: whether the member may see the whole organisation's activity log (Admins and Auditors)
+        public async Task<bool> CanSeeOrganisationLogAsync()
+            => await _member.FindOrganizationAsync() is not null
+               && Application.ActivityLog.ActivityLogQueries.MaySeeAll((await _member.RequireAsync()).User.Role);
     }
 }

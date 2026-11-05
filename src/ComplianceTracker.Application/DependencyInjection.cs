@@ -47,6 +47,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<OrganizationQueries>();
             services.AddScoped<FrameworkQueries>();
             services.AddScoped<ProjectQueries>();
+            services.AddScoped<ActivityLog.ActivityLogQueries>(); // US-102
             services.AddScoped<WorkItemQueries>();
             services.AddScoped<ComplianceQueries>();
             services.AddScoped<RiskQueries>();
