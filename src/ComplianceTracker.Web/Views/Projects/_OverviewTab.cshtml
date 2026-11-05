@@ -189,6 +189,30 @@
             </div>
         </div>
 
+        @* US-056: reports made from the project's data. #project-reports, a#technical-documentation *@
+        <div class="card mb-3">
+            <div class="card-body small" id="project-reports">
+                <h2 class="h6 card-title">Reports</h2>
+                <ul class="list-unstyled mb-0">
+                    @if (frameworks.Count > 0)
+                    {
+                        <li><a asp-action="Traceability" asp-route-id="@project.Id" id="traceability-report">Traceability matrix (CSV)</a></li>
+                    }
+                    @if (Model.Compliance is { } compliance && ComplianceTracker.Application.Reports.TechnicalDocumentationQueries.CraOf(compliance) is not null)
+                    {
+                        <li>
+                            <a asp-action="TechnicalDocumentation" asp-route-id="@project.Id" id="technical-documentation">Technical documentation (draft)</a>
+                            <span class="text-muted">– CRA Annex VII, as DOCX</span>
+                        </li>
+                    }
+                    @if (frameworks.Count == 0)
+                    {
+                        <li class="text-muted">Reports come when the project follows a framework.</li>
+                    }
+                </ul>
+            </div>
+        </div>
+
         @* US-048 R6: folded, but open while the project has no frameworks *@
         <details id="about-project" open="@(frameworks.Count == 0)">
             <summary class="h6">About the project</summary>
