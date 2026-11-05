@@ -164,13 +164,19 @@ namespace ComplianceTracker.Web.Models
         {
             get
             {
+                // US-069: e.g. CRA version 1 (applies from 11-12-2027) after version 2 started applying earlier
+                if (NewerVersionExists)
+                {
+                    return "Newer version available";
+                }
+
                 if (Version.IsUpcomingOn(Today))
                 {
                     var from = Version.AppliesFrom!.Value.ToString("dd-MM-yyyy");
                     return Framework.CurrentVersion(Today) == Version ? $"Applies from {from}" : $"Upcoming (applies from {from})";
                 }
 
-                return NewerVersionExists ? "Newer version available" : "Newest";
+                return "Newest";
             }
         }
     }

@@ -202,7 +202,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.AndAsync("each requirement links to the official text", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 20
-    await testRunner.AndAsync("the coverage says \"0 of 22 requirements covered (0 %)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the coverage says \"0 of 72 requirements covered (0 %)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -292,7 +292,7 @@ namespace ComplianceTracker.Specs.Features
                         "\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 33
-    await testRunner.AndAsync("the coverage says \"1 of 21 requirements covered (5 %), 1 not applicable\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the coverage says \"1 of 71 requirements covered (1 %), 1 not applicable\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

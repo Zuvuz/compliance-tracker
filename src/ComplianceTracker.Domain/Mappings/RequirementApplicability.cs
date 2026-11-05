@@ -48,6 +48,18 @@ namespace ComplianceTracker.Domain.Mappings
             };
         }
 
+        // US-069 R6: the same decision on the requirement with the same code in the version the project moves to
+        public RequirementApplicability CarryTo(Guid requirementId)
+            => new()
+            {
+                ProjectId = ProjectId,
+                RequirementId = requirementId,
+                Reason = Reason,
+                DecidedById = DecidedById,
+                DecidedRole = DecidedRole,
+                DecidedAt = DecidedAt
+            };
+
         // The requirement applies again
         public void Revoke(Guid userId, DateTime at)
         {

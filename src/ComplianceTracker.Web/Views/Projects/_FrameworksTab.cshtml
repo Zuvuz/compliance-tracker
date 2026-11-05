@@ -35,14 +35,15 @@
                         <td class="framework-source">@(row.Framework.IsBuiltIn ? "Built-in" : "Uploaded")</td>
                         <td class="framework-version">@row.Version.Number</td>
                         <td>
-                            @if (row.Version.IsUpcomingOn(Model.Today))
+                            @if (row.NewerVersionExists)
+                            {
+                                @* US-069: also when this version has not started applying yet *@
+                                <span class="framework-status framework-newer badge text-bg-warning">@row.Status</span>
+                            }
+                            else if (row.Version.IsUpcomingOn(Model.Today))
                             {
                                 @* US-035 R5, R6 *@
                                 <span class="framework-status framework-upcoming badge text-bg-info">@row.Status</span>
-                            }
-                            else if (row.NewerVersionExists)
-                            {
-                                <span class="framework-status framework-newer badge text-bg-warning">@row.Status</span>
                             }
                             else
                             {
