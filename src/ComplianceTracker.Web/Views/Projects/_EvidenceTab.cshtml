@@ -4,7 +4,8 @@
    .evidence-requirement (data-code) with form .unlink-evidence, form .link-evidence (requirementIds),
    form .remove-project-evidence, .evidence-suggestion (data-code) with .suggestion-score, .ai-generated,
    .suggestion-rationale, forms .approve-evidence-suggestion and .reject-evidence-suggestion (reason, comment),
-   and form .more-evidence-suggestions. *@
+   and form .more-evidence-suggestions. #52: .fold-toggle[data-fold-target], .fold-part[data-fold-key], .fold-summary,
+   and data-attention on the card. *@
 @using ComplianceTracker.Application.Compliance
 @model ProjectDetailsViewModel
 @{
@@ -36,7 +37,9 @@
                 @foreach (var row in tab.Evidence)
                 {
                     var evidence = row.Evidence;
-                    <div class="card evidence-item" data-title="@evidence.Title">
+                    var foldKey = $"evidence:{evidence.Id}";
+                    @* #52: the card can be folded; it stays open while the AI has suggestions waiting *@
+                    <div class="card evidence-item" data-title="@evidence.Title" data-attention="@(row.Suggestions.Count > 0 ? "true" : "false")">
                         <div class="card-body">
                             <div class="d-flex flex-wrap align-items-center gap-2">
                                 @if (evidence.IsFile)
@@ -56,15 +59,24 @@
                                 {
                                     <span class="small text-muted">valid until @until.ToString("dd-MM-yyyy")</span>
                                 }
+                                <span class="small text-muted fold-summary" data-fold-summary="@foldKey" hidden>
+                                    Proves @row.Links.Count @(row.Links.Count == 1 ? "requirement" : "requirements")
+                                    @if (row.Suggestions.Count > 0)
+                                    {
+                                        <span class="badge text-bg-info">@row.Suggestions.Count AI @(row.Suggestions.Count == 1 ? "suggestion" : "suggestions")</span>
+                                    }
+                                </span>
+                                <button type="button" class="btn btn-sm btn-link p-0 fold-toggle ms-auto" data-fold-target="@foldKey" aria-expanded="true" hidden>Fold</button>
                                 @if (canChange)
                                 {
-                                    <form asp-action="RemoveProjectEvidence" method="post" class="ms-auto remove-project-evidence">
+                                    <form asp-action="RemoveProjectEvidence" method="post" class="remove-project-evidence">
                                         <input type="hidden" name="projectId" value="@project.Id" />
                                         <input type="hidden" name="evidenceId" value="@evidence.Id" />
                                         <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
                                     </form>
                                 }
                             </div>
+                            <div class="fold-part" data-fold-key="@foldKey">
                             @if (evidence.Sha256 is not null)
                             {
                                 <div class="small text-muted evidence-sha256">SHA-256 @evidence.Sha256</div>
@@ -173,6 +185,7 @@
                                     <button type="submit" class="btn btn-sm btn-link p-0">@(row.Suggestions.Count > 0 ? "Show more suggestions" : "Suggest requirements")</button>
                                 </form>
                             }
+                            </div>
                         </div>
                     </div>
                 }
