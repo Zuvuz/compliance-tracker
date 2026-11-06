@@ -25,6 +25,11 @@ namespace ComplianceTracker.Specs.Support
 
         public int RationalesWritten { get; private set; }
 
+        // US-060: the requirements the AI answers "does not apply" for, with the reason; every other answer is "APPLIES"
+        public Dictionary<string, string> NotApplicable { get; } = new(StringComparer.Ordinal);
+
+        // US-060, US-061: every prompt, so a scenario can check what the AI was told
+        public List<string> Prompts { get; } = new();
         // US-117: tasks with their own model name, and tasks whose own model cannot be reached (FakeAiModels)
         public Dictionary<AiTask, string> TaskModels { get; } = new();
         public HashSet<AiTask> UnavailableTasks { get; } = new();
@@ -58,6 +63,12 @@ namespace ComplianceTracker.Specs.Support
             var code = prompt[start..prompt.IndexOf(':', start)];
             lock (this)
             {
+                Prompts.Add(prompt);
+                if (prompt.Contains(ApplicabilityPrompt.Marker, StringComparison.Ordinal))
+                {
+                    return Task.FromResult(NotApplicable.TryGetValue(code, out var reason) ? $"NOT APPLICABLE: {reason}" : "APPLIES");
+                }
+
                 RationalesWritten++;
             }
 

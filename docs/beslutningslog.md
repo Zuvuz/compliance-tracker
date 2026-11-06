@@ -639,6 +639,51 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Flere GitHub Projects til ét tracker-projekt.
   - **Kendt begrænsning:** GitHub kan ikke begrænse et token til ét Project; et token med læseadgang til projects kan læse alle organisationens projects. README anbefaler en maskinbruger, der kun er medlem af det ene projekt.
 
+### B53 – Gennemgang af links, når kravets tekst ændres i en ny version
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-110)
+  - Alt følger stadig med til kravet med samme kode, når et projekt skifter version (B41): links, "ikke relevant"-afgørelser og evidens.
+  - Er kravets titel eller tekst ændret (ses bort fra forskelle i mellemrum), markeres det overførte "Needs review". Uændrede krav overføres uden markering.
+  - Et link eller en evidens, der venter på gennemgang, tæller ikke. Kravet står som "Covered, needs review", til nogen har set på det.
+  - Rækken viser den gamle tekst overstreget over den nye. "Still correct" godkender alt på kravet på én gang og logges med hvem og hvornår. Det, der ikke passer længere, fjernes med det eksisterende kryds.
+  - Links og evidens kræver `LinkWork`. En "ikke relevant"-afgørelse kræver også `DecideCompliance`.
+  - Compliance-fanen har filteret "Needs review", og Overview viser antallet under "Needs attention".
+- **Begrundelse:** Et link, der var rigtigt for den gamle tekst, beviser ikke nødvendigvis den nye. Dækningen skal ikke se bedre ud, end den er (ISO 27001 A.8.32, 7.5.3).
+- **Fravalgt:**
+  - At gennemgå alt, der overføres. Det giver meget at klikke igennem for krav, der ikke er ændret.
+  - At AI'en vurderer, om linket stadig passer (kan komme med US-038).
+
+### B54 – Handlinger på risici, sporet til user stories og evidens
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-111)
+  - En risiko kan have handlinger med titel, ejer og en valgfri frist. De ligger på risikoens side under "Treatment actions" sammen med de user stories og den evidens, der udfører dem. Det er sporet fra risiko over handling til bevis.
+  - Handlingen er en del af risikoen, ligesom de eksisterende measures, som bliver ved med at vise, hvilke krav og stories der mindsker risikoen.
+  - En handling er "Planned", bliver "In progress", når noget kobles på, og kan kun markeres "Done", når en koblet user story er lukket eller en koblet evidens findes. Hvem og hvornår gemmes.
+  - Handlinger efter fristen vises på Risks-fanen og under "Needs attention" på Overview.
+  - Samme rolle som risikoregistret (`ManageRisks`). Alt logges.
+- **Begrundelse:** ISO 27001 6.1.3 og 8.3 kræver en plan for risikohåndtering og bevis for, at den udføres. CRA art. 13(2) kræver, at risikovurderingen holdes opdateret. Kravet om bevis forhindrer, at en handling står som udført uden spor.
+- **Fravalgt:**
+  - Behandlingsform pr. handling. Risikoen har allerede sin behandling (Reduce, Accept …).
+  - At residualniveauet kun kan sættes, når alle handlinger er udført. Det ville ændre eksisterende risici; det kan komme senere.
+  - At genåbne en handling, når en koblet story genåbnes.
+
+### B55 – Hvad AI'en får at vide om projektet, og "ikke relevant" som forslag
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-060, US-061)
+  - AI'ens begrundelse for et forslag får projektets formål, scope og klassificering under kravets eget regulativ. Den får også de åbne risici, hvis measures nævner kravet. Tomme felter skrives som "(not given)", så modellen ikke gætter.
+  - Hvert forslag gemmer, hvilken kontekst der blev brugt ("Context used: purpose, classification, risk 'Stolen sessions'"). Prompten hedder nu `mapping-v3`, så gamle og nye forslag kan sammenlignes (US-036).
+  - Krav, som en åben High- eller Critical-risiko nævner, får mærket "High risk", og deres forslag vises først.
+  - "Suggest not applicable" spørger den lokale chatmodel om de ikke-dækkede krav i ét regulativ, højst 20 pr. tryk. Kun et klart "NOT APPLICABLE: <grund>" bliver et forslag. Et krav med en åben risiko foreslås aldrig.
+  - Et forslag om "ikke relevant" bliver kun en afgørelse, når en person med `DecideCompliance` accepterer det. Grunden kan rettes først. Accepterede og afviste forslag gemmes med rolle.
+  - Ændres klassificeringen, erstattes ventende forslag for det regulativ. Afgørelser, der blev accepteret ud fra den gamle klassificering, vises med "Based on an earlier classification" og under "Needs attention", til nogen trykker "Still not applicable" eller gør kravet relevant igen.
+- **Begrundelse:** CRA art. 13(2)–(3) lader risikovurderingen afgøre, hvilke krav der gælder, og AI Act art. 6 gør det samme for klassen. AI'en kan foreslå, men et menneske beslutter (AI Act art. 14), og det skal kunne ses, hvad AI'en byggede på (art. 13).
+- **Fravalgt:**
+  - At sende konteksten til en ekstern model. Den bliver i organisationens egen infrastruktur (US-020 R2).
+  - At ændre selve embedding-scoren efter risiko. Kun rækkefølgen ændres.
+
 ### B56 – En model pr. AI-opgave
 
 - **Status:** Vedtaget

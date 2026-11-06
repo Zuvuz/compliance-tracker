@@ -81,9 +81,10 @@ namespace ComplianceTracker.Application.Ai
     // can be told apart (US-036 R3). Change the version whenever the text changes.
     public static class RationalePrompt
     {
-        public const string Version = "mapping-v1";
+        // mapping-v1 (US-020); mapping-v3 adds the project's purpose, scope, risks (US-060) and classification (US-061)
+        public const string Version = "mapping-v3";
 
-        public static string For(string storyTitle, string storyText, string requirementCode, string requirementText)
+        public static string For(string storyTitle, string storyText, string requirementCode, string requirementText, AiProjectContext? context = null)
             => $"""
                 You help a software team map their user stories to regulatory requirements.
                 In one or two short sentences, explain how the user story contributes to the requirement,
@@ -94,7 +95,7 @@ namespace ComplianceTracker.Application.Ai
 
                 User story "{storyTitle}":
                 {storyText}
-
+                {(context is null ? "" : "\n" + context.PromptText() + "\n")}
                 Rationale:
                 """;
     }

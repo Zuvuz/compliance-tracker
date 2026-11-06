@@ -117,6 +117,11 @@
                                         {
                                             <span class="badge text-bg-danger">Review due</span>
                                         }
+                                        @* US-111 R7 *@
+                                        @if (risk.OverdueActions(DateOnly.FromDateTime(Model.Now)) is > 0 and var overdueActions)
+                                        {
+                                            <span class="badge text-bg-danger">@overdueActions overdue @(overdueActions == 1 ? "action" : "actions")</span>
+                                        }
                                     </div>
                                 </td>
                                 <td class="text-nowrap">@risk.Likelihood × @risk.Impact = @risk.Score</td>
