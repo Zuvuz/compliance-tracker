@@ -1498,6 +1498,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("CarriedFromRequirementId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("EvidenceId")
                         .HasColumnType("uuid");
 
@@ -1511,6 +1514,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<bool>("NeedsReview")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
 
@@ -1521,6 +1527,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("RequirementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewedById")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Source")
@@ -1799,6 +1811,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("CarriedFromRequirementId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("DecidedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1809,6 +1824,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<bool>("NeedsReview")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
 
@@ -1818,6 +1836,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(1000)");
 
                     b.Property<Guid>("RequirementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("RevokedAt")
@@ -1846,6 +1870,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("CarriedFromRequirementId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("LinkedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1855,6 +1882,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<string>("LinkedRole")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<bool>("NeedsReview")
+                        .HasColumnType("boolean");
 
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
@@ -1866,6 +1896,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("RequirementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewedById")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Source")

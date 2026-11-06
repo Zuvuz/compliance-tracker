@@ -75,8 +75,8 @@ namespace ComplianceTracker.Application.Compliance
                 organization.Id, project.Frameworks.Select(f => f.FrameworkId).ToList(), cancellationToken);
             var workItems = (await _workItems.ListAsync(project.Id, cancellationToken)).ToDictionary(w => w.Id);
             var links = await _links.ListActiveAsync(project.Id, cancellationToken);
-            var notApplicable = (await _applicability.ListActiveAsync(project.Id, cancellationToken))
-                .ToDictionary(a => a.RequirementId, a => a.Reason);
+            var decisions = (await _applicability.ListActiveAsync(project.Id, cancellationToken))
+                .ToDictionary(a => a.RequirementId);
 
             // US-020, US-044 R4: the pending AI suggestions, for stories that still exist
             var pendingSuggestions = (await _suggestions.ListAsync(project.Id, cancellationToken))
@@ -90,7 +90,7 @@ namespace ComplianceTracker.Application.Compliance
                 .OrderByDescending(e => e.AddedAt)
                 .ToList();
             var evidenceLinks = (await _evidence.ListActiveLinksAsync(project.Id, cancellationToken))
-                .ToLookup(l => l.RequirementId, l => l.EvidenceId);
+                .ToLookup(l => l.RequirementId);
 
             // US-058: suggestions from tests and pull requests that wait for a person, and the newest run's failing tests
             var evidenceSuggestions = (await _evidenceSuggestions.ListAsync(project.Id, cancellationToken))
@@ -108,6 +108,9 @@ namespace ComplianceTracker.Application.Compliance
                     continue;
                 }
 
+                // US-110: every version's requirements, to show the old text of what waits for review
+                var allRequirements = framework.Versions.SelectMany(v => v.Requirements).ToDictionary(r => r.Id);
+
                 var rows = version.Requirements
                     .Select(requirement => new RequirementCoverage(
                         requirement,
@@ -115,15 +118,20 @@ namespace ComplianceTracker.Application.Compliance
                             .Select(l => new LinkedWorkItem(l, workItems[l.WorkItemId]))
                             .OrderBy(l => l.WorkItem.Title, StringComparer.OrdinalIgnoreCase)
                             .ToList(),
-                        notApplicable.GetValueOrDefault(requirement.Id))
+                        decisions.GetValueOrDefault(requirement.Id)?.Reason)
                     {
+                        NotApplicableNeedsReview = decisions.GetValueOrDefault(requirement.Id)?.NeedsReview ?? false,
+                        PreviousRequirement = PreviousOf(requirement.Id, links, evidenceLinks, decisions, allRequirements),
                         // US-044 R4: best first
                         Suggestions = pendingSuggestions.Where(s => s.RequirementId == requirement.Id)
                             .OrderByDescending(s => s.Score)
                             .Select(s => new SuggestedWorkItem(s, workItems[s.WorkItemId]))
                             .ToList(),
-                        Evidence = evidence.Where(e => evidenceLinks[requirement.Id].Contains(e.Id))
-                            .Select(e => new EvidenceItem(e, e.IsExpiredOn(today)))
+                        Evidence = evidence.Where(e => evidenceLinks[requirement.Id].Any(l => l.EvidenceId == e.Id))
+                            .Select(e => new EvidenceItem(e, e.IsExpiredOn(today))
+                            {
+                                NeedsReview = evidenceLinks[requirement.Id].Any(l => l.EvidenceId == e.Id && l.NeedsReview)
+                            })
                             .ToList(),
                         EvidenceSuggestions = evidenceSuggestions[requirement.Id].ToList()
                     })
@@ -146,6 +154,22 @@ namespace ComplianceTracker.Application.Compliance
             {
                 Suggestions = pending
             };
+        }
+
+        // US-110 R4: the requirement in the earlier version that something waiting for review was carried from
+        private static Requirement? PreviousOf(
+            Guid requirementId,
+            IReadOnlyList<Domain.Mappings.RequirementLink> links,
+            ILookup<Guid, Domain.Mappings.EvidenceLink> evidenceLinks,
+            Dictionary<Guid, Domain.Mappings.RequirementApplicability> decisions,
+            Dictionary<Guid, Requirement> allRequirements)
+        {
+            var from = links.Where(l => l.RequirementId == requirementId && l.NeedsReview).Select(l => l.CarriedFromRequirementId)
+                .Concat(evidenceLinks[requirementId].Where(l => l.NeedsReview).Select(l => l.CarriedFromRequirementId))
+                .Append(decisions.GetValueOrDefault(requirementId) is { NeedsReview: true } d ? d.CarriedFromRequirementId : null)
+                .FirstOrDefault(id => id is not null);
+
+            return from is { } id ? allRequirements.GetValueOrDefault(id) : null;
         }
     }
 
@@ -177,6 +201,9 @@ namespace ComplianceTracker.Application.Compliance
         public int Covered => Requirements.Count(r => r.IsApplicable && r.IsCovered);
         public int NotApplicable => Requirements.Count(r => !r.IsApplicable);
 
+        // US-110: requirements with something carried over that waits for review
+        public int NeedsReview => Requirements.Count(r => r.NeedsReview);
+
         // US-044 R1: the applicable requirements without a link, and the pending AI suggestions for applicable ones
         public int NotCovered => Total - Covered;
         public int SuggestionCount => Requirements.Where(r => r.IsApplicable).Sum(r => r.Suggestions.Count);
@@ -200,8 +227,20 @@ namespace ComplianceTracker.Application.Compliance
     {
         public bool IsApplicable => NotApplicableReason is null;
 
-        // US-021 R2, R5: covered when at least one active link exists
-        public bool IsCovered => Links.Count > 0;
+        // US-021 R2, R5: covered when at least one active link exists. US-110 R3: a link waiting for review does not count.
+        public bool IsCovered => Links.Any(l => !l.Link.NeedsReview);
+
+        // US-110 R3: linked, but only by links that wait for review: "Covered, needs review"
+        public bool IsCoveredNeedingReview => !IsCovered && Links.Count > 0;
+
+        // US-110: the "not applicable" decision waits for review
+        public bool NotApplicableNeedsReview { get; init; }
+
+        // US-110 R4: the requirement in the earlier version, for the old text
+        public Requirement? PreviousRequirement { get; init; }
+
+        // US-110: something on this requirement was carried over and waits for a person
+        public bool NeedsReview => Links.Any(l => l.Link.NeedsReview) || Evidence.Any(e => e.NeedsReview) || NotApplicableNeedsReview;
 
         // US-044 R4: the pending AI suggestions for this requirement, best first
         public IReadOnlyList<SuggestedWorkItem> Suggestions { get; init; } = [];
@@ -211,7 +250,7 @@ namespace ComplianceTracker.Application.Compliance
         // US-057: the evidence on this requirement, newest first. R3, R8: expired or not applicable does not count.
         public IReadOnlyList<EvidenceItem> Evidence { get; init; } = [];
 
-        public bool HasEvidence => IsApplicable && Evidence.Any(e => !e.IsExpired);
+        public bool HasEvidence => IsApplicable && Evidence.Any(e => !e.IsExpired && !e.NeedsReview);
 
         // US-058 R6: pending suggestions from tests and pull requests, and blocked ones (failing tests); none when not applicable
         public IReadOnlyList<Domain.Mappings.EvidenceSuggestion> EvidenceSuggestions { get; init; } = [];
@@ -224,7 +263,11 @@ namespace ComplianceTracker.Application.Compliance
             => IsApplicable ? EvidenceSuggestions.Where(s => s.Status == Domain.Mappings.EvidenceSuggestionStatus.Blocked).Select(s => s.FailingCount).FirstOrDefault() : 0;
     }
 
-    public record EvidenceItem(Domain.Mappings.Evidence Evidence, bool IsExpired);
+    public record EvidenceItem(Domain.Mappings.Evidence Evidence, bool IsExpired)
+    {
+        // US-110: the link to this requirement waits for review after a version change
+        public bool NeedsReview { get; init; }
+    }
 
     public record SuggestedWorkItem(Domain.Mappings.MappingSuggestion Suggestion, WorkItem WorkItem);
 

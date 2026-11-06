@@ -11,7 +11,9 @@
    .approve-suggestion and .reject-suggestion (reason, comment).
    US-057: #summary-evidence; per row .evidence (data-title) with .evidence-title, .evidence-sha256, .evidence-expired and
    form .remove-evidence; form .add-evidence (title, url, file, validUntil); .evidence-status "No evidence".
-   US-052: #download-traceability (this regulation) and #download-traceability-all. *@
+   US-052: #download-traceability (this regulation) and #download-traceability-all.
+   US-110: per row .needs-review with .previous-text and the form .confirm-review; links and evidence that wait for
+   review have .review-pending. *@
 @model ProjectDetailsViewModel
 @{
     var project = Model.Project;
@@ -189,7 +191,7 @@
                     }
                     var rowFoldKey = $"requirement:{project.Id}:{requirement.Id}";
                     @* #52: the row can be folded; it is never folded while something needs attention *@
-                    var rowAttention = row.HasSuggestions || row.PendingEvidenceSuggestions.Any() || row.FailingTests > 0;
+                    var rowAttention = row.HasSuggestions || row.PendingEvidenceSuggestions.Any() || row.FailingTests > 0 || row.NeedsReview;
                     <tr class="requirement-row @(row.IsApplicable ? "" : "text-muted")" data-code="@requirement.Code" data-group="@requirement.Group" data-attention="@(rowAttention ? "true" : "false")">
                         <td class="requirement-code text-nowrap align-top">@requirement.Code</td>
                         <td class="requirement-title align-top">
@@ -226,6 +228,10 @@
                                 <div class="d-flex align-items-center gap-1 mb-1">
                                     <a class="linked-story" href="@link.WorkItem.Url" target="_blank" rel="noopener noreferrer">@link.WorkItem.Title</a>
                                     <span class="badge text-bg-light">@link.WorkItem.State</span>
+                                    @if (link.Link.NeedsReview)
+                                    {
+                                        <span class="badge text-bg-warning review-pending">Review</span>
+                                    }
                                     @if (!project.IsClosed && canLink)
                                     {
                                         <form asp-action="UnlinkRequirement" method="post" class="d-inline unlink-requirement">
@@ -252,6 +258,10 @@
                                     else
                                     {
                                         <a class="evidence-title" href="@evidence.Url" target="_blank" rel="noopener noreferrer">@evidence.Title</a>
+                                    }
+                                    @if (item.NeedsReview)
+                                    {
+                                        <span class="badge text-bg-warning review-pending">Review</span>
                                     }
                                     @if (item.IsExpired)
                                     {
@@ -457,6 +467,11 @@
                                     </form>
                                 }
                             }
+                            else if (row.IsCoveredNeedingReview)
+                            {
+                                @* US-110 R3 *@
+                                <span class="requirement-status badge text-bg-warning">Covered, needs review</span>
+                            }
                             else if (row.IsCovered)
                             {
                                 <span class="requirement-status badge text-bg-success">Covered</span>
@@ -469,6 +484,28 @@
                             else
                             {
                                 <span class="requirement-status badge text-bg-danger">Not covered</span>
+                            }
+                            @if (row.NeedsReview)
+                            {
+                                @* US-110 R4, R5: the old and the new text, and "Still correct"; "Remove" is the × on the link or evidence *@
+                                <div class="needs-review small mt-2 border-start border-warning ps-2">
+                                    <div class="fw-semibold">The text changed in this version</div>
+                                    @if (row.PreviousRequirement is { } previous)
+                                    {
+                                        <div class="previous-text text-muted"><span class="text-decoration-line-through">@previous.Title@(string.IsNullOrEmpty(previous.Description) ? "" : ": " + previous.Description)</span></div>
+                                    }
+                                    <div class="current-text">@requirement.Title@(string.IsNullOrEmpty(requirement.Description) ? "" : ": " + requirement.Description)</div>
+                                    @if (!project.IsClosed && canLink && (!row.NotApplicableNeedsReview || canDecide))
+                                    {
+                                        <form asp-action="ConfirmReview" method="post" class="confirm-review mt-1">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="requirementId" value="@requirement.Id" />
+                                            <input type="hidden" name="sub" value="@activeSlug" />
+                                            <input type="hidden" name="show" value="@showFilter" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success">Still correct</button>
+                                        </form>
+                                    }
+                                </div>
                             }
                         </td>
                     </tr>

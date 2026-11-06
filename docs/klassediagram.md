@@ -304,6 +304,7 @@ classDiagram
     -position: int
     -group: string?
     -reference: string?
+    +HasSameTextAs(other: Requirement) bool
   }
   class RequirementApplicability {
     -id: Guid
@@ -314,9 +315,14 @@ classDiagram
     -decidedAt: DateTime
     -revokedById: Guid?
     -revokedAt: DateTime?
+    -needsReview: bool
+    -carriedFromRequirementId: Guid?
+    -reviewedById: Guid?
+    -reviewedAt: DateTime?
     +IsActive: bool
     +NotApplicable(projectId: Guid, requirementId: Guid, reason: string, userId: Guid, at: DateTime)$ RequirementApplicability
-    +CarryTo(requirementId: Guid) RequirementApplicability
+    +CarryTo(requirementId: Guid, textChanged: bool) RequirementApplicability
+    +MarkReviewed(userId: Guid, at: DateTime)
     +Revoke(userId: Guid, at: DateTime)
   }
   class OrganizationFramework {
@@ -574,8 +580,13 @@ classDiagram
     -linkedAt: DateTime
     -removedById: Guid?
     -removedAt: DateTime?
+    -needsReview: bool
+    -carriedFromRequirementId: Guid?
+    -reviewedById: Guid?
+    -reviewedAt: DateTime?
     +Create(projectId, evidenceId, requirementId, linkedById, role, at, source)$ EvidenceLink
-    +CarryTo(requirementId: Guid) EvidenceLink
+    +CarryTo(requirementId: Guid, textChanged: bool) EvidenceLink
+    +MarkReviewed(userId: Guid, at: DateTime)
     +Remove(userId: Guid, at: DateTime)
   }
   class EvidenceLinkSuggestion {
@@ -657,9 +668,14 @@ classDiagram
     -linkedAt: DateTime
     -removedById: Guid?
     -removedAt: DateTime?
+    -needsReview: bool
+    -carriedFromRequirementId: Guid?
+    -reviewedById: Guid?
+    -reviewedAt: DateTime?
     +IsActive: bool
     +Create(projectId: Guid, requirementId: Guid, workItemId: Guid, linkedById: Guid, at: DateTime)$ RequirementLink
-    +CarryTo(requirementId: Guid) RequirementLink
+    +CarryTo(requirementId: Guid, textChanged: bool) RequirementLink
+    +MarkReviewed(userId: Guid, at: DateTime)
     +Remove(userId: Guid, at: DateTime)
   }
   class VersionCarryOver {
@@ -674,6 +690,7 @@ classDiagram
     +UnlinkAsync(projectId: Guid, linkId: Guid) Task
     +MarkNotApplicableAsync(projectId: Guid, requirementId: Guid, reason: string) Task
     +MarkApplicableAsync(projectId: Guid, requirementId: Guid) Task
+    +ConfirmReviewAsync(projectId: Guid, requirementId: Guid) Task
     +AddEvidenceLinkAsync(projectId: Guid, requirementId: Guid, title: string, url: string, validUntil: DateOnly?) Task
     +AddEvidenceFileAsync(projectId: Guid, requirementId: Guid, title: string, fileName: string, content: byte[], validUntil: DateOnly?) Task
     +RemoveEvidenceAsync(projectId: Guid, evidenceId: Guid) Task

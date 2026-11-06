@@ -639,6 +639,21 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Flere GitHub Projects til ét tracker-projekt.
   - **Kendt begrænsning:** GitHub kan ikke begrænse et token til ét Project; et token med læseadgang til projects kan læse alle organisationens projects. README anbefaler en maskinbruger, der kun er medlem af det ene projekt.
 
+### B53 – Gennemgang af links, når kravets tekst ændres i en ny version
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-110)
+  - Alt følger stadig med til kravet med samme kode, når et projekt skifter version (B41): links, "ikke relevant"-afgørelser og evidens.
+  - Er kravets titel eller tekst ændret (ses bort fra forskelle i mellemrum), markeres det overførte "Needs review". Uændrede krav overføres uden markering.
+  - Et link eller en evidens, der venter på gennemgang, tæller ikke. Kravet står som "Covered, needs review", til nogen har set på det.
+  - Rækken viser den gamle tekst overstreget over den nye. "Still correct" godkender alt på kravet på én gang og logges med hvem og hvornår. Det, der ikke passer længere, fjernes med det eksisterende kryds.
+  - Links og evidens kræver `LinkWork`. En "ikke relevant"-afgørelse kræver også `DecideCompliance`.
+  - Compliance-fanen har filteret "Needs review", og Overview viser antallet under "Needs attention".
+- **Begrundelse:** Et link, der var rigtigt for den gamle tekst, beviser ikke nødvendigvis den nye. Dækningen skal ikke se bedre ud, end den er (ISO 27001 A.8.32, 7.5.3).
+- **Fravalgt:**
+  - At gennemgå alt, der overføres. Det giver meget at klikke igennem for krav, der ikke er ændret.
+  - At AI'en vurderer, om linket stadig passer (kan komme med US-038).
+
 ### B54 – Handlinger på risici, sporet til user stories og evidens
 
 - **Status:** Vedtaget
