@@ -41,6 +41,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public Task WhenIAcceptTheRisk(string title, string reason)
             => PostOnRiskPageAsync(title, "#accept-risk", "/Risks/Accept", reason);
 
+        [Given("I close the risk {string} with the reason {string}")]
         [When("I close the risk {string} with the reason {string}")]
         public Task WhenICloseTheRisk(string title, string reason)
             => PostOnRiskPageAsync(title, "#close-risk", "/Risks/Close", reason);

@@ -770,6 +770,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At CSV får én række pr. kobling og læserens kolonner (US-120 R7). Det ville ændre et format, andre værktøjer kan læse.
   - PDF (US-051, US-082) og låsning af rapporten med fingeraftryk (US-050).
 
+### B62 – Den røde tråd fra risiko til krav og evidens
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-124)
+  - Risikosiden har en sektion "Trace", der viser tråden som et træ: risikoens measures (krav og stories) og handlinger → de user stories, der udfører dem → de krav, stories dækker → evidensen på kravene. Evidens koblet direkte til en handling vises under handlingen.
+  - Compliance-fanen viser på hver krav-række de åbne risici, der når kravet. En risiko når et krav direkte som measure, eller gennem en story, der er measure eller koblet til en af risikoens handlinger. Højeste risiko står først, og hver risiko nævnes én gang.
+  - Lukkede risici vises ikke på kravene, men deres egen side har stadig tråden. Fjernede stories og links vises ikke.
+  - Excel-rapporten (US-120) har en "Risks"-kolonne for team og auditor. CSV'en er uændret (B60).
+  - Tråden bygges af data, der allerede findes (`RiskTraces`). Intet nyt gemmes, og intet kan ændres fra tråden.
+- **Begrundelse:** Det skal kunne ses, hvorfor et stykke arbejde findes, og hvad det beviser: risikovurderingen bestemmer kravene, og kravene bevises af arbejde og evidens (CRA art. 13(2)–(3), bilag VII; ISO 27001 6.1.3, 8.3; AI Act art. 9).
+- **Fravalgt:**
+  - Et grafisk diagram. Træet er nok til at starte med.
+  - Sikkerhedshændelser og scanningsfund i tråden. De kan komme, når US-119 kobler dem til risici.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
