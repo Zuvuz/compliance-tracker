@@ -73,13 +73,16 @@ namespace ComplianceTracker.Application.Projects
         private readonly IClassificationRepository _classifications;
         private readonly CurrentMember _member;
         private readonly IActivityLogger _log;
+        private readonly Ai.IApplicabilitySuggestionRepository _applicabilitySuggestions;
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
 
         public ClassificationService(
             IProjectRepository projects, IFrameworkRepository frameworks, IClassificationRepository classifications,
-            CurrentMember member, IActivityLogger log, IUnitOfWork unitOfWork, TimeProvider clock)
+            CurrentMember member, IActivityLogger log, IUnitOfWork unitOfWork, TimeProvider clock,
+            Ai.IApplicabilitySuggestionRepository applicabilitySuggestions)
         {
+            _applicabilitySuggestions = applicabilitySuggestions;
             _projects = projects;
             _frameworks = frameworks;
             _classifications = classifications;
@@ -117,6 +120,14 @@ namespace ComplianceTracker.Application.Projects
             var classification = ProjectClassification.Create(project.Id, framework.Id, classCode!, reason, user.Id, user.Role,
                 _clock.GetUtcNow().UtcDateTime);
             await _classifications.AddAsync(classification, cancellationToken);
+
+            // US-061 R3: pending "not applicable" suggestions for this regulation relied on the old classification
+            foreach (var pending in (await _applicabilitySuggestions.ListAsync(project.Id, cancellationToken))
+                         .Where(s => s.IsPending && s.FrameworkId == framework.Id))
+            {
+                pending.Replace();
+            }
+
             await _log.LogAsync(ActivityAction.ProjectClassified, project.Id,
                 $"{FrameworkSlugs.Short(framework.Name)}: {regulation.TitleOf(classification.Class)} ({classification.Reason})", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);

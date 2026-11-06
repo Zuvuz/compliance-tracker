@@ -23,6 +23,9 @@ namespace ComplianceTracker.Application.Compliance
         private readonly IEvidenceSuggestionRepository _evidenceSuggestions;
         private readonly CurrentMember _member;
         private readonly TimeProvider _clock;
+        private readonly IApplicabilitySuggestionRepository _applicabilitySuggestions;
+        private readonly Risks.IRiskRepository _risks;
+        private readonly IClassificationRepository _classifications;
 
         public ComplianceQueries(
             IProjectRepository projects,
@@ -34,8 +37,14 @@ namespace ComplianceTracker.Application.Compliance
             IEvidenceRepository evidence,
             IEvidenceSuggestionRepository evidenceSuggestions,
             CurrentMember member,
-            TimeProvider clock)
+            TimeProvider clock,
+            IApplicabilitySuggestionRepository applicabilitySuggestions,
+            Risks.IRiskRepository risks,
+            IClassificationRepository classifications)
         {
+            _applicabilitySuggestions = applicabilitySuggestions;
+            _risks = risks;
+            _classifications = classifications;
             _evidenceSuggestions = evidenceSuggestions;
             _projects = projects;
             _frameworks = frameworks;
@@ -98,6 +107,27 @@ namespace ComplianceTracker.Application.Compliance
                 .OrderByDescending(s => s.CreatedAt)
                 .ToLookup(s => s.RequirementId);
 
+            // US-060 R4: requirements named by the measures of an open High or Critical risk
+            var highRisk = (await _risks.ListAsync(project.Id, cancellationToken))
+                .Where(r => r.Status != Domain.Risks.RiskStatus.Closed && r.Level >= Domain.Risks.RiskLevel.High)
+                .SelectMany(r => r.Measures).Select(m => m.RequirementId).OfType<Guid>().ToHashSet();
+
+            // US-060 R6: pending "not applicable" suggestions. US-061 R3: decisions accepted from a suggestion that relied
+            // on an earlier classification than the current one, and not decided again since.
+            var applicabilitySuggestions = await _applicabilitySuggestions.ListAsync(project.Id, cancellationToken);
+            var pendingApplicability = applicabilitySuggestions.Where(s => s.IsPending).ToLookup(s => s.RequirementId);
+            var currentClassification = (await _classifications.ListAsync(project.Id, cancellationToken))
+                .GroupBy(c => c.FrameworkId).ToDictionary(g => g.Key, g => g.Max(c => c.ClassifiedAt));
+            var activeDecisions = (await _applicability.ListActiveAsync(project.Id, cancellationToken)).ToDictionary(a => a.RequirementId);
+            var fromOldClassification = applicabilitySuggestions
+                .Where(s => s.Status == Domain.Mappings.SuggestionStatus.Approved
+                    && currentClassification.TryGetValue(s.FrameworkId, out var classifiedAt)
+                    && s.ClassifiedAt != classifiedAt
+                    && activeDecisions.TryGetValue(s.RequirementId, out var decision)
+                    && decision.DecidedAt < classifiedAt)
+                .Select(s => s.RequirementId)
+                .ToHashSet();
+
             var result = new List<FrameworkCompliance>();
             foreach (var used in project.Frameworks)
             {
@@ -125,7 +155,10 @@ namespace ComplianceTracker.Application.Compliance
                         Evidence = evidence.Where(e => evidenceLinks[requirement.Id].Contains(e.Id))
                             .Select(e => new EvidenceItem(e, e.IsExpiredOn(today)))
                             .ToList(),
-                        EvidenceSuggestions = evidenceSuggestions[requirement.Id].ToList()
+                        EvidenceSuggestions = evidenceSuggestions[requirement.Id].ToList(),
+                        HighRisk = highRisk.Contains(requirement.Id),
+                        ApplicabilitySuggestion = pendingApplicability[requirement.Id].OrderByDescending(s => s.CreatedAt).FirstOrDefault(),
+                        NotApplicableFromOldClassification = fromOldClassification.Contains(requirement.Id)
                     })
                     .ToList();
 
@@ -136,7 +169,8 @@ namespace ComplianceTracker.Application.Compliance
             var requirements = result.SelectMany(f => f.Requirements).ToDictionary(r => r.Requirement.Id, r => r.Requirement);
             var pending = pendingSuggestions
                 .Where(s => requirements.ContainsKey(s.RequirementId))
-                .OrderBy(s => s.Rank)
+                .OrderByDescending(s => highRisk.Contains(s.RequirementId)) // US-060 R4
+                .ThenBy(s => s.Rank)
                 .Select(s => new PendingSuggestion(s, requirements[s.RequirementId]))
                 .ToList();
 
@@ -181,6 +215,10 @@ namespace ComplianceTracker.Application.Compliance
         public int NotCovered => Total - Covered;
         public int SuggestionCount => Requirements.Where(r => r.IsApplicable).Sum(r => r.Suggestions.Count);
 
+        // US-060 R6: pending "not applicable" suggestions. US-061 R3: decisions to look at after a new classification.
+        public int ApplicabilitySuggestionCount => Requirements.Count(r => r.ApplicabilitySuggestion is not null);
+        public int OldClassificationDecisions => Requirements.Count(r => r.NotApplicableFromOldClassification);
+
         // US-057 R4: applicable requirements with at least one evidence that has not expired
         public int WithEvidence => Requirements.Count(r => r.HasEvidence);
 
@@ -202,6 +240,15 @@ namespace ComplianceTracker.Application.Compliance
 
         // US-021 R2, R5: covered when at least one active link exists
         public bool IsCovered => Links.Count > 0;
+
+        // US-060 R4: named by a measure of an open High or Critical risk
+        public bool HighRisk { get; init; }
+
+        // US-060 R6: the AI suggests that the requirement does not apply; a person decides
+        public Domain.Mappings.ApplicabilitySuggestion? ApplicabilitySuggestion { get; init; }
+
+        // US-061 R3: not applicable from a suggestion that relied on an earlier classification
+        public bool NotApplicableFromOldClassification { get; init; }
 
         // US-044 R4: the pending AI suggestions for this requirement, best first
         public IReadOnlyList<SuggestedWorkItem> Suggestions { get; init; } = [];

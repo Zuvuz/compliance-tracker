@@ -794,6 +794,55 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
         }
 
+        // ---------------------------------------------------------- Not applicable, suggested by the AI (US-060, US-061)
+
+        // POST /Projects/SuggestNotApplicable: US-060 R6. Only the open framework's not covered requirements.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> SuggestNotApplicable(
+            Guid projectId, Guid frameworkId, string? sub, [FromServices] ApplicabilitySuggestionService applicability, CancellationToken cancellationToken)
+        {
+            var made = await applicability.SuggestAsync(projectId, frameworkId, cancellationToken);
+            TempData["ApplicabilityMessage"] = made == 0
+                ? "The AI found no requirement that clearly does not apply"
+                : $"The AI suggests {made} {(made == 1 ? "requirement" : "requirements")} as not applicable. Accept or reject each one.";
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // POST /Projects/AcceptApplicability: US-060 R6, R8. The reason can be edited before it is accepted.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> AcceptApplicability(
+            Guid projectId, Guid suggestionId, string? reason, string? sub, [FromServices] ApplicabilitySuggestionService applicability,
+            CancellationToken cancellationToken)
+        {
+            await applicability.AcceptAsync(projectId, suggestionId, reason, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // POST /Projects/RejectApplicability: US-060 R8
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> RejectApplicability(
+            Guid projectId, Guid suggestionId, string? sub, [FromServices] ApplicabilitySuggestionService applicability, CancellationToken cancellationToken)
+        {
+            await applicability.RejectAsync(projectId, suggestionId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // POST /Projects/KeepNotApplicable: US-061 R3
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> KeepNotApplicable(Guid projectId, Guid requirementId, string? sub, CancellationToken cancellationToken)
+        {
+            await _compliance.KeepNotApplicableAsync(projectId, requirementId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
         // POST /Projects/ApproveSuggestion: US-020 R6. US-044 R5: decided on the Compliance tab, back to the same view.
         [HttpPost]
         [ValidateAntiForgeryToken]

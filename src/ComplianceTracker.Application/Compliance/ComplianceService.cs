@@ -164,6 +164,23 @@ namespace ComplianceTracker.Application.Compliance
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        // US-061 R3: a "not applicable" decision is checked against the project's new classification and kept. It is
+        // decided again with the same reason, so it no longer counts as based on the earlier classification.
+        public async Task KeepNotApplicableAsync(Guid projectId, Guid requirementId, CancellationToken cancellationToken = default)
+        {
+            var (organizationId, userId, project) = await OpenProjectAsync(projectId, cancellationToken, Permission.DecideCompliance);
+            var decision = (await _applicability.ListActiveAsync(project.Id, cancellationToken)).FirstOrDefault(a => a.RequirementId == requirementId)
+                ?? throw new DomainException("The requirement applies");
+            var requirement = await RequirementOfProjectAsync(organizationId, project, requirementId, cancellationToken);
+
+            decision.Revoke(userId, Now);
+            await _applicability.AddAsync(RequirementApplicability.NotApplicable(project.Id, requirementId, decision.Reason, userId, Now,
+                (await _member.RequireAsync(cancellationToken)).User.Role), cancellationToken);
+            await _log.LogAsync(ActivityAction.RequirementMarkedNotApplicable, project.Id,
+                $"{requirement?.Code ?? "?"}: {decision.Reason} (checked against the new classification)", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
         // US-057 R1, R6: a link as evidence for one of the project's applicable requirements
         public Task AddEvidenceLinkAsync(
             Guid projectId, Guid requirementId, string title, string url, DateOnly? validUntil, CancellationToken cancellationToken = default)

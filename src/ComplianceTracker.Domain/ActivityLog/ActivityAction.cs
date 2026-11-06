@@ -134,6 +134,12 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-026: a project was classified under a regulation. SubjectId points at the project; Details holds e.g.
         // "CRA: Important, class I (Annex III, class I, point 2: a password manager)".
-        ProjectClassified
+        ProjectClassified,
+
+        // US-060: the AI suggested that requirements do not apply, and a person accepted or rejected one. SubjectId points
+        // at the project; Details holds e.g. "3 not applicable suggested of 20 requirements checked" or "I.2(i): …".
+        ApplicabilitySuggested,
+        ApplicabilitySuggestionAccepted,
+        ApplicabilitySuggestionRejected
     }
 }

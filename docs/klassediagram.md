@@ -682,6 +682,37 @@ classDiagram
     +ForProjectAsync(projectId: Guid) Task~ProjectCompliance?~
     +EvidenceFileAsync(projectId: Guid, evidenceId: Guid) Task
   }
+  class ApplicabilitySuggestion {
+    -id: Guid
+    -projectId: Guid
+    -frameworkId: Guid
+    -requirementId: Guid
+    -reason: string
+    -contextUsed: string
+    -classifiedAt: DateTime?
+    -model: string
+    -promptVersion: string
+    -createdAt: DateTime
+    -status: SuggestionStatus
+    -decidedById: Guid?
+    -decidedRole: UserRole?
+    -decidedAt: DateTime?
+    +Create(projectId, frameworkId, requirementId, reason, contextUsed, classifiedAt, model, promptVersion, at)$ ApplicabilitySuggestion
+    +Accept(userId: Guid, at: DateTime, role: UserRole?)
+    +Reject(userId: Guid, at: DateTime, role: UserRole?)
+    +Replace()
+  }
+  class AiContextBuilder {
+    +ForAsync(project: Project, requirement: Requirement) Task~AiProjectContext~
+  }
+  class ApplicabilitySuggestionService {
+    +SuggestAsync(projectId: Guid, frameworkId: Guid) Task~int~
+    +AcceptAsync(projectId: Guid, suggestionId: Guid, reason: string?) Task
+    +RejectAsync(projectId: Guid, suggestionId: Guid) Task
+  }
+  ApplicabilitySuggestionService --> AiContextBuilder
+  ApplicabilitySuggestionService ..> ApplicabilitySuggestion
+  RationaleService --> AiContextBuilder
   class MappingSuggestion {
     -id: Guid
     -projectId: Guid
@@ -693,6 +724,7 @@ classDiagram
     -embeddingModel: string
     -rationaleModel: string?
     -promptVersion: string
+    -contextUsed: string?
     -createdAt: DateTime
     -status: SuggestionStatus
     -decidedById: Guid?
@@ -702,7 +734,7 @@ classDiagram
     +Approve(userId: Guid, at: DateTime)
     +Reject(reason: RejectionReason?, comment: string?, userId: Guid, at: DateTime)
     +Replace()
-    +SetRationale(rationale: string, model: string)
+    +SetRationale(rationale: string, model: string, contextUsed: string?)
   }
   class IAiLimits {
     <<interface>>
