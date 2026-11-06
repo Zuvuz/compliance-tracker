@@ -655,6 +655,21 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At organisationens admin vælger modeller i appen. Driften styrer modellerne, ligesom grænserne i B47.
   - At falde tilbage til standardmodellen, når en opgaves egen model er nede.
 
+### B57 – Måling af AI'ens kvalitet på egne beslutninger
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-116)
+  - Driften (systemadministratoren) har en side "AI quality" under System. Den måler AI'en på de forslag, folk har godkendt og afvist (US-036), i de organisationer, der har slået deling til. Intet forlader infrastrukturen, og en måling ændrer ingen forslag eller links.
+  - Story-matching måles automatisk med opgaven Embeddings aktuelle model (US-117). For hvert godkendt forslag måles, hvor ofte kravet er blandt de første 1, 3 og 10 af alle krav i versionen. For hvert afvist forslag måles, om det stadig scorer over grænsen.
+  - Begrundelser vurderes af et menneske: op til 20 af de nyeste begrundelser får en karakter fra 1 til 5, og gennemsnittet gemmes.
+  - Hver kørsel gemmes med trin, model, prompt-version, antal beslutninger og hvem der kørte den. Siden sammenligner den nyeste story-matching med den forrige ("Top 3: 71 → 78 (better)").
+  - Under `Ai:MinimumDecisionsForEvaluation` beslutninger (standard 50) siger siden "Too few decisions to measure".
+- **Begrundelse:** Et modelskift skal besluttes ud fra målinger på organisationens egne data, ikke ud fra et gæt om, at en større model er bedre (AI Act art. 15, art. 17; ISO 27001 A.8.32).
+- **Fravalgt:**
+  - Måling af evidens-matching. Den følger samme mønster og kan komme senere.
+  - At skifte model automatisk ud fra resultatet.
+  - Offentlige benchmarks.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

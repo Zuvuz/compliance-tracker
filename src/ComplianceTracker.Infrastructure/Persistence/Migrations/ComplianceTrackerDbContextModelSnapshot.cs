@@ -75,6 +75,68 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("ActivityLog", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Ai.AiEvaluation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<double?>("AverageGrade")
+                        .HasColumnType("double precision");
+
+                    b.Property<int>("Decisions")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DecisionsFrom")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DecisionsTo")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Graded")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("PromptVersion")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<double?>("RejectedAboveLimit")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("RunAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RunBy")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Step")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<double?>("Top1")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("Top10")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("Top3")
+                        .HasColumnType("double precision");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Step", "RunAt");
+
+                    b.ToTable("AiEvaluations", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Feedback.Feedback", b =>
                 {
                     b.Property<Guid>("Id")

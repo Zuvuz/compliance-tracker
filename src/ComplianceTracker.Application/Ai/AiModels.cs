@@ -31,6 +31,9 @@ namespace ComplianceTracker.Application.Ai
 
         // US-059: evidence <-> requirement
         double MinimumScoreForEvidence { get; }
+
+        // US-116: fewer decisions than this give no measurement
+        int MinimumDecisionsForEvaluation { get; }
     }
 
     // The local AI cannot be reached or answered with an error. The message is shown to the user.
@@ -66,6 +69,9 @@ namespace ComplianceTracker.Application.Ai
         // the scores of approved and rejected suggestions (US-036 export).
         public double MinimumScoreForStories { get; set; } = 0.5;
         public double MinimumScoreForEvidence { get; set; } = 0.5;
+
+        // US-116: a measurement on fewer decisions than this says "too few decisions"
+        public int MinimumDecisionsForEvaluation { get; set; } = 50;
 
         // US-117: a model per task, e.g. Ai:Tasks:Rationale:Model = "qwen2.5:14b"; a task not named uses the default
         public Dictionary<string, AiTaskOptions> Tasks { get; set; } = new(StringComparer.OrdinalIgnoreCase);
