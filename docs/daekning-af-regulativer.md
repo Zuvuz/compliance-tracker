@@ -79,40 +79,41 @@ Listen gennemgås igen, når et regulativ får en ny version (US-035).
 ## AI Act – Regulation (EU) 2024/1689
 
 - **Tjekket mod:** den officielle engelske tekst på EUR-Lex, OJ L, 2024/1689, 12.7.2024 (<https://eur-lex.europa.eu/eli/reg/2024/1689/oj>).
-- **Tjekket:** 05-11-2026.
+- **Tjekket:** 06-11-2026.
 - **Gælder fra:** 02-08-2026, med disse undtagelser (artikel 113):
   - Kapitel I og II gælder fra 02-02-2025.
   - Kapitel III, afdeling 4, kapitel V, VII og XII og artikel 78 gælder fra 02-08-2025, undtagen artikel 101.
   - Artikel 6(1) og de pligter, der hører til, gælder fra 02-08-2027.
 
-AI Act er indbygget, men har **ingen krav endnu**. De kommer med US-062 ([#117](https://github.com/Zuvuz/compliance-tracker/issues/117)).
+AI Act har 31 krav på version 1 (US-062, B58). Titel og beskrivelse er resuméer med egne ord, og hvert krav linker til sin artikel på EUR-Lex, hvor den bindende tekst står.
 
 | Del | Indhold (med egne ord) | Status | Koder eller issue |
 |---|---|---|---|
 | Art. 1–3 | Formål, anvendelsesområde og definitioner | Udeladt | Ingen pligt i sig selv |
-| Art. 4 | AI-færdigheder hos dem, der udvikler og bruger AI | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
-| Art. 5 | Forbudt AI-praksis | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
+| Art. 4 | AI-færdigheder hos dem, der udvikler og bruger AI | I trackeren | Art. 4 |
+| Art. 5 | Forbudt AI-praksis | I trackeren | Art. 5(1)(a), Art. 5(1)(b), Art. 5(1)(c), Art. 5(1)(d), Art. 5(1)(e), Art. 5(1)(f), Art. 5(1)(g), Art. 5(1)(h) |
 | Art. 6–7 | Klassificering som højrisiko | I trackeren | Se projektets klassificering (US-026, B50). At AI'en bruger klassen, kommer med [#116](https://github.com/Zuvuz/compliance-tracker/issues/116) (US-061) |
-| Art. 8–15 | Krav til højrisiko-AI-systemer: risikostyring, data, teknisk dokumentation, logning, gennemsigtighed, menneskeligt tilsyn, nøjagtighed, robusthed og cybersikkerhed | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
-| Art. 16–21 | Udbyderens pligter: kvalitetsstyring, opbevaring af dokumentation, logs, korrigerende handlinger og samarbejde med myndigheder | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
+| Art. 8–15 | Krav til højrisiko-AI-systemer: risikostyring, data, teknisk dokumentation, logning, gennemsigtighed, menneskeligt tilsyn, nøjagtighed, robusthed og cybersikkerhed | I trackeren | Art. 9, Art. 10, Art. 11, Art. 12, Art. 13, Art. 14, Art. 15 |
+| Art. 16–20 | Udbyderens pligter: kvalitetsstyring, opbevaring af dokumentation, logs og korrigerende handlinger | I trackeren | Art. 16, Art. 17, Art. 18, Art. 19, Art. 20 |
+| Art. 21 | Samarbejde med myndighederne | Udeladt | En pligt på myndighedernes anmodning, ikke noget, et projekt dækker løbende |
 | Art. 22–25 | Bemyndigede repræsentanter, importører, distributører og værdikæden | Udeladt | Trackeren følger udbyderens og idriftsætterens pligter |
-| Art. 26–27 | Idriftsætterens pligter og konsekvensanalyse for grundlæggende rettigheder | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) (og [#145](https://github.com/Zuvuz/compliance-tracker/issues/145), US-085, register over AI-systemer) |
+| Art. 26–27 | Idriftsætterens pligter og konsekvensanalyse for grundlæggende rettigheder | Mangler | [#145](https://github.com/Zuvuz/compliance-tracker/issues/145) (US-085, register over AI-systemer) |
 | Art. 28–39 | Bemyndigende myndigheder og bemyndigede organer | Udeladt | Pligter for myndigheder og bemyndigede organer |
 | Art. 40–42 | Standarder, fælles specifikationer og formodning om overensstemmelse | Udeladt | Ingen pligt |
-| Art. 43 | Overensstemmelsesvurdering | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
+| Art. 43 | Overensstemmelsesvurdering | I trackeren | Art. 43 |
 | Art. 44–46 | Certifikater, bemyndigede organers oplysningspligt og undtagelser | Udeladt | Pligter for bemyndigede organer og myndigheder |
-| Art. 47–49 | EU-overensstemmelseserklæring, CE-mærkning og registrering | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
-| Art. 50 | Gennemsigtighed for visse AI-systemer (fx chatbots og genereret indhold) | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
+| Art. 47–49 | EU-overensstemmelseserklæring, CE-mærkning og registrering | I trackeren | Art. 47, Art. 48, Art. 49 |
+| Art. 50 | Gennemsigtighed for visse AI-systemer (fx chatbots og genereret indhold) | I trackeren | Art. 50(1), Art. 50(2), Art. 50(3), Art. 50(4) |
 | Art. 51–56 | AI-modeller til almene formål | Udeladt | Gælder udbydere af store modeller. Uden for trackerens målgruppe indtil videre |
 | Art. 57–63 | Reguleringsmæssige sandkasser og test under virkelige forhold | Udeladt | Frivillige ordninger |
 | Art. 64–71 | Forvaltning, myndigheder og EU-databasen | Udeladt | Pligter for EU og myndighederne |
-| Art. 72 | Overvågning efter markedsføring | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
-| Art. 73 | Indberetning af alvorlige hændelser | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
+| Art. 72 | Overvågning efter markedsføring | I trackeren | Art. 72 |
+| Art. 73 | Indberetning af alvorlige hændelser | I trackeren | Art. 73 |
 | Art. 74–94 | Markedsovervågning, klageadgang og tilsyn med modeller til almene formål | Udeladt | Pligter for myndighederne |
 | Art. 95–113 | Adfærdskodekser, vejledning, sanktioner og afsluttende bestemmelser | Udeladt | Frivilligt, Kommissionen og konsekvenser |
 | Bilag I–II | Lister over EU-lovgivning og strafbare handlinger | Udeladt | Opslagslister, ingen pligt |
 | Bilag III | Højrisiko-områder | I trackeren | Se projektets klassificering (US-026, B50) |
-| Bilag IV | Indholdet af den tekniske dokumentation | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
-| Bilag V–VII | Overensstemmelseserklæring og procedurer for overensstemmelsesvurdering | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
-| Bilag VIII | Oplysninger ved registrering af højrisiko-systemer | Mangler | [#117](https://github.com/Zuvuz/compliance-tracker/issues/117) |
+| Bilag IV | Indholdet af den tekniske dokumentation | I trackeren | Se Art. 11 |
+| Bilag V–VII | Overensstemmelseserklæring og procedurer for overensstemmelsesvurdering | I trackeren | Se Art. 43 og Art. 47 |
+| Bilag VIII | Oplysninger ved registrering af højrisiko-systemer | I trackeren | Se Art. 49 |
 | Bilag IX–XIII | Test under virkelige forhold, store IT-systemer og AI-modeller til almene formål | Udeladt | Se art. 51–63 |

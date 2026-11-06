@@ -84,13 +84,6 @@ Feature: Compliance tab: requirements, links and coverage per regulation
     Then the page is not found
 
   @US-041 @integration
-  Scenario: A framework without requirements says so
-    Given "AI Act – Regulation (EU) 2024/1689" is switched on
-    And "Acme Portal" uses "AI Act – Regulation (EU) 2024/1689"
-    When I open the "AI Act" sub-tab of "Acme Portal"
-    Then I see "This framework has no requirements in the tracker yet"
-
-  @US-041 @integration
   Scenario: The overview links to each regulation's coverage
     Given the user story "[US-004] Sign in with OpenID Connect" is linked to the requirement "SP-1"
     When I open the "Overview" tab of "Acme Portal"
