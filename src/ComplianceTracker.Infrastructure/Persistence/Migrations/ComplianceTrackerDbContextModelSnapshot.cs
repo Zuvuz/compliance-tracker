@@ -2229,6 +2229,80 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("Risks", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Risks.RiskAction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DoneAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DoneById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly?>("DueOn")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RiskId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("DoneById");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("RiskId");
+
+                    b.ToTable("RiskActions", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Risks.RiskActionLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("EvidenceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("WorkItemId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActionId");
+
+                    b.HasIndex("EvidenceId");
+
+                    b.HasIndex("WorkItemId");
+
+                    b.ToTable("RiskActionLinks", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Risks.RiskMeasure", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3123,6 +3197,51 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Risks.RiskAction", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("DoneById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Risks.Risk", null)
+                        .WithMany("Actions")
+                        .HasForeignKey("RiskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Risks.RiskActionLink", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Risks.RiskAction", null)
+                        .WithMany("Links")
+                        .HasForeignKey("ActionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Mappings.Evidence", null)
+                        .WithMany()
+                        .HasForeignKey("EvidenceId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ComplianceTracker.Domain.WorkItems.WorkItem", null)
+                        .WithMany()
+                        .HasForeignKey("WorkItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Risks.RiskMeasure", b =>
                 {
                     b.HasOne("ComplianceTracker.Domain.Frameworks.Requirement", null)
@@ -3300,7 +3419,14 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("ComplianceTracker.Domain.Risks.Risk", b =>
                 {
+                    b.Navigation("Actions");
+
                     b.Navigation("Measures");
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Risks.RiskAction", b =>
+                {
+                    b.Navigation("Links");
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.WorkItems.RequirementDocument", b =>

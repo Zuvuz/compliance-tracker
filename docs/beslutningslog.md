@@ -639,6 +639,21 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Flere GitHub Projects til ét tracker-projekt.
   - **Kendt begrænsning:** GitHub kan ikke begrænse et token til ét Project; et token med læseadgang til projects kan læse alle organisationens projects. README anbefaler en maskinbruger, der kun er medlem af det ene projekt.
 
+### B54 – Handlinger på risici, sporet til user stories og evidens
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-111)
+  - En risiko kan have handlinger med titel, ejer og en valgfri frist. De ligger på risikoens side under "Treatment actions" sammen med de user stories og den evidens, der udfører dem. Det er sporet fra risiko over handling til bevis.
+  - Handlingen er en del af risikoen, ligesom de eksisterende measures, som bliver ved med at vise, hvilke krav og stories der mindsker risikoen.
+  - En handling er "Planned", bliver "In progress", når noget kobles på, og kan kun markeres "Done", når en koblet user story er lukket eller en koblet evidens findes. Hvem og hvornår gemmes.
+  - Handlinger efter fristen vises på Risks-fanen og under "Needs attention" på Overview.
+  - Samme rolle som risikoregistret (`ManageRisks`). Alt logges.
+- **Begrundelse:** ISO 27001 6.1.3 og 8.3 kræver en plan for risikohåndtering og bevis for, at den udføres. CRA art. 13(2) kræver, at risikovurderingen holdes opdateret. Kravet om bevis forhindrer, at en handling står som udført uden spor.
+- **Fravalgt:**
+  - Behandlingsform pr. handling. Risikoen har allerede sin behandling (Reduce, Accept …).
+  - At residualniveauet kun kan sættes, når alle handlinger er udført. Det ville ændre eksisterende risici; det kan komme senere.
+  - At genåbne en handling, når en koblet story genåbnes.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

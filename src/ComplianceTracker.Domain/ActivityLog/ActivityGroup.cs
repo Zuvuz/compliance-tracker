@@ -43,7 +43,8 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.EvidenceUnlinked or ActivityAction.EvidenceLinkSuggested or ActivityAction.EvidenceLinkApproved
                 or ActivityAction.EvidenceLinkRejected or ActivityAction.EvidenceSuggested or ActivityAction.EvidenceSuggestionAccepted
                 or ActivityAction.EvidenceSuggestionRejected => ActivityGroup.Evidence,
-            ActivityAction.RiskAdded or ActivityAction.RiskUpdated or ActivityAction.RiskReviewed => ActivityGroup.Risks,
+            ActivityAction.RiskAdded or ActivityAction.RiskUpdated or ActivityAction.RiskReviewed
+                or ActivityAction.RiskActionAdded or ActivityAction.RiskActionLinked or ActivityAction.RiskActionDone => ActivityGroup.Risks,
             ActivityAction.VulnerabilityRecorded or ActivityAction.IncidentRecorded or ActivityAction.SecurityReportSent
                 or ActivityAction.SecurityFixAvailable or ActivityAction.SecurityEventClosed => ActivityGroup.SecurityEvents,
             ActivityAction.MappingsSuggested or ActivityAction.MappingApproved or ActivityAction.MappingRejected

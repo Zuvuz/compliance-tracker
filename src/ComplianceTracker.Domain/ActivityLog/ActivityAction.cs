@@ -134,6 +134,12 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-026: a project was classified under a regulation. SubjectId points at the project; Details holds e.g.
         // "CRA: Important, class I (Annex III, class I, point 2: a password manager)".
-        ProjectClassified
+        ProjectClassified,
+
+        // US-111: a treatment action of a risk. SubjectId points at the project; Details holds e.g.
+        // "Stolen sessions: Short session lifetime (owner Bo Berg, due 01-12-2026)" or "… ↔ #41 Session timeout".
+        RiskActionAdded,
+        RiskActionLinked,
+        RiskActionDone
     }
 }
