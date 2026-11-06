@@ -12,6 +12,9 @@ namespace ComplianceTracker.Specs.Support
         public double MinimumScoreForStories { get; set; }
         public double MinimumScoreForEvidence { get; set; }
 
+        // US-116: 1 unless a scenario sets it, so a few decisions are enough to measure
+        public int MinimumDecisionsForEvaluation { get; set; } = 1;
+
         private const int Dimensions = 256;
 
         private readonly Dictionary<(string Story, string Code), double> _scores = new();

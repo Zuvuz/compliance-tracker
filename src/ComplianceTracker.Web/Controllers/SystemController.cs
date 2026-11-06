@@ -56,6 +56,39 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(FeedbackItem), new { id });
         }
 
+        // ---------------------------------------------------------- AI quality (US-116)
+
+        // GET /System/AiQuality: the runs, newest first, and the rationales to grade
+        [HttpGet]
+        public async Task<IActionResult> AiQuality([FromServices] Application.Ai.AiEvaluationService evaluations, CancellationToken cancellationToken)
+            => View(new Models.AiQualityViewModel(
+                await evaluations.ListAsync(cancellationToken),
+                await evaluations.RationaleSampleAsync(cancellationToken)));
+
+        // POST /System/EvaluateStoryMatching: R3
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(AiQuality))]
+        public async Task<IActionResult> EvaluateStoryMatching([FromServices] Application.Ai.AiEvaluationService evaluations, CancellationToken cancellationToken)
+        {
+            await evaluations.EvaluateStoryMatchingAsync(cancellationToken);
+            return RedirectToAction(nameof(AiQuality));
+        }
+
+        // POST /System/GradeRationales: R3. The form sends "grade-{suggestionId}" = 1..5; empty ones are left out.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(AiQuality))]
+        public async Task<IActionResult> GradeRationales([FromServices] Application.Ai.AiEvaluationService evaluations, CancellationToken cancellationToken)
+        {
+            var grades = Request.Form
+                .Where(f => f.Key.StartsWith("grade-", StringComparison.Ordinal) && int.TryParse(f.Value, out _))
+                .Where(f => Guid.TryParse(f.Key["grade-".Length..], out _))
+                .ToDictionary(f => Guid.Parse(f.Key["grade-".Length..]), f => int.Parse(f.Value!));
+            await evaluations.GradeRationalesAsync(grades, cancellationToken);
+            return RedirectToAction(nameof(AiQuality));
+        }
+
         [HttpGet]
         public async Task<IActionResult> Index(CancellationToken cancellationToken)
             => View(await _system.ListOrganizationsAsync(cancellationToken));

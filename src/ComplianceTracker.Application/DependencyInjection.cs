@@ -43,6 +43,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<RationaleService>();
             services.AddScoped<AiContextBuilder>(); // US-060, US-061
             services.AddScoped<ApplicabilitySuggestionService>(); // US-060
+            services.AddScoped<AiEvaluationService>(); // US-116
             services.AddScoped<AiFeedbackService>();
             services.AddScoped<RiskService>();
             services.AddScoped<MemberService>();

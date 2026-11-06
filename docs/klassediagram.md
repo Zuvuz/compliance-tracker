@@ -801,6 +801,30 @@ classDiagram
   }
   ConfiguredAiModels ..|> IAiModels
   RationaleService --> IAiModels
+  class AiEvaluation {
+    -id: Guid
+    -step: AiEvaluationStep
+    -model: string
+    -promptVersion: string
+    -decisions: int
+    -top1: double?
+    -top3: double?
+    -top10: double?
+    -rejectedAboveLimit: double?
+    -graded: int
+    -averageGrade: double?
+    -runBy: string
+    -runAt: DateTime
+    +ForMatching(...)$ AiEvaluation
+    +ForRationales(model, promptVersion, grades, runBy, at)$ AiEvaluation
+  }
+  class AiEvaluationService {
+    +EvaluateStoryMatchingAsync() Task~AiEvaluation~
+    +RationaleSampleAsync() Task~IReadOnlyList~RationaleSample~~
+    +GradeRationalesAsync(grades: IReadOnlyDictionary~Guid,int~) Task~AiEvaluation~
+  }
+  AiEvaluationService --> IAiModels
+  AiEvaluationService ..> AiEvaluation
   class RationaleService {
     +WriteMissingAsync(take: int) Task~int~
   }

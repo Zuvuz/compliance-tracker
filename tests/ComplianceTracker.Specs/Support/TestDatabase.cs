@@ -82,6 +82,7 @@ namespace ComplianceTracker.Specs.Support
                 DELETE FROM "Risks";
                 DELETE FROM "MappingSuggestions";
                 DELETE FROM "ApplicabilitySuggestions";
+                DELETE FROM "AiEvaluations";
                 DELETE FROM "EvidenceSuggestions";
                 DELETE FROM "EvidenceLinkSuggestions";
                 DELETE FROM "EvidenceLinks";
