@@ -136,6 +136,7 @@ body:
       description: Afkryds i issuet, efterhånden som punkterne er opfyldt.
       options:
         - label: Scenarios automated (Reqnroll) and green in `build-and-test`
+        - label: Unit tests for the edge cases (limits, empty and too long input, repeated actions, wrong state, odd files) in `ComplianceTracker.Domain.Tests` or `ComplianceTracker.UnitTests`
         - label: Compliance context filled in and `framework:*` labels set
         - label: Evidence exists and is linked from this issue
         - label: Domain model and class diagram updated in the same PR if the story changed them
