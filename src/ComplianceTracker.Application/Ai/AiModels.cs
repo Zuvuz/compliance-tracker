@@ -66,6 +66,9 @@ namespace ComplianceTracker.Application.Ai
         // the scores of approved and rejected suggestions (US-036 export).
         public double MinimumScoreForStories { get; set; } = 0.5;
         public double MinimumScoreForEvidence { get; set; } = 0.5;
+
+        // US-117: a model per task, e.g. Ai:Tasks:Rationale:Model = "qwen2.5:14b"; a task not named uses the default
+        public Dictionary<string, AiTaskOptions> Tasks { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
 
     // The prompt for a rationale. Its version is stored with every suggestion, so results from different prompts

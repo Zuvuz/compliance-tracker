@@ -80,7 +80,7 @@ namespace ComplianceTracker.Application.Compliance
             IEvidenceRepository evidence,
             IEvidenceLinkSuggestionRepository suggestions,
             IEvidenceTextReader text,
-            IEmbeddingModel embeddings,
+            IAiModels models,
             IRationaleQueue rationales,
             CurrentMember member,
             IActivityLogger log,
@@ -95,7 +95,7 @@ namespace ComplianceTracker.Application.Compliance
             _evidence = evidence;
             _suggestions = suggestions;
             _text = text;
-            _embeddings = embeddings;
+            _embeddings = models.Embedding(AiTask.Embedding); // US-117
             _rationales = rationales;
             _member = member;
             _log = log;

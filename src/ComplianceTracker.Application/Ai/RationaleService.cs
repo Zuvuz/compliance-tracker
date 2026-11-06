@@ -13,6 +13,7 @@ namespace ComplianceTracker.Application.Ai
         private readonly IFrameworkRepository _frameworks;
         private readonly IWorkItemRepository _workItems;
         private readonly IRationaleWriter _writer;
+        private readonly IRationaleWriter _evidenceWriter;
         private readonly IWorkItemNotifier _notifier;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IEvidenceLinkSuggestionRepository _evidenceSuggestions;
@@ -25,7 +26,7 @@ namespace ComplianceTracker.Application.Ai
             IMappingSuggestionRepository suggestions,
             IFrameworkRepository frameworks,
             IWorkItemRepository workItems,
-            IRationaleWriter writer,
+            IAiModels models,
             IWorkItemNotifier notifier,
             IUnitOfWork unitOfWork,
             IEvidenceLinkSuggestionRepository evidenceSuggestions,
@@ -42,7 +43,8 @@ namespace ComplianceTracker.Application.Ai
             _suggestions = suggestions;
             _frameworks = frameworks;
             _workItems = workItems;
-            _writer = writer;
+            _writer = models.Writer(AiTask.Rationale); // US-117
+            _evidenceWriter = models.Writer(AiTask.EvidenceCheck);
             _notifier = notifier;
             _unitOfWork = unitOfWork;
         }
@@ -82,7 +84,7 @@ namespace ComplianceTracker.Application.Ai
                 var evidence = await _evidence.GetAsync(suggestion.ProjectId, suggestion.EvidenceId, cancellationToken);
                 if (requirement is null || evidence is null)
                 {
-                    suggestion.SetRationale("(The evidence or the requirement no longer exists.)", _writer.Name);
+                    suggestion.SetRationale("(The evidence or the requirement no longer exists.)", _evidenceWriter.Name);
                 }
                 else
                 {
@@ -90,7 +92,7 @@ namespace ComplianceTracker.Application.Ai
                     var text = content is not null && evidence.ContentType is not null ? _evidenceText.Read(evidence.ContentType, content) : null;
                     var prompt = EvidenceRationalePrompt.For(evidence.Title, EvidenceService.EvidenceText(evidence, text),
                         requirement.Code, MappingSuggestionService.RequirementText(requirement));
-                    suggestion.SetRationale(await _writer.WriteAsync(prompt, cancellationToken), _writer.Name);
+                    suggestion.SetRationale(await _evidenceWriter.WriteAsync(prompt, cancellationToken), _evidenceWriter.Name);
                 }
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);

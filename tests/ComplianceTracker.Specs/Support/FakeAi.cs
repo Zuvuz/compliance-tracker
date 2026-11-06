@@ -27,6 +27,9 @@ namespace ComplianceTracker.Specs.Support
 
         // US-060, US-061: every prompt, so a scenario can check what the AI was told
         public List<string> Prompts { get; } = new();
+        // US-117: tasks with their own model name, and tasks whose own model cannot be reached (FakeAiModels)
+        public Dictionary<AiTask, string> TaskModels { get; } = new();
+        public HashSet<AiTask> UnavailableTasks { get; } = new();
 
         string IEmbeddingModel.Name => "fake-embed";
         string IRationaleWriter.Name => "fake-chat";
