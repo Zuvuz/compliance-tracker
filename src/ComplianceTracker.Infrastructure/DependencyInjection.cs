@@ -71,6 +71,7 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<IRequirementApplicabilityRepository, RequirementApplicabilityRepository>();
             services.AddScoped<IEvidenceRepository, EvidenceRepository>();
             services.AddSingleton<Application.Reports.IDocumentWriter, Reports.OpenXmlDocumentWriter>(); // US-056
+            services.AddSingleton<Application.Reports.ISpreadsheetWriter, Reports.OpenXmlSpreadsheetWriter>(); // US-120
             services.AddScoped<Application.Feedback.IFeedbackRepository, FeedbackRepository>(); // US-063
             services.AddScoped<IEvidenceLinkSuggestionRepository, EvidenceLinkSuggestionRepository>(); // US-059
             services.AddScoped<IEvidenceSuggestionRepository, EvidenceSuggestionRepository>(); // US-058

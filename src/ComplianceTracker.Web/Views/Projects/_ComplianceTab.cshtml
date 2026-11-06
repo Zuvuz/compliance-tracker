@@ -11,7 +11,7 @@
    .approve-suggestion and .reject-suggestion (reason, comment).
    US-057: #summary-evidence; per row .evidence (data-title) with .evidence-title, .evidence-sha256, .evidence-expired and
    form .remove-evidence; form .add-evidence (title, url, file, validUntil); .evidence-status "No evidence".
-   US-052: #download-traceability (this regulation) and #download-traceability-all.
+   US-052, US-120: form #traceability-download (audience, format, sub) with #download-traceability.
    US-060, US-061: form #suggest-not-applicable; per row .high-risk, .applicability-suggestion with .applicability-reason,
    .applicability-context and the forms .accept-applicability (reason) and .reject-applicability; .suggestion-context
    under a rationale; .old-classification with the form .keep-not-applicable.
@@ -142,13 +142,25 @@
             <button type="submit" class="btn btn-sm btn-outline-secondary">Search</button>
         </form>
 
-        @* US-052: the traceability matrix as CSV, for this regulation or all of them; for every role *@
-        <div class="btn-group btn-group-sm ms-md-auto" role="group" aria-label="Download traceability matrix" id="traceability-download">
-            <a class="btn btn-outline-secondary" id="download-traceability"
-               asp-action="Traceability" asp-route-id="@project.Id" asp-route-sub="@activeSlug">Download CSV</a>
-            <a class="btn btn-outline-secondary" id="download-traceability-all"
-               asp-action="Traceability" asp-route-id="@project.Id" title="Every regulation the project follows">All regulations</a>
-        </div>
+        @* US-052: the traceability matrix, for this regulation or all of them; for every role.
+           US-120: as Excel or CSV, made for the team, an auditor or the management. A GET form, so it is a plain download. *@
+        <form method="get" class="d-flex flex-wrap gap-1 ms-md-auto" id="traceability-download"
+              action="@Url.Action("Traceability", new { id = project.Id })" aria-label="Download traceability matrix">
+            <select name="audience" class="form-select form-select-sm w-auto" aria-label="For whom">
+                <option value="team">For the team</option>
+                <option value="auditor">For an auditor</option>
+                <option value="management">For the management</option>
+            </select>
+            <select name="format" class="form-select form-select-sm w-auto" aria-label="Format">
+                <option value="xlsx">Excel</option>
+                <option value="csv">CSV</option>
+            </select>
+            <select name="sub" class="form-select form-select-sm w-auto" aria-label="Regulations">
+                <option value="@activeSlug">@(active is null ? "" : FrameworkNames.Short(active.Framework.Name))</option>
+                <option value="">All regulations</option>
+            </select>
+            <button type="submit" class="btn btn-sm btn-outline-secondary" id="download-traceability">Download</button>
+        </form>
 
         @if (!project.IsClosed && canLink && openStories.Count > 0 && framework.NotCovered > 0)
         {

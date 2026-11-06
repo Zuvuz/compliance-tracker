@@ -5,8 +5,7 @@ using System.Text;
 namespace ComplianceTracker.Specs.StepDefinitions
 {
     // US-052: the traceability matrix CSV, through the web app with test sign-in.
-    // UI contract: Views/Projects/_ComplianceTab.cshtml (#download-traceability for the open sub-tab,
-    // #download-traceability-all for every regulation).
+    // UI contract: Views/Projects/_ComplianceTab.cshtml (the form #traceability-download with audience, format and sub).
     [Binding]
     public class TraceabilityMatrixStepDefinitions
     {
@@ -31,26 +30,27 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         // ---------------------------------------------------------- When
 
-        // Clicks "All regulations" on the Compliance tab, like a user
+        // Chooses CSV and "All regulations" in the Compliance tab's download form, like a user
         [When("I download the traceability matrix of {string} as CSV")]
         public async Task WhenIDownloadTheMatrix(string projectName)
         {
             await _web.OpenAsync($"/Projects/Details/{await ProjectIdAsync(projectName)}/compliance");
-            await DownloadAsync(_web.Client, Link("#download-traceability-all"));
+            await DownloadAsync(_web.Client, FormUrl(format: "csv", audience: "team", sub: ""));
         }
 
         [When("I download the traceability matrix of the {string} sub-tab of {string}")]
         public async Task WhenIDownloadTheMatrixOfTheSubTab(string subTab, string projectName)
         {
             await _compliance.WhenIOpenTheSubTab(subTab, projectName);
-            await DownloadAsync(_web.Client, Link("#download-traceability"));
+            var sub = _web.Page!.QuerySelector("#traceability-download select[name=sub] option")!.GetAttribute("value")!;
+            await DownloadAsync(_web.Client, FormUrl(format: "csv", audience: "team", sub: sub));
         }
 
         [When("{string} downloads the traceability matrix of {string} as CSV")]
         public async Task WhenDownloadsTheMatrix(string userName, string projectName)
         {
             using var client = _web.CreateClient(signedInAs: userName);
-            await DownloadAsync(client, $"/Projects/Traceability/{await ProjectIdAsync(projectName)}");
+            await DownloadAsync(client, $"/Projects/Traceability/{await ProjectIdAsync(projectName)}?format=csv");
         }
 
         // ---------------------------------------------------------- Then
@@ -108,9 +108,13 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         // ---------------------------------------------------------- Helpers
 
-        private string Link(string selector)
-            => _web.Page!.QuerySelector(selector)?.GetAttribute("href")
-               ?? throw new Xunit.Sdk.XunitException($"The Compliance tab has no {selector} link.");
+        // The form's address with the choices, as the browser sends a GET form
+        private string FormUrl(string format, string audience, string sub)
+        {
+            var form = _web.Page!.QuerySelector("#traceability-download")
+                ?? throw new Xunit.Sdk.XunitException("The Compliance tab has no download form.");
+            return $"{form.GetAttribute("action")}?audience={audience}&format={format}&sub={Uri.EscapeDataString(sub)}";
+        }
 
         // A CSV comes back when it works; otherwise the answer is kept for "the page is not found"
         private async Task DownloadAsync(HttpClient client, string path)
