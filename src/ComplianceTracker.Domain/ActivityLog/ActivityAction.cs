@@ -134,6 +134,10 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-026: a project was classified under a regulation. SubjectId points at the project; Details holds e.g.
         // "CRA: Important, class I (Annex III, class I, point 2: a password manager)".
-        ProjectClassified
+        ProjectClassified,
+
+        // US-110: what was carried over to a requirement whose text changed was checked and is still correct.
+        // SubjectId points at the project; Details holds e.g. "A.5.1: still correct after the version change (2 checked)".
+        LinkReviewed
     }
 }
