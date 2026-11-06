@@ -27,7 +27,7 @@ namespace ComplianceTracker.Infrastructure.Scanning
             {
                 using var document = JsonDocument.Parse(content);
                 return document.RootElement.ValueKind == JsonValueKind.Object
-                       && document.RootElement.TryGetProperty("version", out var version) && version.GetString() == "2.1.0"
+                       && document.RootElement.TryGetProperty("version", out var version) && Str(version) == "2.1.0"
                        && document.RootElement.TryGetProperty("runs", out var runs) && runs.ValueKind == JsonValueKind.Array;
             }
             catch (JsonException)
@@ -50,30 +50,43 @@ namespace ComplianceTracker.Infrastructure.Scanning
 
             using (document)
             {
-                var runs = document.RootElement.GetProperty("runs").EnumerateArray().ToList();
-                var tool = runs.Select(ToolName).FirstOrDefault(n => n is not null) ?? "Unknown tool";
-                var results = new List<ScanResult>();
-                foreach (var run in runs)
+                // A file that passed CanRead can still hold odd types deeper down; it is refused, never a server error
+                try
                 {
-                    var rules = Rules(run);
-                    if (!run.TryGetProperty("results", out var runResults) || runResults.ValueKind != JsonValueKind.Array)
-                    {
-                        continue;
-                    }
+                    return ReadRuns(document);
+                }
+                catch (Exception error) when (error is InvalidOperationException or FormatException or KeyNotFoundException)
+                {
+                    throw new DomainException("The SARIF file could not be read");
+                }
+            }
+        }
 
-                    foreach (var result in runResults.EnumerateArray())
-                    {
-                        results.Add(Result(result, rules));
-                    }
+        private static ScanReport ReadRuns(JsonDocument document)
+        {
+            var runs = document.RootElement.GetProperty("runs").EnumerateArray().ToList();
+            var tool = runs.Select(ToolName).FirstOrDefault(n => n is not null) ?? "Unknown tool";
+            var results = new List<ScanResult>();
+            foreach (var run in runs)
+            {
+                var rules = Rules(run);
+                if (!run.TryGetProperty("results", out var runResults) || runResults.ValueKind != JsonValueKind.Array)
+                {
+                    continue;
                 }
 
-                return new ScanReport(tool, results);
+                foreach (var result in runResults.EnumerateArray())
+                {
+                    results.Add(Result(result, rules));
+                }
             }
+
+            return new ScanReport(tool, results);
         }
 
         private static string? ToolName(JsonElement run)
             => run.TryGetProperty("tool", out var tool) && tool.TryGetProperty("driver", out var driver)
-               && driver.TryGetProperty("name", out var name) ? name.GetString() : null;
+               && driver.TryGetProperty("name", out var name) ? Str(name) : null;
 
         // The rules' default level and "security-severity" (GitHub's convention, used by Trivy, Grype and CodeQL)
         private static Dictionary<string, (string? Level, double? SecuritySeverity)> Rules(JsonElement run)
@@ -84,9 +97,9 @@ namespace ComplianceTracker.Infrastructure.Scanning
             {
                 foreach (var rule in list.EnumerateArray())
                 {
-                    if (rule.TryGetProperty("id", out var id) && id.GetString() is { } ruleId)
+                    if (rule.TryGetProperty("id", out var id) && Str(id) is { } ruleId)
                     {
-                        var level = rule.TryGetProperty("defaultConfiguration", out var config) && config.TryGetProperty("level", out var l) ? l.GetString() : null;
+                        var level = rule.TryGetProperty("defaultConfiguration", out var config) && config.TryGetProperty("level", out var l) ? Str(l) : null;
                         rules[ruleId] = (level, SecuritySeverity(rule));
                     }
                 }
@@ -97,11 +110,11 @@ namespace ComplianceTracker.Infrastructure.Scanning
 
         private static ScanResult Result(JsonElement result, Dictionary<string, (string? Level, double? SecuritySeverity)> rules)
         {
-            var ruleId = result.TryGetProperty("ruleId", out var r) ? r.GetString() ?? "" : "";
-            var message = result.TryGetProperty("message", out var m) && m.TryGetProperty("text", out var text) ? text.GetString() ?? "" : "";
+            var ruleId = result.TryGetProperty("ruleId", out var r) ? Str(r) ?? "" : "";
+            var message = result.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.Object && m.TryGetProperty("text", out var text) ? Str(text) ?? "" : "";
             var location = Location(result);
             var rule = rules.GetValueOrDefault(ruleId);
-            var level = result.TryGetProperty("level", out var l) ? l.GetString() : rule.Level;
+            var level = result.TryGetProperty("level", out var l) ? Str(l) : rule.Level;
             var severity = Severity(SecuritySeverity(result) ?? rule.SecuritySeverity, level);
             return new ScanResult(Fingerprint(result, ruleId, location, message), ruleId, severity, message, location);
         }
@@ -123,11 +136,15 @@ namespace ComplianceTracker.Infrastructure.Scanning
             };
 
         private static double? SecuritySeverity(JsonElement element)
-            => element.TryGetProperty("properties", out var properties) && properties.TryGetProperty("security-severity", out var value)
+            => element.TryGetProperty("properties", out var properties) && properties.ValueKind == JsonValueKind.Object
+               && properties.TryGetProperty("security-severity", out var value)
                && double.TryParse(value.ValueKind == JsonValueKind.String ? value.GetString() : value.GetRawText(),
                    NumberStyles.Float, CultureInfo.InvariantCulture, out var score)
                 ? score
                 : null;
+
+        // The text of a string element; null for numbers, objects and the rest
+        private static string? Str(JsonElement element) => element.ValueKind == JsonValueKind.String ? element.GetString() : null;
 
         // e.g. "package-lock.json:12"
         private static string? Location(JsonElement result)
@@ -142,8 +159,9 @@ namespace ComplianceTracker.Infrastructure.Scanning
                 if (location.TryGetProperty("physicalLocation", out var physical)
                     && physical.TryGetProperty("artifactLocation", out var artifact) && artifact.TryGetProperty("uri", out var uri))
                 {
-                    var line = physical.TryGetProperty("region", out var region) && region.TryGetProperty("startLine", out var start) ? $":{start.GetInt32()}" : "";
-                    return uri.GetString() + line;
+                    var line = physical.TryGetProperty("region", out var region) && region.TryGetProperty("startLine", out var start)
+                        && start.ValueKind == JsonValueKind.Number && start.TryGetInt32(out var number) ? $":{number}" : "";
+                    return Str(uri) is { } path ? path + line : null;
                 }
             }
 
@@ -159,7 +177,7 @@ namespace ComplianceTracker.Infrastructure.Scanning
                 {
                     foreach (var print in prints.EnumerateObject().OrderBy(p => p.Name, StringComparer.Ordinal))
                     {
-                        if (print.Value.GetString() is { Length: > 0 } value)
+                        if (Str(print.Value) is { Length: > 0 } value)
                         {
                             return $"{print.Name}:{value}";
                         }
