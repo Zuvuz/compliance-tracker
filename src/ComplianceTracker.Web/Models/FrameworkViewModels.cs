@@ -56,4 +56,22 @@ namespace ComplianceTracker.Web.Models
             return current ? "Active (current)" : "Active";
         }
     }
+
+    // US-116: the AI quality page. Pairs of runs of the same step can be compared (R4).
+    public record AiQualityViewModel(
+        IReadOnlyList<Domain.Ai.AiEvaluation> Runs,
+        IReadOnlyList<Application.Ai.RationaleSample> Sample)
+    {
+        // R4: e.g. "Top 3: 71 % → 78 % (better)". Higher is better, except rejected matches above the limit.
+        public static string Compare(string label, double? before, double? after, bool lowerIsBetter = false)
+        {
+            if (before is not { } b || after is not { } a)
+            {
+                return $"{label}: –";
+            }
+
+            var verdict = a == b ? "the same" : (a > b) != lowerIsBetter ? "better" : "worse";
+            return $"{label}: {b:0.#} → {a:0.#} ({verdict})";
+        }
+    }
 }

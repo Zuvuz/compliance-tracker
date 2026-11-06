@@ -47,6 +47,19 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await AddRequirementsAndActivateAsync(requirement);
         }
 
+        // US-110: a second version with two requirements, e.g. one with a changed title
+        [Given("version 2 of {string} has the requirements {string} and {string}")]
+        public async Task GivenVersion2HasTheRequirements(string frameworkName, string first, string second)
+        {
+            await _web.OpenAsync("/Frameworks");
+            var row = _web.Page!.QuerySelectorAll("#frameworks tbody tr")
+                .Single(r => r.QuerySelector(".framework-name")?.TextContent.Trim() == frameworkName);
+            await _web.PostFileAsync("/Frameworks/UploadVersion",
+                new Dictionary<string, string> { ["FrameworkId"] = row.GetAttribute("data-framework-id")! },
+                "framework-v2.pdf", TestFiles.Pdf());
+            await AddRequirementsAndActivateAsync(first, second);
+        }
+
         // The story comes from the pretend GitHub, like a real one (US-018)
         [Given("the project {string} has the user story {string}")]
         public async Task GivenTheProjectHasTheUserStory(string projectName, string title)

@@ -27,6 +27,27 @@ namespace ComplianceTracker.Domain.Mappings
         // Linked and not removed. Only active links count as coverage.
         public bool IsActive => RemovedAt is null;
 
+        // US-110: carried over to a requirement whose title or text changed in the new version. It still shows, but
+        // does not count until a person has checked it against the new text. CarriedFromRequirementId is the
+        // requirement it was carried from, so the old text can be shown next to the new.
+        public bool NeedsReview { get; private set; }
+        public Guid? CarriedFromRequirementId { get; private set; }
+        public Guid? ReviewedById { get; private set; }
+        public DateTime? ReviewedAt { get; private set; }
+
+        // US-110 R5: "Still correct"
+        public void MarkReviewed(Guid userId, DateTime at)
+        {
+            if (!NeedsReview)
+            {
+                throw new DomainException("Nothing to review");
+            }
+
+            NeedsReview = false;
+            ReviewedById = userId;
+            ReviewedAt = at;
+        }
+
         // For EF Core only
         private RequirementLink() { }
 
@@ -49,7 +70,8 @@ namespace ComplianceTracker.Domain.Mappings
 
         // US-069 R6: the same link on the requirement with the same code in the version the project moves to.
         // Who linked it, with which role and when, is kept, so the history still says who decided.
-        public RequirementLink CarryTo(Guid requirementId)
+        // US-110 R2: textChanged marks it for review; one still waiting for review keeps waiting, against its first text.
+        public RequirementLink CarryTo(Guid requirementId, bool textChanged = false)
             => new()
             {
                 ProjectId = ProjectId,
@@ -58,7 +80,9 @@ namespace ComplianceTracker.Domain.Mappings
                 Source = Source,
                 LinkedById = LinkedById,
                 LinkedRole = LinkedRole,
-                LinkedAt = LinkedAt
+                LinkedAt = LinkedAt,
+                NeedsReview = NeedsReview || textChanged,
+                CarriedFromRequirementId = NeedsReview ? CarriedFromRequirementId : RequirementId
             };
 
         public void Remove(Guid userId, DateTime at)

@@ -502,7 +502,7 @@ namespace ComplianceTracker.Specs.Features
 #line hidden
 #line 68
     await testRunner.ThenAsync("each suggestion keeps its score, rank, model \"fake-embed\" and prompt version \"map" +
-                        "ping-v1\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+                        "ping-v3\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
