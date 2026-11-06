@@ -142,6 +142,8 @@ namespace ComplianceTracker.Specs.Features
 #line hidden
 #line 19
     await testRunner.AndAsync("I have added the action \"Phishing training\" to the risk \"Phishing\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("\"Acme Portal\" has a \"Trivy\" scan with the findings \"CVE-2026-1111\" and \"CVE-2026-" +
+                    "2222\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 20
     await testRunner.AndAsync("I have recorded the actively exploited vulnerability \"CVE-2026-1234\" for \"Acme Po" +

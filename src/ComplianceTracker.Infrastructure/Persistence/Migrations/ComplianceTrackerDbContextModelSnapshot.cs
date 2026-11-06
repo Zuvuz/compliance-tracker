@@ -2839,6 +2839,141 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("RiskMeasures", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Scanning.Finding", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("AcceptedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("AcceptedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AcceptedReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("FirstScanId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("FixedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("LastScanId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RuleId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Tool")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AcceptedById");
+
+                    b.HasIndex("ProjectId", "Tool", "Fingerprint")
+                        .IsUnique();
+
+                    b.ToTable("Findings", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Scanning.Scan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<int>("Fixed")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("New")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Open")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OpenCritical")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ScannedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Tool")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("UploadedById")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UploadedById");
+
+                    b.HasIndex("ProjectId", "ScannedAt");
+
+                    b.ToTable("Scans", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Scanning.ScanFile", b =>
+                {
+                    b.Property<Guid>("ScanId")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("ScanId");
+
+                    b.ToTable("ScanFiles", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Security.SecurityEvent", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3796,6 +3931,44 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("WorkItemId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Scanning.Finding", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("AcceptedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Scanning.Scan", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UploadedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Scanning.ScanFile", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Scanning.Scan", null)
+                        .WithOne()
+                        .HasForeignKey("ComplianceTracker.Domain.Scanning.ScanFile", "ScanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Security.SecurityEvent", b =>

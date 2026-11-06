@@ -47,7 +47,8 @@ namespace ComplianceTracker.Domain.ActivityLog
             ActivityAction.RiskAdded or ActivityAction.RiskUpdated or ActivityAction.RiskReviewed
                 or ActivityAction.RiskActionAdded or ActivityAction.RiskActionLinked or ActivityAction.RiskActionDone => ActivityGroup.Risks,
             ActivityAction.VulnerabilityRecorded or ActivityAction.IncidentRecorded or ActivityAction.SecurityReportSent
-                or ActivityAction.SecurityFixAvailable or ActivityAction.SecurityEventClosed => ActivityGroup.SecurityEvents,
+                or ActivityAction.SecurityFixAvailable or ActivityAction.SecurityEventClosed
+                or ActivityAction.ScanImported or ActivityAction.FindingAccepted => ActivityGroup.SecurityEvents,
             ActivityAction.MappingsSuggested or ActivityAction.MappingApproved or ActivityAction.MappingRejected
                 or ActivityAction.AiFeedbackSharingChanged or ActivityAction.AiFeedbackExported => ActivityGroup.Ai,
             _ => throw new ArgumentOutOfRangeException(nameof(action), action, "The action has no group; add it in ActivityGroups.Of")

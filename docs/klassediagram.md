@@ -834,6 +834,46 @@ classDiagram
   }
 
   %% ================= Risici (US-042) =================
+  class Scan {
+    -id: Guid
+    -projectId: Guid
+    -tool: string
+    -fileName: string
+    -sha256: string
+    -scannedAt: DateTime
+    -uploadedById: Guid
+    -new: int
+    -fixed: int
+    -open: int
+    -openCritical: int
+    +Create(projectId, tool, fileName, content, userId, at)$ Scan
+    +Record(added: int, fixed: int, open: int, openCritical: int)
+  }
+  class Finding {
+    -id: Guid
+    -projectId: Guid
+    -tool: string
+    -fingerprint: string
+    -ruleId: string
+    -severity: FindingSeverity
+    -message: string
+    -location: string?
+    -state: FindingState
+    -fixedAt: DateTime?
+    -acceptedReason: string?
+    +SeenIn(scanId: Guid)
+    +MissingFrom(scanId: Guid, at: DateTime) bool
+    +Accept(reason: string, userId: Guid, at: DateTime)
+  }
+  class IScanImporter {
+    <<interface>>
+    +CanRead(fileName: string, content: byte[]) bool
+    +Read(content: byte[]) ScanReport
+  }
+  class SarifScanImporter
+  SarifScanImporter ..|> IScanImporter
+  Project "1" --> "0..*" Scan
+  Project "1" --> "0..*" Finding
   class Risk {
     -id: Guid
     -version: uint

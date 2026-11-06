@@ -154,6 +154,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] ClassificationService classifications,
             [FromServices] Application.Security.SecurityEventQueries securityEventQueries,
             [FromServices] EvidenceQueries evidenceQueries,
+            [FromServices] Application.Scanning.ScanService scans,
             CancellationToken cancellationToken)
         {
             // US-104 R1: shared links to the old "User stories" tab still work
@@ -187,7 +188,7 @@ namespace ComplianceTracker.Web.Controllers
                 : null;
 
             // Requirements and links: for the Compliance tab, the overview's summary and the user stories' requirements
-            var compliance = activeTab is ProjectTabs.Compliance or ProjectTabs.Overview or ProjectTabs.ProductRequirements
+            var compliance = activeTab is ProjectTabs.Compliance or ProjectTabs.Overview or ProjectTabs.ProductRequirements or ProjectTabs.Scans
                 ? await _complianceQueries.ForProjectAsync(id, cancellationToken)
                 : null;
 
@@ -202,6 +203,7 @@ namespace ComplianceTracker.Web.Controllers
             var securityEvents = activeTab is ProjectTabs.SecurityEvents or ProjectTabs.Overview
                 ? await securityEventQueries.ForProjectAsync(id, cancellationToken) ?? []
                 : [];
+            var scanOverview = activeTab is ProjectTabs.Scans or ProjectTabs.Overview ? await scans.ForProjectAsync(id, cancellationToken) : null;
             var now = _clock.GetUtcNow().UtcDateTime;
             var risks = allRisks
                 .Where(r => string.IsNullOrEmpty(status) ? r.Status != RiskStatus.Closed : r.DisplayStatus.Equals(status, StringComparison.OrdinalIgnoreCase))
@@ -243,6 +245,7 @@ namespace ComplianceTracker.Web.Controllers
                 AllRisks = allRisks,
                 Classifications = classified,
                 SecurityEvents = securityEvents,
+                Scans = scanOverview,
                 RiskStatusFilter = status,
                 RiskLevelFilter = level,
                 OnlyReviewDue = due == "1",
@@ -668,6 +671,59 @@ namespace ComplianceTracker.Web.Controllers
 
             await events.RecordAsync(projectId, kind, title ?? "", description, Utc(aware), cancellationToken);
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
+        }
+
+        // ---------------------------------------------------------- Scans (US-078)
+
+        // Room for a 50 MB SARIF file and the form (Scan refuses anything larger with a clear message)
+        private const long MaxScanRequestSize = 55 * 1024 * 1024;
+
+        // POST /Projects/UploadScan: R1–R3, R7
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(MaxScanRequestSize)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaxScanRequestSize)]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Scans)]
+        public async Task<IActionResult> UploadScan(
+            Guid projectId, IFormFile? file, [FromServices] Application.Scanning.ScanService scans, CancellationToken cancellationToken)
+        {
+            if (file is null || file.Length == 0)
+            {
+                throw new Domain.Common.DomainException("Choose a SARIF file");
+            }
+
+            using var memory = new MemoryStream();
+            await file.CopyToAsync(memory, cancellationToken);
+            var scan = await scans.UploadAsync(projectId, file.FileName, memory.ToArray(), cancellationToken);
+            TempData["ScanImported"] = scan.Summary;
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
+        }
+
+        // POST /Projects/AcceptFinding: R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Scans)]
+        public async Task<IActionResult> AcceptFinding(
+            Guid projectId, Guid findingId, string? reason, [FromServices] Application.Scanning.ScanService scans, CancellationToken cancellationToken)
+        {
+            await scans.AcceptFindingAsync(projectId, findingId, reason, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
+        }
+
+        // POST /Projects/ScanAsEvidence: R5. The scan file becomes evidence for the requirement (US-057), with its SHA-256.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Scans)]
+        public async Task<IActionResult> ScanAsEvidence(
+            Guid projectId, Guid scanId, Guid requirementId, [FromServices] Application.Scanning.ScanService scans, CancellationToken cancellationToken)
+        {
+            var (scan, content) = await scans.FileAsync(projectId, scanId, cancellationToken)
+                ?? throw new Domain.Common.DomainException("Scan not found");
+            var fileName = Path.ChangeExtension(scan.FileName, ".sarif");
+            await _compliance.AddEvidenceFileAsync(projectId, requirementId, $"{scan.Tool} scan {scan.ScannedAt.ToLocalTime():dd-MM-yyyy}",
+                fileName, content, null, cancellationToken);
+            TempData["ScanImported"] = $"{scan.Tool} scan added as evidence";
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
         }
 
         // POST /Projects/MarkSecurityReportSent: R4

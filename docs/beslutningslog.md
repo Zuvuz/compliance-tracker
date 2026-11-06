@@ -736,6 +736,23 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Senere ændringer af forordningen (fx udskudte frister). De bliver en ny version (US-035 R7).
   - Kapitel V (AI-modeller til almen brug).
 
+### B59 – Scanningsresultater (SARIF) og fanen "Scans"
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-078)
+  - Et projekt har sin egen fane "Scans". Den har upload af SARIF 2.1.0-filer (højst 50 MB), den seneste scanning pr. værktøj, de åbne fund efter alvor og en liste over løste og accepterede fund.
+  - Formatet genkendes på indholdet (`version` 2.1.0 og `runs`), ikke kun på filnavnet. Andre filer afvises med "Only SARIF files can be uploaded". Importen sker bag `IScanImporter`, så andre formater kan komme til (B36).
+  - Alvor tages fra `security-severity` (9+ Critical, 7+ High, 4+ Medium, ellers Low), som Trivy, Grype og CodeQL skriver. Ellers bruges SARIF's level (error = High, warning = Medium).
+  - Fund følges mellem scanninger fra samme værktøj via værktøjets eget fingeraftryk, eller via regel, placering og besked. Nye fund tilføjes. Fund, der ikke længere rapporteres, bliver "Fixed in scan of <dato>", og fund, der kommer igen, er åbne igen. Accepterede fund forbliver accepterede.
+  - Et fund kan accepteres med en grund. En scanning kan bruges som evidens for et krav og gemmes så som evidensfil med SHA-256 (SARIF er nu en tilladt evidenstype).
+  - Overview viser åbne fund med alvor High eller Critical under "Needs attention".
+  - Det kræver `LinkWork` at uploade og acceptere. Auditor kan læse. Hver import logges med resultatet.
+- **Begrundelse:** CRA bilag I kræver, at produktet leveres uden kendte udnyttelige sårbarheder og testes regelmæssigt. ISO 27001 A.8.8 kræver styring af tekniske sårbarheder. SARIF er det fælles format, som de fleste scannere skriver.
+- **Fravalgt:**
+  - At køre scannere fra trackeren.
+  - SBOM-import (US-079).
+  - At koble et fund til en user story eller en risiko. Det kommer med US-119's Suggestions-fane.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

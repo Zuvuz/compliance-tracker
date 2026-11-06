@@ -43,6 +43,11 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<MappingSuggestion> MappingSuggestions => Set<MappingSuggestion>();
         public DbSet<ApplicabilitySuggestion> ApplicabilitySuggestions => Set<ApplicabilitySuggestion>(); // US-060
         public DbSet<Domain.Ai.AiEvaluation> AiEvaluations => Set<Domain.Ai.AiEvaluation>(); // US-116
+
+        // US-078
+        public DbSet<Domain.Scanning.Scan> Scans => Set<Domain.Scanning.Scan>();
+        public DbSet<Domain.Scanning.ScanFile> ScanFiles => Set<Domain.Scanning.ScanFile>();
+        public DbSet<Domain.Scanning.Finding> Findings => Set<Domain.Scanning.Finding>();
         public DbSet<Risk> Risks => Set<Risk>();
         public DbSet<ProjectClassification> ProjectClassifications => Set<ProjectClassification>(); // US-026
         public DbSet<Domain.Security.SecurityEvent> SecurityEvents => Set<Domain.Security.SecurityEvent>(); // US-073

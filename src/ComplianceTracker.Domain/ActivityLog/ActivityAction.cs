@@ -150,6 +150,11 @@ namespace ComplianceTracker.Domain.ActivityLog
         // at the project; Details holds e.g. "3 not applicable suggested of 20 requirements checked" or "I.2(i): …".
         ApplicabilitySuggested,
         ApplicabilitySuggestionAccepted,
-        ApplicabilitySuggestionRejected
+        ApplicabilitySuggestionRejected,
+
+        // US-078: a scan result was imported, or a finding accepted. SubjectId points at the project; Details holds e.g.
+        // "Trivy: 3 new, 0 fixed, 3 open (1 critical)" or "CVE-2026-2222 accepted: not reachable in our use".
+        ScanImported,
+        FindingAccepted
     }
 }

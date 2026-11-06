@@ -62,6 +62,12 @@
         attention.Add((Plural(oldClassification, "not applicable requirement to check after a new classification", "not applicable requirements to check after a new classification"),
             ComplianceUrl(SubWhere(f => f.OldClassificationDecisions > 0), ComplianceFilters.NotApplicable)));
     }
+    // US-078: open high and critical findings from the scanners
+    if (Model.Scans is { OpenAtLeastHigh: > 0 } scanOverview)
+    {
+        attention.Add((Plural(scanOverview.OpenAtLeastHigh, "open high or critical finding", "open high or critical findings"),
+            Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Scans })!));
+    }
     if (withoutEvidence > 0)
     {
         attention.Add((Plural(withoutEvidence, "covered requirement without evidence", "covered requirements without evidence"),
