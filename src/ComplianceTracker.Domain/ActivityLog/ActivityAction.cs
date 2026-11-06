@@ -155,6 +155,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         // US-078: a scan result was imported, or a finding accepted. SubjectId points at the project; Details holds e.g.
         // "Trivy: 3 new, 0 fixed, 3 open (1 critical)" or "CVE-2026-2222 accepted: not reachable in our use".
         ScanImported,
-        FindingAccepted
+        FindingAccepted,
+
+        // US-120 R8: the traceability matrix was downloaded. SubjectId points at the project; Details holds e.g.
+        // "Excel for Auditor: CRA".
+        ReportDownloaded
     }
 }

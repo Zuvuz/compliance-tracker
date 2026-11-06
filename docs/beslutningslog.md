@@ -753,6 +753,23 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - SBOM-import (US-079).
   - At koble et fund til en user story eller en risiko. Det kommer med US-119's Suggestions-fane.
 
+### B60 – Sporbarhedsmatrixen som Excel eller CSV, til team, auditor eller ledelse
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-120)
+  - Compliance-fanens download har tre valg: hvem filen er til (team, auditor eller ledelse), formatet (Excel eller CSV) og regulativerne (det åbne eller alle). Excel og team er standard.
+  - Excel-filen laves med OpenXml, som projektet allerede bruger til Word, så der kom ingen ny pakke. Den har et ark "Summary" med projekt, fase, regulativer og versioner, læser, hvem der hentede den og hvornår, og dækningen pr. regulativ.
+  - Der er ét ark pr. regulativ med fed og frosset overskrift, filter, kolonnebredder efter indholdet og ombrudt tekst. Hver story, evidens eller AI-forslag får sin egen række. Status er farvet: grøn for dækket, rød for ikke dækket, grå for ikke relevant og gul for "mangler evidens" og "skal gennemses".
+  - **Team** får det, der skal gøres: de relevante krav med de ikke-dækkede først, og stories, evidens og ventende AI-forslag.
+  - **Auditor** får hele sporet: alle krav inkl. "ikke relevant" med grund, og for hver kobling og evidens kilde, hvem der besluttede, rolle, dato, SHA-256 og gyldighed. Ingen ventende forslag.
+  - **Ledelse** får kun Summary, udvidet med ikke-dækkede, dækkede uden evidens, åbne høje risici, høje og kritiske scanningsfund, åbne sikkerhedshændelser og supportslutdato.
+  - Hver celle er tekst (inline string), så intet kan køre som formel. Hver download logges med format, læser og regulativer.
+  - CSV beholder US-052's kolonner, så værktøjer, der læser den, virker uændret. Ledelsesudgaven findes kun som Excel.
+- **Begrundelse:** En rå CSV er svær at læse i Excel. Team, auditor og ledelse har brug for forskelligt indhold (ISO 27001 7.5.3, 9.1–9.3; CRA bilag VII).
+- **Fravalgt:**
+  - At CSV får én række pr. kobling og læserens kolonner (US-120 R7). Det ville ændre et format, andre værktøjer kan læse.
+  - PDF (US-051, US-082) og låsning af rapporten med fingeraftryk (US-050).
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

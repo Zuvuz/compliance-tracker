@@ -802,7 +802,17 @@ namespace ComplianceTracker.Web.Controllers
         // GET /Projects/Traceability/{id}?sub=cra: the matrix as CSV, for one regulation or all of them.
         // R5: for anyone in the organisation, also the Auditor; 404 for other organisations and unknown regulations.
         [HttpGet]
-        public async Task<IActionResult> Traceability(Guid id, string? sub, CancellationToken cancellationToken)
+        // US-120: format "xlsx" (the default) or "csv"; audience "team" (the default), "auditor" or "management".
+        // The CSV keeps the US-052 columns for tools that read it; the management version is Excel only.
+        public async Task<IActionResult> Traceability(
+            Guid id, string? sub, string? format, string? audience,
+            [FromServices] Application.Reports.ISpreadsheetWriter spreadsheet,
+            [FromServices] Application.Security.SecurityEventQueries securityEvents,
+            [FromServices] Application.Scanning.ScanService scans,
+            [FromServices] Application.ActivityLog.IActivityLogger log,
+            [FromServices] Application.Common.IUnitOfWork unitOfWork,
+            [FromServices] Application.Common.ICurrentUser currentUser,
+            CancellationToken cancellationToken)
         {
             var project = await _projects.GetAsync(id, cancellationToken);
             var organization = await _organizations.MineAsync(cancellationToken);
@@ -820,12 +830,35 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound();
             }
 
-            var rows = TraceabilityMatrix.Rows(frameworks,
-                userId => organization.Users.FirstOrDefault(u => u.Id == userId)?.Name ?? "Unknown");
-            var name = $"traceability-{FrameworkNames.Slug(project.Name)}{(sub is null ? "" : "-" + sub)}-{_clock.Today():yyyy-MM-dd}.csv";
+            string NameOf(Guid userId) => organization.Users.FirstOrDefault(u => u.Id == userId)?.Name ?? "Unknown";
+            var reader = Enum.TryParse<Application.Reports.ReportAudience>(audience, ignoreCase: true, out var chosen) ? chosen : Application.Reports.ReportAudience.Team;
+            var csv = string.Equals(format, "csv", StringComparison.OrdinalIgnoreCase) && reader != Application.Reports.ReportAudience.Management;
+            var name = $"traceability-{FrameworkNames.Slug(project.Name)}{(sub is null ? "" : "-" + sub)}"
+                       + (csv ? "" : $"-{reader.ToString().ToLowerInvariant()}") + $"-{_clock.Today():yyyy-MM-dd}";
+
+            // R8: every download is logged
+            var what = string.Join(", ", frameworks.Select(f => FrameworkNames.Short(f.Framework.Name)));
+            await log.LogAsync(Domain.ActivityLog.ActivityAction.ReportDownloaded, project.Id,
+                $"{(csv ? "CSV" : "Excel")} for {Application.Reports.TraceabilityReport.Title(reader)}: {what}", cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
 
             Response.Headers["X-Content-Type-Options"] = "nosniff";
-            return File(TraceabilityMatrix.ToCsv(rows), "text/csv; charset=utf-8", name);
+            if (csv)
+            {
+                return File(TraceabilityMatrix.ToCsv(TraceabilityMatrix.Rows(frameworks, NameOf)), "text/csv; charset=utf-8", name + ".csv");
+            }
+
+            // R6: the management facts
+            var now = _clock.GetUtcNow().UtcDateTime;
+            var facts = new Application.Reports.ManagementFacts(
+                (await _risks.ForProjectAsync(id, cancellationToken) ?? [])
+                    .Count(r => r.Status != Domain.Risks.RiskStatus.Closed && r.Level >= Domain.Risks.RiskLevel.High),
+                (await scans.ForProjectAsync(id, cancellationToken))?.OpenAtLeastHigh ?? 0,
+                (await securityEvents.ForProjectAsync(id, cancellationToken) ?? []).Count(e => e.IsOpen),
+                project.SupportEndsOn);
+            var document = Application.Reports.TraceabilityReport.Build(reader, project, frameworks, NameOf,
+                currentUser.Identity.Name, now, facts);
+            return File(spreadsheet.ToXlsx(document), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", name + ".xlsx");
         }
 
         // ---------------------------------------------------------- AI suggestions (US-020, US-036)
