@@ -34,6 +34,11 @@ Feature: Classify a project under each regulation
     When I classify "Billede analyse af CT" under "CRA – Regulation (EU) 2024/2847" as "Important, class I" without a reason
     Then I see the error "A reason is required"
 
+  @US-026 @integration
+  Scenario: The form cannot be sent without a reason
+    When I open the "Overview" tab of "Billede analyse af CT"
+    Then the classify form for "CRA – Regulation (EU) 2024/2847" needs a reason
+
   @US-026 @cra-annexIII @integration
   Scenario: Each regulation offers its own classes and a guide
     When I open the "Overview" tab of "Billede analyse af CT"

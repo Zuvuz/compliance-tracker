@@ -135,7 +135,7 @@ namespace ComplianceTracker.Specs.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Classification.feature.ndjson", 10);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Classification.feature.ndjson", 11);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -330,21 +330,19 @@ namespace ComplianceTracker.Specs.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="Each regulation offers its own classes and a guide")]
+        [global::Xunit.SkippableFactAttribute(DisplayName="The form cannot be sent without a reason")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Classify a project under each regulation")]
-        [global::Xunit.TraitAttribute("Description", "Each regulation offers its own classes and a guide")]
+        [global::Xunit.TraitAttribute("Description", "The form cannot be sent without a reason")]
         [global::Xunit.TraitAttribute("Category", "US-026")]
-        [global::Xunit.TraitAttribute("Category", "cra-annexIII")]
         [global::Xunit.TraitAttribute("Category", "integration")]
-        public async global::System.Threading.Tasks.Task EachRegulationOffersItsOwnClassesAndAGuide()
+        public async global::System.Threading.Tasks.Task TheFormCannotBeSentWithoutAReason()
         {
             string[] tagsOfScenario = new string[] {
                     "US-026",
-                    "cra-annexIII",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "4";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Each regulation offers its own classes and a guide", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The form cannot be sent without a reason", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 38
@@ -364,11 +362,51 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I open the \"Overview\" tab of \"Billede analyse af CT\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 40
+    await testRunner.ThenAsync("the classify form for \"CRA – Regulation (EU) 2024/2847\" needs a reason", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="Each regulation offers its own classes and a guide")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Classify a project under each regulation")]
+        [global::Xunit.TraitAttribute("Description", "Each regulation offers its own classes and a guide")]
+        [global::Xunit.TraitAttribute("Category", "US-026")]
+        [global::Xunit.TraitAttribute("Category", "cra-annexIII")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task EachRegulationOffersItsOwnClassesAndAGuide()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-026",
+                    "cra-annexIII",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "5";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Each regulation offers its own classes and a guide", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 43
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 44
+    await testRunner.WhenAsync("I open the \"Overview\" tab of \"Billede analyse af CT\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 45
     await testRunner.ThenAsync("the classes for \"CRA – Regulation (EU) 2024/2847\" are \"Default (not important or " +
                         "critical)\", \"Important, class I\", \"Important, class II\", \"Critical\" and \"Not app" +
                         "licable\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 41
+#line 46
     await testRunner.AndAsync("the guide for \"CRA – Regulation (EU) 2024/2847\" names \"Annex III\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -388,11 +426,11 @@ namespace ComplianceTracker.Specs.Features
                     "iso27001-7.5.3",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "5";
+            string pickleIndex = "6";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Earlier classifications are kept", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 44
+#line 49
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -405,15 +443,15 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 45
+#line 50
     await testRunner.GivenAsync("\"Billede analyse af CT\" is classified under \"CRA – Regulation (EU) 2024/2847\" as " +
                         "\"Important, class I\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 46
+#line 51
     await testRunner.WhenAsync("I classify \"Billede analyse af CT\" under \"CRA – Regulation (EU) 2024/2847\" as \"Im" +
                         "portant, class II\" because \"Annex III, class II: a firewall\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 47
+#line 52
     await testRunner.ThenAsync("the classification history of \"Billede analyse af CT\" under \"CRA – Regulation (EU" +
                         ") 2024/2847\" shows \"Important, class I\" followed by \"Important, class II\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
@@ -434,11 +472,11 @@ namespace ComplianceTracker.Specs.Features
                     "iso27001-A.8.15",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "6";
+            string pickleIndex = "7";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Classifications are logged", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 50
+#line 55
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -451,11 +489,11 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 51
+#line 56
     await testRunner.WhenAsync("I classify \"Billede analyse af CT\" under \"AI Act – Regulation (EU) 2024/1689\" as " +
                         "\"High-risk\" because \"Annex III\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 52
+#line 57
     await testRunner.ThenAsync("the activity log for \"Acme ApS\" has \"ProjectClassified\" for \"Anna\" concerning \"Bi" +
                         "llede analyse af CT\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
@@ -476,11 +514,11 @@ namespace ComplianceTracker.Specs.Features
                     "iso27001-A.5.15",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "7";
+            string pickleIndex = "8";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A developer sees the classification but cannot change it", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 55
+#line 60
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -493,13 +531,13 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 56
+#line 61
     await testRunner.GivenAsync("\"Carl\" has joined \"Acme ApS\" as \"Developer\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 57
+#line 62
     await testRunner.WhenAsync("\"Carl\" opens the \"Overview\" tab of \"Billede analyse af CT\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 58
+#line 63
     await testRunner.ThenAsync("there is no \"Save\" button", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
