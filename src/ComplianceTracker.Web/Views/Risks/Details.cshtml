@@ -1,6 +1,8 @@
 @* US-042: one risk with its measures, and accept / close / review.
    Ids used by the tests: #risk-title, #risk-level, #risk-status, #risk-accepted, #risk-measures (li.risk-measure),
-   #add-measure, #accept-risk, #close-risk, #review-risk, #edit-risk-link. *@
+   #add-measure, #accept-risk, #close-risk, #review-risk, #edit-risk-link.
+   US-111: #risk-actions with li.risk-action (data-title) holding .risk-action-status, .risk-action-owner, .risk-action-due,
+   li.risk-action-link (data-kind), the forms .link-risk-action and .complete-risk-action; #add-risk-action; #no-risk-actions. *@
 @using ComplianceTracker.Domain.Risks
 @model RiskPageViewModel
 @{
@@ -100,6 +102,109 @@
                 </optgroup>
             </select>
             <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Link measure</button>
+        </form>
+    }
+</section>
+
+<section class="mb-4">
+    @* US-111: the trace from the risk through what is done to the proof *@
+    <h2 class="h5">Treatment actions</h2>
+    <p class="small text-muted">What is done about the risk, and the user stories and evidence that carry it out. An action is done when a linked story is closed or evidence is linked.</p>
+    @if (risk.Actions.Count == 0)
+    {
+        <p class="text-muted" id="no-risk-actions">No actions yet</p>
+    }
+    <ul id="risk-actions" class="list-unstyled">
+        @foreach (var action in risk.Actions.OrderBy(a => a.IsDone).ThenBy(a => a.DueOn ?? DateOnly.MaxValue))
+        {
+            var overdue = action.IsOverdue(Model.Today);
+            <li class="risk-action border rounded p-2 mb-2" data-title="@action.Title">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <strong>@action.Title</strong>
+                    <span class="badge risk-action-status @(action.IsDone ? "text-bg-success" : "text-bg-secondary")">@RiskPageViewModel.StatusText(action.Status)</span>
+                    <span class="small text-muted risk-action-owner">Owner: @Model.OwnerOf(action.OwnerId)</span>
+                    @if (action.DueOn is { } due)
+                    {
+                        <span class="small risk-action-due @(overdue ? "text-danger fw-semibold" : "text-muted")">Due @due.ToString("dd-MM-yyyy")@(overdue ? " (overdue)" : "")</span>
+                    }
+                    @if (action.DoneAt is { } doneAt)
+                    {
+                        <span class="small text-muted">Done by @Model.NameOf(action.DoneById) on @doneAt.ToLocalTime().ToString("dd-MM-yyyy")</span>
+                    }
+                </div>
+                @if (action.Links.Count > 0)
+                {
+                    <ul class="small mb-1 mt-1">
+                        @foreach (var link in action.Links)
+                        {
+                            @if (link.WorkItemId is not null)
+                            {
+                                var story = Model.WorkItemOf(link.WorkItemId);
+                                <li class="risk-action-link" data-kind="story">Story: @if (story is not null) { <a href="@story.Url" target="_blank" rel="noopener noreferrer">@story.Title</a> <span class="badge text-bg-light">@story.State</span> } else { <span>(user story removed)</span> }</li>
+                            }
+                            else
+                            {
+                                <li class="risk-action-link" data-kind="evidence">Evidence: @Model.EvidenceTitle(link.EvidenceId)</li>
+                            }
+                        }
+                    </ul>
+                }
+                @if (editable && !action.IsDone)
+                {
+                    <div class="d-flex flex-wrap gap-2 mt-1">
+                        <form asp-action="LinkAction" method="post" class="d-flex gap-1 link-risk-action">
+                            <input type="hidden" name="id" value="@risk.Id" />
+                            <input type="hidden" name="actionId" value="@action.Id" />
+                            <select name="target" class="form-select form-select-sm" aria-label="Story or evidence for @action.Title">
+                                @if (Model.Compliance is { } stories)
+                                {
+                                    <optgroup label="User stories">
+                                        @foreach (var story in stories.WorkItems.Where(w => w.State != ComplianceTracker.Domain.WorkItems.WorkItemState.Removed && action.Links.All(l => l.WorkItemId != w.Id)))
+                                        {
+                                            <option value="story:@story.Id">@story.Title</option>
+                                        }
+                                    </optgroup>
+                                }
+                                <optgroup label="Evidence">
+                                    @foreach (var evidence in Model.ProjectEvidence.Where(e => action.Links.All(l => l.EvidenceId != e.Id)))
+                                    {
+                                        <option value="evidence:@evidence.Id">@evidence.Title</option>
+                                    }
+                                </optgroup>
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Link</button>
+                        </form>
+                        <form asp-action="CompleteAction" method="post" class="complete-risk-action">
+                            <input type="hidden" name="id" value="@risk.Id" />
+                            <input type="hidden" name="actionId" value="@action.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-success">Mark as done</button>
+                        </form>
+                    </div>
+                }
+            </li>
+        }
+    </ul>
+    @if (editable)
+    {
+        <form asp-action="AddAction" method="post" class="row g-2" id="add-risk-action">
+            <input type="hidden" name="id" value="@risk.Id" />
+            <div class="col-md-5">
+                <input name="title" required maxlength="@RiskAction.MaxTitleLength" class="form-control form-control-sm" placeholder="What will be done, e.g. Shorter session lifetime" aria-label="Action" />
+            </div>
+            <div class="col-md-3">
+                <select name="ownerId" class="form-select form-select-sm" aria-label="Owner">
+                    @foreach (var member in Model.Organization.Members)
+                    {
+                        <option value="@member.Id" selected="@(member.Id == risk.OwnerId)">@member.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="date" name="dueOn" class="form-control form-control-sm" aria-label="Due date" />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-outline-primary w-100">Add action</button>
+            </div>
         </form>
     }
 </section>

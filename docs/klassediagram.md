@@ -773,6 +773,7 @@ classDiagram
     -closedReason: string?
     -lastReviewedAt: DateTime?
     -measures: List~RiskMeasure~
+    -actions: List~RiskAction~
     +Score: int
     +Level: RiskLevel
     +Update(...) IReadOnlyList~ProjectChange~
@@ -781,6 +782,10 @@ classDiagram
     +MarkReviewed(userId: Guid, at: DateTime)
     +IsReviewDue(now: DateTime) bool
     +AddMeasure(requirementId: Guid?, workItemId: Guid?) RiskMeasure
+    +AddAction(title: string, ownerId: Guid, dueOn: DateOnly?, userId: Guid, at: DateTime) RiskAction
+    +LinkAction(actionId: Guid, workItemId: Guid?, evidenceId: Guid?) RiskActionLink
+    +CompleteAction(actionId: Guid, hasProof: bool, userId: Guid, at: DateTime)
+    +OverdueActions(today: DateOnly) int
   }
   class RiskMeasure {
     -id: Guid
@@ -788,6 +793,34 @@ classDiagram
     -requirementId: Guid?
     -workItemId: Guid?
   }
+  class RiskAction {
+    -id: Guid
+    -riskId: Guid
+    -title: string
+    -ownerId: Guid
+    -dueOn: DateOnly?
+    -status: RiskActionStatus
+    -createdById: Guid
+    -createdAt: DateTime
+    -doneById: Guid?
+    -doneAt: DateTime?
+    -links: List~RiskActionLink~
+    +IsOverdue(today: DateOnly) bool
+  }
+  class RiskActionLink {
+    -id: Guid
+    -actionId: Guid
+    -workItemId: Guid?
+    -evidenceId: Guid?
+  }
+  class RiskActionStatus {
+    <<enumeration>>
+    Planned
+    InProgress
+    Done
+  }
+  Risk "1" *-- "0..*" RiskAction
+  RiskAction "1" *-- "0..*" RiskActionLink
 
   %% ================= Roller og invitationer (US-009, US-010) =================
   class Permission {

@@ -78,6 +78,23 @@ namespace ComplianceTracker.Web.Models
                 ? owner.IsActive ? owner.Name : $"Owner removed ({owner.Name})"
                 : "Unknown";
 
+        // US-111 R2: the project's evidence, to link to an action
+        public IReadOnlyList<Domain.Mappings.Evidence> ProjectEvidence { get; init; } = [];
+
+        public DateOnly Today => DateOnly.FromDateTime(Now);
+
+        public Domain.WorkItems.WorkItem? WorkItemOf(Guid? workItemId)
+            => Compliance?.WorkItems.FirstOrDefault(w => w.Id == workItemId);
+
+        public string EvidenceTitle(Guid? evidenceId)
+            => ProjectEvidence.FirstOrDefault(e => e.Id == evidenceId)?.Title ?? "(evidence removed)";
+
+        public static string StatusText(RiskActionStatus status) => status switch
+        {
+            RiskActionStatus.InProgress => "In progress",
+            _ => status.ToString()
+        };
+
         public string MeasureName(RiskMeasure measure)
             => measure.RequirementId is { } requirementId
                 ? Compliance?.Frameworks.SelectMany(f => f.Requirements).FirstOrDefault(r => r.Requirement.Id == requirementId) is { } row

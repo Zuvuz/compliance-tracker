@@ -108,6 +108,12 @@
     {
         attention.Add((Plural(seriousWithoutMeasures, "High or Critical risk without measures", "High or Critical risks without measures"), RisksUrl()));
     }
+    // US-111 R7
+    var overdueActions = openRisks.Sum(r => r.OverdueActions(DateOnly.FromDateTime(Model.Now)));
+    if (overdueActions > 0)
+    {
+        attention.Add((Plural(overdueActions, "overdue risk action", "overdue risk actions"), RisksUrl()));
+    }
     if (doneNotLinked > 0)
     {
         attention.Add((Plural(doneNotLinked, "done story not linked to a requirement", "done stories not linked to a requirement"),

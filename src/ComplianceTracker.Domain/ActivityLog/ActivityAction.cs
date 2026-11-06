@@ -138,6 +138,12 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-110: what was carried over to a requirement whose text changed was checked and is still correct.
         // SubjectId points at the project; Details holds e.g. "A.5.1: still correct after the version change (2 checked)".
-        LinkReviewed
+        LinkReviewed,
+
+        // US-111: a treatment action of a risk. SubjectId points at the project; Details holds e.g.
+        // "Stolen sessions: Short session lifetime (owner Bo Berg, due 01-12-2026)" or "… ↔ #41 Session timeout".
+        RiskActionAdded,
+        RiskActionLinked,
+        RiskActionDone
     }
 }
