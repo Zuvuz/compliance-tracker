@@ -1487,6 +1487,347 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                             Position = 72,
                             Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847#anx_VII",
                             Title = "The SBOM, when the market surveillance authority asks for it"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0401"),
+                            Code = "Art. 4",
+                            Description = "Applies from 2 February 2025. Providers and deployers take measures to ensure, to their best extent, a sufficient level of AI literacy of their staff and others operating or using AI systems on their behalf, taking into account their knowledge, experience, education and training, the context of use and the persons the systems are used on.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "AI literacy",
+                            Position = 1,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_4",
+                            Title = "AI literacy of staff"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0402"),
+                            Code = "Art. 5(1)(a)",
+                            Description = "Applies from 2 February 2025. It is prohibited to place on the market, put into service or use an AI system that deploys subliminal, purposefully manipulative or deceptive techniques that materially distort a person's behaviour by impairing their ability to make an informed decision, causing or likely causing significant harm.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "Prohibited AI practices",
+                            Position = 2,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_5",
+                            Title = "No manipulative or deceptive techniques"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0403"),
+                            Code = "Art. 5(1)(b)",
+                            Description = "Applies from 2 February 2025. It is prohibited to place on the market, put into service or use an AI system that exploits the vulnerabilities of a person or group due to their age, disability or social or economic situation, to materially distort their behaviour in a way that causes or is likely to cause significant harm.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "Prohibited AI practices",
+                            Position = 3,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_5",
+                            Title = "No exploitation of vulnerabilities"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0404"),
+                            Code = "Art. 5(1)(c)",
+                            Description = "Applies from 2 February 2025. It is prohibited to place on the market, put into service or use an AI system that evaluates or classifies persons over time based on their social behaviour or personal characteristics, where the score leads to detrimental or unfavourable treatment in unrelated contexts or that is unjustified or disproportionate.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "Prohibited AI practices",
+                            Position = 4,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_5",
+                            Title = "No social scoring"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0405"),
+                            Code = "Art. 5(1)(d)",
+                            Description = "Applies from 2 February 2025. It is prohibited to place on the market, put into service or use an AI system that assesses or predicts the risk of a person committing a criminal offence based solely on profiling or on their personality traits and characteristics (not when it supports a human assessment based on objective, verifiable facts).",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "Prohibited AI practices",
+                            Position = 5,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_5",
+                            Title = "No crime prediction from profiling alone"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0406"),
+                            Code = "Art. 5(1)(e)",
+                            Description = "Applies from 2 February 2025. It is prohibited to place on the market, put into service or use an AI system that creates or expands facial recognition databases through untargeted scraping of facial images from the internet or CCTV footage.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "Prohibited AI practices",
+                            Position = 6,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_5",
+                            Title = "No untargeted scraping of facial images"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0407"),
+                            Code = "Art. 5(1)(f)",
+                            Description = "Applies from 2 February 2025. It is prohibited to place on the market, put into service or use an AI system that infers the emotions of a person in the workplace or in education institutions, except for medical or safety reasons.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "Prohibited AI practices",
+                            Position = 7,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_5",
+                            Title = "No emotion recognition at work or in education"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0408"),
+                            Code = "Art. 5(1)(g)",
+                            Description = "Applies from 2 February 2025. It is prohibited to place on the market, put into service or use an AI system that categorises persons based on their biometric data to deduce or infer their race, political opinions, trade union membership, religious or philosophical beliefs, sex life or sexual orientation (labelling or filtering of lawfully acquired biometric datasets excepted).",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "Prohibited AI practices",
+                            Position = 8,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_5",
+                            Title = "No biometric categorisation of sensitive traits"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0409"),
+                            Code = "Art. 5(1)(h)",
+                            Description = "Applies from 2 February 2025. It is prohibited to use real-time remote biometric identification systems in publicly accessible spaces for law enforcement, unless strictly necessary for one of the objectives the Article lists (such as searching for victims, preventing an imminent threat or locating suspects of serious crimes) and under its safeguards.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "Prohibited AI practices",
+                            Position = 9,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_5",
+                            Title = "No real-time remote biometric identification for law enforcement"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0410"),
+                            Code = "Art. 9",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). A risk management system is established, implemented, documented and maintained throughout the lifecycle of the high-risk AI system: known and foreseeable risks to health, safety and fundamental rights are identified, estimated and evaluated, appropriate risk management measures are taken, and the system is tested against defined metrics.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – requirements",
+                            Position = 10,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_9",
+                            Title = "Risk management system"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0411"),
+                            Code = "Art. 10",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). Training, validation and testing data sets are subject to appropriate data governance and management practices, are relevant, sufficiently representative and, to the best extent possible, free of errors and complete for the intended purpose, and are examined for possible biases.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – requirements",
+                            Position = 11,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_10",
+                            Title = "Data and data governance"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0412"),
+                            Code = "Art. 11",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). Technical documentation (Annex IV) is drawn up before the system is placed on the market or put into service, kept up to date, and shows how the system meets the requirements.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – requirements",
+                            Position = 12,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_11",
+                            Title = "Technical documentation"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0413"),
+                            Code = "Art. 12",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). The system technically allows the automatic recording of events (logs) over its lifetime, so that its functioning can be traced, risks identified and post-market monitoring carried out.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – requirements",
+                            Position = 13,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_12",
+                            Title = "Record-keeping (logs)"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0414"),
+                            Code = "Art. 13",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). The system is designed so its operation is sufficiently transparent for deployers to interpret its output and use it appropriately, and it comes with instructions for use that state its purpose, accuracy, known risks, human oversight measures and maintenance.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – requirements",
+                            Position = 14,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_13",
+                            Title = "Transparency and instructions for use"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0415"),
+                            Code = "Art. 14",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). The system is designed so it can be effectively overseen by natural persons while in use, with measures that let them understand its capacities and limitations, avoid over-reliance on its output, and decide not to use it, override it or stop it.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – requirements",
+                            Position = 15,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_14",
+                            Title = "Human oversight"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0416"),
+                            Code = "Art. 15",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). The system achieves an appropriate level of accuracy, robustness and cybersecurity and performs consistently throughout its lifecycle; it is resilient against errors, faults and attempts by third parties to alter its use or performance (such as data poisoning or adversarial examples).",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – requirements",
+                            Position = 16,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_15",
+                            Title = "Accuracy, robustness and cybersecurity"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0417"),
+                            Code = "Art. 16",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). Providers of high-risk AI systems ensure the system meets the requirements of Articles 8 to 15, give their name and contact address, have a quality management system, keep documentation and logs, carry out the conformity assessment, draw up the EU declaration of conformity, affix the CE marking, register the system, take corrective actions and meet accessibility requirements.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – provider obligations",
+                            Position = 17,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_16",
+                            Title = "Obligations of providers"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0418"),
+                            Code = "Art. 17",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). Providers put a documented quality management system in place, with policies and procedures for regulatory compliance, design, development, testing, data management, risk management, post-market monitoring, incident reporting, record-keeping and accountability.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – provider obligations",
+                            Position = 18,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_17",
+                            Title = "Quality management system"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0419"),
+                            Code = "Art. 18",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). Providers keep the technical documentation, the quality management system documentation, approved changes, notified body decisions and the EU declaration of conformity available to the authorities for 10 years after the system is placed on the market.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – provider obligations",
+                            Position = 19,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_18",
+                            Title = "Keeping the documentation"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0420"),
+                            Code = "Art. 19",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). Providers keep the logs automatically generated by the system, to the extent they control them, for a period appropriate to the intended purpose and at least six months.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – provider obligations",
+                            Position = 20,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_19",
+                            Title = "Keeping the logs"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0421"),
+                            Code = "Art. 20",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). Providers who consider that a system they placed on the market does not conform immediately take corrective action (bring it into conformity, withdraw, disable or recall it), inform distributors and deployers, and inform the authorities when it presents a risk.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – provider obligations",
+                            Position = 21,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_20",
+                            Title = "Corrective actions and duty of information"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0422"),
+                            Code = "Art. 43",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). Before the system is placed on the market, the provider follows the conformity assessment procedure that applies: internal control (Annex VI) or assessment with a notified body (Annex VII), or the procedure of the Union harmonisation legislation in Annex I; substantial modifications need a new assessment.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – provider obligations",
+                            Position = 22,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_43",
+                            Title = "Conformity assessment"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0423"),
+                            Code = "Art. 47",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). The provider draws up a written, machine-readable EU declaration of conformity (Annex V) for each high-risk AI system, keeps it for 10 years and keeps it up to date.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – provider obligations",
+                            Position = 23,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_47",
+                            Title = "EU declaration of conformity"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0424"),
+                            Code = "Art. 48",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). The CE marking is affixed visibly, legibly and indelibly to the high-risk AI system, or digitally for systems provided digitally, with the identification number of the notified body where one was involved.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – provider obligations",
+                            Position = 24,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_48",
+                            Title = "CE marking"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0425"),
+                            Code = "Art. 49",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). Before placing a high-risk AI system listed in Annex III on the market or putting it into service, the provider registers itself and the system in the EU database (Article 71).",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – provider obligations",
+                            Position = 25,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_49",
+                            Title = "Registration in the EU database"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0426"),
+                            Code = "Art. 72",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). Providers establish and document a post-market monitoring system, proportionate to the risks, that actively collects and analyses data on the system's performance throughout its lifetime, based on a post-market monitoring plan.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – provider obligations",
+                            Position = 26,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_72",
+                            Title = "Post-market monitoring"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0427"),
+                            Code = "Art. 73",
+                            Description = "Applies from 2 August 2026 (2 August 2027 for high-risk AI systems under Article 6(1) and Annex I). Providers report any serious incident to the market surveillance authorities immediately after establishing a causal link, and no later than 15 days after becoming aware of it (shorter for widespread infringements and deaths), and investigate it.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "High-risk AI systems – provider obligations",
+                            Position = 27,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_73",
+                            Title = "Reporting serious incidents"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0428"),
+                            Code = "Art. 50(1)",
+                            Description = "Applies from 2 August 2026. Providers design AI systems that interact directly with persons so that the persons are informed they are interacting with an AI system, unless this is obvious from the context.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "Transparency",
+                            Position = 28,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_50",
+                            Title = "Tell people they interact with an AI system"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0429"),
+                            Code = "Art. 50(2)",
+                            Description = "Applies from 2 August 2026. Providers of AI systems that generate synthetic audio, image, video or text ensure the outputs are marked in a machine-readable format and detectable as artificially generated or manipulated.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "Transparency",
+                            Position = 29,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_50",
+                            Title = "Mark AI-generated content"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0430"),
+                            Code = "Art. 50(3)",
+                            Description = "Applies from 2 August 2026. Deployers of an emotion recognition system or a biometric categorisation system inform the persons exposed to it of its operation and process personal data in line with the data protection rules.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "Transparency",
+                            Position = 30,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_50",
+                            Title = "Inform people exposed to emotion recognition or biometric categorisation"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0431"),
+                            Code = "Art. 50(4)",
+                            Description = "Applies from 2 August 2026. Deployers of an AI system that generates or manipulates deep fake image, audio or video content disclose that it has been artificially generated or manipulated; the same applies to AI-generated text published to inform the public on matters of public interest, unless a person has reviewed it and holds editorial responsibility.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c04"),
+                            Group = "Transparency",
+                            Position = 31,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_50",
+                            Title = "Disclose deep fakes and AI-generated public texts"
                         });
                 });
 

@@ -161,6 +161,11 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public void ThenTheTableLists(string first, string second)
             => Assert.Equal([first, second], Codes());
 
+        // US-062 R7
+        [Then("the table does not list {string}")]
+        public void ThenTheTableDoesNotList(string code)
+            => Assert.DoesNotContain(code, Codes());
+
         [Then("the table lists only {string}")]
         public void ThenTheTableListsOnly(string code)
             => Assert.Equal([code], Codes());

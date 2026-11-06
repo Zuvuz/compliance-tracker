@@ -52,6 +52,19 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
                 Reference = (string?)item.Reference
             }));
 
+            // US-062: the AI Act's requirements, on the built-in AI Act version 1
+            builder.HasData(BuiltInAiActRequirements.All.Select(item => new
+            {
+                item.Id,
+                FrameworkVersionId = BuiltInFrameworks.AiAct.VersionId,
+                item.Code,
+                item.Title,
+                item.Description,
+                item.Position,
+                item.Group,
+                Reference = (string?)item.Reference
+            }));
+
             // A code is used once per version (the domain checks it first, the index is the safety net)
             builder.HasIndex(r => new { r.FrameworkVersionId, r.Code }).IsUnique();
         }

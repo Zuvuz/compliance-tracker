@@ -147,6 +147,7 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** EU-forordninger er frit tilgængelige, så alle organisationer kan bruge dem uden at uploade noget. En migration med faste id'er giver samme data i alle miljøer og i testene. At udskyde kravene holder US-006 lille, så US-011 (frameworks på projekter) kan bygges ovenpå.
 - **Bygger på:** B18, som skelner mellem fælles og organisationens egne frameworks.
 - **Opdateret (US-043):** CRA har nu sine krav. Bilag I (22 krav) seedes på version 1 med den officielle tekst. AI Act har stadig ingen krav.
+- **Opdateret (US-062):** AI Act har nu 31 krav på version 1 (B58).
 
 ### B21 – Projekter vælger selv deres frameworkversion
 
@@ -714,6 +715,26 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Måling af evidens-matching. Den følger samme mønster og kan komme senere.
   - At skifte model automatisk ud fra resultatet.
   - Offentlige benchmarks.
+
+### B58 – AI Act's krav i trackeren
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-062)
+  - Den indbyggede AI Act version 1 får 31 krav i fem grupper:
+    - AI literacy: art. 4.
+    - Forbudte praksisser: art. 5, stk. 1, litra a–h.
+    - Krav til højrisiko-systemer: art. 9–15.
+    - Udbyderens pligter: art. 16–20, 43, 47–49, 72 og 73.
+    - Gennemsigtighed: art. 50, stk. 1–4.
+  - Koderne følger forordningen (`Art. 9`, `Art. 5(1)(c)`, `Art. 50(2)`). Kravene er seed-data med faste id'er og vises med det samme for projekter, der allerede bruger AI Act.
+  - **Titel og beskrivelse er et resumé med egne ord, ikke den officielle tekst** (en afvigelse fra US-062 R2). Hvert krav linker til sin artikel på EUR-Lex, hvor den bindende tekst står. Beskrivelsen starter med, hvornår kravet gælder: art. 4 og 5 fra 2. februar 2025, højrisiko-kravene fra 2. august 2026 (2. august 2027 for systemer under bilag I) og art. 50 fra 2. august 2026.
+  - Pligterne for AI-modeller til almen brug (kapitel V) er ikke med. De gælder modeludbydere, ikke de produktteams, trackeren er lavet til.
+  - B20 er opdateret: AI Act har nu krav.
+- **Begrundelse:** Uden krav kunne et projekt følge AI Act, men ikke dække eller bevise noget. Resuméer på egne ord er korte nok til at matche med user stories, og de undgår at gengive den officielle tekst forkert fra hukommelsen. Linket til EUR-Lex giver altid den bindende tekst.
+- **Fravalgt:**
+  - Den officielle tekst som beskrivelse. Den kan komme i en ny version, når teksten hentes fra EUR-Lex og kontrolleres.
+  - Senere ændringer af forordningen (fx udskudte frister). De bliver en ny version (US-035 R7).
+  - Kapitel V (AI-modeller til almen brug).
 
 ## Åbne spørgsmål til klassediagrammet
 
