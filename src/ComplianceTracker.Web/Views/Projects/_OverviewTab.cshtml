@@ -49,6 +49,19 @@
         attention.Add((Plural(needsReview, "requirement needs review after a version change", "requirements need review after a version change"),
             ComplianceUrl(SubWhere(f => f.NeedsReview > 0), ComplianceFilters.NeedsReview)));
     }
+    // US-060 R6, US-061 R3
+    var applicabilitySuggestions = frameworks.Sum(f => f.ApplicabilitySuggestionCount);
+    if (applicabilitySuggestions > 0)
+    {
+        attention.Add((Plural(applicabilitySuggestions, "\"not applicable\" suggestion", "\"not applicable\" suggestions"),
+            ComplianceUrl(SubWhere(f => f.ApplicabilitySuggestionCount > 0), null)));
+    }
+    var oldClassification = frameworks.Sum(f => f.OldClassificationDecisions);
+    if (oldClassification > 0)
+    {
+        attention.Add((Plural(oldClassification, "not applicable requirement to check after a new classification", "not applicable requirements to check after a new classification"),
+            ComplianceUrl(SubWhere(f => f.OldClassificationDecisions > 0), ComplianceFilters.NotApplicable)));
+    }
     if (withoutEvidence > 0)
     {
         attention.Add((Plural(withoutEvidence, "covered requirement without evidence", "covered requirements without evidence"),

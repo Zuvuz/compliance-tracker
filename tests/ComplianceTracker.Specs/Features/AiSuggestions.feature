@@ -65,7 +65,7 @@ Feature: The local AI suggests mappings, and every decision is kept
   Scenario: Every suggestion keeps where it came from
     Given the AI rates "[US-004] Sign in with OpenID Connect" against "SP-1" with 0.86
     When I click "Suggest mappings" for "Acme Portal"
-    Then each suggestion keeps its score, rank, model "fake-embed" and prompt version "mapping-v1"
+    Then each suggestion keeps its score, rank, model "fake-embed" and prompt version "mapping-v3"
 
   @US-043 @integration
   Scenario: Requirements that do not apply are not suggested

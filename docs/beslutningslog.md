@@ -669,6 +669,21 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At residualniveauet kun kan sættes, når alle handlinger er udført. Det ville ændre eksisterende risici; det kan komme senere.
   - At genåbne en handling, når en koblet story genåbnes.
 
+### B55 – Hvad AI'en får at vide om projektet, og "ikke relevant" som forslag
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-060, US-061)
+  - AI'ens begrundelse for et forslag får projektets formål, scope og klassificering under kravets eget regulativ. Den får også de åbne risici, hvis measures nævner kravet. Tomme felter skrives som "(not given)", så modellen ikke gætter.
+  - Hvert forslag gemmer, hvilken kontekst der blev brugt ("Context used: purpose, classification, risk 'Stolen sessions'"). Prompten hedder nu `mapping-v3`, så gamle og nye forslag kan sammenlignes (US-036).
+  - Krav, som en åben High- eller Critical-risiko nævner, får mærket "High risk", og deres forslag vises først.
+  - "Suggest not applicable" spørger den lokale chatmodel om de ikke-dækkede krav i ét regulativ, højst 20 pr. tryk. Kun et klart "NOT APPLICABLE: <grund>" bliver et forslag. Et krav med en åben risiko foreslås aldrig.
+  - Et forslag om "ikke relevant" bliver kun en afgørelse, når en person med `DecideCompliance` accepterer det. Grunden kan rettes først. Accepterede og afviste forslag gemmes med rolle.
+  - Ændres klassificeringen, erstattes ventende forslag for det regulativ. Afgørelser, der blev accepteret ud fra den gamle klassificering, vises med "Based on an earlier classification" og under "Needs attention", til nogen trykker "Still not applicable" eller gør kravet relevant igen.
+- **Begrundelse:** CRA art. 13(2)–(3) lader risikovurderingen afgøre, hvilke krav der gælder, og AI Act art. 6 gør det samme for klassen. AI'en kan foreslå, men et menneske beslutter (AI Act art. 14), og det skal kunne ses, hvad AI'en byggede på (art. 13).
+- **Fravalgt:**
+  - At sende konteksten til en ekstern model. Den bliver i organisationens egen infrastruktur (US-020 R2).
+  - At ændre selve embedding-scoren efter risiko. Kun rækkefølgen ændres.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

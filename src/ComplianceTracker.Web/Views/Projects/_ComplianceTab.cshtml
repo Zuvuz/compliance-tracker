@@ -12,6 +12,9 @@
    US-057: #summary-evidence; per row .evidence (data-title) with .evidence-title, .evidence-sha256, .evidence-expired and
    form .remove-evidence; form .add-evidence (title, url, file, validUntil); .evidence-status "No evidence".
    US-052: #download-traceability (this regulation) and #download-traceability-all.
+   US-060, US-061: form #suggest-not-applicable; per row .high-risk, .applicability-suggestion with .applicability-reason,
+   .applicability-context and the forms .accept-applicability (reason) and .reject-applicability; .suggestion-context
+   under a rationale; .old-classification with the form .keep-not-applicable.
    US-110: per row .needs-review with .previous-text and the form .confirm-review; links and evidence that wait for
    review have .review-pending. *@
 @model ProjectDetailsViewModel
@@ -157,6 +160,20 @@
                 <button type="submit" class="btn btn-sm btn-outline-primary" title="The local AI suggests user stories for each requirement that is not covered. You approve or reject each suggestion.">Suggest for not covered</button>
             </form>
         }
+        @if (!project.IsClosed && canDecide && framework.NotCovered > 0)
+        {
+            @* US-060 R6: the AI only suggests; a person accepts or rejects each one *@
+            <form asp-action="SuggestNotApplicable" method="post" id="suggest-not-applicable">
+                <input type="hidden" name="projectId" value="@project.Id" />
+                <input type="hidden" name="frameworkId" value="@framework.Framework.Id" />
+                <input type="hidden" name="sub" value="@activeSlug" />
+                <button type="submit" class="btn btn-sm btn-outline-secondary" title="The local AI checks the requirements that are not covered against the product's purpose, scope and classification, and suggests the ones that clearly do not apply.">Suggest not applicable</button>
+            </form>
+        }
+        @if (TempData["ApplicabilityMessage"] is string applicabilityMessage)
+        {
+            <span class="small text-muted w-100" id="applicability-message" role="status">@applicabilityMessage</span>
+        }
     </div>
 
     @if (shown.Count == 0)
@@ -191,11 +208,17 @@
                     }
                     var rowFoldKey = $"requirement:{project.Id}:{requirement.Id}";
                     @* #52: the row can be folded; it is never folded while something needs attention *@
-                    var rowAttention = row.HasSuggestions || row.PendingEvidenceSuggestions.Any() || row.FailingTests > 0 || row.NeedsReview;
+                    var rowAttention = row.HasSuggestions || row.PendingEvidenceSuggestions.Any() || row.FailingTests > 0 || row.NeedsReview
+                        || row.ApplicabilitySuggestion is not null || row.NotApplicableFromOldClassification;
                     <tr class="requirement-row @(row.IsApplicable ? "" : "text-muted")" data-code="@requirement.Code" data-group="@requirement.Group" data-attention="@(rowAttention ? "true" : "false")">
                         <td class="requirement-code text-nowrap align-top">@requirement.Code</td>
                         <td class="requirement-title align-top">
                             @requirement.Title
+                            @if (row.HighRisk)
+                            {
+                                @* US-060 R4 *@
+                                <span class="badge text-bg-danger high-risk" title="Named by a measure of an open High or Critical risk">High risk</span>
+                            }
                             @if (!string.IsNullOrEmpty(requirement.Description))
                             {
                                 @* US-044: long descriptions can be expanded *@
@@ -323,6 +346,36 @@
                                 </div>
                             }
 
+                            @if (row.IsApplicable && row.ApplicabilitySuggestion is { } applicability)
+                            {
+                                @* US-060 R6: the AI suggests the requirement does not apply; the reason can be edited before accepting *@
+                                <div class="applicability-suggestion border-start border-3 border-secondary ps-2 mb-2" data-code="@requirement.Code">
+                                    <div class="d-flex flex-wrap align-items-center gap-1">
+                                        <span class="badge text-bg-info">AI-generated</span>
+                                        <span class="small fw-semibold">Not applicable?</span>
+                                    </div>
+                                    <div class="small applicability-reason">@applicability.Reason</div>
+                                    <div class="small text-muted applicability-context">Context used: @(string.IsNullOrEmpty(applicability.ContextUsed) ? "none" : applicability.ContextUsed)</div>
+                                    @if (!project.IsClosed && canDecide)
+                                    {
+                                        <div class="d-flex flex-wrap align-items-start gap-2 mt-1">
+                                            <form asp-action="AcceptApplicability" method="post" class="d-flex gap-1 accept-applicability">
+                                                <input type="hidden" name="projectId" value="@project.Id" />
+                                                <input type="hidden" name="suggestionId" value="@applicability.Id" />
+                                                <input type="hidden" name="sub" value="@activeSlug" />
+                                                <input name="reason" class="form-control form-control-sm" value="@applicability.Reason" maxlength="1000" aria-label="Reason for not applicable" />
+                                                <button type="submit" class="btn btn-sm btn-outline-success text-nowrap">Accept</button>
+                                            </form>
+                                            <form asp-action="RejectApplicability" method="post" class="reject-applicability">
+                                                <input type="hidden" name="projectId" value="@project.Id" />
+                                                <input type="hidden" name="suggestionId" value="@applicability.Id" />
+                                                <input type="hidden" name="sub" value="@activeSlug" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                            </form>
+                                        </div>
+                                    }
+                                </div>
+                            }
                             @if (row.IsApplicable)
                             {
                                 @foreach (var entry in row.Suggestions)
@@ -336,6 +389,11 @@
                                             <span class="small text-muted">score <span class="suggestion-score">@suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span></span>
                                         </div>
                                         <div class="small suggestion-rationale">@(suggestion.Rationale ?? "Writing rationale…")</div>
+                                        @if (suggestion.ContextUsed is { } contextUsed)
+                                        {
+                                            @* US-060 *@
+                                            <div class="small text-muted suggestion-context">Context used: @contextUsed</div>
+                                        }
                                         @if (!project.IsClosed && canDecide)
                                         {
                                             <div class="d-flex flex-wrap align-items-start gap-2 mt-1">
@@ -457,6 +515,20 @@
                                 @* US-043 R5, R6 *@
                                 <span class="requirement-status badge text-bg-secondary">Not applicable</span>
                                 <div class="small not-applicable-reason">@row.NotApplicableReason</div>
+                                @if (row.NotApplicableFromOldClassification)
+                                {
+                                    @* US-061 R3 *@
+                                    <div class="small text-warning-emphasis old-classification">Based on an earlier classification</div>
+                                    @if (!project.IsClosed && canDecide)
+                                    {
+                                        <form asp-action="KeepNotApplicable" method="post" class="keep-not-applicable">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="requirementId" value="@requirement.Id" />
+                                            <input type="hidden" name="sub" value="@activeSlug" />
+                                            <button type="submit" class="btn btn-sm btn-link p-0">Still not applicable</button>
+                                        </form>
+                                    }
+                                }
                                 @if (!project.IsClosed && canDecide)
                                 {
                                     <form asp-action="MarkApplicable" method="post" class="mark-applicable">

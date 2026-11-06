@@ -144,6 +144,12 @@ namespace ComplianceTracker.Domain.ActivityLog
         // "Stolen sessions: Short session lifetime (owner Bo Berg, due 01-12-2026)" or "… ↔ #41 Session timeout".
         RiskActionAdded,
         RiskActionLinked,
-        RiskActionDone
+        RiskActionDone,
+
+        // US-060: the AI suggested that requirements do not apply, and a person accepted or rejected one. SubjectId points
+        // at the project; Details holds e.g. "3 not applicable suggested of 20 requirements checked" or "I.2(i): …".
+        ApplicabilitySuggested,
+        ApplicabilitySuggestionAccepted,
+        ApplicabilitySuggestionRejected
     }
 }
