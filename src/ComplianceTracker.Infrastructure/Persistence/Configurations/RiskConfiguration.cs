@@ -48,6 +48,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.HasMany(r => r.Measures).WithOne().HasForeignKey(m => m.RiskId).OnDelete(DeleteBehavior.Cascade);
             builder.Navigation(r => r.Measures).HasField("_measures").UsePropertyAccessMode(PropertyAccessMode.Field).AutoInclude();
 
+            // US-111: the treatment actions, loaded with the risk like the measures
+            builder.HasMany(r => r.Actions).WithOne().HasForeignKey(a => a.RiskId).OnDelete(DeleteBehavior.Cascade);
+            builder.Navigation(r => r.Actions).HasField("_actions").UsePropertyAccessMode(PropertyAccessMode.Field).AutoInclude();
+
             builder.HasIndex(r => r.ProjectId);
         }
     }
@@ -61,6 +65,38 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(m => m.Id).ValueGeneratedNever();
             builder.HasOne<Requirement>().WithMany().HasForeignKey(m => m.RequirementId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
             builder.HasOne<WorkItem>().WithMany().HasForeignKey(m => m.WorkItemId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+        }
+    }
+
+    // US-111: "RiskActions" and their links in "RiskActionLinks"
+    public class RiskActionConfiguration : IEntityTypeConfiguration<RiskAction>
+    {
+        public void Configure(EntityTypeBuilder<RiskAction> builder)
+        {
+            builder.ToTable("RiskActions");
+            builder.HasKey(a => a.Id);
+            builder.Property(a => a.Id).ValueGeneratedNever();
+            builder.Property(a => a.Title).IsRequired().HasMaxLength(RiskAction.MaxTitleLength);
+            builder.Property(a => a.Status).HasConversion<string>().HasMaxLength(20);
+            builder.Ignore(a => a.IsDone);
+            builder.HasOne<User>().WithMany().HasForeignKey(a => a.OwnerId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<User>().WithMany().HasForeignKey(a => a.CreatedById).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<User>().WithMany().HasForeignKey(a => a.DoneById).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasMany(a => a.Links).WithOne().HasForeignKey(l => l.ActionId).OnDelete(DeleteBehavior.Cascade);
+            builder.Navigation(a => a.Links).HasField("_links").UsePropertyAccessMode(PropertyAccessMode.Field).AutoInclude();
+        }
+    }
+
+    public class RiskActionLinkConfiguration : IEntityTypeConfiguration<RiskActionLink>
+    {
+        public void Configure(EntityTypeBuilder<RiskActionLink> builder)
+        {
+            builder.ToTable("RiskActionLinks");
+            builder.HasKey(l => l.Id);
+            builder.Property(l => l.Id).ValueGeneratedNever();
+            builder.HasOne<WorkItem>().WithMany().HasForeignKey(l => l.WorkItemId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<Domain.Mappings.Evidence>().WithMany().HasForeignKey(l => l.EvidenceId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

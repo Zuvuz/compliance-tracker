@@ -85,7 +85,7 @@ namespace ComplianceTracker.Web.Controllers
 
         // GET /Risks/Details/{id}: the risk, its measures, and accept / close / review (R11: only the organisation's)
         [HttpGet]
-        public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
+        public async Task<IActionResult> Details(Guid id, [FromServices] EvidenceQueries evidence, CancellationToken cancellationToken)
         {
             var risk = await _risks.GetAsync(id, cancellationToken);
             var project = risk is null ? null : await _projects.GetAsync(risk.ProjectId, cancellationToken);
@@ -96,7 +96,11 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             return View(new RiskPageViewModel(risk, project, organization,
-                await _compliance.ForProjectAsync(project.Id, cancellationToken), _clock.GetUtcNow().UtcDateTime));
+                await _compliance.ForProjectAsync(project.Id, cancellationToken), _clock.GetUtcNow().UtcDateTime)
+            {
+                // US-111 R2: the project's evidence, to link to an action
+                ProjectEvidence = (await evidence.ForProjectAsync(project.Id, cancellationToken))?.Evidence.Select(e => e.Evidence).ToList() ?? []
+            });
         }
 
         // POST /Risks/Accept: R4
@@ -151,6 +155,44 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> RemoveMeasure(Guid id, Guid measureId, CancellationToken cancellationToken)
         {
             await _service.RemoveMeasureAsync(await ProjectOfAsync(id, cancellationToken), id, measureId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // ---------------------------------------------------------- Treatment actions (US-111)
+
+        // POST /Risks/AddAction: R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "id")]
+        public async Task<IActionResult> AddAction(Guid id, string? title, Guid? ownerId, DateOnly? dueOn, CancellationToken cancellationToken)
+        {
+            await _service.AddActionAsync(await ProjectOfAsync(id, cancellationToken), id, title ?? "",
+                ownerId ?? throw new DomainException("Choose an owner"), dueOn, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // POST /Risks/LinkAction: R2. "target" is "story:{id}" or "evidence:{id}".
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "id")]
+        public async Task<IActionResult> LinkAction(Guid id, Guid actionId, string? target, CancellationToken cancellationToken)
+        {
+            var (kind, value) = (target ?? "").Split(':') is [var k, var v] && Guid.TryParse(v, out var parsed)
+                ? (k, parsed)
+                : throw new DomainException("Choose a user story or evidence");
+
+            await _service.LinkActionAsync(await ProjectOfAsync(id, cancellationToken), id, actionId,
+                kind == "story" ? value : null, kind == "evidence" ? value : null, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // POST /Risks/CompleteAction: R3
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "id")]
+        public async Task<IActionResult> CompleteAction(Guid id, Guid actionId, CancellationToken cancellationToken)
+        {
+            await _service.CompleteActionAsync(await ProjectOfAsync(id, cancellationToken), id, actionId, cancellationToken);
             return RedirectToAction(nameof(Details), new { id });
         }
 

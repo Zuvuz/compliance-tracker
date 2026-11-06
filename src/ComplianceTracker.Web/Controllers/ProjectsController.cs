@@ -404,6 +404,16 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
         }
 
+        // POST /Projects/ConfirmReview: US-110 R5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> ConfirmReview(Guid projectId, Guid requirementId, string? sub, string? show, CancellationToken cancellationToken)
+        {
+            await _compliance.ConfirmReviewAsync(projectId, requirementId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub, show });
+        }
+
         // ---------------------------------------------------------- Evidence (US-057)
 
         // Room for a 10 MB file and the form (EvidenceFile refuses anything larger with a clear message)

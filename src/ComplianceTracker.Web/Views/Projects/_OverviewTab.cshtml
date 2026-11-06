@@ -42,6 +42,13 @@
         attention.Add((Plural(suggestions, "AI suggestion", "AI suggestions"),
             ComplianceUrl(SubWhere(f => f.SuggestionCount > 0), ComplianceFilters.HasSuggestions)));
     }
+    // US-110 R7
+    var needsReview = frameworks.Sum(f => f.NeedsReview);
+    if (needsReview > 0)
+    {
+        attention.Add((Plural(needsReview, "requirement needs review after a version change", "requirements need review after a version change"),
+            ComplianceUrl(SubWhere(f => f.NeedsReview > 0), ComplianceFilters.NeedsReview)));
+    }
     // US-060 R6, US-061 R3
     var applicabilitySuggestions = frameworks.Sum(f => f.ApplicabilitySuggestionCount);
     if (applicabilitySuggestions > 0)
@@ -113,6 +120,12 @@
     if (seriousWithoutMeasures > 0)
     {
         attention.Add((Plural(seriousWithoutMeasures, "High or Critical risk without measures", "High or Critical risks without measures"), RisksUrl()));
+    }
+    // US-111 R7
+    var overdueActions = openRisks.Sum(r => r.OverdueActions(DateOnly.FromDateTime(Model.Now)));
+    if (overdueActions > 0)
+    {
+        attention.Add((Plural(overdueActions, "overdue risk action", "overdue risk actions"), RisksUrl()));
     }
     if (doneNotLinked > 0)
     {

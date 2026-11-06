@@ -181,6 +181,39 @@ namespace ComplianceTracker.Application.Compliance
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        // US-110 R5, R6: "Still correct" for everything on the requirement that waits for review after a version change.
+        // Links and evidence take LinkWork; a "not applicable" decision also takes DecideCompliance.
+        public async Task ConfirmReviewAsync(Guid projectId, Guid requirementId, CancellationToken cancellationToken = default)
+        {
+            var (organizationId, userId, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var requirement = await RequirementOfProjectAsync(organizationId, project, requirementId, cancellationToken)
+                ?? throw new DomainException("The requirement is not in a framework version the project follows");
+
+            var links = (await _links.ListActiveAsync(project.Id, cancellationToken))
+                .Where(l => l.RequirementId == requirement.Id && l.NeedsReview).ToList();
+            var evidence = (await _evidence.ListActiveLinksAsync(project.Id, cancellationToken))
+                .Where(l => l.RequirementId == requirement.Id && l.NeedsReview).ToList();
+            var decisions = (await _applicability.ListActiveAsync(project.Id, cancellationToken))
+                .Where(a => a.RequirementId == requirement.Id && a.NeedsReview).ToList();
+            var count = links.Count + evidence.Count + decisions.Count;
+            if (count == 0)
+            {
+                throw new DomainException("Nothing to review");
+            }
+
+            if (decisions.Count > 0)
+            {
+                await _member.RequireAsync(Permission.DecideCompliance, cancellationToken);
+            }
+
+            links.ForEach(l => l.MarkReviewed(userId, Now));
+            evidence.ForEach(l => l.MarkReviewed(userId, Now));
+            decisions.ForEach(d => d.MarkReviewed(userId, Now));
+            await _log.LogAsync(ActivityAction.LinkReviewed, project.Id,
+                $"{requirement.Code}: still correct after the version change ({count} checked)", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
         // US-057 R1, R6: a link as evidence for one of the project's applicable requirements
         public Task AddEvidenceLinkAsync(
             Guid projectId, Guid requirementId, string title, string url, DateOnly? validUntil, CancellationToken cancellationToken = default)

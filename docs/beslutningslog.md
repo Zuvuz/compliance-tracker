@@ -639,6 +639,36 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Flere GitHub Projects til ét tracker-projekt.
   - **Kendt begrænsning:** GitHub kan ikke begrænse et token til ét Project; et token med læseadgang til projects kan læse alle organisationens projects. README anbefaler en maskinbruger, der kun er medlem af det ene projekt.
 
+### B53 – Gennemgang af links, når kravets tekst ændres i en ny version
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-110)
+  - Alt følger stadig med til kravet med samme kode, når et projekt skifter version (B41): links, "ikke relevant"-afgørelser og evidens.
+  - Er kravets titel eller tekst ændret (ses bort fra forskelle i mellemrum), markeres det overførte "Needs review". Uændrede krav overføres uden markering.
+  - Et link eller en evidens, der venter på gennemgang, tæller ikke. Kravet står som "Covered, needs review", til nogen har set på det.
+  - Rækken viser den gamle tekst overstreget over den nye. "Still correct" godkender alt på kravet på én gang og logges med hvem og hvornår. Det, der ikke passer længere, fjernes med det eksisterende kryds.
+  - Links og evidens kræver `LinkWork`. En "ikke relevant"-afgørelse kræver også `DecideCompliance`.
+  - Compliance-fanen har filteret "Needs review", og Overview viser antallet under "Needs attention".
+- **Begrundelse:** Et link, der var rigtigt for den gamle tekst, beviser ikke nødvendigvis den nye. Dækningen skal ikke se bedre ud, end den er (ISO 27001 A.8.32, 7.5.3).
+- **Fravalgt:**
+  - At gennemgå alt, der overføres. Det giver meget at klikke igennem for krav, der ikke er ændret.
+  - At AI'en vurderer, om linket stadig passer (kan komme med US-038).
+
+### B54 – Handlinger på risici, sporet til user stories og evidens
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-111)
+  - En risiko kan have handlinger med titel, ejer og en valgfri frist. De ligger på risikoens side under "Treatment actions" sammen med de user stories og den evidens, der udfører dem. Det er sporet fra risiko over handling til bevis.
+  - Handlingen er en del af risikoen, ligesom de eksisterende measures, som bliver ved med at vise, hvilke krav og stories der mindsker risikoen.
+  - En handling er "Planned", bliver "In progress", når noget kobles på, og kan kun markeres "Done", når en koblet user story er lukket eller en koblet evidens findes. Hvem og hvornår gemmes.
+  - Handlinger efter fristen vises på Risks-fanen og under "Needs attention" på Overview.
+  - Samme rolle som risikoregistret (`ManageRisks`). Alt logges.
+- **Begrundelse:** ISO 27001 6.1.3 og 8.3 kræver en plan for risikohåndtering og bevis for, at den udføres. CRA art. 13(2) kræver, at risikovurderingen holdes opdateret. Kravet om bevis forhindrer, at en handling står som udført uden spor.
+- **Fravalgt:**
+  - Behandlingsform pr. handling. Risikoen har allerede sin behandling (Reduce, Accept …).
+  - At residualniveauet kun kan sættes, når alle handlinger er udført. Det ville ændre eksisterende risici; det kan komme senere.
+  - At genåbne en handling, når en koblet story genåbnes.
+
 ### B55 – Hvad AI'en får at vide om projektet, og "ikke relevant" som forslag
 
 - **Status:** Vedtaget
