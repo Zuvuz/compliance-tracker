@@ -42,6 +42,13 @@
         attention.Add((Plural(suggestions, "AI suggestion", "AI suggestions"),
             ComplianceUrl(SubWhere(f => f.SuggestionCount > 0), ComplianceFilters.HasSuggestions)));
     }
+    // US-110 R7
+    var needsReview = frameworks.Sum(f => f.NeedsReview);
+    if (needsReview > 0)
+    {
+        attention.Add((Plural(needsReview, "requirement needs review after a version change", "requirements need review after a version change"),
+            ComplianceUrl(SubWhere(f => f.NeedsReview > 0), ComplianceFilters.NeedsReview)));
+    }
     if (withoutEvidence > 0)
     {
         attention.Add((Plural(withoutEvidence, "covered requirement without evidence", "covered requirements without evidence"),

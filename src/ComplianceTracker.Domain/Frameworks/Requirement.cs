@@ -58,5 +58,12 @@ namespace ComplianceTracker.Domain.Frameworks
             Title = title.Trim();
             Description = description?.Trim() ?? "";
         }
+
+        // US-110 R2: the same title and text, ignoring differences in whitespace
+        public bool HasSameTextAs(Requirement other)
+            => Normalized(Title) == Normalized(other.Title) && Normalized(Description) == Normalized(other.Description);
+
+        private static string Normalized(string? text)
+            => string.Join(' ', (text ?? "").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
     }
 }
