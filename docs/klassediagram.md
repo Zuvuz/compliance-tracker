@@ -729,6 +729,29 @@ classDiagram
     +ApproveAsync(projectId: Guid, suggestionId: Guid) Task
     +RejectAsync(projectId: Guid, suggestionId: Guid, reason: RejectionReason?, comment: string?) Task
   }
+  class AiTask {
+    <<enumeration>>
+    Embedding
+    Ranking
+    Rationale
+    EvidenceCheck
+    GapDrafts
+    RiskDrafts
+    ImportFill
+  }
+  class IAiModels {
+    <<interface>>
+    +Embedding(task: AiTask) IEmbeddingModel
+    +Writer(task: AiTask) IRationaleWriter
+    +Overview() IReadOnlyList~AiTaskModel~
+  }
+  class ConfiguredAiModels {
+    +Embedding(task: AiTask) IEmbeddingModel
+    +Writer(task: AiTask) IRationaleWriter
+    +Overview() IReadOnlyList~AiTaskModel~
+  }
+  ConfiguredAiModels ..|> IAiModels
+  RationaleService --> IAiModels
   class RationaleService {
     +WriteMissingAsync(take: int) Task~int~
   }

@@ -639,6 +639,22 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Flere GitHub Projects til ét tracker-projekt.
   - **Kendt begrænsning:** GitHub kan ikke begrænse et token til ét Project; et token med læseadgang til projects kan læse alle organisationens projects. README anbefaler en maskinbruger, der kun er medlem af det ene projekt.
 
+### B56 – En model pr. AI-opgave
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-117)
+  - AI'ens opgaver har hver sit navn: Embedding, Ranking, Rationale, EvidenceCheck, GapDrafts, RiskDrafts og ImportFill. Driften kan give hver opgave sin egen model i indstillingerne, `Ai:Tasks:<Opgave>:Model`. Den kan også få en anden server, `Ai:Tasks:<Opgave>:BaseUrl`, men stadig i organisationens egen infrastruktur.
+  - En opgave uden egen indstilling bruger standardmodellerne (`Ai:EmbeddingModel` og `Ai:ChatModel`), så intet ændrer sig, før driften vælger.
+  - I dag bruger forslag til user stories og evidens opgaven Embedding, begrundelser for story-forslag Rationale, og begrundelser for evidensforslag EvidenceCheck. De andre opgaver får deres model, når deres stories bygges.
+  - Hvert forslag gemmer stadig, hvilken model der lavede det.
+  - Kan en opgaves egen model ikke nås, siger fejlen hvilken ("Embedding is unavailable: the model … cannot be reached"). Opgaven falder ikke tilbage til en anden model, så en svagere model aldrig bruges, uden at nogen ved det.
+  - Systemsiden viser, hvilken model hver opgave bruger.
+  - Embeddings gemmes ikke. De beregnes, hver gang der foreslås, så et modelskift kræver ingen genberegning.
+- **Begrundelse:** De mange små kald (søgning) skal være hurtige, mens de få, der skriver tekst til mennesker, har gavn af en større model. Det skal kunne ses og måles (US-116), hvilken model der gjorde hvad (AI Act art. 12, art. 15).
+- **Fravalgt:**
+  - At organisationens admin vælger modeller i appen. Driften styrer modellerne, ligesom grænserne i B47.
+  - At falde tilbage til standardmodellen, når en opgaves egen model er nede.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

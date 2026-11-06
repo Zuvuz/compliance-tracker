@@ -1,5 +1,7 @@
-@* US-010: every organisation, for the system admin. Ids used by the tests: #system-organisations (rows data-organisation). *@
+@* US-010: every organisation, for the system admin. Ids used by the tests: #system-organisations (rows data-organisation).
+   US-117: #ai-models rows (data-task) with .ai-model and .ai-model-source. *@
 @model IReadOnlyList<ComplianceTracker.Domain.Organizations.Organization>
+@inject ComplianceTracker.Application.Ai.IAiModels AiModels
 @{
     ViewData["Title"] = "System";
 }
@@ -18,6 +20,23 @@
                 <td>@organization.Cvr</td>
                 <td>@organization.Members.Count</td>
                 <td>@string.Join(", ", organization.Members.Where(u => u.Role == UserRole.Admin).Select(u => u.Name))</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@* US-117 R1: the model of each AI task; set by the operator in the settings (Ai:Tasks:<Task>:Model) *@
+<h2 class="h5 mt-4">AI models</h2>
+<p class="small text-muted">Each AI task can have its own model in the settings (<code>Ai:Tasks:&lt;Task&gt;:Model</code>). A task without one uses the default model. Every model runs inside your own infrastructure.</p>
+<table class="table table-sm" id="ai-models">
+    <thead><tr><th>Task</th><th>Model</th><th></th></tr></thead>
+    <tbody>
+        @foreach (var task in AiModels.Overview())
+        {
+            <tr data-task="@task.Task">
+                <td>@ComplianceTracker.Application.Ai.AiTaskNames.Title(task.Task)</td>
+                <td class="ai-model"><code>@task.Model</code></td>
+                <td class="small text-muted ai-model-source">@(task.OwnSetting ? "Own setting" : "Default")</td>
             </tr>
         }
     </tbody>

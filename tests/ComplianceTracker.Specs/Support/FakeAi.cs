@@ -22,6 +22,10 @@ namespace ComplianceTracker.Specs.Support
 
         public int RationalesWritten { get; private set; }
 
+        // US-117: tasks with their own model name, and tasks whose own model cannot be reached (FakeAiModels)
+        public Dictionary<AiTask, string> TaskModels { get; } = new();
+        public HashSet<AiTask> UnavailableTasks { get; } = new();
+
         string IEmbeddingModel.Name => "fake-embed";
         string IRationaleWriter.Name => "fake-chat";
 

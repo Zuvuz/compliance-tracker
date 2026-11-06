@@ -147,6 +147,10 @@ namespace ComplianceTracker.Infrastructure
 
             // US-083: keyed by provider name; the setting picks one (AiProviders)
             AiProviders.Add(services);
+
+            // US-117: a model per task; ConfiguredAiModels sets the address of each client
+            services.AddHttpClient(ConfiguredAiModels.HttpClientName);
+            services.AddTransient<IAiModels, ConfiguredAiModels>();
         }
     }
 }

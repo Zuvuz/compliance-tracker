@@ -69,6 +69,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddSingleton<IEmbeddingModel>(ai);
                 services.AddSingleton<IAiLimits>(ai); // US-105
                 services.AddSingleton<IRationaleWriter>(ai);
+                services.AddSingleton<IAiModels>(new FakeAiModels(ai)); // US-117
 
                 // US-015: lets a scenario save something at the same moment as the app
                 if (race is not null)

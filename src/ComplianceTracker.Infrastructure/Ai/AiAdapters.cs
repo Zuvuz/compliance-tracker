@@ -22,6 +22,13 @@ namespace ComplianceTracker.Infrastructure.Ai
             Name = options.Value.EmbeddingModel;
         }
 
+        // US-117: a task's own model (ConfiguredAiModels)
+        internal OllamaEmbeddingModel(HttpClient http, string model)
+        {
+            _http = http;
+            Name = model;
+        }
+
         public string Name { get; }
 
         public async Task<IReadOnlyList<float[]>> EmbedAsync(IReadOnlyList<string> texts, CancellationToken cancellationToken = default)
@@ -41,6 +48,13 @@ namespace ComplianceTracker.Infrastructure.Ai
         {
             _http = http;
             Name = options.Value.ChatModel;
+        }
+
+        // US-117: a task's own model (ConfiguredAiModels)
+        internal OllamaRationaleWriter(HttpClient http, string model)
+        {
+            _http = http;
+            Name = model;
         }
 
         public string Name { get; }
@@ -69,6 +83,13 @@ namespace ComplianceTracker.Infrastructure.Ai
             Name = options.Value.EmbeddingModel;
         }
 
+        // US-117: a task's own model (ConfiguredAiModels)
+        internal OpenAiCompatibleEmbeddingModel(HttpClient http, string model)
+        {
+            _http = http;
+            Name = model;
+        }
+
         public string Name { get; }
 
         public async Task<IReadOnlyList<float[]>> EmbedAsync(IReadOnlyList<string> texts, CancellationToken cancellationToken = default)
@@ -90,6 +111,13 @@ namespace ComplianceTracker.Infrastructure.Ai
         {
             _http = http;
             Name = options.Value.ChatModel;
+        }
+
+        // US-117: a task's own model (ConfiguredAiModels)
+        internal OpenAiCompatibleRationaleWriter(HttpClient http, string model)
+        {
+            _http = http;
+            Name = model;
         }
 
         public string Name { get; }

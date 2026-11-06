@@ -75,6 +75,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddSingleton<IAiLimits>(provider => provider.GetRequiredService<FakeAi>()); // US-105
                 services.AddSingleton<IEmbeddingModel>(provider => provider.GetRequiredService<FakeAi>());
                 services.AddSingleton<IRationaleWriter>(provider => provider.GetRequiredService<FakeAi>());
+                services.AddSingleton<IAiModels>(provider => new FakeAiModels(provider.GetRequiredService<FakeAi>())); // US-117
                 services.AddSingleton<IRationaleQueue, NoRationaleQueue>();
                 services.AddSingleton<IWorkItemSource>(new GitHubWorkItemSource(new HttpClient { BaseAddress = new Uri("http://github.invalid/") }));
                 services.AddSingleton<IWorkItemNotifier, NoWorkItemNotifier>();
