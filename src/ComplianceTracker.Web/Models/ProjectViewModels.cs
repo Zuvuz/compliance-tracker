@@ -112,6 +112,7 @@ namespace ComplianceTracker.Web.Models
         public const string NotCovered = "not-covered";
         public const string HasSuggestions = "has-suggestions";
         public const string NotApplicable = "not-applicable";
+        public const string NeedsReview = "needs-review";
 
         // In the order they are shown, with the text on the button
         public static readonly IReadOnlyList<(string Slug, string Title)> Each =
@@ -119,7 +120,8 @@ namespace ComplianceTracker.Web.Models
             (All, "All"),
             (NotCovered, "Not covered"),
             (HasSuggestions, "Has suggestions"),
-            (NotApplicable, "Not applicable")
+            (NotApplicable, "Not applicable"),
+            (NeedsReview, "Needs review")
         ];
 
         // An unknown or missing filter shows everything
@@ -131,6 +133,7 @@ namespace ComplianceTracker.Web.Models
             NotCovered => row.IsApplicable && !row.IsCovered, // not applicable is not "not covered" (US-043 R6)
             HasSuggestions => row.HasSuggestions,
             NotApplicable => !row.IsApplicable,
+            NeedsReview => row.NeedsReview,
             _ => true
         };
     }

@@ -16,6 +16,7 @@ Feature: No organisation can reach another organisation's data
     And I have added the evidence "MFA config" with the file "mfa.pdf" to "I.2(d)"
     And the risk "Phishing" exists in "Acme Portal"
     And the risk "Phishing" has the measure "[US-004] Sign in"
+    And I have added the action "Phishing training" to the risk "Phishing"
     And "Acme Portal" has a "Trivy" scan with the findings "CVE-2026-1111" and "CVE-2026-2222"
     And I have recorded the actively exploited vulnerability "CVE-2026-1234" for "Acme Portal", aware since "2026-11-01T08:00:00Z"
     And "Acme Portal" has version 1 of "kravspec.xlsx" with "REQ-001 Log in"

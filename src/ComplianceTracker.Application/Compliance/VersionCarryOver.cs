@@ -30,10 +30,15 @@ namespace ComplianceTracker.Application.Compliance
             Project project, Guid frameworkId, Guid fromVersionId, Guid toVersionId, CancellationToken cancellationToken = default)
         {
             var framework = (await _frameworks.ListAvailableWithRequirementsAsync(project.OrganizationId, [frameworkId], cancellationToken)).Single();
-            var target = framework.Versions.Single(v => v.Id == toVersionId).Requirements.ToDictionary(r => r.Code, r => r.Id);
-            var sameCode = framework.Versions.Single(v => v.Id == fromVersionId).Requirements
+            var target = framework.Versions.Single(v => v.Id == toVersionId).Requirements.ToDictionary(r => r.Code);
+            var from = framework.Versions.Single(v => v.Id == fromVersionId).Requirements
                 .Where(r => target.ContainsKey(r.Code))
-                .ToDictionary(r => r.Id, r => target[r.Code]);
+                .ToList();
+            var sameCode = from.ToDictionary(r => r.Id, r => target[r.Code].Id);
+
+            // US-110 R2: only requirements whose title or text changed need a person to look again
+            var changed = from.Where(r => !r.HasSameTextAs(target[r.Code])).Select(r => r.Id).ToHashSet();
+            var toReview = 0;
 
             var links = await _links.ListActiveAsync(project.Id, cancellationToken);
             var linksCarried = 0;
@@ -42,8 +47,10 @@ namespace ComplianceTracker.Application.Compliance
                 var to = sameCode[link.RequirementId];
                 if (!links.Any(l => l.RequirementId == to && l.WorkItemId == link.WorkItemId))
                 {
-                    await _links.AddAsync(link.CarryTo(to), cancellationToken);
+                    var carried = link.CarryTo(to, changed.Contains(link.RequirementId));
+                    await _links.AddAsync(carried, cancellationToken);
                     linksCarried++;
+                    toReview += carried.NeedsReview ? 1 : 0;
                 }
             }
 
@@ -54,8 +61,10 @@ namespace ComplianceTracker.Application.Compliance
                 var to = sameCode[decision.RequirementId];
                 if (!decisions.Any(d => d.RequirementId == to))
                 {
-                    await _applicability.AddAsync(decision.CarryTo(to), cancellationToken);
+                    var carried = decision.CarryTo(to, changed.Contains(decision.RequirementId));
+                    await _applicability.AddAsync(carried, cancellationToken);
                     decisionsCarried++;
+                    toReview += carried.NeedsReview ? 1 : 0;
                 }
             }
 
@@ -67,19 +76,23 @@ namespace ComplianceTracker.Application.Compliance
                 var to = sameCode[link.RequirementId];
                 if (!evidenceLinks.Any(l => l.RequirementId == to && l.EvidenceId == link.EvidenceId))
                 {
-                    await _evidence.AddLinkAsync(link.CarryTo(to), cancellationToken);
+                    var carried = link.CarryTo(to, changed.Contains(link.RequirementId));
+                    await _evidence.AddLinkAsync(carried, cancellationToken);
                     evidenceCarried++;
+                    toReview += carried.NeedsReview ? 1 : 0;
                 }
             }
 
-            return new CarriedOver(linksCarried, decisionsCarried, evidenceCarried);
+            return new CarriedOver(linksCarried, decisionsCarried, evidenceCarried, toReview);
         }
     }
 
     // How much followed the project to the new version, for the activity log
-    public record CarriedOver(int Links, int NotApplicable, int Evidence)
+    // US-110: ToReview counts what was carried to a requirement whose text changed
+    public record CarriedOver(int Links, int NotApplicable, int Evidence, int ToReview = 0)
     {
         public string Describe(string framework, int version)
-            => $"{framework}: version {version}; carried over {Links} links, {NotApplicable} not applicable, {Evidence} evidence";
+            => $"{framework}: version {version}; carried over {Links} links, {NotApplicable} not applicable, {Evidence} evidence"
+               + (ToReview > 0 ? $"; {ToReview} to review because the requirement's text changed" : "");
     }
 }

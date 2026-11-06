@@ -304,6 +304,7 @@ classDiagram
     -position: int
     -group: string?
     -reference: string?
+    +HasSameTextAs(other: Requirement) bool
   }
   class RequirementApplicability {
     -id: Guid
@@ -314,9 +315,14 @@ classDiagram
     -decidedAt: DateTime
     -revokedById: Guid?
     -revokedAt: DateTime?
+    -needsReview: bool
+    -carriedFromRequirementId: Guid?
+    -reviewedById: Guid?
+    -reviewedAt: DateTime?
     +IsActive: bool
     +NotApplicable(projectId: Guid, requirementId: Guid, reason: string, userId: Guid, at: DateTime)$ RequirementApplicability
-    +CarryTo(requirementId: Guid) RequirementApplicability
+    +CarryTo(requirementId: Guid, textChanged: bool) RequirementApplicability
+    +MarkReviewed(userId: Guid, at: DateTime)
     +Revoke(userId: Guid, at: DateTime)
   }
   class OrganizationFramework {
@@ -574,8 +580,13 @@ classDiagram
     -linkedAt: DateTime
     -removedById: Guid?
     -removedAt: DateTime?
+    -needsReview: bool
+    -carriedFromRequirementId: Guid?
+    -reviewedById: Guid?
+    -reviewedAt: DateTime?
     +Create(projectId, evidenceId, requirementId, linkedById, role, at, source)$ EvidenceLink
-    +CarryTo(requirementId: Guid) EvidenceLink
+    +CarryTo(requirementId: Guid, textChanged: bool) EvidenceLink
+    +MarkReviewed(userId: Guid, at: DateTime)
     +Remove(userId: Guid, at: DateTime)
   }
   class EvidenceLinkSuggestion {
@@ -657,9 +668,14 @@ classDiagram
     -linkedAt: DateTime
     -removedById: Guid?
     -removedAt: DateTime?
+    -needsReview: bool
+    -carriedFromRequirementId: Guid?
+    -reviewedById: Guid?
+    -reviewedAt: DateTime?
     +IsActive: bool
     +Create(projectId: Guid, requirementId: Guid, workItemId: Guid, linkedById: Guid, at: DateTime)$ RequirementLink
-    +CarryTo(requirementId: Guid) RequirementLink
+    +CarryTo(requirementId: Guid, textChanged: bool) RequirementLink
+    +MarkReviewed(userId: Guid, at: DateTime)
     +Remove(userId: Guid, at: DateTime)
   }
   class VersionCarryOver {
@@ -674,6 +690,7 @@ classDiagram
     +UnlinkAsync(projectId: Guid, linkId: Guid) Task
     +MarkNotApplicableAsync(projectId: Guid, requirementId: Guid, reason: string) Task
     +MarkApplicableAsync(projectId: Guid, requirementId: Guid) Task
+    +ConfirmReviewAsync(projectId: Guid, requirementId: Guid) Task
     +AddEvidenceLinkAsync(projectId: Guid, requirementId: Guid, title: string, url: string, validUntil: DateOnly?) Task
     +AddEvidenceFileAsync(projectId: Guid, requirementId: Guid, title: string, fileName: string, content: byte[], validUntil: DateOnly?) Task
     +RemoveEvidenceAsync(projectId: Guid, evidenceId: Guid) Task
@@ -682,6 +699,37 @@ classDiagram
     +ForProjectAsync(projectId: Guid) Task~ProjectCompliance?~
     +EvidenceFileAsync(projectId: Guid, evidenceId: Guid) Task
   }
+  class ApplicabilitySuggestion {
+    -id: Guid
+    -projectId: Guid
+    -frameworkId: Guid
+    -requirementId: Guid
+    -reason: string
+    -contextUsed: string
+    -classifiedAt: DateTime?
+    -model: string
+    -promptVersion: string
+    -createdAt: DateTime
+    -status: SuggestionStatus
+    -decidedById: Guid?
+    -decidedRole: UserRole?
+    -decidedAt: DateTime?
+    +Create(projectId, frameworkId, requirementId, reason, contextUsed, classifiedAt, model, promptVersion, at)$ ApplicabilitySuggestion
+    +Accept(userId: Guid, at: DateTime, role: UserRole?)
+    +Reject(userId: Guid, at: DateTime, role: UserRole?)
+    +Replace()
+  }
+  class AiContextBuilder {
+    +ForAsync(project: Project, requirement: Requirement) Task~AiProjectContext~
+  }
+  class ApplicabilitySuggestionService {
+    +SuggestAsync(projectId: Guid, frameworkId: Guid) Task~int~
+    +AcceptAsync(projectId: Guid, suggestionId: Guid, reason: string?) Task
+    +RejectAsync(projectId: Guid, suggestionId: Guid) Task
+  }
+  ApplicabilitySuggestionService --> AiContextBuilder
+  ApplicabilitySuggestionService ..> ApplicabilitySuggestion
+  RationaleService --> AiContextBuilder
   class MappingSuggestion {
     -id: Guid
     -projectId: Guid
@@ -693,6 +741,7 @@ classDiagram
     -embeddingModel: string
     -rationaleModel: string?
     -promptVersion: string
+    -contextUsed: string?
     -createdAt: DateTime
     -status: SuggestionStatus
     -decidedById: Guid?
@@ -702,7 +751,7 @@ classDiagram
     +Approve(userId: Guid, at: DateTime)
     +Reject(reason: RejectionReason?, comment: string?, userId: Guid, at: DateTime)
     +Replace()
-    +SetRationale(rationale: string, model: string)
+    +SetRationale(rationale: string, model: string, contextUsed: string?)
   }
   class IAiLimits {
     <<interface>>
@@ -729,6 +778,53 @@ classDiagram
     +ApproveAsync(projectId: Guid, suggestionId: Guid) Task
     +RejectAsync(projectId: Guid, suggestionId: Guid, reason: RejectionReason?, comment: string?) Task
   }
+  class AiTask {
+    <<enumeration>>
+    Embedding
+    Ranking
+    Rationale
+    EvidenceCheck
+    GapDrafts
+    RiskDrafts
+    ImportFill
+  }
+  class IAiModels {
+    <<interface>>
+    +Embedding(task: AiTask) IEmbeddingModel
+    +Writer(task: AiTask) IRationaleWriter
+    +Overview() IReadOnlyList~AiTaskModel~
+  }
+  class ConfiguredAiModels {
+    +Embedding(task: AiTask) IEmbeddingModel
+    +Writer(task: AiTask) IRationaleWriter
+    +Overview() IReadOnlyList~AiTaskModel~
+  }
+  ConfiguredAiModels ..|> IAiModels
+  RationaleService --> IAiModels
+  class AiEvaluation {
+    -id: Guid
+    -step: AiEvaluationStep
+    -model: string
+    -promptVersion: string
+    -decisions: int
+    -top1: double?
+    -top3: double?
+    -top10: double?
+    -rejectedAboveLimit: double?
+    -graded: int
+    -averageGrade: double?
+    -runBy: string
+    -runAt: DateTime
+    +ForMatching(...)$ AiEvaluation
+    +ForRationales(model, promptVersion, grades, runBy, at)$ AiEvaluation
+  }
+  class AiEvaluationService {
+    +EvaluateStoryMatchingAsync() Task~AiEvaluation~
+    +RationaleSampleAsync() Task~IReadOnlyList~RationaleSample~~
+    +GradeRationalesAsync(grades: IReadOnlyDictionary~Guid,int~) Task~AiEvaluation~
+  }
+  AiEvaluationService --> IAiModels
+  AiEvaluationService ..> AiEvaluation
   class RationaleService {
     +WriteMissingAsync(take: int) Task~int~
   }
@@ -796,6 +892,7 @@ classDiagram
     -closedReason: string?
     -lastReviewedAt: DateTime?
     -measures: List~RiskMeasure~
+    -actions: List~RiskAction~
     +Score: int
     +Level: RiskLevel
     +Update(...) IReadOnlyList~ProjectChange~
@@ -804,6 +901,10 @@ classDiagram
     +MarkReviewed(userId: Guid, at: DateTime)
     +IsReviewDue(now: DateTime) bool
     +AddMeasure(requirementId: Guid?, workItemId: Guid?) RiskMeasure
+    +AddAction(title: string, ownerId: Guid, dueOn: DateOnly?, userId: Guid, at: DateTime) RiskAction
+    +LinkAction(actionId: Guid, workItemId: Guid?, evidenceId: Guid?) RiskActionLink
+    +CompleteAction(actionId: Guid, hasProof: bool, userId: Guid, at: DateTime)
+    +OverdueActions(today: DateOnly) int
   }
   class RiskMeasure {
     -id: Guid
@@ -811,6 +912,34 @@ classDiagram
     -requirementId: Guid?
     -workItemId: Guid?
   }
+  class RiskAction {
+    -id: Guid
+    -riskId: Guid
+    -title: string
+    -ownerId: Guid
+    -dueOn: DateOnly?
+    -status: RiskActionStatus
+    -createdById: Guid
+    -createdAt: DateTime
+    -doneById: Guid?
+    -doneAt: DateTime?
+    -links: List~RiskActionLink~
+    +IsOverdue(today: DateOnly) bool
+  }
+  class RiskActionLink {
+    -id: Guid
+    -actionId: Guid
+    -workItemId: Guid?
+    -evidenceId: Guid?
+  }
+  class RiskActionStatus {
+    <<enumeration>>
+    Planned
+    InProgress
+    Done
+  }
+  Risk "1" *-- "0..*" RiskAction
+  RiskAction "1" *-- "0..*" RiskActionLink
 
   %% ================= Roller og invitationer (US-009, US-010) =================
   class Permission {

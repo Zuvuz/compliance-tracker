@@ -16,5 +16,7 @@ namespace ComplianceTracker.Infrastructure.Ai
         public double MinimumScoreForStories => Math.Clamp(_options.CurrentValue.MinimumScoreForStories, 0, 1);
 
         public double MinimumScoreForEvidence => Math.Clamp(_options.CurrentValue.MinimumScoreForEvidence, 0, 1);
+
+        public int MinimumDecisionsForEvaluation => Math.Max(1, _options.CurrentValue.MinimumDecisionsForEvaluation);
     }
 }

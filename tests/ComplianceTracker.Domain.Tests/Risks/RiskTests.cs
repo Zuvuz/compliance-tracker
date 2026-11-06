@@ -149,4 +149,128 @@ public class RiskTests
         Assert.Equal("A closed risk cannot be changed", error.Message);
         Assert.False(risk.IsReviewDue(Monday.AddYears(5)));
     }
+
+    // ---------------------------------------------------------- US-111: treatment actions
+
+    [Fact]
+    public void A_new_action_is_planned_with_its_owner_and_due_date()
+    {
+        // Arrange
+        var risk = Create();
+        var bo = Guid.NewGuid();
+
+        // Act
+        var action = risk.AddAction(" Short session lifetime ", bo, new DateOnly(2026, 12, 1), Anna, Monday);
+
+        // Assert
+        Assert.Equal("Short session lifetime", action.Title);
+        Assert.Equal(RiskActionStatus.Planned, action.Status);
+        Assert.Equal(bo, action.OwnerId);
+        Assert.Single(risk.Actions);
+    }
+
+    [Fact]
+    public void An_action_needs_a_title()
+    {
+        // Arrange
+        var risk = Create();
+
+        // Act
+        var error = Assert.Throws<DomainException>(() => risk.AddAction(" ", Anna, null, Anna, Monday));
+
+        // Assert
+        Assert.Equal("Give the action a title", error.Message);
+    }
+
+    [Fact]
+    public void Linking_a_story_puts_the_action_in_progress()
+    {
+        // Arrange
+        var risk = Create();
+        var action = risk.AddAction("Short session lifetime", Anna, null, Anna, Monday);
+
+        // Act
+        risk.LinkAction(action.Id, Guid.NewGuid(), null);
+
+        // Assert
+        Assert.Equal(RiskActionStatus.InProgress, action.Status);
+        Assert.Single(action.Links);
+    }
+
+    [Fact]
+    public void A_link_is_a_story_or_evidence_not_both()
+    {
+        // Arrange
+        var risk = Create();
+        var action = risk.AddAction("Short session lifetime", Anna, null, Anna, Monday);
+
+        // Act
+        var error = Assert.Throws<DomainException>(() => risk.LinkAction(action.Id, Guid.NewGuid(), Guid.NewGuid()));
+
+        // Assert
+        Assert.Equal("Choose a user story or evidence", error.Message);
+    }
+
+    [Fact]
+    public void An_action_is_done_only_with_proof()
+    {
+        // Arrange
+        var risk = Create();
+        var action = risk.AddAction("Short session lifetime", Anna, null, Anna, Monday);
+
+        // Act
+        var error = Assert.Throws<DomainException>(() => risk.CompleteAction(action.Id, hasProof: false, Anna, Monday));
+
+        // Assert
+        Assert.Equal("Link a done work item or evidence first", error.Message);
+        Assert.False(action.IsDone);
+    }
+
+    [Fact]
+    public void Completing_with_proof_keeps_who_and_when()
+    {
+        // Arrange
+        var risk = Create();
+        var action = risk.AddAction("Short session lifetime", Anna, null, Anna, Monday);
+
+        // Act
+        risk.CompleteAction(action.Id, hasProof: true, Anna, Monday.AddDays(3));
+
+        // Assert
+        Assert.True(action.IsDone);
+        Assert.Equal(Anna, action.DoneById);
+        Assert.Equal(Monday.AddDays(3), action.DoneAt);
+    }
+
+    [Fact]
+    public void Only_open_actions_past_their_due_date_are_overdue()
+    {
+        // Arrange
+        var risk = Create();
+        var late = risk.AddAction("Late", Anna, new DateOnly(2026, 11, 1), Anna, Monday);
+        risk.AddAction("Not yet", Anna, new DateOnly(2026, 12, 1), Anna, Monday);
+        var done = risk.AddAction("Done", Anna, new DateOnly(2026, 10, 1), Anna, Monday);
+        risk.CompleteAction(done.Id, hasProof: true, Anna, Monday);
+
+        // Act
+        var overdue = risk.OverdueActions(new DateOnly(2026, 11, 6));
+
+        // Assert
+        Assert.Equal(1, overdue);
+        Assert.True(late.IsOverdue(new DateOnly(2026, 11, 6)));
+    }
+
+    [Fact]
+    public void A_closed_risk_gets_no_new_actions()
+    {
+        // Arrange
+        var risk = Create();
+        risk.Close("No longer relevant", Monday);
+
+        // Act
+        var error = Assert.Throws<DomainException>(() => risk.AddAction("Too late", Anna, null, Anna, Monday));
+
+        // Assert
+        Assert.Equal("A closed risk cannot be changed", error.Message);
+    }
 }

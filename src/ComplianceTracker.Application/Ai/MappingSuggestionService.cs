@@ -69,7 +69,7 @@ namespace ComplianceTracker.Application.Ai
             IRequirementLinkRepository links,
             IRequirementApplicabilityRepository applicability,
             IMappingSuggestionRepository suggestions,
-            IEmbeddingModel embeddings,
+            IAiModels models,
             IRationaleQueue rationales,
             IWorkItemNotifier notifier,
             CurrentMember member,
@@ -85,7 +85,7 @@ namespace ComplianceTracker.Application.Ai
             _links = links;
             _applicability = applicability;
             _suggestions = suggestions;
-            _embeddings = embeddings;
+            _embeddings = models.Embedding(AiTask.Embedding); // US-117
             _rationales = rationales;
             _notifier = notifier;
             _member = member;

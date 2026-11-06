@@ -31,6 +31,9 @@ namespace ComplianceTracker.Application.Ai
 
         // US-059: evidence <-> requirement
         double MinimumScoreForEvidence { get; }
+
+        // US-116: fewer decisions than this give no measurement
+        int MinimumDecisionsForEvaluation { get; }
     }
 
     // The local AI cannot be reached or answered with an error. The message is shown to the user.
@@ -66,15 +69,22 @@ namespace ComplianceTracker.Application.Ai
         // the scores of approved and rejected suggestions (US-036 export).
         public double MinimumScoreForStories { get; set; } = 0.5;
         public double MinimumScoreForEvidence { get; set; } = 0.5;
+
+        // US-116: a measurement on fewer decisions than this says "too few decisions"
+        public int MinimumDecisionsForEvaluation { get; set; } = 50;
+
+        // US-117: a model per task, e.g. Ai:Tasks:Rationale:Model = "qwen2.5:14b"; a task not named uses the default
+        public Dictionary<string, AiTaskOptions> Tasks { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
 
     // The prompt for a rationale. Its version is stored with every suggestion, so results from different prompts
     // can be told apart (US-036 R3). Change the version whenever the text changes.
     public static class RationalePrompt
     {
-        public const string Version = "mapping-v1";
+        // mapping-v1 (US-020); mapping-v3 adds the project's purpose, scope, risks (US-060) and classification (US-061)
+        public const string Version = "mapping-v3";
 
-        public static string For(string storyTitle, string storyText, string requirementCode, string requirementText)
+        public static string For(string storyTitle, string storyText, string requirementCode, string requirementText, AiProjectContext? context = null)
             => $"""
                 You help a software team map their user stories to regulatory requirements.
                 In one or two short sentences, explain how the user story contributes to the requirement,
@@ -85,7 +95,7 @@ namespace ComplianceTracker.Application.Ai
 
                 User story "{storyTitle}":
                 {storyText}
-
+                {(context is null ? "" : "\n" + context.PromptText() + "\n")}
                 Rationale:
                 """;
     }

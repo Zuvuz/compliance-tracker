@@ -38,12 +38,14 @@ namespace ComplianceTracker.Domain.ActivityLog
             ActivityAction.RepositoryConnected or ActivityAction.WorkItemsSynced or ActivityAction.AccessTokenChanged
                 or ActivityAction.RequirementDocumentUploaded => ActivityGroup.WorkItems,
             ActivityAction.RequirementLinked or ActivityAction.RequirementUnlinked or ActivityAction.RequirementMarkedNotApplicable
-                or ActivityAction.RequirementMarkedApplicable => ActivityGroup.Requirements,
+                or ActivityAction.RequirementMarkedApplicable or ActivityAction.LinkReviewed or ActivityAction.ApplicabilitySuggested
+                or ActivityAction.ApplicabilitySuggestionAccepted or ActivityAction.ApplicabilitySuggestionRejected => ActivityGroup.Requirements,
             ActivityAction.EvidenceAdded or ActivityAction.EvidenceRemoved or ActivityAction.EvidenceLinked
                 or ActivityAction.EvidenceUnlinked or ActivityAction.EvidenceLinkSuggested or ActivityAction.EvidenceLinkApproved
                 or ActivityAction.EvidenceLinkRejected or ActivityAction.EvidenceSuggested or ActivityAction.EvidenceSuggestionAccepted
                 or ActivityAction.EvidenceSuggestionRejected => ActivityGroup.Evidence,
-            ActivityAction.RiskAdded or ActivityAction.RiskUpdated or ActivityAction.RiskReviewed => ActivityGroup.Risks,
+            ActivityAction.RiskAdded or ActivityAction.RiskUpdated or ActivityAction.RiskReviewed
+                or ActivityAction.RiskActionAdded or ActivityAction.RiskActionLinked or ActivityAction.RiskActionDone => ActivityGroup.Risks,
             ActivityAction.VulnerabilityRecorded or ActivityAction.IncidentRecorded or ActivityAction.SecurityReportSent
                 or ActivityAction.SecurityFixAvailable or ActivityAction.SecurityEventClosed
                 or ActivityAction.ScanImported or ActivityAction.FindingAccepted => ActivityGroup.SecurityEvents,

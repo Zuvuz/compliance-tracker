@@ -27,6 +27,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(s => s.EmbeddingModel).IsRequired().HasMaxLength(200);
             builder.Property(s => s.RationaleModel).HasMaxLength(200);
             builder.Property(s => s.PromptVersion).IsRequired().HasMaxLength(50);
+            builder.Property(s => s.ContextUsed).HasMaxLength(1000); // US-060
             builder.Ignore(s => s.IsPending);
 
             // Restrict: nothing a suggestion points at can be deleted; suggestions are the AI's audit trail

@@ -16,6 +16,7 @@ namespace ComplianceTracker.Domain.Risks
         public const int ReviewMonths = 12;
 
         private readonly List<RiskMeasure> _measures = new();
+        private readonly List<RiskAction> _actions = new();
 
         public Guid Id { get; } = Guid.NewGuid();
 
@@ -64,6 +65,12 @@ namespace ComplianceTracker.Domain.Risks
 
         // R5: the project's requirements and user stories that reduce the risk
         public IReadOnlyList<RiskMeasure> Measures => _measures;
+
+        // US-111: what the team does about the risk, with the work items and evidence that carry it out
+        public IReadOnlyList<RiskAction> Actions => _actions;
+
+        // US-111 R7: actions past their due date that are not done
+        public int OverdueActions(DateOnly today) => _actions.Count(a => a.IsOverdue(today));
 
         // R2: calculated, never typed
         public int Score => Likelihood * Impact;
@@ -182,6 +189,32 @@ namespace ComplianceTracker.Domain.Risks
                 ?? throw new DomainException("Measure not found");
             _measures.Remove(measure);
         }
+
+        // US-111 R1: the caller checks that the owner is a member of the organisation
+        public RiskAction AddAction(string title, Guid ownerId, DateOnly? dueOn, Guid userId, DateTime at)
+        {
+            EnsureNotClosed();
+            var action = new RiskAction(Id, title, ownerId, dueOn, userId, at);
+            _actions.Add(action);
+            return action;
+        }
+
+        // US-111 R2: the caller checks that the work item or evidence belongs to the project
+        public RiskActionLink LinkAction(Guid actionId, Guid? workItemId, Guid? evidenceId)
+        {
+            EnsureNotClosed();
+            return Action(actionId).Link(workItemId, evidenceId);
+        }
+
+        // US-111 R3
+        public void CompleteAction(Guid actionId, bool hasProof, Guid userId, DateTime at)
+        {
+            EnsureNotClosed();
+            Action(actionId).Complete(hasProof, userId, at);
+        }
+
+        public RiskAction Action(Guid actionId)
+            => _actions.FirstOrDefault(a => a.Id == actionId) ?? throw new DomainException("Action not found");
 
         public static RiskLevel LevelOf(int score) => score switch
         {

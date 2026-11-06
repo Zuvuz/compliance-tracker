@@ -147,6 +147,7 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** EU-forordninger er frit tilgængelige, så alle organisationer kan bruge dem uden at uploade noget. En migration med faste id'er giver samme data i alle miljøer og i testene. At udskyde kravene holder US-006 lille, så US-011 (frameworks på projekter) kan bygges ovenpå.
 - **Bygger på:** B18, som skelner mellem fælles og organisationens egne frameworks.
 - **Opdateret (US-043):** CRA har nu sine krav. Bilag I (22 krav) seedes på version 1 med den officielle tekst. AI Act har stadig ingen krav.
+- **Opdateret (US-062):** AI Act har nu 31 krav på version 1 (B58).
 
 ### B21 – Projekter vælger selv deres frameworkversion
 
@@ -638,6 +639,102 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Personlige (brugerejede) GitHub Projects.
   - Flere GitHub Projects til ét tracker-projekt.
   - **Kendt begrænsning:** GitHub kan ikke begrænse et token til ét Project; et token med læseadgang til projects kan læse alle organisationens projects. README anbefaler en maskinbruger, der kun er medlem af det ene projekt.
+
+### B53 – Gennemgang af links, når kravets tekst ændres i en ny version
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-110)
+  - Alt følger stadig med til kravet med samme kode, når et projekt skifter version (B41): links, "ikke relevant"-afgørelser og evidens.
+  - Er kravets titel eller tekst ændret (ses bort fra forskelle i mellemrum), markeres det overførte "Needs review". Uændrede krav overføres uden markering.
+  - Et link eller en evidens, der venter på gennemgang, tæller ikke. Kravet står som "Covered, needs review", til nogen har set på det.
+  - Rækken viser den gamle tekst overstreget over den nye. "Still correct" godkender alt på kravet på én gang og logges med hvem og hvornår. Det, der ikke passer længere, fjernes med det eksisterende kryds.
+  - Links og evidens kræver `LinkWork`. En "ikke relevant"-afgørelse kræver også `DecideCompliance`.
+  - Compliance-fanen har filteret "Needs review", og Overview viser antallet under "Needs attention".
+- **Begrundelse:** Et link, der var rigtigt for den gamle tekst, beviser ikke nødvendigvis den nye. Dækningen skal ikke se bedre ud, end den er (ISO 27001 A.8.32, 7.5.3).
+- **Fravalgt:**
+  - At gennemgå alt, der overføres. Det giver meget at klikke igennem for krav, der ikke er ændret.
+  - At AI'en vurderer, om linket stadig passer (kan komme med US-038).
+
+### B54 – Handlinger på risici, sporet til user stories og evidens
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-111)
+  - En risiko kan have handlinger med titel, ejer og en valgfri frist. De ligger på risikoens side under "Treatment actions" sammen med de user stories og den evidens, der udfører dem. Det er sporet fra risiko over handling til bevis.
+  - Handlingen er en del af risikoen, ligesom de eksisterende measures, som bliver ved med at vise, hvilke krav og stories der mindsker risikoen.
+  - En handling er "Planned", bliver "In progress", når noget kobles på, og kan kun markeres "Done", når en koblet user story er lukket eller en koblet evidens findes. Hvem og hvornår gemmes.
+  - Handlinger efter fristen vises på Risks-fanen og under "Needs attention" på Overview.
+  - Samme rolle som risikoregistret (`ManageRisks`). Alt logges.
+- **Begrundelse:** ISO 27001 6.1.3 og 8.3 kræver en plan for risikohåndtering og bevis for, at den udføres. CRA art. 13(2) kræver, at risikovurderingen holdes opdateret. Kravet om bevis forhindrer, at en handling står som udført uden spor.
+- **Fravalgt:**
+  - Behandlingsform pr. handling. Risikoen har allerede sin behandling (Reduce, Accept …).
+  - At residualniveauet kun kan sættes, når alle handlinger er udført. Det ville ændre eksisterende risici; det kan komme senere.
+  - At genåbne en handling, når en koblet story genåbnes.
+
+### B55 – Hvad AI'en får at vide om projektet, og "ikke relevant" som forslag
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-060, US-061)
+  - AI'ens begrundelse for et forslag får projektets formål, scope og klassificering under kravets eget regulativ. Den får også de åbne risici, hvis measures nævner kravet. Tomme felter skrives som "(not given)", så modellen ikke gætter.
+  - Hvert forslag gemmer, hvilken kontekst der blev brugt ("Context used: purpose, classification, risk 'Stolen sessions'"). Prompten hedder nu `mapping-v3`, så gamle og nye forslag kan sammenlignes (US-036).
+  - Krav, som en åben High- eller Critical-risiko nævner, får mærket "High risk", og deres forslag vises først.
+  - "Suggest not applicable" spørger den lokale chatmodel om de ikke-dækkede krav i ét regulativ, højst 20 pr. tryk. Kun et klart "NOT APPLICABLE: <grund>" bliver et forslag. Et krav med en åben risiko foreslås aldrig.
+  - Et forslag om "ikke relevant" bliver kun en afgørelse, når en person med `DecideCompliance` accepterer det. Grunden kan rettes først. Accepterede og afviste forslag gemmes med rolle.
+  - Ændres klassificeringen, erstattes ventende forslag for det regulativ. Afgørelser, der blev accepteret ud fra den gamle klassificering, vises med "Based on an earlier classification" og under "Needs attention", til nogen trykker "Still not applicable" eller gør kravet relevant igen.
+- **Begrundelse:** CRA art. 13(2)–(3) lader risikovurderingen afgøre, hvilke krav der gælder, og AI Act art. 6 gør det samme for klassen. AI'en kan foreslå, men et menneske beslutter (AI Act art. 14), og det skal kunne ses, hvad AI'en byggede på (art. 13).
+- **Fravalgt:**
+  - At sende konteksten til en ekstern model. Den bliver i organisationens egen infrastruktur (US-020 R2).
+  - At ændre selve embedding-scoren efter risiko. Kun rækkefølgen ændres.
+
+### B56 – En model pr. AI-opgave
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-117)
+  - AI'ens opgaver har hver sit navn: Embedding, Ranking, Rationale, EvidenceCheck, GapDrafts, RiskDrafts og ImportFill. Driften kan give hver opgave sin egen model i indstillingerne, `Ai:Tasks:<Opgave>:Model`. Den kan også få en anden server, `Ai:Tasks:<Opgave>:BaseUrl`, men stadig i organisationens egen infrastruktur.
+  - En opgave uden egen indstilling bruger standardmodellerne (`Ai:EmbeddingModel` og `Ai:ChatModel`), så intet ændrer sig, før driften vælger.
+  - I dag bruger forslag til user stories og evidens opgaven Embedding, begrundelser for story-forslag Rationale, og begrundelser for evidensforslag EvidenceCheck. De andre opgaver får deres model, når deres stories bygges.
+  - Hvert forslag gemmer stadig, hvilken model der lavede det.
+  - Kan en opgaves egen model ikke nås, siger fejlen hvilken ("Embedding is unavailable: the model … cannot be reached"). Opgaven falder ikke tilbage til en anden model, så en svagere model aldrig bruges, uden at nogen ved det.
+  - Systemsiden viser, hvilken model hver opgave bruger.
+  - Embeddings gemmes ikke. De beregnes, hver gang der foreslås, så et modelskift kræver ingen genberegning.
+- **Begrundelse:** De mange små kald (søgning) skal være hurtige, mens de få, der skriver tekst til mennesker, har gavn af en større model. Det skal kunne ses og måles (US-116), hvilken model der gjorde hvad (AI Act art. 12, art. 15).
+- **Fravalgt:**
+  - At organisationens admin vælger modeller i appen. Driften styrer modellerne, ligesom grænserne i B47.
+  - At falde tilbage til standardmodellen, når en opgaves egen model er nede.
+
+### B57 – Måling af AI'ens kvalitet på egne beslutninger
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-116)
+  - Driften (systemadministratoren) har en side "AI quality" under System. Den måler AI'en på de forslag, folk har godkendt og afvist (US-036), i de organisationer, der har slået deling til. Intet forlader infrastrukturen, og en måling ændrer ingen forslag eller links.
+  - Story-matching måles automatisk med opgaven Embeddings aktuelle model (US-117). For hvert godkendt forslag måles, hvor ofte kravet er blandt de første 1, 3 og 10 af alle krav i versionen. For hvert afvist forslag måles, om det stadig scorer over grænsen.
+  - Begrundelser vurderes af et menneske: op til 20 af de nyeste begrundelser får en karakter fra 1 til 5, og gennemsnittet gemmes.
+  - Hver kørsel gemmes med trin, model, prompt-version, antal beslutninger og hvem der kørte den. Siden sammenligner den nyeste story-matching med den forrige ("Top 3: 71 → 78 (better)").
+  - Under `Ai:MinimumDecisionsForEvaluation` beslutninger (standard 50) siger siden "Too few decisions to measure".
+- **Begrundelse:** Et modelskift skal besluttes ud fra målinger på organisationens egne data, ikke ud fra et gæt om, at en større model er bedre (AI Act art. 15, art. 17; ISO 27001 A.8.32).
+- **Fravalgt:**
+  - Måling af evidens-matching. Den følger samme mønster og kan komme senere.
+  - At skifte model automatisk ud fra resultatet.
+  - Offentlige benchmarks.
+
+### B58 – AI Act's krav i trackeren
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-062)
+  - Den indbyggede AI Act version 1 får 31 krav i fem grupper:
+    - AI literacy: art. 4.
+    - Forbudte praksisser: art. 5, stk. 1, litra a–h.
+    - Krav til højrisiko-systemer: art. 9–15.
+    - Udbyderens pligter: art. 16–20, 43, 47–49, 72 og 73.
+    - Gennemsigtighed: art. 50, stk. 1–4.
+  - Koderne følger forordningen (`Art. 9`, `Art. 5(1)(c)`, `Art. 50(2)`). Kravene er seed-data med faste id'er og vises med det samme for projekter, der allerede bruger AI Act.
+  - **Titel og beskrivelse er et resumé med egne ord, ikke den officielle tekst** (en afvigelse fra US-062 R2). Hvert krav linker til sin artikel på EUR-Lex, hvor den bindende tekst står. Beskrivelsen starter med, hvornår kravet gælder: art. 4 og 5 fra 2. februar 2025, højrisiko-kravene fra 2. august 2026 (2. august 2027 for systemer under bilag I) og art. 50 fra 2. august 2026.
+  - Pligterne for AI-modeller til almen brug (kapitel V) er ikke med. De gælder modeludbydere, ikke de produktteams, trackeren er lavet til.
+  - B20 er opdateret: AI Act har nu krav.
+- **Begrundelse:** Uden krav kunne et projekt følge AI Act, men ikke dække eller bevise noget. Resuméer på egne ord er korte nok til at matche med user stories, og de undgår at gengive den officielle tekst forkert fra hukommelsen. Linket til EUR-Lex giver altid den bindende tekst.
+- **Fravalgt:**
+  - Den officielle tekst som beskrivelse. Den kan komme i en ny version, når teksten hentes fra EUR-Lex og kontrolleres.
+  - Senere ændringer af forordningen (fx udskudte frister). De bliver en ny version (US-035 R7).
+  - Kapitel V (AI-modeller til almen brug).
 
 ### B59 – Scanningsresultater (SARIF) og fanen "Scans"
 

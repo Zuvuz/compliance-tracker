@@ -77,6 +77,8 @@ namespace ComplianceTracker.Infrastructure
             services.AddSingleton<ITestResultsReader, Compliance.TestResultsReader>();
             services.AddSingleton<IEvidenceTextReader, Compliance.EvidenceTextReader>();
             services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();
+            services.AddScoped<IApplicabilitySuggestionRepository, ApplicabilitySuggestionRepository>(); // US-060
+            services.AddScoped<IAiEvaluationRepository, AiEvaluationRepository>(); // US-116
             services.AddScoped<Application.Scanning.IScanRepository, ScanRepository>(); // US-078
             services.AddSingleton<Application.Scanning.IScanImporter, Scanning.SarifScanImporter>();
             services.AddScoped<IRiskRepository, RiskRepository>();
@@ -149,6 +151,10 @@ namespace ComplianceTracker.Infrastructure
 
             // US-083: keyed by provider name; the setting picks one (AiProviders)
             AiProviders.Add(services);
+
+            // US-117: a model per task; ConfiguredAiModels sets the address of each client
+            services.AddHttpClient(ConfiguredAiModels.HttpClientName);
+            services.AddTransient<IAiModels, ConfiguredAiModels>();
         }
     }
 }

@@ -66,6 +66,8 @@ namespace ComplianceTracker.Specs.Support
 
                 // US-020: not used by these tests, but the use cases must be creatable
                 services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();
+                services.AddScoped<IApplicabilitySuggestionRepository, ApplicabilitySuggestionRepository>(); // US-060
+                services.AddScoped<IAiEvaluationRepository, AiEvaluationRepository>(); // US-116
                 services.AddScoped<ComplianceTracker.Application.Scanning.IScanRepository, ScanRepository>(); // US-078
                 services.AddSingleton<ComplianceTracker.Application.Scanning.IScanImporter, ComplianceTracker.Infrastructure.Scanning.SarifScanImporter>();
                 services.AddScoped<IRiskRepository, RiskRepository>(); // US-042
@@ -77,6 +79,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddSingleton<IAiLimits>(provider => provider.GetRequiredService<FakeAi>()); // US-105
                 services.AddSingleton<IEmbeddingModel>(provider => provider.GetRequiredService<FakeAi>());
                 services.AddSingleton<IRationaleWriter>(provider => provider.GetRequiredService<FakeAi>());
+                services.AddSingleton<IAiModels>(provider => new FakeAiModels(provider.GetRequiredService<FakeAi>())); // US-117
                 services.AddSingleton<IRationaleQueue, NoRationaleQueue>();
                 services.AddSingleton<IWorkItemSource>(new GitHubWorkItemSource(new HttpClient { BaseAddress = new Uri("http://github.invalid/") }));
                 services.AddSingleton<IWorkItemNotifier, NoWorkItemNotifier>();

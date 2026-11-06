@@ -134,7 +134,7 @@ namespace ComplianceTracker.Specs.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/ComplianceTab.feature.ndjson", 16);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/ComplianceTab.feature.ndjson", 15);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -643,19 +643,19 @@ namespace ComplianceTracker.Specs.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="A framework without requirements says so")]
+        [global::Xunit.SkippableFactAttribute(DisplayName="The overview links to each regulation\'s coverage")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Compliance tab: requirements, links and coverage per regulation")]
-        [global::Xunit.TraitAttribute("Description", "A framework without requirements says so")]
+        [global::Xunit.TraitAttribute("Description", "The overview links to each regulation\'s coverage")]
         [global::Xunit.TraitAttribute("Category", "US-041")]
         [global::Xunit.TraitAttribute("Category", "integration")]
-        public async global::System.Threading.Tasks.Task AFrameworkWithoutRequirementsSaysSo()
+        public async global::System.Threading.Tasks.Task TheOverviewLinksToEachRegulationsCoverage()
         {
             string[] tagsOfScenario = new string[] {
                     "US-041",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "11";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A framework without requirements says so", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The overview links to each regulation\'s coverage", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 87
@@ -672,57 +672,13 @@ namespace ComplianceTracker.Specs.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 88
-    await testRunner.GivenAsync("\"AI Act – Regulation (EU) 2024/1689\" is switched on", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-#line hidden
-#line 89
-    await testRunner.AndAsync("\"Acme Portal\" uses \"AI Act – Regulation (EU) 2024/1689\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-#line 90
-    await testRunner.WhenAsync("I open the \"AI Act\" sub-tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
-#line 91
-    await testRunner.ThenAsync("I see \"This framework has no requirements in the tracker yet\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-#line hidden
-            }
-            await this.ScenarioCleanupAsync();
-        }
-        
-        [global::Xunit.SkippableFactAttribute(DisplayName="The overview links to each regulation\'s coverage")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Compliance tab: requirements, links and coverage per regulation")]
-        [global::Xunit.TraitAttribute("Description", "The overview links to each regulation\'s coverage")]
-        [global::Xunit.TraitAttribute("Category", "US-041")]
-        [global::Xunit.TraitAttribute("Category", "integration")]
-        public async global::System.Threading.Tasks.Task TheOverviewLinksToEachRegulationsCoverage()
-        {
-            string[] tagsOfScenario = new string[] {
-                    "US-041",
-                    "integration"};
-            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "12";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The overview links to each regulation\'s coverage", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
-            string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 94
-  this.ScenarioInitialize(scenarioInfo, ruleInfo);
-#line hidden
-            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
-            {
-                await testRunner.SkipScenarioAsync();
-            }
-            else
-            {
-                await this.ScenarioStartAsync();
-#line 7
-  await this.FeatureBackgroundAsync();
-#line hidden
-#line 95
     await testRunner.GivenAsync("the user story \"[US-004] Sign in with OpenID Connect\" is linked to the requiremen" +
                         "t \"SP-1\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 96
+#line 89
     await testRunner.WhenAsync("I open the \"Overview\" tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 97
+#line 90
     await testRunner.ThenAsync("the coverage summary shows \"Security policy 50 % (1 of 2 covered)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -742,11 +698,11 @@ namespace ComplianceTracker.Specs.Features
                     "iso27001-A.5.15",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "13";
+            string pickleIndex = "12";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Other organisations cannot see it", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 100
+#line 93
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -759,14 +715,14 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 101
+#line 94
     await testRunner.GivenAsync("\"Bo\" has created the organisation \"Beta ApS\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 102
+#line 95
     await testRunner.WhenAsync("\"Bo\" opens the address \"/Projects/Details/{id}/compliance/security-policy\" of \"Ac" +
                         "me Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 103
+#line 96
     await testRunner.ThenAsync("the page is not found", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }

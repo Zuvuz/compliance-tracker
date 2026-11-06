@@ -136,6 +136,22 @@ namespace ComplianceTracker.Domain.ActivityLog
         // "CRA: Important, class I (Annex III, class I, point 2: a password manager)".
         ProjectClassified,
 
+        // US-110: what was carried over to a requirement whose text changed was checked and is still correct.
+        // SubjectId points at the project; Details holds e.g. "A.5.1: still correct after the version change (2 checked)".
+        LinkReviewed,
+
+        // US-111: a treatment action of a risk. SubjectId points at the project; Details holds e.g.
+        // "Stolen sessions: Short session lifetime (owner Bo Berg, due 01-12-2026)" or "… ↔ #41 Session timeout".
+        RiskActionAdded,
+        RiskActionLinked,
+        RiskActionDone,
+
+        // US-060: the AI suggested that requirements do not apply, and a person accepted or rejected one. SubjectId points
+        // at the project; Details holds e.g. "3 not applicable suggested of 20 requirements checked" or "I.2(i): …".
+        ApplicabilitySuggested,
+        ApplicabilitySuggestionAccepted,
+        ApplicabilitySuggestionRejected,
+
         // US-078: a scan result was imported, or a finding accepted. SubjectId points at the project; Details holds e.g.
         // "Trivy: 3 new, 0 fixed, 3 open (1 critical)" or "CVE-2026-2222 accepted: not reachable in our use".
         ScanImported,
