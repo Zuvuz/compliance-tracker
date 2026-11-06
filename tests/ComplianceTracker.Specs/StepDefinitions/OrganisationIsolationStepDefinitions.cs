@@ -349,6 +349,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "invitationid" => ids.Invitation,
                 "measureid" => ids.Measure,
                 "eventid" => ids.SecurityEvent, // US-073
+                "scanid" => ids.Scan, // US-078
+                "findingid" => ids.Finding,
                 "documentid" => ids.Document,
                 "frameworkids" => ids.Framework,
                 "requirementids" => ids.CraRequirement,
@@ -367,10 +369,10 @@ namespace ComplianceTracker.Specs.StepDefinitions
         private sealed record Ids(
             Guid Organization, Guid Project, Guid Risk, Guid Measure, Guid Evidence, Guid WorkItem, Guid Link,
             Guid Document, Guid DocumentVersion, Guid Framework, Guid FrameworkVersion, Guid FrameworkRequirement,
-            Guid CraRequirement, Guid Member, Guid Invitation, Guid SecurityEvent)
+            Guid CraRequirement, Guid Member, Guid Invitation, Guid SecurityEvent, Guid Scan, Guid Finding)
         {
             public IEnumerable<Guid> All => [Organization, Project, Risk, Measure, Evidence, WorkItem, Link, Document,
-                DocumentVersion, Framework, FrameworkVersion, FrameworkRequirement, Member, Invitation, SecurityEvent];
+                DocumentVersion, Framework, FrameworkVersion, FrameworkRequirement, Member, Invitation, SecurityEvent, Scan, Finding];
         }
 
         private async Task<Ids> IdsAsync(string organisation)
@@ -400,7 +402,9 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 link.RequirementId,
                 org.Users.Single(u => u.Name == "Carl").Id,
                 await db.Invitations.Where(i => i.OrganizationId == org.Id).OrderByDescending(i => i.CreatedAt).Select(i => i.Id).FirstAsync(), // the open one, not Carl's used one
-                await db.SecurityEvents.Where(e => e.ProjectId == project.Id).Select(e => e.Id).SingleAsync()); // US-073
+                await db.SecurityEvents.Where(e => e.ProjectId == project.Id).Select(e => e.Id).SingleAsync(), // US-073
+                await db.Scans.Where(s => s.ProjectId == project.Id).Select(s => s.Id).SingleAsync(), // US-078
+                await db.Findings.Where(f => f.ProjectId == project.Id).OrderBy(f => f.RuleId).Select(f => f.Id).FirstAsync());
         }
 
         // A form token for the caller, from a page they may open (their own Users page)

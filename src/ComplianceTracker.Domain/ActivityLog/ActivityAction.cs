@@ -134,6 +134,11 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-026: a project was classified under a regulation. SubjectId points at the project; Details holds e.g.
         // "CRA: Important, class I (Annex III, class I, point 2: a password manager)".
-        ProjectClassified
+        ProjectClassified,
+
+        // US-078: a scan result was imported, or a finding accepted. SubjectId points at the project; Details holds e.g.
+        // "Trivy: 3 new, 0 fixed, 3 open (1 critical)" or "CVE-2026-2222 accepted: not reachable in our use".
+        ScanImported,
+        FindingAccepted
     }
 }

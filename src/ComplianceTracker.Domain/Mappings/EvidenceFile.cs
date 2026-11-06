@@ -20,7 +20,10 @@ namespace ComplianceTracker.Domain.Mappings
             [".jpeg"] = "image/jpeg",
             [".txt"] = "text/plain",
             [".csv"] = "text/csv",
-            [".md"] = "text/markdown"
+            [".md"] = "text/markdown",
+
+            // US-078 R5: a scan result (SARIF is JSON text)
+            [".sarif"] = "application/sarif+json"
         };
 
         private static readonly Dictionary<string, byte[]> Signatures = new()
@@ -64,7 +67,7 @@ namespace ComplianceTracker.Domain.Mappings
             // ASVS V5.2.2: both the extension and the content must agree, whatever the browser claims
             if (!ContentTypes.TryGetValue(Path.GetExtension(name), out var contentType) || !ContentMatches(contentType, content))
             {
-                throw new DomainException("Only PDF, PNG, JPG, TXT, CSV and Markdown files are allowed");
+                throw new DomainException("Only PDF, PNG, JPG, TXT, CSV, Markdown and SARIF files are allowed");
             }
 
             return new EvidenceFile(name, contentType, content);

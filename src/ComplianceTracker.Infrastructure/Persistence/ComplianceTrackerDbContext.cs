@@ -41,6 +41,11 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<EvidenceLinkSuggestion> EvidenceLinkSuggestions => Set<EvidenceLinkSuggestion>();
         public DbSet<EvidenceSuggestion> EvidenceSuggestions => Set<EvidenceSuggestion>(); // US-058
         public DbSet<MappingSuggestion> MappingSuggestions => Set<MappingSuggestion>();
+
+        // US-078
+        public DbSet<Domain.Scanning.Scan> Scans => Set<Domain.Scanning.Scan>();
+        public DbSet<Domain.Scanning.ScanFile> ScanFiles => Set<Domain.Scanning.ScanFile>();
+        public DbSet<Domain.Scanning.Finding> Findings => Set<Domain.Scanning.Finding>();
         public DbSet<Risk> Risks => Set<Risk>();
         public DbSet<ProjectClassification> ProjectClassifications => Set<ProjectClassification>(); // US-026
         public DbSet<Domain.Security.SecurityEvent> SecurityEvents => Set<Domain.Security.SecurityEvent>(); // US-073

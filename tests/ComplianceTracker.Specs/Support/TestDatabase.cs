@@ -79,6 +79,9 @@ namespace ComplianceTracker.Specs.Support
                 DELETE FROM "RiskMeasures";
                 DELETE FROM "Risks";
                 DELETE FROM "MappingSuggestions";
+                DELETE FROM "Findings";
+                DELETE FROM "ScanFiles";
+                DELETE FROM "Scans";
                 DELETE FROM "EvidenceSuggestions";
                 DELETE FROM "EvidenceLinkSuggestions";
                 DELETE FROM "EvidenceLinks";

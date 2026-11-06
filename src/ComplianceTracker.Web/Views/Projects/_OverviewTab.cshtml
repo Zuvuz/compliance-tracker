@@ -42,6 +42,12 @@
         attention.Add((Plural(suggestions, "AI suggestion", "AI suggestions"),
             ComplianceUrl(SubWhere(f => f.SuggestionCount > 0), ComplianceFilters.HasSuggestions)));
     }
+    // US-078: open high and critical findings from the scanners
+    if (Model.Scans is { OpenAtLeastHigh: > 0 } scanOverview)
+    {
+        attention.Add((Plural(scanOverview.OpenAtLeastHigh, "open high or critical finding", "open high or critical findings"),
+            Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Scans })!));
+    }
     if (withoutEvidence > 0)
     {
         attention.Add((Plural(withoutEvidence, "covered requirement without evidence", "covered requirements without evidence"),
