@@ -30,6 +30,11 @@ namespace ComplianceTracker.Specs.Support
 
         public Dictionary<string, List<FakeProject>> Organizations { get; } = new(StringComparer.OrdinalIgnoreCase);
 
+        // US-121: each repository's code scanning and Dependabot alerts, and sources that are switched off
+        public Dictionary<string, List<FakeAlert>> CodeScanningAlerts { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, List<FakeAlert>> DependabotAlerts { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> DependabotOff { get; } = new(StringComparer.OrdinalIgnoreCase);
+
         public List<FakeIssue> Repository(string name)
         {
             if (!_repositories.TryGetValue(name, out var issues))
@@ -87,6 +92,13 @@ namespace ComplianceTracker.Specs.Support
                 if (request.Method == HttpMethod.Post && path is ["graphql"])
                 {
                     return GraphQl(request);
+                }
+
+                // US-121: repos/{owner}/{name}/code-scanning/alerts and repos/{owner}/{name}/dependabot/alerts?state=…&page=…
+                if (request.Method == HttpMethod.Get && path.Length == 5 && path[0] == "repos" && path[4] == "alerts"
+                    && path[3] is "code-scanning" or "dependabot")
+                {
+                    return Alerts($"{path[1]}/{path[2]}", path[3], request.RequestUri);
                 }
 
                 // US-058: repos/{owner}/{name}/issues/{number}/timeline, with the pull request that closed the issue
@@ -181,6 +193,50 @@ namespace ComplianceTracker.Specs.Support
             }
         }
 
+        // US-121: GitHub's alert lists, one page; a switched-off Dependabot answers 403 like GitHub
+        private HttpResponseMessage Alerts(string repository, string kind, Uri uri)
+        {
+            if (kind == "dependabot" && DependabotOff.Contains(repository))
+            {
+                return new HttpResponseMessage(HttpStatusCode.Forbidden)
+                {
+                    Content = new StringContent("{\"message\":\"Dependabot alerts are disabled for this repository.\"}", Encoding.UTF8, "application/json")
+                };
+            }
+
+            var state = System.Web.HttpUtility.ParseQueryString(uri.Query)["state"] ?? "open";
+            var page = int.TryParse(System.Web.HttpUtility.ParseQueryString(uri.Query)["page"], out var p) ? p : 1;
+            var all = (kind == "dependabot" ? DependabotAlerts : CodeScanningAlerts).GetValueOrDefault(repository) ?? [];
+            var alerts = page > 1 ? [] : all.Where(a => a.State == state).ToList();
+
+            object body = kind == "dependabot"
+                ? alerts.Select(a => new
+                {
+                    number = a.Number,
+                    state = a.State,
+                    dismissed_reason = a.DismissedReason,
+                    dismissed_comment = (string?)null,
+                    security_advisory = new { ghsa_id = $"GHSA-{a.Number}", cve_id = a.RuleId, summary = a.Message, severity = a.Severity },
+                    security_vulnerability = new { severity = a.Severity, package = new { ecosystem = "npm", name = "left-pad" } },
+                    dependency = new { manifest_path = "package-lock.json" }
+                })
+                : alerts.Select(a => new
+                {
+                    number = a.Number,
+                    state = a.State,
+                    dismissed_reason = a.DismissedReason,
+                    dismissed_comment = (string?)null,
+                    rule = new { id = a.RuleId, severity = "error", security_severity_level = a.Severity, description = a.Message },
+                    tool = new { name = a.Tool },
+                    most_recent_instance = new { message = new { text = a.Message }, location = new { path = "src/App.cs", start_line = 10 } }
+                });
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json")
+            };
+        }
+
         // US-107: answers the two queries the adapter sends: the organisation's projects, and one project's items
         private HttpResponseMessage GraphQl(HttpRequestMessage request)
         {
@@ -267,6 +323,18 @@ namespace ComplianceTracker.Specs.Support
         public int Number { get; init; }
         public string Title { get; init; } = "";
         public List<(string Repository, FakeIssue Issue)> Items { get; } = new();
+    }
+
+    // US-121: an alert of a repository; State is "open", "dismissed" or "fixed"
+    public sealed class FakeAlert
+    {
+        public int Number { get; init; }
+        public string Tool { get; init; } = "CodeQL";
+        public string RuleId { get; init; } = "";
+        public string Severity { get; init; } = "high";
+        public string Message { get; init; } = "";
+        public string State { get; set; } = "open";
+        public string? DismissedReason { get; set; }
     }
 
     // US-063: an issue the feedback writer created

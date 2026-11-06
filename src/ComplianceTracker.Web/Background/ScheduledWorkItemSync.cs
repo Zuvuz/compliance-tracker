@@ -34,6 +34,9 @@ namespace ComplianceTracker.Web.Background
                     // A new scope per run, like a request: its own DbContext and unit of work
                     using var scope = _scopes.CreateScope();
                     await scope.ServiceProvider.GetRequiredService<WorkItemSyncService>().SyncAllAsync(stoppingToken);
+
+                    // US-121 R6: the security alerts of the linked repositories, with the same schedule
+                    await scope.ServiceProvider.GetRequiredService<Application.Scanning.ScanService>().FetchAllFromGitHubAsync(stoppingToken);
                 }
                 catch (Exception error) when (error is not OperationCanceledException)
                 {
