@@ -413,4 +413,40 @@ public class RecentStoriesEdgeCaseTests
         // Assert
         Assert.Equal(average, run.AverageGrade);
     }
+
+    // ---------------------------------------------------------- US-130: leaving a project out of AI improvement
+
+    private static ComplianceTracker.Domain.Projects.Project Project(
+        ComplianceTracker.Domain.Projects.LifecyclePhase phase = ComplianceTracker.Domain.Projects.LifecyclePhase.Planning)
+        => ComplianceTracker.Domain.Projects.Project.Create(Guid.NewGuid(), "Acme Portal", null, "Purpose", null, phase);
+
+    [Fact]
+    public void Leaving_a_project_out_keeps_who_and_when_and_the_same_choice_twice_changes_nothing()
+    {
+        // Arrange
+        var project = Project();
+
+        // Act
+        var first = project.SetExcludedFromAiSharing(true, Anna, Monday);
+        var again = project.SetExcludedFromAiSharing(true, Anna, Monday.AddDays(1));
+
+        // Assert
+        Assert.NotNull(first);
+        Assert.Null(again);
+        Assert.True(project.ExcludedFromAiSharing);
+        Assert.Equal(Monday, project.AiSharingChangedAt);
+    }
+
+    [Fact]
+    public void A_project_at_end_of_support_can_still_be_left_out()
+    {
+        // Arrange
+        var project = Project(ComplianceTracker.Domain.Projects.LifecyclePhase.EndOfSupport);
+
+        // Act
+        var change = project.SetExcludedFromAiSharing(true, Anna, Monday);
+
+        // Assert
+        Assert.NotNull(change);
+    }
 }

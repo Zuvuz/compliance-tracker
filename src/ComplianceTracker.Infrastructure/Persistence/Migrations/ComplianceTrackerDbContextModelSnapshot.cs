@@ -2476,6 +2476,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<bool>("ShareAiFeedback")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTime?>("ShareAiFeedbackSince")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Size")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -2494,12 +2497,21 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("AiSharingChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("AiSharingChangedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateOnly?>("EndOfSupportOn")
                         .HasColumnType("date");
+
+                    b.Property<bool>("ExcludedFromAiSharing")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("IntendedPurpose")
                         .IsRequired()

@@ -37,6 +37,7 @@ namespace ComplianceTracker.Web.Controllers
                 return Forbid(); // US-045 R2
             }
 
+            ViewData["SharedCount"] = await _aiFeedback.SharedCountAsync(cancellationToken); // US-130 R6
             return View(organization);
         }
 
@@ -48,16 +49,6 @@ namespace ComplianceTracker.Web.Controllers
         {
             await _aiFeedback.SetSharingAsync(share, cancellationToken);
             return RedirectToAction(nameof(Index));
-        }
-
-        // POST /Settings/ExportAiFeedback: US-036 R7–R9. JSON Lines, one decision per line, without names.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [OnDomainError(nameof(Index))]
-        public async Task<IActionResult> ExportAiFeedback(CancellationToken cancellationToken)
-        {
-            var lines = await _aiFeedback.ExportAsync(cancellationToken);
-            return File(System.Text.Encoding.UTF8.GetBytes(lines), "application/x-ndjson", "ai-feedback.jsonl");
         }
     }
 }

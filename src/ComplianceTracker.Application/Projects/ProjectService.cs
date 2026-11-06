@@ -169,6 +169,23 @@ namespace ComplianceTracker.Application.Projects
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        // US-130 R4: leave a confidential project out of AI improvement (EditProjects), logged
+        public async Task SetExcludedFromAiSharingAsync(Guid projectId, bool excluded, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
+            var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
+                ?? throw new DomainException("Project not found");
+
+            var change = project.SetExcludedFromAiSharing(excluded, user.Id, Now);
+            if (change is null)
+            {
+                return;
+            }
+
+            await _log.LogAsync(ActivityAction.ProjectAiSharingChanged, project.Id, change.ToString(), cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
         // US-025 R2, R3, R5: set or move the support end date, logged with old and new
         public async Task SetSupportPeriodAsync(Guid projectId, DateOnly endsOn, string? reason, CancellationToken cancellationToken = default)
         {
