@@ -40,6 +40,11 @@ namespace ComplianceTracker.Specs.StepDefinitions
             => Assert.Equal(new[] { a, b, c, d, e },
                 Regulation(framework).QuerySelectorAll("select[name=classCode] option").Select(o => o.TextContent.Trim()));
 
+        // #52: the browser stops the form while the reason is empty (the server still checks it)
+        [Then("the classify form for {string} needs a reason")]
+        public void ThenTheClassifyFormNeedsAReason(string framework)
+            => Assert.True(Regulation(framework).QuerySelector("form.classify-form textarea[name=reason]")!.HasAttribute("required"));
+
         [Then("the guide for {string} names {string}")]
         public void ThenTheGuideNames(string framework, string text)
             => Assert.Contains(text, Regulation(framework).QuerySelector(".classification-guide")!.TextContent);
