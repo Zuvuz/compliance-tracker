@@ -36,6 +36,7 @@ namespace ComplianceTracker.Application.Risks
         private readonly IProjectRepository _projects;
         private readonly IRiskRepository _risks;
         private readonly ComplianceQueries _compliance;
+        private readonly IEvidenceRepository _evidence;
         private readonly CurrentMember _member;
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
@@ -45,11 +46,13 @@ namespace ComplianceTracker.Application.Risks
             IProjectRepository projects,
             IRiskRepository risks,
             ComplianceQueries compliance,
+            IEvidenceRepository evidence,
             CurrentMember member,
             IActivityLogger log,
             IUnitOfWork unitOfWork,
             TimeProvider clock)
         {
+            _evidence = evidence;
             _projects = projects;
             _risks = risks;
             _compliance = compliance;
@@ -148,6 +151,67 @@ namespace ComplianceTracker.Application.Risks
             var (organization, _, project, risk) = await RiskAsync(projectId, riskId, cancellationToken);
             risk.RemoveMeasure(measureId);
             await LogChangeAsync(organization, project, risk, [new ProjectChange("Measure", "linked", "")], cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // ---------------------------------------------------------- Treatment actions (US-111)
+
+        // R1: an action with an owner from the organisation and an optional due date
+        public async Task<RiskAction> AddActionAsync(
+            Guid projectId, Guid riskId, string title, Guid ownerId, DateOnly? dueOn, CancellationToken cancellationToken = default)
+        {
+            var (organization, userId, project, risk) = await RiskAsync(projectId, riskId, cancellationToken);
+            EnsureMember(organization, ownerId);
+
+            var action = risk.AddAction(title, ownerId, dueOn, userId, Now);
+            var owner = organization.Users.First(u => u.Id == ownerId).Name;
+            await _log.LogAsync(ActivityAction.RiskActionAdded, project.Id,
+                $"{risk.Title}: {action.Title} (owner {owner}{(dueOn is { } due ? $", due {due:dd-MM-yyyy}" : "")})", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return action;
+        }
+
+        // R2: one of the project's work items, or one of its pieces of evidence
+        public async Task LinkActionAsync(
+            Guid projectId, Guid riskId, Guid actionId, Guid? workItemId, Guid? evidenceId, CancellationToken cancellationToken = default)
+        {
+            var (_, _, project, risk) = await RiskAsync(projectId, riskId, cancellationToken);
+            string name;
+            if (workItemId is { } wid)
+            {
+                var compliance = await _compliance.ForProjectAsync(project.Id, cancellationToken)
+                    ?? throw new DomainException("Project not found");
+                name = compliance.WorkItems.FirstOrDefault(w => w.Id == wid)?.Title ?? throw new DomainException("User story not found");
+            }
+            else
+            {
+                name = (evidenceId is { } eid ? await _evidence.GetAsync(project.Id, eid, cancellationToken) : null)?.Title
+                    ?? throw new DomainException("Evidence not found");
+            }
+
+            var action = risk.Action(actionId);
+            risk.LinkAction(actionId, workItemId, evidenceId);
+            await _log.LogAsync(ActivityAction.RiskActionLinked, project.Id, $"{risk.Title}: {action.Title} ↔ {name}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // R3: done only when a linked work item is closed, or a linked evidence is still there
+        public async Task CompleteActionAsync(Guid projectId, Guid riskId, Guid actionId, CancellationToken cancellationToken = default)
+        {
+            var (_, userId, project, risk) = await RiskAsync(projectId, riskId, cancellationToken);
+            var action = risk.Action(actionId);
+
+            var closed = action.Links.Any(l => l.WorkItemId is not null)
+                ? ((await _compliance.ForProjectAsync(project.Id, cancellationToken))?.WorkItems ?? [])
+                    .Where(w => w.State == Domain.WorkItems.WorkItemState.Closed).Select(w => w.Id).ToHashSet()
+                : [];
+            var evidence = action.Links.Any(l => l.EvidenceId is not null)
+                ? (await _evidence.ListActiveAsync(project.Id, cancellationToken)).Select(e => e.Id).ToHashSet()
+                : [];
+            var hasProof = action.Links.Any(l => l.WorkItemId is { } w && closed.Contains(w) || l.EvidenceId is { } e && evidence.Contains(e));
+
+            risk.CompleteAction(actionId, hasProof, userId, Now);
+            await _log.LogAsync(ActivityAction.RiskActionDone, project.Id, $"{risk.Title}: {action.Title}", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 

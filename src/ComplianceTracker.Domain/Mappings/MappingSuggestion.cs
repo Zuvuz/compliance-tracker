@@ -27,6 +27,9 @@ namespace ComplianceTracker.Domain.Mappings
         public string? RationaleModel { get; private set; }
         public string PromptVersion { get; private set; } = "";
 
+        // US-060: what the AI was told about the project for the rationale, e.g. "purpose, scope, risk 'Stolen sessions'"
+        public string? ContextUsed { get; private set; }
+
         // US-105 R5: the minimum score in force when it was made, so old and new suggestions can be compared
         public double MinimumScore { get; private set; }
 
@@ -63,7 +66,7 @@ namespace ComplianceTracker.Domain.Mappings
             };
 
         // The chat model's short explanation; written once
-        public void SetRationale(string rationale, string model)
+        public void SetRationale(string rationale, string model, string? contextUsed = null)
         {
             if (Rationale is not null)
             {
@@ -72,6 +75,7 @@ namespace ComplianceTracker.Domain.Mappings
 
             Rationale = Cut(rationale.Trim(), 1000);
             RationaleModel = model;
+            ContextUsed = string.IsNullOrWhiteSpace(contextUsed) ? null : Cut(contextUsed, 1000);
         }
 
         // US-020 R6: the caller creates the link

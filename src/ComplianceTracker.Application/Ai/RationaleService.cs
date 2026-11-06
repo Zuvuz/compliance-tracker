@@ -19,6 +19,8 @@ namespace ComplianceTracker.Application.Ai
         private readonly IEvidenceLinkSuggestionRepository _evidenceSuggestions;
         private readonly IEvidenceRepository _evidence;
         private readonly IEvidenceTextReader _evidenceText;
+        private readonly Projects.IProjectRepository _projects;
+        private readonly AiContextBuilder _context;
 
         public RationaleService(
             IMappingSuggestionRepository suggestions,
@@ -29,8 +31,12 @@ namespace ComplianceTracker.Application.Ai
             IUnitOfWork unitOfWork,
             IEvidenceLinkSuggestionRepository evidenceSuggestions,
             IEvidenceRepository evidence,
-            IEvidenceTextReader evidenceText)
+            IEvidenceTextReader evidenceText,
+            Projects.IProjectRepository projects,
+            AiContextBuilder context)
         {
+            _projects = projects;
+            _context = context;
             _evidenceSuggestions = evidenceSuggestions;
             _evidence = evidence;
             _evidenceText = evidenceText;
@@ -58,9 +64,12 @@ namespace ComplianceTracker.Application.Ai
                 }
                 else
                 {
+                    // US-060, US-061: the project's purpose, scope, risks and classification
+                    var project = await _projects.GetForSyncAsync(suggestion.ProjectId, cancellationToken);
+                    var context = project is null ? null : await _context.ForAsync(project, requirement, cancellationToken);
                     var prompt = RationalePrompt.For(story.Title, MappingSuggestionService.StoryText(story),
-                        requirement.Code, MappingSuggestionService.RequirementText(requirement));
-                    suggestion.SetRationale(await _writer.WriteAsync(prompt, cancellationToken), _writer.Name);
+                        requirement.Code, MappingSuggestionService.RequirementText(requirement), context);
+                    suggestion.SetRationale(await _writer.WriteAsync(prompt, cancellationToken), _writer.Name, context?.Used);
                 }
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);

@@ -20,6 +20,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public Task GivenIsClassified(string project, string framework, string classTitle)
             => ClassifyAsync(project, framework, classTitle, "The first assessment");
 
+        [Given("I classify {string} under {string} as {string} because {string}")]
         [When("I classify {string} under {string} as {string} because {string}")]
         public Task WhenIClassify(string project, string framework, string classTitle, string reason)
             => ClassifyAsync(project, framework, classTitle, reason);

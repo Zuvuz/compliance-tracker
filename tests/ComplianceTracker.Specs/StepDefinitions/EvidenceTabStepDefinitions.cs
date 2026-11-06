@@ -115,6 +115,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         // ---------------------------------------------------------- When
 
+        [Given("I upload the evidence {string} with the file {string} on the Evidence tab of {string}")]
         [When("I upload the evidence {string} with the file {string} on the Evidence tab of {string}")]
         public async Task WhenIUploadTheEvidence(string title, string fileName, string project)
         {

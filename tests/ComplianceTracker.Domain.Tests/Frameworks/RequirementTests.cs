@@ -199,4 +199,35 @@ public class RequirementTests
         Assert.Same(second, framework.CurrentVersion(Today));
         Assert.True(first.IsActive);
     }
+
+    // ---------------------------------------------------------- US-110: has the text changed?
+
+    [Fact]
+    public void The_same_title_and_text_with_other_whitespace_is_the_same_text()
+    {
+        // Arrange
+        var version = CreateFramework().LatestVersion;
+        var before = version.AddRequirement("A.5.1", "Policies", "Rules  for\nsecurity");
+        var after = version.AddRequirement("A.5.2", " Policies ", "Rules for security");
+
+        // Act
+        var same = before.HasSameTextAs(after);
+
+        // Assert
+        Assert.True(same);
+    }
+
+    [Fact]
+    public void A_changed_title_or_text_is_not_the_same_text()
+    {
+        // Arrange
+        var version = CreateFramework().LatestVersion;
+        var before = version.AddRequirement("A.5.1", "Policies", "Rules for security");
+        var newTitle = version.AddRequirement("A.5.2", "Policies and review", "Rules for security");
+        var newText = version.AddRequirement("A.5.3", "Policies", "Rules for security, reviewed yearly");
+
+        // Act and Assert
+        Assert.False(before.HasSameTextAs(newTitle));
+        Assert.False(before.HasSameTextAs(newText));
+    }
 }
