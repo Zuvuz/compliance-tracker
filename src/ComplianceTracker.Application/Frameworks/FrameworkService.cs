@@ -126,7 +126,19 @@ namespace ComplianceTracker.Application.Frameworks
             version.Activate(user.Id, Now, user.Role);
 
             // US-035 R8: the start date is logged with the activation
-            var details = version.AppliesFrom is { } from ? $"Applies from {from:dd-MM-yyyy}" : null;
+            // US-070 R5: the extraction check's numbers, also when a warning was shown (not for a PDF without text)
+            var parts = new List<string>();
+            if (version.AppliesFrom is { } from)
+            {
+                parts.Add($"Applies from {from:dd-MM-yyyy}");
+            }
+
+            if (version.Extraction is { PagesWithText: > 0 } check)
+            {
+                parts.Add($"{version.FileName}: {check.Summary}");
+            }
+
+            var details = parts.Count > 0 ? string.Join("; ", parts) : null;
             await _log.LogAsync(ActivityAction.CatalogActivated, version.Id, details, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
@@ -160,10 +172,14 @@ namespace ComplianceTracker.Application.Frameworks
         // R1: the requirements found in the PDF become the draft's rows
         private void AddFoundRequirements(FrameworkVersion version, CatalogFile file)
         {
-            foreach (var found in _extractor.Extract(file.Content))
+            var result = _extractor.Extract(file.Content);
+            foreach (var found in result.Requirements)
             {
                 version.AddRequirement(found.Code, found.Title, found.Description);
             }
+
+            // US-070 R1
+            version.RecordExtraction(result.Check);
         }
 
         // US-006: switches a built-in framework on for the organisation (R2, R3).

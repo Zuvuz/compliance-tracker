@@ -17,13 +17,13 @@ namespace ComplianceTracker.Specs.Support
             => web.OpenAsync($"/Frameworks/Version/{versionId}");
 
         // Adds a requirement on the open draft page, like typing it into the "Add requirement" row
-        public static async Task AddRequirementAsync(WebScenario web, string versionId, string code, string title)
+        public static async Task AddRequirementAsync(WebScenario web, string versionId, string code, string title, string description = "")
             => await web.PostFormAsync("/Frameworks/AddRequirement", new Dictionary<string, string>
             {
                 ["versionId"] = versionId,
                 ["code"] = code,
                 ["title"] = title,
-                ["description"] = ""
+                ["description"] = description
             });
 
         public static Task ActivateAsync(WebScenario web, string versionId)
