@@ -11,7 +11,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
     // UI contract: on the Product requirements tab (_ProductRequirementsTab.cshtml, _WorkItems.cshtml) #suggest-mappings and per story
     // .show-more-suggestions; on the Compliance tab (_ComplianceTab.cshtml, US-044) .ai-suggestion with data-story and
     // data-code, .suggestion-score, .suggestion-rationale and the forms .approve-suggestion and .reject-suggestion
-    // (reason, comment); on the Settings page #set-ai-sharing and #export-ai-feedback.
+    // (reason, comment); on the Settings page #set-ai-sharing and #ai-sharing-state.
     [Binding]
     public class AiSuggestionsStepDefinitions
     {
@@ -19,7 +19,6 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         private readonly WebScenario _web;
         private readonly FakeAi _ai;
-        private string? _export;
 
         public AiSuggestionsStepDefinitions(WebScenario web, FakeAi ai)
         {
@@ -118,6 +117,11 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task WhenISwitchOnSharing()
         {
             await _web.OpenAsync("/Settings");
+            if (_web.Page!.QuerySelector("#ai-sharing-state")?.TextContent.Trim() == "On")
+            {
+                return; // US-130: on by default
+            }
+
             var form = _web.Page!.QuerySelector("form#set-ai-sharing")
                 ?? throw new Xunit.Sdk.XunitException("The organisation page has no AI sharing switch.");
             await _web.PostFormAsync(form.GetAttribute("action")!, HiddenFields(form));
@@ -125,25 +129,6 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         // A file comes back when it works; otherwise the organisation page with the error
-        [When("I export the AI feedback")]
-        public async Task WhenIExportTheAiFeedback()
-        {
-            await _web.OpenAsync("/Settings");
-            var form = _web.Page!.QuerySelector("form#export-ai-feedback")!;
-            var fields = new Dictionary<string, string> { ["__RequestVerificationToken"] = _web.AntiforgeryToken() };
-            var response = await _web.Client.PostAsync(form.GetAttribute("action")!, new FormUrlEncodedContent(fields));
-
-            if (response.Content.Headers.ContentType?.MediaType == "application/x-ndjson")
-            {
-                _export = await response.Content.ReadAsStringAsync();
-            }
-            else
-            {
-                _web.Response = response;
-                _web.Page = await WebScenario.ParseAsync(response);
-            }
-        }
-
         // ---------------------------------------------------------- Then
 
         [Then("I see the suggestion {string} for {string} with score {string} marked {string}")]
@@ -237,35 +222,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
             });
         }
 
-        [Then("the export has {int} line with the requirement, the user story, the score and the decision {string}")]
-        public void ThenTheExportHas(int count, string decision)
-        {
-            Assert.NotNull(_export);
-            var lines = _export!.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            Assert.Equal(count, lines.Length);
-
-            using var json = JsonDocument.Parse(lines[0]);
-            Assert.StartsWith("SP-1", json.RootElement.GetProperty("requirement").GetString());
-            Assert.StartsWith("[US-004]", json.RootElement.GetProperty("story").GetString());
-            Assert.True(json.RootElement.GetProperty("score").GetDouble() > 0);
-            Assert.Equal(decision, json.RootElement.GetProperty("decision").GetString());
-        }
-
         // R7: no field about the person who decided, and no e-mail addresses. Names written into a story's own
         // text are part of the story and stay.
-        [Then("the export does not say who decided")]
-        public void ThenTheExportDoesNotSayWhoDecided()
-        {
-            foreach (var line in _export!.Split('\n', StringSplitOptions.RemoveEmptyEntries))
-            {
-                using var json = JsonDocument.Parse(line);
-                var names = json.RootElement.EnumerateObject().Select(p => p.Name.ToLowerInvariant()).ToList();
-                Assert.DoesNotContain(names, n => n.Contains("user") || n.Contains("email") || n.Contains("decidedby"));
-            }
-
-            Assert.DoesNotContain("@", _export!);
-        }
-
         // ---------------------------------------------------------- Helpers
 
         private async Task OpenUserStoriesAsync(string projectName)

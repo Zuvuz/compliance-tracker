@@ -20,6 +20,8 @@ namespace ComplianceTracker.Application.Ai
         private readonly CurrentMember _member;
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly TimeProvider _clock;
+        private readonly IProjectRepository _projects;
 
         public AiFeedbackService(
             IMappingSuggestionRepository suggestions,
@@ -27,8 +29,12 @@ namespace ComplianceTracker.Application.Ai
             IWorkItemRepository workItems,
             CurrentMember member,
             IActivityLogger log,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            TimeProvider clock,
+            IProjectRepository projects)
         {
+            _clock = clock;
+            _projects = projects;
             _suggestions = suggestions;
             _frameworks = frameworks;
             _workItems = workItems;
@@ -41,7 +47,7 @@ namespace ComplianceTracker.Application.Ai
         public async Task SetSharingAsync(bool share, CancellationToken cancellationToken = default)
         {
             var (organization, user) = await _member.RequireAsync(Permission.ManageAiSharing, cancellationToken);
-            if (organization.SetShareAiFeedback(share, user.Id))
+            if (organization.SetShareAiFeedback(share, user.Id, _clock.GetUtcNow().UtcDateTime))
             {
                 await _log.LogAsync(ActivityAction.AiFeedbackSharingChanged, organization.Id, share ? "Sharing on" : "Sharing off", cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -49,59 +55,14 @@ namespace ComplianceTracker.Application.Ai
         }
 
         // R7–R9: the decided suggestions as JSON Lines, without names or e-mails. Only for an Admin, only while sharing is on.
-        public async Task<string> ExportAsync(CancellationToken cancellationToken = default)
+        // US-130 R6: how many of the organisation's decisions may be used to improve the AI; organisations cannot export
+        // them for their own models (only the system owner trains, US-123)
+        public async Task<int> SharedCountAsync(CancellationToken cancellationToken = default)
         {
-            var (organization, user) = await _member.RequireAsync(Permission.ManageAiSharing, cancellationToken);
-            if (user.Role != UserRole.Admin)
-            {
-                throw new DomainException("Only an Admin can export AI feedback");
-            }
-
-            if (!organization.ShareAiFeedback)
-            {
-                throw new DomainException("Sharing is off");
-            }
-
-            var lines = new StringBuilder();
-            var count = 0;
-            var stories = new Dictionary<Guid, IReadOnlyList<Domain.WorkItems.WorkItem>>();
-            foreach (var suggestion in await _suggestions.ListDecidedAsync(organization.Id, cancellationToken))
-            {
-                if (!stories.TryGetValue(suggestion.ProjectId, out var projectStories))
-                {
-                    projectStories = await _workItems.ListAsync(suggestion.ProjectId, cancellationToken);
-                    stories[suggestion.ProjectId] = projectStories;
-                }
-
-                var story = projectStories.FirstOrDefault(w => w.Id == suggestion.WorkItemId);
-                var requirement = await _frameworks.GetRequirementAsync(suggestion.RequirementId, cancellationToken);
-                if (story is null || requirement is null)
-                {
-                    continue;
-                }
-
-                lines.AppendLine(JsonSerializer.Serialize(new
-                {
-                    requirement = MappingSuggestionService.RequirementText(requirement),
-                    story = MappingSuggestionService.StoryText(story),
-                    score = suggestion.Score,
-                    rank = suggestion.Rank,
-                    rationale = suggestion.Rationale,
-                    decision = suggestion.Status.ToString(),
-                    reason = suggestion.RejectionReason?.ToString(),
-                    comment = suggestion.Comment,
-                    embeddingModel = suggestion.EmbeddingModel,
-                    rationaleModel = suggestion.RationaleModel,
-                    promptVersion = suggestion.PromptVersion,
-                    suggestedAt = suggestion.CreatedAt,
-                    decidedAt = suggestion.DecidedAt
-                }));
-                count++;
-            }
-
-            await _log.LogAsync(ActivityAction.AiFeedbackExported, organization.Id, $"{count} lines", cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-            return lines.ToString();
+            var (organization, _) = await _member.RequireAsync(Permission.ManageAiSharing, cancellationToken);
+            var excluded = (await _projects.ListAsync(organization.Id, cancellationToken))
+                .Where(p => p.ExcludedFromAiSharing).Select(p => p.Id).ToHashSet();
+            return (await _suggestions.ListDecidedAsync(organization.Id, cancellationToken)).Count(d => AiSharing.MayUse(organization, excluded, d));
         }
     }
 }

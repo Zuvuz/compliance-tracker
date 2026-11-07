@@ -310,12 +310,15 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.GivenAsync("I have approved the suggestion \"SP-1\" for \"[US-004] Sign in with OpenID Connect\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 37
-    await testRunner.AndAsync("I am signed in as the system admin \"Sys\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("\"Acme ApS\" does not share its decisions", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 38
-    await testRunner.WhenAsync("I measure story matching", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.AndAsync("I am signed in as the system admin \"Sys\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 39
+    await testRunner.WhenAsync("I measure story matching", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 40
     await testRunner.ThenAsync("I see the error \"Too few decisions to measure: 0 of at least 1\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -339,7 +342,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Compare two models", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 42
+#line 43
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -352,28 +355,28 @@ namespace ComplianceTracker.Specs.Features
 #line 5
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 43
+#line 44
     await testRunner.GivenAsync("I have approved the suggestion \"SP-1\" for \"[US-004] Sign in with OpenID Connect\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 44
+#line 45
     await testRunner.AndAsync("\"Acme ApS\" shares its decisions to improve the AI", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 45
+#line 46
     await testRunner.AndAsync("I am signed in as the system admin \"Sys\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 46
+#line 47
     await testRunner.AndAsync("I have measured story matching", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 47
+#line 48
     await testRunner.AndAsync("the AI task \"Embedding\" has its own model \"big-embed\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 48
+#line 49
     await testRunner.WhenAsync("I measure story matching", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 49
+#line 50
     await testRunner.ThenAsync("the comparison says \"fake-embed → big-embed\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 50
+#line 51
     await testRunner.AndAsync("the comparison says \"Top 1: 100 → 100 (the same)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -397,7 +400,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A person grades the rationales", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 53
+#line 54
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -410,19 +413,19 @@ namespace ComplianceTracker.Specs.Features
 #line 5
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 54
+#line 55
     await testRunner.GivenAsync("I have approved the suggestion \"SP-1\" for \"[US-004] Sign in with OpenID Connect\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 55
+#line 56
     await testRunner.AndAsync("\"Acme ApS\" shares its decisions to improve the AI", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 56
+#line 57
     await testRunner.AndAsync("I am signed in as the system admin \"Sys\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 57
+#line 58
     await testRunner.WhenAsync("I grade the rationale of \"SP-1\" with 4", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 58
+#line 59
     await testRunner.ThenAsync("the newest rationale run has the grade \"4.0 of 5 (1)\" and the model \"fake-chat\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }

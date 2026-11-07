@@ -25,6 +25,8 @@ classDiagram
 
   %% ================= Organisation og brugere =================
   class Organization {
+    -shareAiFeedback: bool
+    -shareAiFeedbackSince: DateTime?
     -id: Guid
     -name: string
     -cvr: string
@@ -200,6 +202,7 @@ classDiagram
 
   %% ================= Projekt og releases =================
   class Project {
+    -excludedFromAiSharing: bool
     -id: Guid
     -version: uint
     -organizationId: Guid

@@ -1,5 +1,5 @@
-@* Settings (US-045, in the top bar, organisation admin only). For now the AI feedback consent and export (US-036 R5–R9).
-   Ids used by the tests: #ai-feedback, #ai-sharing-state, #set-ai-sharing, #export-ai-feedback. *@
+@* Settings (US-045, in the top bar, organisation admin only). The AI feedback sharing (US-036, US-130).
+   Ids used by the tests: #ai-feedback, #ai-sharing-state, #set-ai-sharing, #ai-shared-count. *@
 @using ComplianceTracker.Domain.Organizations
 @model Organization
 @{
@@ -14,7 +14,8 @@
     <h2 class="h4">AI feedback</h2>
     <p class="small text-muted mb-2">
         Every AI suggestion and your decision on it is kept in the tracker as an audit trail.
-        Only when sharing is on can the decisions be exported to improve the AI. The export has no names or e-mails.
+        Your decisions on AI suggestions (the texts the AI compared and whether you approved them, without names or e-mails) help us train better models for the tracker. They are shared by default. You can switch this off under Settings, or leave a single confidential project out on its Edit page.
+        Only decisions made while sharing is on are used.
     </p>
     <div class="d-flex flex-wrap gap-2 align-items-center">
         <span>Share our decisions to improve the AI: <strong id="ai-sharing-state">@(Model.ShareAiFeedback ? "On" : "Off")</strong></span>
@@ -22,8 +23,7 @@
             <input type="hidden" name="share" value="@(Model.ShareAiFeedback ? "false" : "true")" />
             <button type="submit" class="btn btn-sm btn-outline-primary">@(Model.ShareAiFeedback ? "Switch off" : "Switch on")</button>
         </form>
-        <form asp-action="ExportAiFeedback" method="post" id="export-ai-feedback">
-            <button type="submit" class="btn btn-sm btn-outline-secondary">Export AI feedback</button>
-        </form>
+        @* US-130 R6: organisations do not export for their own models; they see how much is shared *@
+        <span class="small text-muted" id="ai-shared-count">@ViewData["SharedCount"] decisions shared</span>
     </div>
 </section>

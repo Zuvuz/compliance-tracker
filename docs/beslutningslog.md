@@ -266,6 +266,7 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - **Modellen kan altid skiftes:** Application kender kun `IEmbeddingModel` og `IRationaleWriter`. Provider, adresse og modelnavne står i konfigurationen (`Ai:Provider`, `Ai:BaseUrl`, `Ai:EmbeddingModel`, `Ai:ChatModel`). Der er adaptere til Ollama og til OpenAI-kompatible servere (vLLM, LM Studio, llama.cpp). En ny slags server kræver kun en ny adapter.
   - **Sporbarhed:** hvert forslag gemmer modellernes navne og prompt-versionen (`RationalePrompt.Version`), så resultater fra forskellige modeller kan sammenlignes. Embeddings gemmes ikke, men beregnes ved hver kørsel, så en ny model aldrig blandes med gamle vektorer.
   - **Data:** alle forslag og beslutninger gemmes altid som revisionsspor. Eksport til forbedring af AI'en kræver, at en Admin har slået deling til (slået fra som standard). Eksporten indeholder ikke, hvem der besluttede.
+  - **Opdateret (US-130, B63):** deling er nu slået til som standard, og organisationens egen eksport er fjernet.
   - Krav markeret "Not applicable" (US-043) foreslås ikke.
 - **Begrundelse:** Udviklingsmaskinen har ingen GPU. En chat-model, der vurderede alle par, ville tage timer, mens embeddings tager sekunder. Når trackeren kører på en server med GPU, kan en større model indsættes uden kodeændringer, og de gemte beslutninger viser, om den er bedre.
 - **Fravalgt:**
@@ -798,6 +799,21 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - Et grafisk diagram. Træet er nok til at starte med.
   - Sikkerhedshændelser og scanningsfund i tråden. De kan komme, når US-119 kobler dem til risici.
+
+### B63 – AI-beslutninger deles som standard, og kun systemejeren træner
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-130)
+  - Nye organisationer deler som standard deres beslutninger om AI-forslag: de tekster, AI'en sammenlignede, og om forslaget blev godkendt. Navne og e-mails deles aldrig. Det fortælles på siden, hvor organisationen oprettes, og på Settings-siden.
+  - Organisationens admin kan slå delingen fra og til. Den bruger, der må redigere projekter, kan udelade et fortroligt projekt fra AI-forbedring på projektets Edit-side. Begge dele logges.
+  - Kun beslutninger, der er truffet efter delingen sidst blev slået til, og som ikke kommer fra et udeladt projekt, bruges til måling (US-116) og træning (US-123). Reglen står ét sted (`AiSharing.MayUse`).
+  - Organisationernes egen "Export AI feedback" (US-036) er fjernet. Settings-siden viser i stedet, hvor mange beslutninger der deles. Kun systemejeren vælger modeller (B47, B56) og trækker træningsdata ud. AI'en trænes aldrig i realtid.
+  - Ved migreringen bliver eksisterende organisationer slået til fra nu af, undtagen dem, hvis admin bevidst har slået delingen fra. Deres tidligere beslutninger bruges ikke. Migreringen skriver ikke i aktivitetsloggen, så loggens fingeraftryk ikke brydes.
+- **Begrundelse:** Systemejeren træner modellerne til formålet og skal have data nok. Mellem virksomheder kan det bygge på legitim interesse med ret til at sige fra (GDPR art. 6(1)(f), art. 21), når det fortælles tydeligt (art. 13). Fortrolige projekter kan holdes ude (art. 25).
+- **Fravalgt:**
+  - At organisationer bruger deres egne modeller eller eksporterer til dem. En svagere model ville få produktet til at se dårligere ud, end det er.
+  - At bruge beslutninger fra en tidligere periode med deling, efter delingen har været slået fra. Det er enklere og mere forsigtigt at starte forfra.
+- **Åbent:** vilkårene og databehandleraftalen skal sige det samme, før det går i drift.
 
 ## Åbne spørgsmål til klassediagrammet
 
