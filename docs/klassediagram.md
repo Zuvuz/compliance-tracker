@@ -865,6 +865,18 @@ classDiagram
     +MissingFrom(scanId: Guid, at: DateTime) bool
     +Accept(reason: string, userId: Guid, at: DateTime)
   }
+  class ScanSource {
+    <<enumeration>>
+    Upload
+    GitHubCodeScanning
+    GitHubDependabot
+    CiUpload
+  }
+  class IGitHubSecurityAlerts {
+    <<interface>>
+    +ReadAsync(repository: string, token: string?) Task~IReadOnlyList~GitHubAlertRead~~
+  }
+  Scan --> ScanSource
   class IScanImporter {
     <<interface>>
     +CanRead(fileName: string, content: byte[]) bool
