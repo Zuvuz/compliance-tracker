@@ -2927,6 +2927,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("CommitSha")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -2967,14 +2971,23 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<Guid?>("UploadTokenId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("UploadedById")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Version")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("UploadedById");
 
                     b.HasIndex("ProjectId", "ScannedAt");
+
+                    b.HasIndex("UploadTokenId", "ScannedAt");
 
                     b.ToTable("Scans", (string)null);
                 });
@@ -2991,6 +3004,53 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasKey("ScanId");
 
                     b.ToTable("ScanFiles", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Scanning.ScanUploadToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Hash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RevokedById")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("Hash")
+                        .IsUnique();
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("RevokedById");
+
+                    b.ToTable("ScanUploadTokens", (string)null);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Security.ExploitedList", b =>
@@ -4091,6 +4151,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ComplianceTracker.Domain.Scanning.ScanUploadToken", null)
+                        .WithMany()
+                        .HasForeignKey("UploadTokenId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ComplianceTracker.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UploadedById")
@@ -4104,6 +4169,26 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ComplianceTracker.Domain.Scanning.ScanFile", "ScanId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Scanning.ScanUploadToken", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("RevokedById")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Security.SecurityEvent", b =>

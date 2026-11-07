@@ -18,6 +18,7 @@ Tekst i *kursiv* er udkast, du kan rette til. Linjer der starter med **Spørgsm�
 | Dokument | Primær reference |
 | --- | --- |
 | [Backup og gendannelse af databasen](backup-og-gendannelse.md) | ISO 27001 A.8.13; US-014 |
+| [Scanninger fra byggepipelinen](scan-upload-fra-pipeline.md) | CRA bilag I, del II (3); ISO 27001 A.8.29; US-122 |
 
 ## Næste dokumenter
 

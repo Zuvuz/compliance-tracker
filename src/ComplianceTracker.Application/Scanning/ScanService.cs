@@ -41,17 +41,22 @@ namespace ComplianceTracker.Application.Scanning
 
         Task AddFindingsAsync(IEnumerable<Finding> findings, CancellationToken cancellationToken = default);
 
+        // US-122 R6: how many scans a token uploaded since then
+        Task<int> CountByTokenSinceAsync(Guid tokenId, DateTime since, CancellationToken cancellationToken = default);
+
         // US-128: every project, of every organisation, that has open findings
         Task<IReadOnlyList<Guid>> ListProjectIdsWithOpenFindingsAsync(CancellationToken cancellationToken = default);
     }
 
-    // What the Scans tab reads (R6: every member, also the Auditor)
+    // What the Scans tab reads (R6: every member, also the Auditor). US-122: the project's upload tokens.
     public record ScanOverview(IReadOnlyList<Scan> LatestPerTool, IReadOnlyList<Finding> Open, IReadOnlyList<Finding> Closed)
     {
         public int OpenAtLeastHigh => Open.Count(f => f.Severity >= FindingSeverity.High);
+
+        public IReadOnlyList<ScanUploadToken> Tokens { get; init; } = [];
     }
 
-    public class ScanService
+    public partial class ScanService
     {
         private readonly IProjectRepository _projects;
         private readonly IScanRepository _scans;
@@ -62,13 +67,16 @@ namespace ComplianceTracker.Application.Scanning
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
+        private readonly IScanUploadTokenRepository _tokens;
         private readonly Security.SecurityEventSuggestionService _suggestions;
 
         public ScanService(
             IProjectRepository projects, IScanRepository scans, IEnumerable<IScanImporter> importers, CurrentMember member,
             IActivityLogger log, IUnitOfWork unitOfWork, TimeProvider clock, IGitHubSecurityAlerts alerts, ISecretProtector secrets,
+            IScanUploadTokenRepository tokens,
             Security.SecurityEventSuggestionService suggestions)
         {
+            _tokens = tokens;
             _alerts = alerts;
             _secrets = secrets;
             _suggestions = suggestions;
@@ -198,14 +206,21 @@ namespace ComplianceTracker.Application.Scanning
         }
 
         // R1–R3, R7 (US-078): reads the file and matches its results with the tool's findings by fingerprint
+        // US-122: pipeline is the token and what was built, for a scan a pipeline sent
         private async Task<Scan> ImportAsync(
-            Domain.Projects.Project project, Guid? userId, string fileName, byte[] content, ScanSource source, CancellationToken cancellationToken)
+            Domain.Projects.Project project, Guid? userId, string fileName, byte[] content, ScanSource source, CancellationToken cancellationToken,
+            (ScanUploadToken Token, string? Commit, string? Version)? pipeline = null)
         {
             var importer = _importers.FirstOrDefault(i => i.CanRead(fileName, content))
                 ?? throw new DomainException("Only SARIF files can be uploaded");
             var report = importer.Read(content);
 
             var scan = Scan.Create(project.Id, report.Tool, fileName, content, userId, Now, source);
+            if (pipeline is { } sent)
+            {
+                scan.FromPipeline(sent.Token.Id, sent.Commit, sent.Version);
+            }
+
             var existing = (await _scans.ListFindingsAsync(project.Id, cancellationToken))
                 .Where(f => string.Equals(f.Tool, scan.Tool, StringComparison.OrdinalIgnoreCase))
                 .ToDictionary(f => f.Fingerprint);
@@ -231,8 +246,21 @@ namespace ComplianceTracker.Application.Scanning
 
             await _scans.AddAsync(scan, content, cancellationToken);
             await _scans.AddFindingsAsync(added, cancellationToken);
-            await _log.LogAsync(ActivityAction.ScanImported, project.Id,
-                source == ScanSource.Upload ? scan.Summary : $"{scan.Summary} (from GitHub)", cancellationToken);
+            var details = source switch
+            {
+                ScanSource.Upload => scan.Summary,
+                ScanSource.CiUpload => $"{scan.Summary} (from the pipeline with the token \"{pipeline!.Value.Token.Name}\"{(scan.Build is { } build ? $", {build}" : "")})",
+                _ => $"{scan.Summary} (from GitHub)"
+            };
+            if (userId is null)
+            {
+                // The system acted: the scheduled GitHub sync, or a pipeline with a token (US-122 R7)
+                await _log.LogSystemAsync(project.OrganizationId, ActivityAction.ScanImported, project.Id, details, cancellationToken);
+            }
+            else
+            {
+                await _log.LogAsync(ActivityAction.ScanImported, project.Id, details, cancellationToken);
+            }
 
             // US-128 R2, R3: suggested security events from the findings as they are now
             await _suggestions.MatchAsync(project, existing.Values.Concat(added).ToList(), added.Select(f => f.Id).ToHashSet(), cancellationToken);
@@ -266,7 +294,10 @@ namespace ComplianceTracker.Application.Scanning
             return new ScanOverview(
                 scans.GroupBy(s => s.Tool, StringComparer.OrdinalIgnoreCase).Select(g => g.OrderByDescending(s => s.ScannedAt).First()).ToList(),
                 findings.Where(f => f.IsOpen).OrderByDescending(f => f.Severity).ThenBy(f => f.RuleId, StringComparer.Ordinal).ToList(),
-                findings.Where(f => !f.IsOpen).OrderByDescending(f => f.FixedAt ?? f.AcceptedAt).ToList());
+                findings.Where(f => !f.IsOpen).OrderByDescending(f => f.FixedAt ?? f.AcceptedAt).ToList())
+            {
+                Tokens = (await _tokens.ListAsync(project.Id, cancellationToken)).OrderBy(t => t.RevokedAt is not null).ThenByDescending(t => t.CreatedAt).ToList()
+            };
         }
 
         // R5: the scan file, to add it as evidence (US-057); null for other organisations' projects

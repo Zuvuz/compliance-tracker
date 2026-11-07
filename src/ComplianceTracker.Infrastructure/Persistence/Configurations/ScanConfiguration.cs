@@ -22,6 +22,31 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.HasOne<User>().WithMany().HasForeignKey(s => s.UploadedById).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
             builder.Property(s => s.Source).HasConversion<string>().HasMaxLength(30).HasDefaultValue(ScanSource.Upload).HasSentinel(ScanSource.Upload); // US-121
             builder.HasIndex(s => new { s.ProjectId, s.ScannedAt });
+
+            // US-122: what a pipeline built, and its token
+            builder.Property(s => s.CommitSha).HasMaxLength(40);
+            builder.Property(s => s.Version).HasMaxLength(Scan.MaxVersionLength);
+            builder.Ignore(s => s.Build);
+            builder.HasOne<ScanUploadToken>().WithMany().HasForeignKey(s => s.UploadTokenId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+            builder.HasIndex(s => new { s.UploadTokenId, s.ScannedAt });
+        }
+    }
+
+    // US-122: only the hash of a token is stored, and it is unique
+    public class ScanUploadTokenConfiguration : IEntityTypeConfiguration<ScanUploadToken>
+    {
+        public void Configure(EntityTypeBuilder<ScanUploadToken> builder)
+        {
+            builder.ToTable("ScanUploadTokens");
+            builder.HasKey(t => t.Id);
+            builder.Property(t => t.Id).ValueGeneratedNever();
+            builder.Property(t => t.Name).IsRequired().HasMaxLength(ScanUploadToken.MaxNameLength);
+            builder.Property(t => t.Hash).IsRequired().HasMaxLength(64);
+            builder.Ignore(t => t.IsActive);
+            builder.HasIndex(t => t.Hash).IsUnique();
+            builder.HasOne<Project>().WithMany().HasForeignKey(t => t.ProjectId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<User>().WithMany().HasForeignKey(t => t.CreatedById).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<User>().WithMany().HasForeignKey(t => t.RevokedById).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
         }
     }
 

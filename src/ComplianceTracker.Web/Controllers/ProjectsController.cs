@@ -707,6 +707,28 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
         }
 
+        // POST /Projects/CreateUploadToken: US-122 R2, the token is shown once on the next page
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Scans)]
+        public async Task<IActionResult> CreateUploadToken(
+            Guid projectId, string? name, [FromServices] Application.Scanning.ScanService scans, CancellationToken cancellationToken)
+        {
+            TempData["NewUploadToken"] = await scans.CreateUploadTokenAsync(projectId, name, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
+        }
+
+        // POST /Projects/RevokeUploadToken: US-122 R3
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Scans)]
+        public async Task<IActionResult> RevokeUploadToken(
+            Guid projectId, Guid tokenId, [FromServices] Application.Scanning.ScanService scans, CancellationToken cancellationToken)
+        {
+            await scans.RevokeUploadTokenAsync(projectId, tokenId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
+        }
+
         // POST /Projects/FetchScansFromGitHub: US-121 R1, R5
         [HttpPost]
         [ValidateAntiForgeryToken]

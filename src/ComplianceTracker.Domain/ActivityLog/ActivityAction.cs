@@ -173,6 +173,11 @@ namespace ComplianceTracker.Domain.ActivityLog
         // recorded or dismissed it. SubjectId points at the project.
         SecurityEventSuggested,
         SecurityEventSuggestionAccepted,
-        SecurityEventSuggestionDismissed
+        SecurityEventSuggestionDismissed,
+
+        // US-122: an upload token for a build pipeline was created or revoked. SubjectId points at the project; Details
+        // holds the token's name, never the token. Its uploads are logged as ScanImported by the system.
+        ScanUploadTokenCreated,
+        ScanUploadTokenRevoked
     }
 }
