@@ -330,7 +330,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             {
                 "id" => action.ControllerName switch
                 {
-                    "Projects" => ids.Project,
+                    "Projects" or "ScanUploadApi" => ids.Project, // US-122: the API's project
                     "Risks" => ids.Risk,
                     "Frameworks" => action.ActionName == "Versions" ? ids.Framework : ids.FrameworkVersion,
                     "Organizations" or "System" => ids.Organization,
@@ -352,6 +352,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "actionid" => ids.RiskAction, // US-111
                 "scanid" => ids.Scan, // US-078
                 "findingid" => ids.Finding,
+                "tokenid" => ids.UploadToken, // US-122
                 "documentid" => ids.Document,
                 "frameworkids" => ids.Framework,
                 "requirementids" => ids.CraRequirement,
@@ -362,6 +363,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // GET: "not found", "forbidden", or a redirect that does not lead to Acme's data
         private bool Refused(HttpResponseMessage response)
             => response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Forbidden
+                   or HttpStatusCode.Unauthorized // US-122: the upload API without a valid token
                || (response.StatusCode is HttpStatusCode.Found or HttpStatusCode.Redirect
                    && !_ids!.All.Any(id => response.Headers.Location?.ToString().Contains(id.ToString(), StringComparison.OrdinalIgnoreCase) == true));
 
@@ -370,10 +372,10 @@ namespace ComplianceTracker.Specs.StepDefinitions
         private sealed record Ids(
             Guid Organization, Guid Project, Guid Risk, Guid Measure, Guid Evidence, Guid WorkItem, Guid Link,
             Guid Document, Guid DocumentVersion, Guid Framework, Guid FrameworkVersion, Guid FrameworkRequirement,
-            Guid CraRequirement, Guid Member, Guid Invitation, Guid SecurityEvent, Guid RiskAction, Guid Scan, Guid Finding)
+            Guid CraRequirement, Guid Member, Guid Invitation, Guid SecurityEvent, Guid RiskAction, Guid Scan, Guid Finding, Guid UploadToken)
         {
             public IEnumerable<Guid> All => [Organization, Project, Risk, Measure, Evidence, WorkItem, Link, Document,
-                DocumentVersion, Framework, FrameworkVersion, FrameworkRequirement, Member, Invitation, SecurityEvent, RiskAction, Scan, Finding];
+                DocumentVersion, Framework, FrameworkVersion, FrameworkRequirement, Member, Invitation, SecurityEvent, RiskAction, Scan, Finding, UploadToken];
         }
 
         private async Task<Ids> IdsAsync(string organisation)
@@ -406,7 +408,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 await db.SecurityEvents.Where(e => e.ProjectId == project.Id).Select(e => e.Id).SingleAsync(), // US-073
                 risk.Actions.Single().Id, // US-111
                 await db.Scans.Where(s => s.ProjectId == project.Id).Select(s => s.Id).SingleAsync(), // US-078
-                await db.Findings.Where(f => f.ProjectId == project.Id).OrderBy(f => f.RuleId).Select(f => f.Id).FirstAsync());
+                await db.Findings.Where(f => f.ProjectId == project.Id).OrderBy(f => f.RuleId).Select(f => f.Id).FirstAsync(),
+                await db.ScanUploadTokens.Where(t => t.ProjectId == project.Id).Select(t => t.Id).SingleAsync()); // US-122
         }
 
         // A form token for the caller, from a page they may open (their own Users page)
