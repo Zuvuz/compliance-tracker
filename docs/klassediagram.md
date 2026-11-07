@@ -25,6 +25,8 @@ classDiagram
 
   %% ================= Organisation og brugere =================
   class Organization {
+    -shareAiFeedback: bool
+    -shareAiFeedbackSince: DateTime?
     -id: Guid
     -name: string
     -cvr: string
@@ -200,6 +202,7 @@ classDiagram
 
   %% ================= Projekt og releases =================
   class Project {
+    -excludedFromAiSharing: bool
     -id: Guid
     -version: uint
     -organizationId: Guid
@@ -865,6 +868,18 @@ classDiagram
     +MissingFrom(scanId: Guid, at: DateTime) bool
     +Accept(reason: string, userId: Guid, at: DateTime)
   }
+  class ScanSource {
+    <<enumeration>>
+    Upload
+    GitHubCodeScanning
+    GitHubDependabot
+    CiUpload
+  }
+  class IGitHubSecurityAlerts {
+    <<interface>>
+    +ReadAsync(repository: string, token: string?) Task~IReadOnlyList~GitHubAlertRead~~
+  }
+  Scan --> ScanSource
   class IScanImporter {
     <<interface>>
     +CanRead(fileName: string, content: byte[]) bool
@@ -906,6 +921,12 @@ classDiagram
     +CompleteAction(actionId: Guid, hasProof: bool, userId: Guid, at: DateTime)
     +OverdueActions(today: DateOnly) int
   }
+  class RiskTraces {
+    <<static>>
+    +For(risk: Risk, compliance: ProjectCompliance)$ RiskTrace
+    +ByRequirement(risks: IEnumerable~Risk~, requirementsOfStory: ILookup~Guid,Guid~)$ IReadOnlyDictionary~Guid,IReadOnlyList~RiskReference~~
+  }
+  RiskTraces ..> Risk
   class RiskMeasure {
     -id: Guid
     -riskId: Guid
@@ -1076,17 +1097,28 @@ classDiagram
     -notificationSentAt: DateTime?
     -finalReportSentAt: DateTime?
     -closedAt: DateTime?
+    -closedReason: string?
+    -disclosedAt: DateTime?
+    -upgradedAt: DateTime?
+    -upgradeReason: string?
+    -firstAwareAt: DateTime?
+    +IsReportable: bool
+    +IsVulnerability: bool
     +Record(...)$ SecurityEvent
     +DueAt(report: SecurityReportKind) DateTime?
     +Status(report: SecurityReportKind, now: DateTime) SecurityReportStatus
     +MarkSent(report: SecurityReportKind, sentAt: DateTime, reference: string, now: DateTime)
     +MarkFixAvailable(at: DateTime, now: DateTime)
-    +Close(userId: Guid, now: DateTime)
+    +Close(userId: Guid, now: DateTime, reason: string?)
+    +MarkDisclosed(at: DateTime, now: DateTime)
+    +Upgrade(reportableAt: DateTime, reason: string, userId: Guid, now: DateTime)
   }
   class SecurityEventKind {
     <<enumeration>>
     ActivelyExploitedVulnerability
     SevereIncident
+    VulnerabilityNotExploited
+    IncidentNotSevere
   }
   class SecurityReportKind {
     <<enumeration>>
@@ -1098,6 +1130,8 @@ classDiagram
     +RecordAsync(...) Task~SecurityEvent~
     +MarkSentAsync(...) Task
     +MarkFixAvailableAsync(...) Task
+    +MarkDisclosedAsync(...) Task
+    +UpgradeAsync(...) Task
     +CloseAsync(...) Task
   }
   class ISecurityEventRepository {

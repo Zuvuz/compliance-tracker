@@ -701,6 +701,18 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
         }
 
+        // POST /Projects/FetchScansFromGitHub: US-121 R1, R5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Scans)]
+        public async Task<IActionResult> FetchScansFromGitHub(
+            Guid projectId, [FromServices] Application.Scanning.ScanService scans, CancellationToken cancellationToken)
+        {
+            var lines = await scans.FetchFromGitHubAsync(projectId, cancellationToken);
+            TempData["ScanImported"] = string.Join("\n", lines);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
+        }
+
         // POST /Projects/AcceptFinding: R4
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -759,9 +771,38 @@ namespace ComplianceTracker.Web.Controllers
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.SecurityEvents)]
         public async Task<IActionResult> CloseSecurityEvent(
-            Guid projectId, Guid eventId, [FromServices] Application.Security.SecurityEventService events, CancellationToken cancellationToken)
+            Guid projectId, Guid eventId, string? reason, [FromServices] Application.Security.SecurityEventService events, CancellationToken cancellationToken)
         {
-            await events.CloseAsync(projectId, eventId, cancellationToken);
+            await events.CloseAsync(projectId, eventId, reason, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
+        }
+
+        // POST /Projects/MarkSecurityEventDisclosed: US-127 (CRA Annex I, Part II (4))
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.SecurityEvents)]
+        public async Task<IActionResult> MarkSecurityEventDisclosed(
+            Guid projectId, Guid eventId, DateTime? disclosedAt, [FromServices] Application.Security.SecurityEventService events, CancellationToken cancellationToken)
+        {
+            var at = disclosedAt is { } d ? Utc(d) : _clock.GetUtcNow().UtcDateTime;
+            await events.MarkDisclosedAsync(projectId, eventId, at, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
+        }
+
+        // POST /Projects/UpgradeSecurityEvent: US-127 R2–R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.SecurityEvents)]
+        public async Task<IActionResult> UpgradeSecurityEvent(
+            Guid projectId, Guid eventId, DateTime? reportableAt, string? reason, [FromServices] Application.Security.SecurityEventService events,
+            CancellationToken cancellationToken)
+        {
+            if (reportableAt is not { } at)
+            {
+                throw new Domain.Common.DomainException("Give the time it became reportable");
+            }
+
+            await events.UpgradeAsync(projectId, eventId, Utc(at), reason, cancellationToken);
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
         }
 
@@ -984,6 +1025,7 @@ namespace ComplianceTracker.Web.Controllers
                 return RedirectToAction(nameof(Details), new { id });
             }
 
+            ViewData["ExcludedFromAiSharing"] = project.ExcludedFromAiSharing; // US-130
             return View(EditProjectViewModel.From(project));
         }
 
@@ -995,6 +1037,16 @@ namespace ComplianceTracker.Web.Controllers
             await _service.UpdateAsync(
                 model.Id, model.Name ?? "", model.Description, model.IntendedPurpose ?? "", model.Scope, cancellationToken, model.Version);
             return RedirectToAction(nameof(Details), new { id = model.Id }); // Post/Redirect/Get
+        }
+
+        // POST /Projects/SetAiSharing: US-130 R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Edit), IdFrom = "projectId")]
+        public async Task<IActionResult> SetAiSharing(Guid projectId, bool excluded, CancellationToken cancellationToken)
+        {
+            await _service.SetExcludedFromAiSharingAsync(projectId, excluded, cancellationToken);
+            return RedirectToAction(nameof(Edit), new { id = projectId });
         }
 
         // POST /Projects/ChangePhase: R2, R4. US-025 R1: releasing sends the support end date (and a reason when short).

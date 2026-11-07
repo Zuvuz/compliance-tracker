@@ -19,7 +19,8 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(s => s.Sha256).IsRequired().HasMaxLength(64);
             builder.Ignore(s => s.Summary);
             builder.HasOne<Project>().WithMany().HasForeignKey(s => s.ProjectId).OnDelete(DeleteBehavior.Restrict);
-            builder.HasOne<User>().WithMany().HasForeignKey(s => s.UploadedById).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<User>().WithMany().HasForeignKey(s => s.UploadedById).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+            builder.Property(s => s.Source).HasConversion<string>().HasMaxLength(30).HasDefaultValue(ScanSource.Upload).HasSentinel(ScanSource.Upload); // US-121
             builder.HasIndex(s => new { s.ProjectId, s.ScannedAt });
         }
     }

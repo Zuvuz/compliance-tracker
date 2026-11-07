@@ -34,6 +34,7 @@ Feature: Measure the AI's quality on the organisations' own decisions
   @US-116 @iso27001-A.5.34 @integration
   Scenario: Decisions that are not shared are not used
     Given I have approved the suggestion "SP-1" for "[US-004] Sign in with OpenID Connect"
+    And "Acme ApS" does not share its decisions
     And I am signed in as the system admin "Sys"
     When I measure story matching
     Then I see the error "Too few decisions to measure: 0 of at least 1"

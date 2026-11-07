@@ -96,7 +96,7 @@ public class MappingSuggestionTests
     }
 
     [Fact]
-    public void Only_an_Admin_can_switch_sharing_and_it_is_off_by_default()
+    public void Only_an_Admin_can_switch_sharing_and_it_is_on_by_default()
     {
         // Arrange
         var organization = Organization.Create("Acme ApS", "12345678", Sector.DigitalInfrastructure, OrganizationSize.Small,
@@ -104,12 +104,14 @@ public class MappingSuggestionTests
         var anna = organization.Users.Single();
 
         // Act
-        var stranger = Assert.Throws<DomainException>(() => organization.SetShareAiFeedback(true, Guid.NewGuid()));
-        var changed = organization.SetShareAiFeedback(true, anna.Id);
+        var sharedAtStart = organization.ShareAiFeedback;
+        var stranger = Assert.Throws<DomainException>(() => organization.SetShareAiFeedback(false, Guid.NewGuid()));
+        var changed = organization.SetShareAiFeedback(false, anna.Id);
 
         // Assert
+        Assert.True(sharedAtStart); // US-130 R1
         Assert.Equal("Only an Admin can change this setting", stranger.Message);
         Assert.True(changed);
-        Assert.True(organization.ShareAiFeedback);
+        Assert.False(organization.ShareAiFeedback);
     }
 }

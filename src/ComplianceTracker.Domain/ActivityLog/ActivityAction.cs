@@ -159,6 +159,14 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-120 R8: the traceability matrix was downloaded. SubjectId points at the project; Details holds e.g.
         // "Excel for Auditor: CRA".
-        ReportDownloaded
+        ReportDownloaded,
+
+        // US-130 R4: a project was left out of (or taken back into) AI improvement. SubjectId points at the project.
+        ProjectAiSharingChanged,
+
+        // US-127: a security event was upgraded to reportable, or a vulnerability that is not exploited was disclosed.
+        // SubjectId points at the project.
+        SecurityEventUpgraded,
+        SecurityEventDisclosed
     }
 }

@@ -2476,6 +2476,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<bool>("ShareAiFeedback")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTime?>("ShareAiFeedbackSince")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Size")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -2494,12 +2497,21 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("AiSharingChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("AiSharingChangedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateOnly?>("EndOfSupportOn")
                         .HasColumnType("date");
+
+                    b.Property<bool>("ExcludedFromAiSharing")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("IntendedPurpose")
                         .IsRequired()
@@ -2943,12 +2955,19 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasDefaultValue("Upload");
+
                     b.Property<string>("Tool")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<Guid>("UploadedById")
+                    b.Property<Guid?>("UploadedById")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -2988,9 +3007,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("ClosedById")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ClosedReason")
+                        .HasColumnType("text");
+
                     b.Property<string>("Description")
                         .HasMaxLength(4000)
                         .HasColumnType("character varying(4000)");
+
+                    b.Property<DateTime?>("DisclosedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("EarlyWarningReference")
                         .HasMaxLength(200)
@@ -3004,6 +3029,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(200)");
 
                     b.Property<DateTime?>("FinalReportSentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FirstAwareAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("FixAvailableAt")
@@ -3038,6 +3066,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("UpgradeReason")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpgradedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpgradedById")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -3958,8 +3995,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasOne("ComplianceTracker.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UploadedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Scanning.ScanFile", b =>
