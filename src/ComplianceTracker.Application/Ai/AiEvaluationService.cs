@@ -28,6 +28,7 @@ namespace ComplianceTracker.Application.Ai
         public const int SampleSize = 20;
 
         private readonly IOrganizationRepository _organizations;
+        private readonly Projects.IProjectRepository _projects;
         private readonly IMappingSuggestionRepository _suggestions;
         private readonly IWorkItemRepository _workItems;
         private readonly IFrameworkRepository _frameworks;
@@ -48,8 +49,10 @@ namespace ComplianceTracker.Application.Ai
             IAiLimits limits,
             ICurrentUser currentUser,
             IUnitOfWork unitOfWork,
-            TimeProvider clock)
+            TimeProvider clock,
+            Projects.IProjectRepository projects)
         {
+            _projects = projects;
             _organizations = organizations;
             _suggestions = suggestions;
             _workItems = workItems;
@@ -167,13 +170,17 @@ namespace ComplianceTracker.Application.Ai
             return evaluation;
         }
 
-        // R1: only the decisions of organisations that share them
+        // R1, US-130 R5: only the decisions the organisations share (AiSharing)
         private async Task<List<(Guid OrganizationId, MappingSuggestion Suggestion)>> DecidedAsync(CancellationToken cancellationToken)
         {
             var decided = new List<(Guid, MappingSuggestion)>();
             foreach (var organization in (await _organizations.ListAllAsync(cancellationToken)).Where(o => o.ShareAiFeedback))
             {
-                decided.AddRange((await _suggestions.ListDecidedAsync(organization.Id, cancellationToken)).Select(s => (organization.Id, s)));
+                var excluded = (await _projects.ListAsync(organization.Id, cancellationToken))
+                    .Where(p => p.ExcludedFromAiSharing).Select(p => p.Id).ToHashSet();
+                decided.AddRange((await _suggestions.ListDecidedAsync(organization.Id, cancellationToken))
+                    .Where(s => AiSharing.MayUse(organization, excluded, s))
+                    .Select(s => (organization.Id, s)));
             }
 
             return decided;

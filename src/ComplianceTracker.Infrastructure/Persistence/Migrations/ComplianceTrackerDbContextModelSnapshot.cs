@@ -2476,6 +2476,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<bool>("ShareAiFeedback")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTime?>("ShareAiFeedbackSince")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Size")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -2494,12 +2497,21 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("AiSharingChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("AiSharingChangedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateOnly?>("EndOfSupportOn")
                         .HasColumnType("date");
+
+                    b.Property<bool>("ExcludedFromAiSharing")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("IntendedPurpose")
                         .IsRequired()
@@ -3041,6 +3053,31 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("ScanUploadTokens", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Security.ExploitedList", b =>
+                {
+                    b.Property<string>("Name")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("AttemptedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.PrimitiveCollection<List<string>>("Cves")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<DateTime?>("FetchedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Name");
+
+                    b.ToTable("ExploitedLists", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Security.SecurityEvent", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3055,9 +3092,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("ClosedById")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ClosedReason")
+                        .HasColumnType("text");
+
                     b.Property<string>("Description")
                         .HasMaxLength(4000)
                         .HasColumnType("character varying(4000)");
+
+                    b.Property<DateTime?>("DisclosedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("EarlyWarningReference")
                         .HasMaxLength(200)
@@ -3071,6 +3114,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(200)");
 
                     b.Property<DateTime?>("FinalReportSentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FirstAwareAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("FixAvailableAt")
@@ -3106,6 +3152,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("UpgradeReason")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpgradedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpgradedById")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ClosedById");
@@ -3115,6 +3170,80 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasIndex("ProjectId", "AwareAt");
 
                     b.ToTable("SecurityEvents", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Security.SecurityEventSuggestion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DecidedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DismissedReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid?>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.PrimitiveCollection<List<Guid>>("FindingIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("LearnedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("SourceName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid?>("UpgradeEventId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DecidedById");
+
+                    b.HasIndex("EventId");
+
+                    b.HasIndex("UpgradeEventId");
+
+                    b.HasIndex("ProjectId", "Key");
+
+                    b.ToTable("SecurityEventSuggestions", (string)null);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Users.User", b =>
@@ -4080,6 +4209,30 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasForeignKey("RecordedById")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Security.SecurityEventSuggestion", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("DecidedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ComplianceTracker.Domain.Security.SecurityEvent", null)
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Security.SecurityEvent", null)
+                        .WithMany()
+                        .HasForeignKey("UpgradeEventId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Users.User", b =>

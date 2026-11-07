@@ -2,7 +2,11 @@
    three reports and their deadlines. The tracker does not send the reports; a person marks each as sent (R4).
    Times are shown in local time. Ids and classes used by the tests: #record-security-event (kind, title, description,
    awareAt), .security-event[data-title] with .security-event-closed, .security-report[data-report] holding .report-due,
-   .report-status, form .mark-report-sent (sentAt, reference); form .mark-fix-available; form .close-security-event. *@
+   .report-status, form .mark-report-sent (sentAt, reference); form .mark-fix-available; form .close-security-event (reason).
+   US-127: .no-reports, .security-event-upgraded, form .mark-disclosed (disclosedAt), form .upgrade-security-event
+   (reportableAt, reason).
+   US-128: #security-event-suggestions with .event-suggestion[data-key] holding .suggestion-text and the forms
+   .record-suggestion (awareAt) and .dismiss-suggestion (reason); #exploited-lists with .exploited-list[data-name]. *@
 @using ComplianceTracker.Domain.Security
 @model ProjectDetailsViewModel
 @{
@@ -22,7 +26,56 @@
             (CRA Art. 14): an early warning within 24 hours, a notification within 72 hours, and a final report
             (14 days after a fix is available, or one month after the notification for an incident). Send them through
             ENISA's single reporting platform and mark them here with the reference you get.
+            A vulnerability that nobody exploits, or an incident that is not severe, has no reports: record it to follow it
+            to its fix, and upgrade it if it becomes exploited or severe. The deadlines then start from that moment.
         </p>
+
+        @if (Model.EventSuggestions is { } suggestions && (suggestions.Pending.Count > 0 || suggestions.Lists.Count > 0))
+        {
+            @* US-128 R1: the tracker only suggests; a person records or dismisses *@
+            <section class="mb-4" id="security-event-suggestions">
+                <h3 class="h6">Suggested by the tracker</h3>
+                @if (suggestions.Lists.Count > 0)
+                {
+                    <ul class="list-unstyled small text-muted mb-2" id="exploited-lists">
+                        @foreach (var list in suggestions.Lists)
+                        {
+                            @* R5: a list that cannot be fetched says when it was last fetched *@
+                            <li class="exploited-list @(list.LastError is null ? "" : "text-warning-emphasis")" data-name="@list.Name">
+                                @list.Name: @(list.FetchedAt is { } fetched ? $"fetched {Local(fetched)}" : "not fetched yet")@(list.LastError is null ? "" : $"; the last attempt failed ({Local(list.AttemptedAt!.Value)})")
+                            </li>
+                        }
+                    </ul>
+                }
+                @foreach (var suggestion in suggestions.Pending)
+                {
+                    var exploitedNow = suggestion.Kind == SecurityEventKind.ActivelyExploitedVulnerability;
+                    <div class="card mb-2 event-suggestion @(exploitedNow ? "border-danger" : "")" data-key="@suggestion.Key">
+                        <div class="card-body py-2">
+                            <p class="mb-1 small suggestion-text"><span class="fw-semibold">@ComplianceTracker.Application.Security.SecurityEventSuggestionService.Text(suggestion, project.Name)</span>
+                                <span class="text-muted">· @suggestion.SourceName, learned @Local(suggestion.LearnedAt)</span></p>
+                            @if (canChange)
+                            {
+                                <div class="d-flex flex-wrap gap-2">
+                                    <form asp-action="RecordSuggestedSecurityEvent" method="post" class="d-flex gap-1 record-suggestion">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                        <input type="datetime-local" name="awareAt" class="form-control form-control-sm w-auto" value="@Input(suggestion.LearnedAt)" aria-label="Aware since" />
+                                        <button type="submit" class="btn btn-sm @(exploitedNow ? "btn-danger" : "btn-outline-primary") text-nowrap">@(suggestion.IsUpgrade ? "Upgrade event" : "Record event")</button>
+                                    </form>
+                                    <form asp-action="DismissSecurityEventSuggestion" method="post" class="d-flex gap-1 dismiss-suggestion">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                        <input name="reason" class="form-control form-control-sm" maxlength="1000" placeholder="Why not" aria-label="Reason for dismissing" required />
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">Dismiss</button>
+                                    </form>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </section>
+        }
 
         @if (Model.SecurityEvents.Count == 0)
         {
@@ -41,12 +94,27 @@
                             <span class="badge text-bg-success security-event-closed">Closed @Local(securityEvent.ClosedAt!.Value)</span>
                         }
                     </div>
-                    <p class="small text-muted mb-2">Aware since @Local(securityEvent.AwareAt)@(securityEvent.FixAvailableAt is { } fix ? $", fix available {Local(fix)}" : "")</p>
+                    <p class="small text-muted mb-2">Aware since @Local(securityEvent.FirstAwareAt ?? securityEvent.AwareAt)@(securityEvent.FixAvailableAt is { } fix ? $", fix available {Local(fix)}" : "")@(securityEvent.DisclosedAt is { } disclosed ? $", disclosed {Local(disclosed)}" : "")</p>
+                    @if (securityEvent.UpgradedAt is not null)
+                    {
+                        @* US-127 R3 *@
+                        <p class="small text-warning-emphasis security-event-upgraded">Reportable since @Local(securityEvent.AwareAt): @securityEvent.UpgradeReason</p>
+                    }
+                    @if (securityEvent.ClosedReason is { } closedReason)
+                    {
+                        <p class="small text-muted">Closed because: @closedReason</p>
+                    }
                     @if (securityEvent.Description is not null)
                     {
                         <p class="small ct-pre-wrap">@securityEvent.Description</p>
                     }
 
+                    @if (!securityEvent.IsReportable)
+                    {
+                        <p class="small text-muted no-reports">No reports to ENISA or the CSIRT are needed (not actively exploited or not severe).</p>
+                    }
+                    else
+                    {
                     <table class="table table-sm small align-middle mb-2">
                         <thead><tr><th>Report</th><th>Due</th><th>Status</th><th></th></tr></thead>
                         <tbody>
@@ -97,11 +165,12 @@
                             }
                         </tbody>
                     </table>
+                    }
 
                     @if (canChange && securityEvent.IsOpen)
                     {
                         <div class="d-flex flex-wrap gap-2">
-                            @if (securityEvent.Kind == SecurityEventKind.ActivelyExploitedVulnerability && securityEvent.FixAvailableAt is null)
+                            @if (securityEvent.IsVulnerability && securityEvent.FixAvailableAt is null)
                             {
                                 <form asp-action="MarkSecurityFixAvailable" method="post" class="d-flex gap-1 mark-fix-available">
                                     <input type="hidden" name="projectId" value="@project.Id" />
@@ -110,11 +179,35 @@
                                     <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">Fix available</button>
                                 </form>
                             }
-                            <form asp-action="CloseSecurityEvent" method="post" class="close-security-event">
+                            @if (securityEvent.Kind == SecurityEventKind.VulnerabilityNotExploited && securityEvent.FixAvailableAt is not null && securityEvent.DisclosedAt is null)
+                            {
+                                <form asp-action="MarkSecurityEventDisclosed" method="post" class="d-flex gap-1 mark-disclosed">
+                                    <input type="hidden" name="projectId" value="@project.Id" />
+                                    <input type="hidden" name="eventId" value="@securityEvent.Id" />
+                                    <input type="datetime-local" name="disclosedAt" class="form-control form-control-sm" value="@Input(Model.Now)" aria-label="Disclosed at" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">Disclosed</button>
+                                </form>
+                            }
+                            <form asp-action="CloseSecurityEvent" method="post" class="d-flex gap-1 close-security-event">
                                 <input type="hidden" name="projectId" value="@project.Id" />
                                 <input type="hidden" name="eventId" value="@securityEvent.Id" />
-                                <button type="submit" class="btn btn-sm btn-outline-success">Close event</button>
+                                @if (securityEvent.Kind == SecurityEventKind.VulnerabilityNotExploited)
+                                {
+                                    <input name="reason" class="form-control form-control-sm" maxlength="4000" placeholder="Reason, if not fixed and disclosed" aria-label="Reason for closing" />
+                                }
+                                <button type="submit" class="btn btn-sm btn-outline-success text-nowrap">Close event</button>
                             </form>
+                            @if (!securityEvent.IsReportable)
+                            {
+                                @* US-127 R2: it became actively exploited or severe *@
+                                <form asp-action="UpgradeSecurityEvent" method="post" class="d-flex flex-wrap gap-1 upgrade-security-event">
+                                    <input type="hidden" name="projectId" value="@project.Id" />
+                                    <input type="hidden" name="eventId" value="@securityEvent.Id" />
+                                    <input type="datetime-local" name="reportableAt" class="form-control form-control-sm w-auto" value="@Input(Model.Now)" aria-label="Became reportable at" required />
+                                    <input name="reason" class="form-control form-control-sm w-auto" maxlength="4000" placeholder="Why, e.g. listed as exploited" aria-label="Why it became reportable" required />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger text-nowrap">Upgrade to @(securityEvent.IsVulnerability ? "actively exploited" : "severe incident")</button>
+                                </form>
+                            }
                         </div>
                     }
                 </div>

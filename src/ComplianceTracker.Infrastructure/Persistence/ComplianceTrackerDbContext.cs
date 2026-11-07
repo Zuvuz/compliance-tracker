@@ -52,6 +52,8 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<Risk> Risks => Set<Risk>();
         public DbSet<ProjectClassification> ProjectClassifications => Set<ProjectClassification>(); // US-026
         public DbSet<Domain.Security.SecurityEvent> SecurityEvents => Set<Domain.Security.SecurityEvent>(); // US-073
+        public DbSet<Domain.Security.SecurityEventSuggestion> SecurityEventSuggestions => Set<Domain.Security.SecurityEventSuggestion>(); // US-128
+        public DbSet<Domain.Security.ExploitedList> ExploitedLists => Set<Domain.Security.ExploitedList>(); // US-128
         public DbSet<Invitation> Invitations => Set<Invitation>();
         public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
         public DbSet<OrganizationFramework> OrganizationFrameworks => Set<OrganizationFramework>();

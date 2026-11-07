@@ -85,6 +85,7 @@ namespace ComplianceTracker.Web.Models
         public const string ProductRequirements = "product-requirements";
         public const string OldProductRequirements = "user-stories";
         public const string Activity = "activity";
+        public const string Reports = "reports"; // US-129
 
         // In the order they are shown, with the text on the tab
         public static readonly IReadOnlyList<(string Slug, string Title)> All =
@@ -97,7 +98,8 @@ namespace ComplianceTracker.Web.Models
             (SecurityEvents, "Security events"),
             (Scans, "Scans"),
             (ProductRequirements, "Product requirements"),
-            (Activity, "Activity")
+            (Activity, "Activity"),
+            (Reports, "Reports")
         ];
 
         // The tab for an address, Overview when there is none, or null for an unknown one
@@ -242,6 +244,9 @@ namespace ComplianceTracker.Web.Models
         public IReadOnlyList<Application.Projects.RegulationClassification> Classifications { get; init; } = [];
         // US-073: the project's security events (CRA Art. 14), for their tab and the Overview's deadlines
         public IReadOnlyList<Domain.Security.SecurityEvent> SecurityEvents { get; init; } = [];
+
+        // US-128: suggested security events and the exploited lists' status
+        public Application.Security.SuggestionOverview? EventSuggestions { get; init; }
 
         // US-078: the Scans tab, and the Overview's count of open high and critical findings
         public Application.Scanning.ScanOverview? Scans { get; init; }

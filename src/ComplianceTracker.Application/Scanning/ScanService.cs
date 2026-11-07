@@ -43,6 +43,9 @@ namespace ComplianceTracker.Application.Scanning
 
         // US-122 R6: how many scans a token uploaded since then
         Task<int> CountByTokenSinceAsync(Guid tokenId, DateTime since, CancellationToken cancellationToken = default);
+
+        // US-128: every project, of every organisation, that has open findings
+        Task<IReadOnlyList<Guid>> ListProjectIdsWithOpenFindingsAsync(CancellationToken cancellationToken = default);
     }
 
     // What the Scans tab reads (R6: every member, also the Auditor). US-122: the project's upload tokens.
@@ -65,15 +68,18 @@ namespace ComplianceTracker.Application.Scanning
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
         private readonly IScanUploadTokenRepository _tokens;
+        private readonly Security.SecurityEventSuggestionService _suggestions;
 
         public ScanService(
             IProjectRepository projects, IScanRepository scans, IEnumerable<IScanImporter> importers, CurrentMember member,
             IActivityLogger log, IUnitOfWork unitOfWork, TimeProvider clock, IGitHubSecurityAlerts alerts, ISecretProtector secrets,
-            IScanUploadTokenRepository tokens)
+            IScanUploadTokenRepository tokens,
+            Security.SecurityEventSuggestionService suggestions)
         {
             _tokens = tokens;
             _alerts = alerts;
             _secrets = secrets;
+            _suggestions = suggestions;
             _projects = projects;
             _scans = scans;
             _importers = importers;
@@ -256,6 +262,9 @@ namespace ComplianceTracker.Application.Scanning
                 await _log.LogAsync(ActivityAction.ScanImported, project.Id, details, cancellationToken);
             }
 
+            // US-128 R2, R3: suggested security events from the findings as they are now
+            await _suggestions.MatchAsync(project, existing.Values.Concat(added).ToList(), added.Select(f => f.Id).ToHashSet(), cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
             return scan;
         }
 

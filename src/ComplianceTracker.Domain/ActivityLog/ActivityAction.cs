@@ -161,6 +161,20 @@ namespace ComplianceTracker.Domain.ActivityLog
         // "Excel for Auditor: CRA".
         ReportDownloaded,
 
+        // US-130 R4: a project was left out of (or taken back into) AI improvement. SubjectId points at the project.
+        ProjectAiSharingChanged,
+
+        // US-127: a security event was upgraded to reportable, or a vulnerability that is not exploited was disclosed.
+        // SubjectId points at the project.
+        SecurityEventUpgraded,
+        SecurityEventDisclosed,
+
+        // US-128: the tracker suggested a security event (from a scan or an exploited-vulnerability list), and a person
+        // recorded or dismissed it. SubjectId points at the project.
+        SecurityEventSuggested,
+        SecurityEventSuggestionAccepted,
+        SecurityEventSuggestionDismissed,
+
         // US-122: an upload token for a build pipeline was created or revoked. SubjectId points at the project; Details
         // holds the token's name, never the token. Its uploads are logged as ScanImported by the system.
         ScanUploadTokenCreated,

@@ -46,7 +46,25 @@ namespace ComplianceTracker.Domain.Security
         public DateTime? ClosedAt { get; private set; }
         public Guid? ClosedById { get; private set; }
 
+        // US-127 R5: why a vulnerability that is not exploited is closed without being disclosed
+        public string? ClosedReason { get; private set; }
+
+        // US-127: a vulnerability that is not exploited is disclosed after the fix (CRA Annex I, Part II (4))
+        public DateTime? DisclosedAt { get; private set; }
+
+        // US-127 R2, R3: upgraded once to a reportable kind; AwareAt then holds when it became reportable, and the
+        // first awareness is kept here
+        public DateTime? UpgradedAt { get; private set; }
+        public Guid? UpgradedById { get; private set; }
+        public string? UpgradeReason { get; private set; }
+        public DateTime? FirstAwareAt { get; private set; }
+
         public bool IsOpen => ClosedAt is null;
+
+        // US-127 R1: only these two kinds have reports and deadlines (CRA Art. 14(1), (3))
+        public bool IsReportable => Kind is SecurityEventKind.ActivelyExploitedVulnerability or SecurityEventKind.SevereIncident;
+
+        public bool IsVulnerability => Kind is SecurityEventKind.ActivelyExploitedVulnerability or SecurityEventKind.VulnerabilityNotExploited;
 
         // For EF Core only
         private SecurityEvent() { }
@@ -96,7 +114,7 @@ namespace ComplianceTracker.Domain.Security
         }
 
         // R2: the deadline of a report, or null while it cannot be known yet (the final report waits for a fix or the notification)
-        public DateTime? DueAt(SecurityReportKind report) => report switch
+        public DateTime? DueAt(SecurityReportKind report) => !IsReportable ? null : report switch
         {
             SecurityReportKind.EarlyWarning => AwareAt + EarlyWarningWithin,
             SecurityReportKind.Notification => AwareAt + NotificationWithin,
@@ -121,6 +139,12 @@ namespace ComplianceTracker.Domain.Security
         // R3: where a report stands at a moment
         public SecurityReportStatus Status(SecurityReportKind report, DateTime now)
         {
+            // US-127 R1: nothing to report for these kinds
+            if (!IsReportable)
+            {
+                return SecurityReportStatus.NotRequired;
+            }
+
             if (SentAt(report) is { } sent)
             {
                 return DueAt(report) is { } due && sent > due ? SecurityReportStatus.SentLate : SecurityReportStatus.Sent;
@@ -143,6 +167,11 @@ namespace ComplianceTracker.Domain.Security
         public void MarkSent(SecurityReportKind report, DateTime sentAt, string? reference, DateTime now)
         {
             EnsureOpen();
+            if (!IsReportable)
+            {
+                throw new DomainException("This event has no reports; upgrade it if it becomes reportable");
+            }
+
             if (!Enum.IsDefined(report))
             {
                 throw new DomainException("Unknown report");
@@ -193,7 +222,7 @@ namespace ComplianceTracker.Domain.Security
         public void MarkFixAvailable(DateTime at, DateTime now)
         {
             EnsureOpen();
-            if (Kind != SecurityEventKind.ActivelyExploitedVulnerability)
+            if (!IsVulnerability)
             {
                 throw new DomainException("Only a vulnerability has a fix");
             }
@@ -211,17 +240,86 @@ namespace ComplianceTracker.Domain.Security
             FixAvailableAt = DateTime.SpecifyKind(at, DateTimeKind.Utc);
         }
 
-        // R1: closed when every report is sent
-        public void Close(Guid userId, DateTime now)
+        // R1: closed when every report is sent. US-127 R5: a vulnerability that is not exploited when it is fixed and
+        // disclosed, or with a reason why not; an incident that is not severe at any time.
+        public void Close(Guid userId, DateTime now, string? reason = null)
         {
             EnsureOpen();
-            if (Enum.GetValues<SecurityReportKind>().Any(r => SentAt(r) is null))
+            var text = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+            if (text?.Length > MaxDescriptionLength)
             {
-                throw new DomainException("Send every report before closing the event");
+                throw new DomainException($"The reason must be {MaxDescriptionLength} characters or fewer");
+            }
+
+            switch (Kind)
+            {
+                case SecurityEventKind.VulnerabilityNotExploited when (FixAvailableAt is null || DisclosedAt is null) && text is null:
+                    throw new DomainException("Mark the fix as available and the vulnerability as disclosed, or give a reason to close it");
+                case SecurityEventKind.ActivelyExploitedVulnerability or SecurityEventKind.SevereIncident
+                    when Enum.GetValues<SecurityReportKind>().Any(r => SentAt(r) is null):
+                    throw new DomainException("Send every report before closing the event");
             }
 
             ClosedAt = now;
             ClosedById = userId;
+            ClosedReason = text;
+        }
+
+        // US-127 (CRA Annex I, Part II (4)): the vulnerability is disclosed after the fix
+        public void MarkDisclosed(DateTime at, DateTime now)
+        {
+            EnsureOpen();
+            if (Kind != SecurityEventKind.VulnerabilityNotExploited)
+            {
+                throw new DomainException("Only a vulnerability that is not exploited is disclosed here");
+            }
+
+            if (DisclosedAt is not null)
+            {
+                throw new DomainException("The vulnerability is already marked as disclosed");
+            }
+
+            if (FixAvailableAt is not { } fix || at < fix || at > now)
+            {
+                throw new DomainException("Disclose the vulnerability after the fix is available, and not in the future");
+            }
+
+            DisclosedAt = DateTime.SpecifyKind(at, DateTimeKind.Utc);
+        }
+
+        // US-127 R2–R4: it became actively exploited or severe; from reportableAt the reports and deadlines apply
+        public void Upgrade(DateTime reportableAt, string? reason, Guid userId, DateTime now)
+        {
+            EnsureOpen();
+            if (IsReportable)
+            {
+                throw new DomainException(UpgradedAt is null ? "The event is reportable already" : "The event is upgraded already");
+            }
+
+            var text = (reason ?? "").Trim();
+            if (text.Length == 0)
+            {
+                throw new DomainException("Say why it became reportable");
+            }
+
+            if (text.Length > MaxDescriptionLength)
+            {
+                throw new DomainException($"The reason must be {MaxDescriptionLength} characters or fewer");
+            }
+
+            if (reportableAt < AwareAt || reportableAt > now)
+            {
+                throw new DomainException("It became reportable between the time you became aware of the event and now");
+            }
+
+            FirstAwareAt = AwareAt;
+            AwareAt = DateTime.SpecifyKind(reportableAt, DateTimeKind.Utc);
+            Kind = Kind == SecurityEventKind.VulnerabilityNotExploited
+                ? SecurityEventKind.ActivelyExploitedVulnerability
+                : SecurityEventKind.SevereIncident;
+            UpgradedAt = now;
+            UpgradedById = userId;
+            UpgradeReason = text;
         }
 
         private void EnsureOpen()
@@ -240,7 +338,11 @@ namespace ComplianceTracker.Domain.Security
         ActivelyExploitedVulnerability,
 
         // Art. 14(3)
-        SevereIncident
+        SevereIncident,
+
+        // US-127: handled under Annex I, Part II without reports; can be upgraded when it becomes exploited or severe
+        VulnerabilityNotExploited,
+        IncidentNotSevere
     }
 
     // Art. 14(2)(a)–(c) and (4)(a)–(c)
@@ -261,7 +363,10 @@ namespace ComplianceTracker.Domain.Security
         DueSoon,
         Missed,
         Sent,
-        SentLate
+        SentLate,
+
+        // US-127: the event is not reportable
+        NotRequired
     }
 
     public static class SecurityReportNames
@@ -273,8 +378,12 @@ namespace ComplianceTracker.Domain.Security
             _ => "Final report"
         };
 
-        public static string Title(SecurityEventKind kind) => kind == SecurityEventKind.ActivelyExploitedVulnerability
-            ? "Actively exploited vulnerability"
-            : "Severe incident";
+        public static string Title(SecurityEventKind kind) => kind switch
+        {
+            SecurityEventKind.ActivelyExploitedVulnerability => "Actively exploited vulnerability",
+            SecurityEventKind.SevereIncident => "Severe incident",
+            SecurityEventKind.VulnerabilityNotExploited => "Vulnerability, not exploited",
+            _ => "Incident, not severe"
+        };
     }
 }

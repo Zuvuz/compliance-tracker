@@ -25,6 +25,8 @@ classDiagram
 
   %% ================= Organisation og brugere =================
   class Organization {
+    -shareAiFeedback: bool
+    -shareAiFeedbackSince: DateTime?
     -id: Guid
     -name: string
     -cvr: string
@@ -200,6 +202,7 @@ classDiagram
 
   %% ================= Projekt og releases =================
   class Project {
+    -excludedFromAiSharing: bool
     -id: Guid
     -version: uint
     -organizationId: Guid
@@ -938,6 +941,12 @@ classDiagram
     +CompleteAction(actionId: Guid, hasProof: bool, userId: Guid, at: DateTime)
     +OverdueActions(today: DateOnly) int
   }
+  class RiskTraces {
+    <<static>>
+    +For(risk: Risk, compliance: ProjectCompliance)$ RiskTrace
+    +ByRequirement(risks: IEnumerable~Risk~, requirementsOfStory: ILookup~Guid,Guid~)$ IReadOnlyDictionary~Guid,IReadOnlyList~RiskReference~~
+  }
+  RiskTraces ..> Risk
   class RiskMeasure {
     -id: Guid
     -riskId: Guid
@@ -1108,17 +1117,28 @@ classDiagram
     -notificationSentAt: DateTime?
     -finalReportSentAt: DateTime?
     -closedAt: DateTime?
+    -closedReason: string?
+    -disclosedAt: DateTime?
+    -upgradedAt: DateTime?
+    -upgradeReason: string?
+    -firstAwareAt: DateTime?
+    +IsReportable: bool
+    +IsVulnerability: bool
     +Record(...)$ SecurityEvent
     +DueAt(report: SecurityReportKind) DateTime?
     +Status(report: SecurityReportKind, now: DateTime) SecurityReportStatus
     +MarkSent(report: SecurityReportKind, sentAt: DateTime, reference: string, now: DateTime)
     +MarkFixAvailable(at: DateTime, now: DateTime)
-    +Close(userId: Guid, now: DateTime)
+    +Close(userId: Guid, now: DateTime, reason: string?)
+    +MarkDisclosed(at: DateTime, now: DateTime)
+    +Upgrade(reportableAt: DateTime, reason: string, userId: Guid, now: DateTime)
   }
   class SecurityEventKind {
     <<enumeration>>
     ActivelyExploitedVulnerability
     SevereIncident
+    VulnerabilityNotExploited
+    IncidentNotSevere
   }
   class SecurityReportKind {
     <<enumeration>>
@@ -1130,11 +1150,62 @@ classDiagram
     +RecordAsync(...) Task~SecurityEvent~
     +MarkSentAsync(...) Task
     +MarkFixAvailableAsync(...) Task
+    +MarkDisclosedAsync(...) Task
+    +UpgradeAsync(...) Task
     +CloseAsync(...) Task
   }
   class ISecurityEventRepository {
     <<interface>>
   }
+  class SecurityEventSuggestion {
+    -id: Guid
+    -projectId: Guid
+    -key: string
+    -title: string
+    -source: SuggestionSource
+    -sourceName: string
+    -kind: SecurityEventKind
+    -upgradeEventId: Guid?
+    -findingIds: List~Guid~
+    -learnedAt: DateTime
+    -status: SuggestionStatus
+    -dismissedReason: string?
+    -eventId: Guid?
+    +Create(...)$ SecurityEventSuggestion
+    +Accept(userId: Guid, now: DateTime)
+    +Dismiss(reason: string, userId: Guid, now: DateTime)
+    +Supersede(reason: string, now: DateTime)
+  }
+  class ExploitedList {
+    -name: string
+    -cves: List~string~
+    -fetchedAt: DateTime?
+    -lastError: string?
+    +Refreshed(cves: string[], at: DateTime)
+    +Failed(error: string, at: DateTime)
+  }
+  class SuggestionMatcher {
+    <<static>>
+    +Match(...)$ SecurityEventSuggestion[]
+  }
+  class SecurityEventSuggestionService {
+    +MatchAsync(...) Task
+    +RefreshAsync() Task
+    +RecordAsync(...) Task
+    +DismissAsync(...) Task
+  }
+  class IExploitedVulnerabilityList {
+    <<interface>>
+    +FetchAsync() Task~string[]~
+  }
+  IExploitedVulnerabilityList <|.. KevExploitedList
+  IExploitedVulnerabilityList <|.. EuvdExploitedList
+  SecurityEventSuggestion --> SecurityEventKind
+  SecurityEventSuggestion ..> SecurityEvent : upgrade or recorded
+  SecurityEventSuggestionService ..> SuggestionMatcher
+  SecurityEventSuggestionService --> IExploitedVulnerabilityList
+  SecurityEventSuggestionService --> SecurityEventService
+  ScanService --> SecurityEventSuggestionService : after import
   SecurityEvent --> SecurityEventKind
   SecurityEvent ..> SecurityReportKind
   SecurityEventService --> ISecurityEventRepository

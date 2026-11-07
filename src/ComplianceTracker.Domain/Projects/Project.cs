@@ -58,6 +58,11 @@ namespace ComplianceTracker.Domain.Projects
         // hidden before someone chooses; there is always at least one.
         public RequirementMethods RequirementMethods { get; private set; } = RequirementMethods.All;
 
+        // US-130 R4: a confidential project is left out of AI improvement, with who and when
+        public bool ExcludedFromAiSharing { get; private set; }
+        public Guid? AiSharingChangedById { get; private set; }
+        public DateTime? AiSharingChangedAt { get; private set; }
+
         // US-024 R4: a project at end of support is kept as it was and cannot be changed
         public bool IsClosed => Phase == LifecyclePhase.EndOfSupport;
 
@@ -95,6 +100,21 @@ namespace ComplianceTracker.Domain.Projects
 
         // R2, R4: one or more methods. Turning one off hides it on the tab and deletes nothing (R5).
         // Returns the change, or null when nothing changed.
+        // US-130 R4: null when nothing changes. Allowed at end of support too: it only limits what leaves the organisation.
+        public ProjectChange? SetExcludedFromAiSharing(bool excluded, Guid userId, DateTime at)
+        {
+            if (ExcludedFromAiSharing == excluded)
+            {
+                return null;
+            }
+
+            var change = new ProjectChange("AI improvement", ExcludedFromAiSharing ? "Left out" : "Shared", excluded ? "Left out" : "Shared");
+            ExcludedFromAiSharing = excluded;
+            AiSharingChangedById = userId;
+            AiSharingChangedAt = at;
+            return change;
+        }
+
         public ProjectChange? ChangeRequirementMethods(RequirementMethods methods)
         {
             EnsureOpen();

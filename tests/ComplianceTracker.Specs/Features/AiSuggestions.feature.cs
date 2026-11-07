@@ -134,7 +134,7 @@ namespace ComplianceTracker.Specs.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/AiSuggestions.feature.ndjson", 14);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/AiSuggestions.feature.ndjson", 12);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -595,21 +595,21 @@ namespace ComplianceTracker.Specs.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="Nothing is exported while sharing is off")]
+        [global::Xunit.SkippableFactAttribute(DisplayName="Decisions are logged")]
         [global::Xunit.TraitAttribute("FeatureTitle", "The local AI suggests mappings, and every decision is kept")]
-        [global::Xunit.TraitAttribute("Description", "Nothing is exported while sharing is off")]
-        [global::Xunit.TraitAttribute("Category", "US-036")]
-        [global::Xunit.TraitAttribute("Category", "iso27001-A.5.34")]
+        [global::Xunit.TraitAttribute("Description", "Decisions are logged")]
+        [global::Xunit.TraitAttribute("Category", "US-020")]
+        [global::Xunit.TraitAttribute("Category", "iso27001-A.8.15")]
         [global::Xunit.TraitAttribute("Category", "integration")]
-        public async global::System.Threading.Tasks.Task NothingIsExportedWhileSharingIsOff()
+        public async global::System.Threading.Tasks.Task DecisionsAreLogged()
         {
             string[] tagsOfScenario = new string[] {
-                    "US-036",
-                    "iso27001-A.5.34",
+                    "US-020",
+                    "iso27001-A.8.15",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "9";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Nothing is exported while sharing is off", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Decisions are logged", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 84
@@ -626,122 +626,19 @@ namespace ComplianceTracker.Specs.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 85
-    await testRunner.WhenAsync("I export the AI feedback", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.GivenAsync("the AI rates \"[US-004] Sign in with OpenID Connect\" against \"SP-1\" with 0.86", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 86
-    await testRunner.ThenAsync("I see the error \"Sharing is off\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-#line hidden
-            }
-            await this.ScenarioCleanupAsync();
-        }
-        
-        [global::Xunit.SkippableFactAttribute(DisplayName="The export has the decisions and no names")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "The local AI suggests mappings, and every decision is kept")]
-        [global::Xunit.TraitAttribute("Description", "The export has the decisions and no names")]
-        [global::Xunit.TraitAttribute("Category", "US-036")]
-        [global::Xunit.TraitAttribute("Category", "iso27001-A.5.34")]
-        [global::Xunit.TraitAttribute("Category", "iso27001-A.8.15")]
-        [global::Xunit.TraitAttribute("Category", "integration")]
-        public async global::System.Threading.Tasks.Task TheExportHasTheDecisionsAndNoNames()
-        {
-            string[] tagsOfScenario = new string[] {
-                    "US-036",
-                    "iso27001-A.5.34",
-                    "iso27001-A.8.15",
-                    "integration"};
-            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "10";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The export has the decisions and no names", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
-            string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 89
-  this.ScenarioInitialize(scenarioInfo, ruleInfo);
-#line hidden
-            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
-            {
-                await testRunner.SkipScenarioAsync();
-            }
-            else
-            {
-                await this.ScenarioStartAsync();
-#line 7
-  await this.FeatureBackgroundAsync();
-#line hidden
-#line 90
-    await testRunner.GivenAsync("the AI rates \"[US-004] Sign in with OpenID Connect\" against \"SP-1\" with 0.86", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-#line hidden
-#line 91
     await testRunner.AndAsync("I have clicked \"Suggest mappings\" for \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 92
-    await testRunner.AndAsync("I reject the suggestion \"SP-1\" for \"[US-004] Sign in with OpenID Connect\" with th" +
-                        "e reason \"TooBroad\" and the comment \"Only about sign-in\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-#line 93
-    await testRunner.WhenAsync("I switch on \"Share our decisions to improve the AI\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
-#line 94
-    await testRunner.AndAsync("I export the AI feedback", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-#line 95
-    await testRunner.ThenAsync("the export has 1 line with the requirement, the user story, the score and the dec" +
-                        "ision \"Rejected\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-#line hidden
-#line 96
-    await testRunner.AndAsync("the export does not say who decided", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-#line 97
-    await testRunner.AndAsync("the activity log for \"Acme ApS\" has \"AiFeedbackSharingChanged\" and \"AiFeedbackExp" +
-                        "orted\" for \"Anna\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-            }
-            await this.ScenarioCleanupAsync();
-        }
-        
-        [global::Xunit.SkippableFactAttribute(DisplayName="Decisions are logged")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "The local AI suggests mappings, and every decision is kept")]
-        [global::Xunit.TraitAttribute("Description", "Decisions are logged")]
-        [global::Xunit.TraitAttribute("Category", "US-020")]
-        [global::Xunit.TraitAttribute("Category", "iso27001-A.8.15")]
-        [global::Xunit.TraitAttribute("Category", "integration")]
-        public async global::System.Threading.Tasks.Task DecisionsAreLogged()
-        {
-            string[] tagsOfScenario = new string[] {
-                    "US-020",
-                    "iso27001-A.8.15",
-                    "integration"};
-            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "11";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Decisions are logged", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
-            string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 100
-  this.ScenarioInitialize(scenarioInfo, ruleInfo);
-#line hidden
-            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
-            {
-                await testRunner.SkipScenarioAsync();
-            }
-            else
-            {
-                await this.ScenarioStartAsync();
-#line 7
-  await this.FeatureBackgroundAsync();
-#line hidden
-#line 101
-    await testRunner.GivenAsync("the AI rates \"[US-004] Sign in with OpenID Connect\" against \"SP-1\" with 0.86", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-#line hidden
-#line 102
-    await testRunner.AndAsync("I have clicked \"Suggest mappings\" for \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-#line 103
+#line 87
     await testRunner.WhenAsync("I approve the suggestion \"SP-1\" for \"[US-004] Sign in with OpenID Connect\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 104
+#line 88
     await testRunner.ThenAsync("the activity log for \"Acme ApS\" has \"MappingApproved\" for \"Anna\" concerning \"Acme" +
                         " Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 105
+#line 89
     await testRunner.AndAsync("the \"MappingApproved\" entry says \"SP-1 ↔ [US-004] Sign in with OpenID Connect\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }

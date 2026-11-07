@@ -83,6 +83,9 @@ namespace ComplianceTracker.Web.Models
 
         public DateOnly Today => DateOnly.FromDateTime(Now);
 
+        // US-124 R1: the thread from this risk to requirements and evidence
+        public Application.Risks.RiskTrace? Trace => Compliance is null ? null : Application.Risks.RiskTraces.For(Risk, Compliance);
+
         public Domain.WorkItems.WorkItem? WorkItemOf(Guid? workItemId)
             => Compliance?.WorkItems.FirstOrDefault(w => w.Id == workItemId);
 

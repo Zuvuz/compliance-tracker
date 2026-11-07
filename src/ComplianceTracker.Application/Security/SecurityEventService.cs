@@ -52,7 +52,8 @@ namespace ComplianceTracker.Application.Security
 
             await _events.AddAsync(securityEvent, cancellationToken);
             await _log.LogAsync(
-                kind == SecurityEventKind.ActivelyExploitedVulnerability ? ActivityAction.VulnerabilityRecorded : ActivityAction.IncidentRecorded,
+                kind is SecurityEventKind.ActivelyExploitedVulnerability or SecurityEventKind.VulnerabilityNotExploited
+                    ? ActivityAction.VulnerabilityRecorded : ActivityAction.IncidentRecorded,
                 project.Id, $"{securityEvent.Title}, aware {securityEvent.AwareAt:dd-MM-yyyy HH:mm} UTC", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return securityEvent;
@@ -83,13 +84,37 @@ namespace ComplianceTracker.Application.Security
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
-        public async Task CloseAsync(Guid projectId, Guid eventId, CancellationToken cancellationToken = default)
+        public async Task CloseAsync(Guid projectId, Guid eventId, string? reason = null, CancellationToken cancellationToken = default)
         {
             var (user, project) = await OpenProjectAsync(projectId, cancellationToken);
             var securityEvent = await RequireAsync(project, eventId, cancellationToken);
 
-            securityEvent.Close(user.Id, Now);
-            await _log.LogAsync(ActivityAction.SecurityEventClosed, project.Id, securityEvent.Title, cancellationToken);
+            securityEvent.Close(user.Id, Now, reason);
+            await _log.LogAsync(ActivityAction.SecurityEventClosed, project.Id,
+                securityEvent.Title + (securityEvent.ClosedReason is { } why ? $" ({why})" : ""), cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-127: a vulnerability that is not exploited is disclosed after its fix
+        public async Task MarkDisclosedAsync(Guid projectId, Guid eventId, DateTime atUtc, CancellationToken cancellationToken = default)
+        {
+            var (_, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var securityEvent = await RequireAsync(project, eventId, cancellationToken);
+
+            securityEvent.MarkDisclosed(atUtc, Now);
+            await _log.LogAsync(ActivityAction.SecurityEventDisclosed, project.Id, $"{securityEvent.Title}: disclosed", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-127 R2–R4: from now the reports and deadlines apply, from the time it became reportable
+        public async Task UpgradeAsync(Guid projectId, Guid eventId, DateTime reportableAtUtc, string? reason, CancellationToken cancellationToken = default)
+        {
+            var (user, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var securityEvent = await RequireAsync(project, eventId, cancellationToken);
+
+            securityEvent.Upgrade(reportableAtUtc, reason, user.Id, Now);
+            await _log.LogAsync(ActivityAction.SecurityEventUpgraded, project.Id,
+                $"{securityEvent.Title}: {SecurityReportNames.Title(securityEvent.Kind)} ({securityEvent.UpgradeReason})", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 

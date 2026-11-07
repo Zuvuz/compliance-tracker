@@ -266,6 +266,7 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - **Modellen kan altid skiftes:** Application kender kun `IEmbeddingModel` og `IRationaleWriter`. Provider, adresse og modelnavne står i konfigurationen (`Ai:Provider`, `Ai:BaseUrl`, `Ai:EmbeddingModel`, `Ai:ChatModel`). Der er adaptere til Ollama og til OpenAI-kompatible servere (vLLM, LM Studio, llama.cpp). En ny slags server kræver kun en ny adapter.
   - **Sporbarhed:** hvert forslag gemmer modellernes navne og prompt-versionen (`RationalePrompt.Version`), så resultater fra forskellige modeller kan sammenlignes. Embeddings gemmes ikke, men beregnes ved hver kørsel, så en ny model aldrig blandes med gamle vektorer.
   - **Data:** alle forslag og beslutninger gemmes altid som revisionsspor. Eksport til forbedring af AI'en kræver, at en Admin har slået deling til (slået fra som standard). Eksporten indeholder ikke, hvem der besluttede.
+  - **Opdateret (US-130, B63):** deling er nu slået til som standard, og organisationens egen eksport er fjernet.
   - Krav markeret "Not applicable" (US-043) foreslås ikke.
 - **Begrundelse:** Udviklingsmaskinen har ingen GPU. En chat-model, der vurderede alle par, ville tage timer, mens embeddings tager sekunder. Når trackeren kører på en server med GPU, kan en større model indsættes uden kodeændringer, og de gemte beslutninger viser, om den er bedre.
 - **Fravalgt:**
@@ -784,6 +785,92 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At starte en scanning eller et workflow i GitHub (kræver skriveadgang).
   - Secret scanning-alarmer (kan komme på samme måde).
   - Repositories uden for GitHub (US-122).
+
+### B62 – Den røde tråd fra risiko til krav og evidens
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-124)
+  - Risikosiden har en sektion "Trace", der viser tråden som et træ: risikoens measures (krav og stories) og handlinger → de user stories, der udfører dem → de krav, stories dækker → evidensen på kravene. Evidens koblet direkte til en handling vises under handlingen.
+  - Compliance-fanen viser på hver krav-række de åbne risici, der når kravet. En risiko når et krav direkte som measure, eller gennem en story, der er measure eller koblet til en af risikoens handlinger. Højeste risiko står først, og hver risiko nævnes én gang.
+  - Lukkede risici vises ikke på kravene, men deres egen side har stadig tråden. Fjernede stories og links vises ikke.
+  - Excel-rapporten (US-120) har en "Risks"-kolonne for team og auditor. CSV'en er uændret (B60).
+  - Tråden bygges af data, der allerede findes (`RiskTraces`). Intet nyt gemmes, og intet kan ændres fra tråden.
+- **Begrundelse:** Det skal kunne ses, hvorfor et stykke arbejde findes, og hvad det beviser: risikovurderingen bestemmer kravene, og kravene bevises af arbejde og evidens (CRA art. 13(2)–(3), bilag VII; ISO 27001 6.1.3, 8.3; AI Act art. 9).
+- **Fravalgt:**
+  - Et grafisk diagram. Træet er nok til at starte med.
+  - Sikkerhedshændelser og scanningsfund i tråden. De kan komme, når US-119 kobler dem til risici.
+
+### B63 – AI-beslutninger deles som standard, og kun systemejeren træner
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-130)
+  - Nye organisationer deler som standard deres beslutninger om AI-forslag: de tekster, AI'en sammenlignede, og om forslaget blev godkendt. Navne og e-mails deles aldrig. Det fortælles på siden, hvor organisationen oprettes, og på Settings-siden.
+  - Organisationens admin kan slå delingen fra og til. Den bruger, der må redigere projekter, kan udelade et fortroligt projekt fra AI-forbedring på projektets Edit-side. Begge dele logges.
+  - Kun beslutninger, der er truffet efter delingen sidst blev slået til, og som ikke kommer fra et udeladt projekt, bruges til måling (US-116) og træning (US-123). Reglen står ét sted (`AiSharing.MayUse`).
+  - Organisationernes egen "Export AI feedback" (US-036) er fjernet. Settings-siden viser i stedet, hvor mange beslutninger der deles. Kun systemejeren vælger modeller (B47, B56) og trækker træningsdata ud. AI'en trænes aldrig i realtid.
+  - Ved migreringen bliver eksisterende organisationer slået til fra nu af, undtagen dem, hvis admin bevidst har slået delingen fra. Deres tidligere beslutninger bruges ikke. Migreringen skriver ikke i aktivitetsloggen, så loggens fingeraftryk ikke brydes.
+- **Begrundelse:** Systemejeren træner modellerne til formålet og skal have data nok. Mellem virksomheder kan det bygge på legitim interesse med ret til at sige fra (GDPR art. 6(1)(f), art. 21), når det fortælles tydeligt (art. 13). Fortrolige projekter kan holdes ude (art. 25).
+- **Fravalgt:**
+  - At organisationer bruger deres egne modeller eller eksporterer til dem. En svagere model ville få produktet til at se dårligere ud, end det er.
+  - At bruge beslutninger fra en tidligere periode med deling, efter delingen har været slået fra. Det er enklere og mere forsigtigt at starte forfra.
+- **Åbent:** vilkårene og databehandleraftalen skal sige det samme, før det går i drift.
+
+### B64 – Sikkerhedshændelser, der ikke skal indberettes (endnu)
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-127, udvider B49)
+  - En sikkerhedshændelse kan også være "Vulnerability, not exploited" eller "Incident, not severe". De har ingen indberetninger og ingen frister. Fanen siger det, og status er `NotRequired`.
+  - En sårbarhed, der ikke udnyttes, følges til rettelsen (CRA bilag I, del II): rettelsen markeres som tilgængelig og sårbarheden som offentliggjort, tidligst ved rettelsen og ikke i fremtiden. Den lukkes, når begge dele er sket, eller med en grund (fx at komponenten er fjernet). En hændelse, der ikke er alvorlig, kan lukkes med det samme.
+  - Bliver den udnyttet aktivt eller alvorlig, opgraderes den med tidspunktet og en grund. Tidspunktet skal ligge mellem, da man blev opmærksom, og nu. Fristerne i CRA art. 14 regnes fra det tidspunkt, og det første opmærksomhedstidspunkt gemmes. En hændelse kan kun opgraderes én gang og aldrig nedgraderes.
+  - En opgraderet hændelse kræver alle indberetninger, før den kan lukkes. En grund erstatter dem ikke.
+  - Opgradering og offentliggørelse logges i gruppen Security events.
+- **Begrundelse:** Kun aktivt udnyttede sårbarheder og alvorlige hændelser skal indberettes (CRA art. 14(1), (3)). De andre skal stadig håndteres og rettes (bilag I, del II), og de kan skifte status senere. Fristen løber fra, man ved, at den er indberetningspligtig.
+- **Fravalgt:**
+  - At nedgradere en hændelse, der først er indberetningspligtig. Indberetningerne er sendt eller skulle have været.
+  - Forslag til hændelser ud fra fund og lister over udnyttede sårbarheder. Det kommer med US-128.
+
+### B65 – Alle rapporter på én fane
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-129)
+  - Projektet har en fane "Reports" efter "Activity". Den viser hver rapport som et kort med navn, hvem den er til, hvad den indeholder og formatet.
+  - Sporbarhedsrapporten har de samme valg som på Compliance-fanen (læser, format og regulativ, B60), men her er "All regulations" standard. Udkastet til teknisk dokumentation (US-056) hentes som Word.
+  - En rapport, der ikke kan laves, står der stadig og siger hvorfor, fx "Add a framework to the project to make a traceability report". Reglen ligger i `ProjectReports` i Application, så nye rapporter kommer til samme sted.
+  - Overview's kort "Reports" viser, hvilke rapporter der kan laves, og linker til fanen. Den forkerte tekst "Traceability matrix (CSV)" er væk.
+  - Compliance-fanen beholder sin download for det åbne regulativ. Alle roller kan hente, og hver download logges som før.
+- **Begrundelse:** Rapporterne lå forskellige steder. Den, der skal aflevere en rapport til en auditor eller ledelsen, skal kunne finde den ét sted (ISO 27001 7.5.3, 9.1, 9.3; CRA bilag VII).
+- **Fravalgt:**
+  - At fanen husker de sidste valg pr. bruger.
+  - Siden for eksterne auditorer. Den hører til US-076.
+
+### B66 – Forslag til sikkerhedshændelser fra fund og lister over udnyttede sårbarheder
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-128)
+  - Trackeren foreslår sikkerhedshændelser. Den opretter dem aldrig selv. En person registrerer eller afviser hvert forslag.
+  - **Udnyttede sårbarheder:**
+    - Åbne fund matches på CVE-nummer mod de offentlige lister over udnyttede sårbarheder: CISA's Known Exploited Vulnerabilities (KEV) og EU's sårbarhedsdatabase (EUVD, ENISA).
+    - CVE-nummeret findes i fundets regel-id eller besked, uanset store og små bogstaver.
+    - Et match foreslår "Actively exploited vulnerability" én gang pr. CVE og projekt, også når flere fund har samme CVE.
+  - **Kritiske fund:** et nyt kritisk fund uden match foreslår "Vulnerability, not exploited" (B64). Det gælder også et fund uden CVE, fx en CodeQL-regel.
+  - **Når der allerede er en hændelse:**
+    - En CVE, der allerede har en hændelse, får ikke et nyt forslag.
+    - Er hændelsen en åben "not exploited", foreslås en opgradering i stedet.
+    - Et ventende "not exploited"-forslag trækkes tilbage, når CVE'en bliver udnyttet.
+  - **Registrering:** opmærksomhedstidspunktet er, da trackeren lærte det, og det kan ændres. Fristen for den tidlige advarsel løber altså fra det tidspunkt.
+  - **Afvisning:** et afvist forslag beholder sin grund. Det kommer kun igen, hvis CVE'en dukker op i et nyt fund.
+  - **Hvornår der matches:** efter hver scanningsimport, og når listerne hentes.
+  - **Listerne:**
+    - Listerne hentes kun, når operatøren slår dem til (`Security:ExploitedLists:Enabled`, fx `["KEV", "EUVD"]`). De hentes ved start og derefter hver 24. time.
+    - Den sidst hentede udgave gemmes. Hvis hentningen fejler, viser fanen, hvornår listen sidst blev hentet, og intet andet ændres.
+    - En tracker uden internet virker som før.
+  - Forslagene vises øverst på fanen Security events og under "Needs attention", hvor en udnyttet CVE står først. Det kræver `ManageRisks` at beslutte, som i US-073. Forslag, registrering og afvisning logges.
+- **Begrundelse:** CRA art. 14(2)(a) giver 24 timer til den tidlige advarsel fra, man ved, at en sårbarhed udnyttes aktivt. Listerne er det offentlige bevis for det, og produktets fund viser, at sårbarheden er i produktet (ISO 27001 A.5.7, A.8.8). Trackeren gætter ikke på alvoren alene. Mennesket beslutter (AI Act art. 14 som princip).
+- **Fravalgt:**
+  - GitHub's private security advisories som kilde. De kommer, når US-121 (GitHub-alarmer) er flettet.
+  - EPSS-scorer (sandsynligheden for udnyttelse).
+  - Hændelser fra drift og logs (US-098).
+  - At trackeren selv opretter hændelser.
 
 ### B67 – Byggepipelinen uploader scanninger med et token for projektet
 
