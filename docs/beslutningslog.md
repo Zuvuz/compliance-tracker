@@ -770,6 +770,21 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At CSV får én række pr. kobling og læserens kolonner (US-120 R7). Det ville ændre et format, andre værktøjer kan læse.
   - PDF (US-051, US-082) og låsning af rapporten med fingeraftryk (US-050).
 
+### B61 – Sikkerhedsalarmer hentes fra GitHub
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-121)
+  - Et projekt, der er koblet til et GitHub-repository, kan hente repositoryets code scanning-alarmer (CodeQL og andre værktøjer, der uploader SARIF til GitHub) og Dependabot-alarmer. Det sker med knappen "Fetch from GitHub" på Scans-fanen og med den planlagte synkronisering. Der bruges samme token som til user stories, og trackeren kun læser (B12).
+  - Alarmerne laves om til en SARIF-fil og importeres som en upload (US-078). Hvert værktøj bliver sin egen scanning med kilden "GitHub code scanning" eller "GitHub Dependabot". Fingeraftrykket er alarmens nummer i repositoryet, så den samme alarm følges mellem hentninger.
+  - En alarm, der er løst i GitHub, forsvinder fra listen og bliver "Fixed". En alarm, der er afvist i GitHub, bliver "Accepted" med GitHubs grund ("Dismissed in GitHub: false positive"). Den markeres ikke som accepteret af en person.
+  - Kan en kilde ikke læses (Dependabot slået fra, code scanning ikke sat op, ingen adgang), siger fanen det i ord, og den anden kilde hentes stadig.
+  - En scanning hentet af den planlagte synkronisering har ingen bruger.
+- **Begrundelse:** Fundene findes allerede i GitHub for de fleste projekter. At hente dem kræver ingen ny rettighed og giver Scans-fanen data uden manuelle uploads (CRA bilag I, ISO 27001 A.8.8).
+- **Fravalgt:**
+  - At starte en scanning eller et workflow i GitHub (kræver skriveadgang).
+  - Secret scanning-alarmer (kan komme på samme måde).
+  - Repositories uden for GitHub (US-122).
+
 ### B62 – Den røde tråd fra risiko til krav og evidens
 
 - **Status:** Vedtaget
