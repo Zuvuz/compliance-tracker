@@ -2,7 +2,9 @@
    Ids used by the tests: #risk-title, #risk-level, #risk-status, #risk-accepted, #risk-measures (li.risk-measure),
    #add-measure, #accept-risk, #close-risk, #review-risk, #edit-risk-link.
    US-111: #risk-actions with li.risk-action (data-title) holding .risk-action-status, .risk-action-owner, .risk-action-due,
-   li.risk-action-link (data-kind), the forms .link-risk-action and .complete-risk-action; #add-risk-action; #no-risk-actions. *@
+   li.risk-action-link (data-kind), the forms .link-risk-action and .complete-risk-action; #add-risk-action; #no-risk-actions.
+   US-124: #risk-trace with li.trace-node (data-kind: measure-requirement, measure-story, action, story, requirement, evidence;
+   data-name), nested as the thread goes; #no-trace. *@
 @using ComplianceTracker.Domain.Risks
 @model RiskPageViewModel
 @{
@@ -206,6 +208,88 @@
                 <button type="submit" class="btn btn-sm btn-outline-primary w-100">Add action</button>
             </div>
         </form>
+    }
+</section>
+
+<section class="mb-4">
+    @* US-124 R1: risk → measures and actions → user stories → requirements → evidence *@
+    <h2 class="h5">Trace</h2>
+    @{
+        var trace = Model.Trace;
+        async Task Requirement(ComplianceTracker.Application.Risks.TraceRequirement requirement, string kind)
+        {
+            <li class="trace-node" data-kind="@kind" data-name="@requirement.Requirement.Code">
+                <span class="badge text-bg-light">@requirement.Framework</span>
+                <a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.Project.Id" asp-route-tab="@ProjectTabs.Compliance"
+                   asp-route-sub="@FrameworkNames.Slug(requirement.Framework)" asp-route-q="@requirement.Requirement.Code">@requirement.Requirement.Code</a>
+                <span class="small">@requirement.Requirement.Title</span>
+                @if (requirement.Evidence.Count > 0)
+                {
+                    <ul class="list-unstyled ms-3 mb-0">
+                        @foreach (var item in requirement.Evidence)
+                        {
+                            <li class="trace-node small" data-kind="evidence" data-name="@item.Evidence.Title">
+                                Evidence: @item.Evidence.Title@(item.IsExpired ? " (expired)" : "")
+                            </li>
+                        }
+                    </ul>
+                }
+            </li>
+        }
+        async Task Story(ComplianceTracker.Application.Risks.TraceStory story, string kind)
+        {
+            <li class="trace-node" data-kind="@kind" data-name="@story.Story.Title">
+                Story: <a href="@story.Story.Url" target="_blank" rel="noopener noreferrer">@story.Story.Title</a>
+                <span class="badge text-bg-light">@story.Story.State</span>
+                @if (story.Requirements.Count > 0)
+                {
+                    <ul class="list-unstyled ms-3 mb-0">
+                        @foreach (var requirement in story.Requirements)
+                        {
+                            await Requirement(requirement, "requirement");
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <span class="small text-muted">· covers no requirement yet</span>
+                }
+            </li>
+        }
+    }
+    @if (trace is null || trace.IsEmpty)
+    {
+        <p class="text-muted" id="no-trace">No measures or actions yet, so nothing to trace</p>
+    }
+    else
+    {
+        <ul class="list-unstyled" id="risk-trace">
+            @foreach (var requirement in trace.MeasureRequirements)
+            {
+                await Requirement(requirement, "measure-requirement");
+            }
+            @foreach (var story in trace.MeasureStories)
+            {
+                await Story(story, "measure-story");
+            }
+            @foreach (var action in trace.Actions)
+            {
+                <li class="trace-node" data-kind="action" data-name="@action.Action.Title">
+                    Action: <strong>@action.Action.Title</strong>
+                    <span class="badge text-bg-secondary">@RiskPageViewModel.StatusText(action.Action.Status)</span>
+                    <ul class="list-unstyled ms-3 mb-1">
+                        @foreach (var story in action.Stories)
+                        {
+                            await Story(story, "story");
+                        }
+                        @foreach (var evidenceId in action.EvidenceIds)
+                        {
+                            <li class="trace-node small" data-kind="evidence" data-name="@Model.EvidenceTitle(evidenceId)">Evidence: @Model.EvidenceTitle(evidenceId)</li>
+                        }
+                    </ul>
+                </li>
+            }
+        </ul>
     }
 </section>
 

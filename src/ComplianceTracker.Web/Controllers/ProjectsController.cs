@@ -699,6 +699,18 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
         }
 
+        // POST /Projects/FetchScansFromGitHub: US-121 R1, R5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Scans)]
+        public async Task<IActionResult> FetchScansFromGitHub(
+            Guid projectId, [FromServices] Application.Scanning.ScanService scans, CancellationToken cancellationToken)
+        {
+            var lines = await scans.FetchFromGitHubAsync(projectId, cancellationToken);
+            TempData["ScanImported"] = string.Join("\n", lines);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
+        }
+
         // POST /Projects/AcceptFinding: R4
         [HttpPost]
         [ValidateAntiForgeryToken]

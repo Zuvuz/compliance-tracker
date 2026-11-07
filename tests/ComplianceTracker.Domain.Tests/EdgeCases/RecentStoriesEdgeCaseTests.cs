@@ -414,6 +414,66 @@ public class RecentStoriesEdgeCaseTests
         Assert.Equal(average, run.AverageGrade);
     }
 
+    // ---------------------------------------------------------- US-121: alerts from GitHub
+
+    [Fact]
+    public void A_finding_dismissed_in_the_source_is_accepted_without_a_person()
+    {
+        // Arrange
+        var finding = Finding.Create(Guid.NewGuid(), "CodeQL", "github:code-scanning-7", "js/xss", FindingSeverity.High, "m", null, Guid.NewGuid());
+
+        // Act
+        var changed = finding.AcceptFromSource("Dismissed in GitHub: false positive", Monday);
+
+        // Assert
+        Assert.True(changed);
+        Assert.Equal(FindingState.Accepted, finding.State);
+        Assert.Null(finding.AcceptedById);
+    }
+
+    [Fact]
+    public void A_finding_already_accepted_keeps_its_first_reason()
+    {
+        // Arrange
+        var finding = Finding.Create(Guid.NewGuid(), "CodeQL", "f", "js/xss", FindingSeverity.High, "m", null, Guid.NewGuid());
+        finding.Accept("Not reachable", Anna, Monday);
+
+        // Act
+        var changed = finding.AcceptFromSource("Dismissed in GitHub: false positive", Monday.AddDays(1));
+
+        // Assert
+        Assert.False(changed);
+        Assert.Equal("Not reachable", finding.AcceptedReason);
+        Assert.Equal(Anna, finding.AcceptedById);
+    }
+
+    [Fact]
+    public void An_empty_source_reason_gets_a_default()
+    {
+        // Arrange
+        var finding = Finding.Create(Guid.NewGuid(), "CodeQL", "f", "js/xss", FindingSeverity.High, "m", null, Guid.NewGuid());
+
+        // Act
+        finding.AcceptFromSource(" ", Monday);
+
+        // Assert
+        Assert.Equal("Dismissed in the source", finding.AcceptedReason);
+    }
+
+    [Fact]
+    public void A_scan_without_a_person_and_with_a_source_can_be_made()
+    {
+        // Arrange (nothing)
+
+        // Act
+        var scan = Scan.Create(Guid.NewGuid(), "CodeQL", "github-code-scanning-codeql.sarif", [1], null, Monday, ScanSource.GitHubCodeScanning);
+
+        // Assert
+        Assert.Null(scan.UploadedById);
+        Assert.Equal(ScanSource.GitHubCodeScanning, scan.Source);
+        Assert.Equal(ScanSource.Upload, Scan.Create(Guid.NewGuid(), "Trivy", "t.sarif", [1], Anna, Monday).Source);
+    }
+
     // ---------------------------------------------------------- US-130: leaving a project out of AI improvement
 
     private static ComplianceTracker.Domain.Projects.Project Project(

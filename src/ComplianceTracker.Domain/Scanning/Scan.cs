@@ -15,7 +15,11 @@ namespace ComplianceTracker.Domain.Scanning
         public string FileName { get; private set; } = "";
         public string Sha256 { get; private set; } = "";
         public DateTime ScannedAt { get; private set; }
-        public Guid UploadedById { get; private set; }
+        // US-121: null when the scheduled sync fetched it from GitHub
+        public Guid? UploadedById { get; private set; }
+
+        // US-121: where the scan came from
+        public ScanSource Source { get; private set; } = ScanSource.Upload;
 
         // R7: what the import did
         public int New { get; private set; }
@@ -27,7 +31,8 @@ namespace ComplianceTracker.Domain.Scanning
         private Scan() { }
 
         // R1: the importer has read the file; the caller checks the format
-        public static Scan Create(Guid projectId, string tool, string fileName, byte[] content, Guid userId, DateTime at)
+        public static Scan Create(Guid projectId, string tool, string fileName, byte[] content, Guid? userId, DateTime at,
+            ScanSource source = ScanSource.Upload)
         {
             if (content.Length == 0)
             {
@@ -46,7 +51,8 @@ namespace ComplianceTracker.Domain.Scanning
                 FileName = Cut(Path.GetFileName(fileName ?? "scan.sarif"), 255),
                 Sha256 = Convert.ToHexString(SHA256.HashData(content)).ToLowerInvariant(),
                 ScannedAt = at,
-                UploadedById = userId
+                UploadedById = userId,
+                Source = source
             };
         }
 
@@ -62,6 +68,17 @@ namespace ComplianceTracker.Domain.Scanning
         public string Summary => $"{Tool}: {New} new, {Fixed} fixed, {Open} open" + (OpenCritical > 0 ? $" ({OpenCritical} critical)" : "");
 
         private static string Cut(string text, int length) => text.Length <= length ? text : text[..length];
+    }
+
+    // US-121: where a scan came from. Stored as text.
+    public enum ScanSource
+    {
+        Upload,
+        GitHubCodeScanning,
+        GitHubDependabot,
+
+        // US-122
+        CiUpload
     }
 
     // The uploaded file, by the scan's id
@@ -166,6 +183,22 @@ namespace ComplianceTracker.Domain.Scanning
             AcceptedReason = Cut(text, MaxReasonLength);
             AcceptedById = userId;
             AcceptedAt = at;
+        }
+
+        // US-121 R4: dismissed in the source (GitHub); no person of the organisation decided it here.
+        // Returns false when it is accepted already.
+        public bool AcceptFromSource(string reason, DateTime at)
+        {
+            if (State == FindingState.Accepted)
+            {
+                return false;
+            }
+
+            State = FindingState.Accepted;
+            AcceptedReason = Cut(string.IsNullOrWhiteSpace(reason) ? "Dismissed in the source" : reason.Trim(), MaxReasonLength);
+            AcceptedById = null;
+            AcceptedAt = at;
+            return true;
         }
 
         private static string Cut(string text, int length) => text.Length <= length ? text : text[..length];
