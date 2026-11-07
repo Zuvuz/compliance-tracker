@@ -159,6 +159,11 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-120 R8: the traceability matrix was downloaded. SubjectId points at the project; Details holds e.g.
         // "Excel for Auditor: CRA".
-        ReportDownloaded
+        ReportDownloaded,
+
+        // US-122: an upload token for a build pipeline was created or revoked. SubjectId points at the project; Details
+        // holds the token's name, never the token. Its uploads are logged as ScanImported by the system.
+        ScanUploadTokenCreated,
+        ScanUploadTokenRevoked
     }
 }

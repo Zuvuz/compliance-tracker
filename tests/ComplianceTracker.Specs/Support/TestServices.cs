@@ -70,6 +70,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<IApplicabilitySuggestionRepository, ApplicabilitySuggestionRepository>(); // US-060
                 services.AddScoped<IAiEvaluationRepository, AiEvaluationRepository>(); // US-116
                 services.AddScoped<ComplianceTracker.Application.Scanning.IScanRepository, ScanRepository>(); // US-078
+                services.AddScoped<ComplianceTracker.Application.Scanning.IScanUploadTokenRepository, ScanUploadTokenRepository>(); // US-122
                 services.AddSingleton<ComplianceTracker.Application.Scanning.IScanImporter, ComplianceTracker.Infrastructure.Scanning.SarifScanImporter>();
                 services.AddScoped<IRiskRepository, RiskRepository>(); // US-042
                 services.AddScoped<IClassificationRepository, ClassificationRepository>(); // US-026

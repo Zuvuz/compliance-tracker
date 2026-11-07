@@ -21,6 +21,13 @@ namespace ComplianceTracker.Domain.Scanning
         // US-121: where the scan came from
         public ScanSource Source { get; private set; } = ScanSource.Upload;
 
+        // US-122 R4: what was built, when a pipeline sent it, and with which token
+        public string? CommitSha { get; private set; }
+        public string? Version { get; private set; }
+        public Guid? UploadTokenId { get; private set; }
+
+        public const int MaxVersionLength = 100;
+
         // R7: what the import did
         public int New { get; private set; }
         public int Fixed { get; private set; }
@@ -55,6 +62,40 @@ namespace ComplianceTracker.Domain.Scanning
                 Source = source
             };
         }
+
+        // US-122 R4: the commit is a Git SHA (7 to 40 hex characters); both are optional
+        public void FromPipeline(Guid tokenId, string? commit, string? version)
+        {
+            var sha = string.IsNullOrWhiteSpace(commit) ? null : commit.Trim().ToLowerInvariant();
+            if (sha is not null && (sha.Length is < 7 or > 40 || !sha.All(Uri.IsHexDigit)))
+            {
+                throw new DomainException("The commit must be a Git SHA of 7 to 40 hex characters");
+            }
+
+            var text = string.IsNullOrWhiteSpace(version) ? null : version.Trim();
+            if (text?.Length > MaxVersionLength)
+            {
+                throw new DomainException($"The version must be {MaxVersionLength} characters or fewer");
+            }
+
+            if (text is not null && text.Any(char.IsControl))
+            {
+                throw new DomainException("The version must be on one line");
+            }
+
+            UploadTokenId = tokenId;
+            CommitSha = sha;
+            Version = text;
+        }
+
+        // e.g. "Commit 3f2a9c1 · version 2.3.1"; null when it has neither
+        public string? Build => (CommitSha, Version) switch
+        {
+            (null, null) => null,
+            ({ } c, null) => $"Commit {c[..Math.Min(7, c.Length)]}",
+            (null, { } v) => $"Version {v}",
+            ({ } c, { } v) => $"Commit {c[..Math.Min(7, c.Length)]} · version {v}"
+        };
 
         public void Record(int added, int fixedCount, int open, int openCritical)
         {

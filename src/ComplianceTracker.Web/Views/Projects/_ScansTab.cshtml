@@ -2,13 +2,16 @@
    Ids and classes used by the tests: #upload-scan (file), #scan-imported, #latest-scans rows .latest-scan (data-tool)
    with .scan-summary and the form .scan-as-evidence (requirementId); #open-findings rows .finding (data-rule) with
    .finding-severity and the form .accept-finding (reason); #closed-findings rows .finding (data-rule) with .finding-state;
-   #no-scans. US-121: form #fetch-from-github, .scan-source on each latest scan, #scan-imported lines (.scan-line). *@
+   #no-scans. US-121: form #fetch-from-github, .scan-source on each latest scan, #scan-imported lines (.scan-line).
+   US-122: .scan-build on each latest scan; #upload-tokens with form #create-upload-token (name), #new-upload-token (shown
+   once), rows .upload-token (data-name) with .token-created, .token-last-used, .token-revoked and form .revoke-upload-token. *@
 @using ComplianceTracker.Domain.Scanning
 @model ProjectDetailsViewModel
 @{
     var project = Model.Project;
     var scans = Model.Scans;
     var canChange = !project.IsClosed && await Permissions.CanAsync(Permission.LinkWork);
+    var canManageTokens = !project.IsClosed && await Permissions.CanAsync(Permission.EditProjects); // US-122
     string Badge(FindingSeverity severity) => severity switch
     {
         FindingSeverity.Critical => "text-bg-dark",
@@ -53,6 +56,67 @@
         </form>
     }
 
+    @if (canManageTokens || scans?.Tokens.Count > 0)
+    {
+        @* US-122: tokens a build pipeline uses with POST /api/projects/{id}/scans; see docs/ci-scan-upload.md *@
+        <details class="mb-4" id="upload-tokens" @(TempData.Peek("NewUploadToken") is not null ? "open" : "")>
+            <summary class="small">Upload tokens for build pipelines (@(scans?.Tokens.Count(t => t.IsActive) ?? 0) active)</summary>
+            <div class="mt-2">
+                <p class="small text-muted mb-2">
+                    A pipeline sends its SARIF file to <code>@Url.Action("Upload", "ScanUploadApi", new { id = project.Id }, Context.Request.Scheme)</code>
+                    with <code>Authorization: Bearer &lt;token&gt;</code>, and optionally <code>commit</code> and <code>version</code>.
+                    A token can only upload to this project, at most @ComplianceTracker.Domain.Scanning.ScanUploadToken.MaxUploadsPerHour times an hour.
+                </p>
+                @if (TempData["NewUploadToken"] is string secret)
+                {
+                    @* R2: shown once *@
+                    <div class="alert alert-warning py-2 small" role="status">
+                        Copy the token now. It is not shown again.
+                        <code class="d-block mt-1 user-select-all" id="new-upload-token">@secret</code>
+                    </div>
+                }
+                @if (canManageTokens)
+                {
+                    <form asp-action="CreateUploadToken" method="post" class="d-flex flex-wrap gap-2 mb-2" id="create-upload-token">
+                        <input type="hidden" name="projectId" value="@project.Id" />
+                        <input name="name" class="form-control form-control-sm w-auto" maxlength="100" placeholder="e.g. GitHub Actions" aria-label="Token name" required />
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Create token</button>
+                    </form>
+                }
+                @if (scans?.Tokens.Count > 0)
+                {
+                    <table class="table table-sm small align-middle mb-0">
+                        <thead><tr><th>Name</th><th>Created</th><th>Last used</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var token in scans.Tokens)
+                            {
+                                <tr class="upload-token @(token.IsActive ? "" : "text-muted")" data-name="@token.Name">
+                                    <td>@token.Name</td>
+                                    <td class="token-created">@token.CreatedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
+                                    <td class="token-last-used">@(token.LastUsedAt?.ToLocalTime().ToString("dd-MM-yyyy HH:mm") ?? "Never")</td>
+                                    <td>
+                                        @if (!token.IsActive)
+                                        {
+                                            <span class="token-revoked">Revoked @token.RevokedAt!.Value.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</span>
+                                        }
+                                        else if (canManageTokens)
+                                        {
+                                            <form asp-action="RevokeUploadToken" method="post" class="revoke-upload-token">
+                                                <input type="hidden" name="projectId" value="@project.Id" />
+                                                <input type="hidden" name="tokenId" value="@token.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Revoke</button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </details>
+    }
+
     @if (scans is null || scans.LatestPerTool.Count == 0)
     {
         <p class="text-muted" id="no-scans">No scans yet</p>
@@ -75,7 +139,13 @@
                             _ => "Upload"
                         })</td>
                         <td class="text-nowrap">@scan.ScannedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
-                        <td class="scan-summary">@scan.Summary</td>
+                        <td>
+                            <span class="scan-summary">@scan.Summary</span>
+                            @if (scan.Build is { } build)
+                            {
+                                <div class="small text-muted scan-build">@build</div>
+                            }
+                        </td>
                         <td class="small text-muted" title="@scan.Sha256">@scan.Sha256[..8]…</td>
                         <td>
                             @if (canChange && requirements.Count > 0)

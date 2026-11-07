@@ -785,6 +785,31 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Secret scanning-alarmer (kan komme på samme måde).
   - Repositories uden for GitHub (US-122).
 
+### B67 – Byggepipelinen uploader scanninger med et token for projektet
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-122, udvider B59 og B61)
+  - **API'et:**
+    - Trackeren får sit første indgående API: `POST /api/projects/{id}/scans` med SARIF-filen og valgfri `commit` og `version`.
+    - Det kræver `Authorization: Bearer <token>` og bruger ingen cookies og intet antiforgery-token. Uden for udvikling kræves https.
+  - **Tokenet:**
+    - Et token hører til ét projekt og kan kun uploade dertil. Det kan ikke læse noget.
+    - Det er 32 tilfældige bytes med præfikset `ctu_`. Det vises én gang, og kun dets SHA-256 gemmes (unikt indeks).
+    - Det kan spærres med det samme. Et forkert, spærret eller andet projekts token giver samme svar, 401, så man ikke kan gætte, hvilke tokens der findes.
+    - Admin og Compliance manager (`EditProjects`) opretter og spærrer tokens på fanen Scans.
+  - **Uploadet** følger US-078: SARIF 2.1.0, højst 50 MB og match på fingeraftryk.
+    - Scanningen får kilden "CI upload" og gemmer commit (en Git-SHA på 7–40 hextegn), version og tokenet.
+    - Filen læses først, når tokenet og størrelsen er godkendt.
+  - **Grænse:** højst 30 uploads i timen pr. token, ellers 429 med `Retry-After`. Grænsen tælles ud fra tokenets scanninger i databasen, så den gælder også efter en genstart og på flere servere.
+  - **Log:** oprettelse og spærring logges med tokenets navn, aldrig selve tokenet. Hver upload logges af systemet som en scanningsimport med tokenets navn, commit og version.
+  - Scanninger uden en bruger (fra en pipeline eller den planlagte GitHub-hentning) logges nu som systemet. Før krævede loggen en logget ind bruger.
+- **Begrundelse:** CRA bilag I, del II (3) og ISO 27001 A.8.29 kræver regelmæssige sikkerhedstest. Når hver build sender sin scanning med commit og version, ligger testene ét sted og kan knyttes til det, der blev bygget. Tokenet følger ASVS V2 og V13: kun det nødvendige, gemt som hash og kan spærres.
+- **Fravalgt:**
+  - At læse gennem API'et.
+  - Andre formater, fx SBOM (US-079).
+  - En generel ratebegrænser (US-097).
+  - At koble versionen til en release (et åbent spørgsmål til US-072).
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

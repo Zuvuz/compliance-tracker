@@ -841,14 +841,34 @@ classDiagram
     -fileName: string
     -sha256: string
     -scannedAt: DateTime
-    -uploadedById: Guid
+    -uploadedById: Guid?
+    -source: ScanSource
+    -commitSha: string?
+    -version: string?
+    -uploadTokenId: Guid?
     -new: int
     -fixed: int
     -open: int
     -openCritical: int
-    +Create(projectId, tool, fileName, content, userId, at)$ Scan
+    +Create(projectId, tool, fileName, content, userId, at, source)$ Scan
+    +FromPipeline(tokenId: Guid, commit: string?, version: string?)
     +Record(added: int, fixed: int, open: int, openCritical: int)
   }
+  class ScanUploadToken {
+    -id: Guid
+    -projectId: Guid
+    -name: string
+    -hash: string
+    -createdAt: DateTime
+    -lastUsedAt: DateTime?
+    -revokedAt: DateTime?
+    +Create(projectId, name, userId, now)$ (ScanUploadToken, string)
+    +HashOf(secret: string)$ string
+    +Allows(projectId: Guid) bool
+    +LimitReached(uploadsInTheLastHour: int)$ bool
+    +Revoke(userId: Guid, now: DateTime)
+  }
+  Scan --> ScanUploadToken : sent with
   class Finding {
     -id: Guid
     -projectId: Guid
