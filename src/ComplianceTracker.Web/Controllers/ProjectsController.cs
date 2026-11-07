@@ -187,8 +187,10 @@ namespace ComplianceTracker.Web.Controllers
                 ? await _projects.SearchActivityAsync(id, activityQuery, cancellationToken)
                 : null;
 
-            // Requirements and links: for the Compliance tab, the overview's summary and the user stories' requirements
+            // Requirements and links: for the Compliance tab, the overview's summary and the user stories' requirements.
+            // US-129: the Reports tab, for which reports can be made.
             var compliance = activeTab is ProjectTabs.Compliance or ProjectTabs.Overview or ProjectTabs.ProductRequirements or ProjectTabs.Scans
+                or ProjectTabs.Reports
                 ? await _complianceQueries.ForProjectAsync(id, cancellationToken)
                 : null;
 
