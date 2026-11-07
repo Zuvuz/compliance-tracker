@@ -182,6 +182,16 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-123 R7: the system owner exported the organisation's shared AI decisions as training data. SubjectId points
         // at the organisation; Details holds how many and the period. Written by the system, without a user.
-        TrainingDataExported
+        TrainingDataExported,
+
+        // US-135: an action that needs a second person's approval was asked for, approved, rejected, withdrawn by the
+        // person who asked, cancelled because its subject changed, or expired after 7 days. SubjectId points at the
+        // project; Details holds what the action does.
+        ApprovalRequested,
+        ApprovalGiven,
+        ApprovalRejected,
+        ApprovalWithdrawn,
+        ApprovalCancelled,
+        ApprovalExpired
     }
 }

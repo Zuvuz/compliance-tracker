@@ -923,6 +923,28 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Karaktererne fra US-116's vurdering af begrundelser.
   - At maskere andre navne end medlemmernes. Fri tekst kan stadig nævne fx en kunde.
 
+### B69 – Bekræftelse af vigtige handlinger og fire-øjne
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-135)
+  - **Bekræftelse:** vigtige handlinger åbner en dialog, der siger, hvad der sker, og om det kan fortrydes. Det gælder fx at fjerne evidens, en ramme eller et medlem, at tilbagekalde et token eller en invitation, at lukke en risiko eller hændelse, at acceptere et fund, at ændre en rolle og at ændre AI-deling. Dialogen er en `data-confirm` på formularen. Uden JavaScript sendes formularen som før, og serveren tjekker alt.
+  - **Fire-øjne** for fire handlinger:
+    - at acceptere en risiko, der er High eller Critical (det resterende niveau, når det er givet, ellers niveauet)
+    - at registrere en sikkerhedshændelse som ikke indberetningspligtig (US-127), også fra et forslag (US-128)
+    - at sætte et projekt til end of support
+    - at signere og låse rapporter, som kommer med US-050 og US-132
+  - Handlingen gemmes som en `ApprovalRequest` med det, den skal bruge, og sker først, når en anden person godkender. Godkenderen skal have den rettighed, handlingen selv kræver. Ingen kan godkende sin egen anmodning.
+  - Handlingen udføres af den samme kode, som når den ikke venter. Den logges som udført af den, der bad om den, med "(approved by …)". Godkendelsen logges for sig.
+  - Anmodningen tjekkes, før den laves, så der aldrig bedes om noget, der ville fejle. Den annulleres, hvis emnet er ændret inden godkendelsen (risikoens eller projektets version), og udløber efter 7 dage.
+  - Den, der bad, kan trække anmodningen tilbage. En afvisning kræver en grund.
+  - Anmodningerne vises på projektets Overview under "Waiting for approval" og under "Needs attention" for dem, der må godkende.
+  - **Kun ét medlem med rettigheden:** anmodningen laves stadig, og siden siger, at ingen andre må godkende. Organisationen må invitere en.
+- **Begrundelse:** ISO 27001 A.5.3 kræver adskillelse af opgaver, og A.8.32 kræver styrede ændringer. CRA art. 14 gør det alvorligt at lade være med at indberette. Det må aldrig være én persons beslutning. OWASP ASVS V2.3 og V11.1 kræver bekræftelse af følsomme handlinger.
+- **Fravalgt:**
+  - At organisationen selv vælger, hvilke handlinger der kræver fire-øjne. Det kan komme senere.
+  - En ny "godkender"-rolle. Rettighederne findes allerede.
+  - At lade en eneste administrator godkende sig selv.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

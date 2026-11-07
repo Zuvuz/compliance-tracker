@@ -19,7 +19,7 @@
     </p>
     <div class="d-flex flex-wrap gap-2 align-items-center">
         <span>Share our decisions to improve the AI: <strong id="ai-sharing-state">@(Model.ShareAiFeedback ? "On" : "Off")</strong></span>
-        <form asp-action="SetAiSharing" method="post" id="set-ai-sharing">
+        <form asp-action="SetAiSharing" method="post" data-confirm="This changes whether the organisation's AI decisions may be used to improve the AI." id="set-ai-sharing">
             <input type="hidden" name="share" value="@(Model.ShareAiFeedback ? "false" : "true")" />
             <button type="submit" class="btn btn-sm btn-outline-primary">@(Model.ShareAiFeedback ? "Switch off" : "Switch on")</button>
         </form>

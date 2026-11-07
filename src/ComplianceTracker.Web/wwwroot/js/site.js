@@ -45,3 +45,35 @@ document.querySelectorAll("[data-percent]").forEach(bar => {
     });
 })();
 
+
+// US-135 R1: a form with data-confirm asks first, in a dialog that says what will happen and whether it can be undone.
+// Nothing happens on one click. Without JavaScript the form is sent as before (the server still checks everything).
+(() => {
+    const dialog = document.getElementById("confirm-dialog");
+    if (!dialog || !window.bootstrap) return;
+    const modal = new bootstrap.Modal(dialog);
+    let pending = null;
+
+    document.addEventListener("submit", event => {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement) || !form.dataset.confirm || form.dataset.confirmed === "true") return;
+        event.preventDefault();
+        pending = { form, submitter: event.submitter };
+        dialog.querySelector("#confirm-dialog-title").textContent = form.dataset.confirmTitle || "Are you sure?";
+        dialog.querySelector("#confirm-dialog-text").textContent = form.dataset.confirm;
+        dialog.querySelector("#confirm-dialog-final").hidden = form.dataset.confirmFinal !== "true";
+        dialog.querySelector("#confirm-dialog-ok").textContent = form.dataset.confirmButton || "Confirm";
+        modal.show();
+    });
+
+    dialog.querySelector("#confirm-dialog-ok").addEventListener("click", () => {
+        if (!pending) return;
+        const { form, submitter } = pending;
+        pending = null;
+        form.dataset.confirmed = "true";
+        modal.hide();
+        form.requestSubmit(submitter && submitter.form === form ? submitter : undefined);
+    });
+
+    dialog.addEventListener("hidden.bs.modal", () => { pending = null; });
+})();

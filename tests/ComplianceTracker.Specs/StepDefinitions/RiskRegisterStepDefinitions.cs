@@ -38,8 +38,12 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         [Given("I accept the risk {string} with the reason {string}")]
         [When("I accept the risk {string} with the reason {string}")]
-        public Task WhenIAcceptTheRisk(string title, string reason)
-            => PostOnRiskPageAsync(title, "#accept-risk", "/Risks/Accept", reason);
+        public async Task WhenIAcceptTheRisk(string title, string reason)
+        {
+            await PostOnRiskPageAsync(title, "#accept-risk", "/Risks/Accept", reason);
+            // US-135: the action waits for a second member, who approves it here; the four-eyes rules are tested in FourEyes.feature
+            await FourEyes.ApproveAllAsync(_web);
+        }
 
         [Given("I close the risk {string} with the reason {string}")]
         [When("I close the risk {string} with the reason {string}")]

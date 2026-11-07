@@ -63,7 +63,7 @@
                                         <input type="datetime-local" name="awareAt" class="form-control form-control-sm w-auto" value="@Input(suggestion.LearnedAt)" aria-label="Aware since" />
                                         <button type="submit" class="btn btn-sm @(exploitedNow ? "btn-danger" : "btn-outline-primary") text-nowrap">@(suggestion.IsUpgrade ? "Upgrade event" : "Record event")</button>
                                     </form>
-                                    <form asp-action="DismissSecurityEventSuggestion" method="post" class="d-flex gap-1 dismiss-suggestion">
+                                    <form asp-action="DismissSecurityEventSuggestion" method="post" data-confirm="The suggestion is dismissed and comes back only with a new finding." data-confirm-final="true" class="d-flex gap-1 dismiss-suggestion">
                                         <input type="hidden" name="projectId" value="@project.Id" />
                                         <input type="hidden" name="suggestionId" value="@suggestion.Id" />
                                         <input name="reason" class="form-control form-control-sm" maxlength="1000" placeholder="Why not" aria-label="Reason for dismissing" required />
@@ -188,7 +188,7 @@
                                     <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">Disclosed</button>
                                 </form>
                             }
-                            <form asp-action="CloseSecurityEvent" method="post" class="d-flex gap-1 close-security-event">
+                            <form asp-action="CloseSecurityEvent" method="post" data-confirm="The security event is closed; its deadlines stop." data-confirm-final="true" class="d-flex gap-1 close-security-event">
                                 <input type="hidden" name="projectId" value="@project.Id" />
                                 <input type="hidden" name="eventId" value="@securityEvent.Id" />
                                 @if (securityEvent.Kind == SecurityEventKind.VulnerabilityNotExploited)

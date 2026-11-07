@@ -42,7 +42,7 @@ Feature: End of support and retention
   Scenario: End of support is logged with the retention date
     Given the time is "2032-01-10T09:00:00Z"
     When I end the support of "Acme Portal", last placed on the market "2026-12-31"
-    Then the "ProjectPhaseChanged" entry says "Phase: Released → EndOfSupport, kept until 31-12-2036"
+    Then the "ProjectPhaseChanged" entry says "Phase: Released → EndOfSupport, kept until 31-12-2036 (approved by Approver)"
 
   @US-074 @iso27001-A.5.33 @integration
   Scenario: The closed project can still be read by the Auditor

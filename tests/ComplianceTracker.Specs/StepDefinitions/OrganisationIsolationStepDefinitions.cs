@@ -334,6 +334,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                     "Risks" => ids.Risk,
                     "Frameworks" => action.ActionName == "Versions" ? ids.Framework : ids.FrameworkVersion,
                     "Organizations" or "System" => ids.Organization,
+                    "Approvals" => ids.ApprovalRequest, // US-135
                     _ => null
                 },
                 "projectid" => ids.Project,
@@ -372,10 +373,11 @@ namespace ComplianceTracker.Specs.StepDefinitions
         private sealed record Ids(
             Guid Organization, Guid Project, Guid Risk, Guid Measure, Guid Evidence, Guid WorkItem, Guid Link,
             Guid Document, Guid DocumentVersion, Guid Framework, Guid FrameworkVersion, Guid FrameworkRequirement,
-            Guid CraRequirement, Guid Member, Guid Invitation, Guid SecurityEvent, Guid RiskAction, Guid Scan, Guid Finding, Guid UploadToken)
+            Guid CraRequirement, Guid Member, Guid Invitation, Guid SecurityEvent, Guid RiskAction, Guid Scan, Guid Finding, Guid UploadToken,
+            Guid ApprovalRequest)
         {
             public IEnumerable<Guid> All => [Organization, Project, Risk, Measure, Evidence, WorkItem, Link, Document,
-                DocumentVersion, Framework, FrameworkVersion, FrameworkRequirement, Member, Invitation, SecurityEvent, RiskAction, Scan, Finding, UploadToken];
+                DocumentVersion, Framework, FrameworkVersion, FrameworkRequirement, Member, Invitation, SecurityEvent, RiskAction, Scan, Finding, UploadToken, ApprovalRequest];
         }
 
         private async Task<Ids> IdsAsync(string organisation)
@@ -409,7 +411,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 risk.Actions.Single().Id, // US-111
                 await db.Scans.Where(s => s.ProjectId == project.Id).Select(s => s.Id).SingleAsync(), // US-078
                 await db.Findings.Where(f => f.ProjectId == project.Id).OrderBy(f => f.RuleId).Select(f => f.Id).FirstAsync(),
-                await db.ScanUploadTokens.Where(t => t.ProjectId == project.Id).Select(t => t.Id).SingleAsync()); // US-122
+                await db.ScanUploadTokens.Where(t => t.ProjectId == project.Id).Select(t => t.Id).SingleAsync(), // US-122
+                await db.ApprovalRequests.Where(r => r.ProjectId == project.Id).Select(r => r.Id).SingleAsync()); // US-135
         }
 
         // A form token for the caller, from a page they may open (their own Users page)

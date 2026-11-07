@@ -215,7 +215,23 @@ namespace ComplianceTracker.Domain.Projects
             return SupportEndsOn is { } supportEnds && supportEnds > tenYears ? supportEnds : tenYears;
         }
 
+        // US-135: the checks of EndSupport without changing anything, so a request for approval is never made for
+        // something that would fail
+        public void CheckEndSupport(DateOnly lastPlacedOnMarket, DateOnly? keepUntil, DateOnly today)
+        {
+            EnsureOpen();
+            CheckRetention(lastPlacedOnMarket, keepUntil, today);
+        }
+
         private void Retain(DateOnly lastPlacedOnMarket, DateOnly? keepUntil, DateOnly today)
+        {
+            CheckRetention(lastPlacedOnMarket, keepUntil, today);
+            LastPlacedOnMarketOn = lastPlacedOnMarket;
+            RetainUntil = keepUntil ?? MinimumRetention(lastPlacedOnMarket);
+            EndOfSupportOn = today;
+        }
+
+        private void CheckRetention(DateOnly lastPlacedOnMarket, DateOnly? keepUntil, DateOnly today)
         {
             if (lastPlacedOnMarket > today)
             {
@@ -232,10 +248,6 @@ namespace ComplianceTracker.Domain.Projects
             {
                 throw new DomainException($"The project must be kept until at least {minimum:dd-MM-yyyy}");
             }
-
-            LastPlacedOnMarketOn = lastPlacedOnMarket;
-            RetainUntil = keepUntil ?? minimum;
-            EndOfSupportOn = today;
         }
 
         // ---------------------------------------------------------- Support period (US-025)
