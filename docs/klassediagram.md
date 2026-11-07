@@ -1076,17 +1076,28 @@ classDiagram
     -notificationSentAt: DateTime?
     -finalReportSentAt: DateTime?
     -closedAt: DateTime?
+    -closedReason: string?
+    -disclosedAt: DateTime?
+    -upgradedAt: DateTime?
+    -upgradeReason: string?
+    -firstAwareAt: DateTime?
+    +IsReportable: bool
+    +IsVulnerability: bool
     +Record(...)$ SecurityEvent
     +DueAt(report: SecurityReportKind) DateTime?
     +Status(report: SecurityReportKind, now: DateTime) SecurityReportStatus
     +MarkSent(report: SecurityReportKind, sentAt: DateTime, reference: string, now: DateTime)
     +MarkFixAvailable(at: DateTime, now: DateTime)
-    +Close(userId: Guid, now: DateTime)
+    +Close(userId: Guid, now: DateTime, reason: string?)
+    +MarkDisclosed(at: DateTime, now: DateTime)
+    +Upgrade(reportableAt: DateTime, reason: string, userId: Guid, now: DateTime)
   }
   class SecurityEventKind {
     <<enumeration>>
     ActivelyExploitedVulnerability
     SevereIncident
+    VulnerabilityNotExploited
+    IncidentNotSevere
   }
   class SecurityReportKind {
     <<enumeration>>
@@ -1098,6 +1109,8 @@ classDiagram
     +RecordAsync(...) Task~SecurityEvent~
     +MarkSentAsync(...) Task
     +MarkFixAvailableAsync(...) Task
+    +MarkDisclosedAsync(...) Task
+    +UpgradeAsync(...) Task
     +CloseAsync(...) Task
   }
   class ISecurityEventRepository {

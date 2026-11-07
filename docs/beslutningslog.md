@@ -770,6 +770,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At CSV får én række pr. kobling og læserens kolonner (US-120 R7). Det ville ændre et format, andre værktøjer kan læse.
   - PDF (US-051, US-082) og låsning af rapporten med fingeraftryk (US-050).
 
+### B64 – Sikkerhedshændelser, der ikke skal indberettes (endnu)
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-127, udvider B49)
+  - En sikkerhedshændelse kan også være "Vulnerability, not exploited" eller "Incident, not severe". De har ingen indberetninger og ingen frister. Fanen siger det, og status er `NotRequired`.
+  - En sårbarhed, der ikke udnyttes, følges til rettelsen (CRA bilag I, del II): rettelsen markeres som tilgængelig og sårbarheden som offentliggjort, tidligst ved rettelsen og ikke i fremtiden. Den lukkes, når begge dele er sket, eller med en grund (fx at komponenten er fjernet). En hændelse, der ikke er alvorlig, kan lukkes med det samme.
+  - Bliver den udnyttet aktivt eller alvorlig, opgraderes den med tidspunktet og en grund. Tidspunktet skal ligge mellem, da man blev opmærksom, og nu. Fristerne i CRA art. 14 regnes fra det tidspunkt, og det første opmærksomhedstidspunkt gemmes. En hændelse kan kun opgraderes én gang og aldrig nedgraderes.
+  - En opgraderet hændelse kræver alle indberetninger, før den kan lukkes. En grund erstatter dem ikke.
+  - Opgradering og offentliggørelse logges i gruppen Security events.
+- **Begrundelse:** Kun aktivt udnyttede sårbarheder og alvorlige hændelser skal indberettes (CRA art. 14(1), (3)). De andre skal stadig håndteres og rettes (bilag I, del II), og de kan skifte status senere. Fristen løber fra, man ved, at den er indberetningspligtig.
+- **Fravalgt:**
+  - At nedgradere en hændelse, der først er indberetningspligtig. Indberetningerne er sendt eller skulle have været.
+  - Forslag til hændelser ud fra fund og lister over udnyttede sårbarheder. Det kommer med US-128.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

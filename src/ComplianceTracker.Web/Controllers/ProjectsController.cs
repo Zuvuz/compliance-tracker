@@ -757,9 +757,38 @@ namespace ComplianceTracker.Web.Controllers
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.SecurityEvents)]
         public async Task<IActionResult> CloseSecurityEvent(
-            Guid projectId, Guid eventId, [FromServices] Application.Security.SecurityEventService events, CancellationToken cancellationToken)
+            Guid projectId, Guid eventId, string? reason, [FromServices] Application.Security.SecurityEventService events, CancellationToken cancellationToken)
         {
-            await events.CloseAsync(projectId, eventId, cancellationToken);
+            await events.CloseAsync(projectId, eventId, reason, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
+        }
+
+        // POST /Projects/MarkSecurityEventDisclosed: US-127 (CRA Annex I, Part II (4))
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.SecurityEvents)]
+        public async Task<IActionResult> MarkSecurityEventDisclosed(
+            Guid projectId, Guid eventId, DateTime? disclosedAt, [FromServices] Application.Security.SecurityEventService events, CancellationToken cancellationToken)
+        {
+            var at = disclosedAt is { } d ? Utc(d) : _clock.GetUtcNow().UtcDateTime;
+            await events.MarkDisclosedAsync(projectId, eventId, at, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
+        }
+
+        // POST /Projects/UpgradeSecurityEvent: US-127 R2–R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.SecurityEvents)]
+        public async Task<IActionResult> UpgradeSecurityEvent(
+            Guid projectId, Guid eventId, DateTime? reportableAt, string? reason, [FromServices] Application.Security.SecurityEventService events,
+            CancellationToken cancellationToken)
+        {
+            if (reportableAt is not { } at)
+            {
+                throw new Domain.Common.DomainException("Give the time it became reportable");
+            }
+
+            await events.UpgradeAsync(projectId, eventId, Utc(at), reason, cancellationToken);
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
         }
 
