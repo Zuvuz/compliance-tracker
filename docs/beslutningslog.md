@@ -786,6 +786,32 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At bruge beslutninger fra en tidligere periode med deling, efter delingen har været slået fra. Det er enklere og mere forsigtigt at starte forfra.
 - **Åbent:** vilkårene og databehandleraftalen skal sige det samme, før det går i drift.
 
+### B68 – Systemejeren eksporterer træningsdata
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-123, udvider B63)
+  - **Ingen læring i realtid:** modellerne trænes aldrig i realtid. Intet i trackeren ændrer en model, en prompt eller en score ud fra beslutningerne af sig selv.
+  - **Eksporten er den eneste vej ud:** systemejeren eksporterer beslutningerne på System → AI quality og træner eller tilpasser en model uden for trackeren. En ny model måles (US-116), før den tages i brug (US-117).
+  - Kun systemejeren kan eksportere. Organisationerne har ingen eksport (B63).
+  - **Hvad der tages med:** kun organisationer, der deler, og kun beslutninger fra efter, at deling sidst blev slået til, uden projekter, der er holdt udenfor. Reglen er `AiSharing.MayUse`, den samme som til målingen.
+  - **Filen** er JSON Lines med én linje pr. beslutning. Den skrives, mens den laves, så en stor eksport ikke fylder hukommelsen.
+  - **Typerne:**
+    - Story ↔ krav (US-020)
+    - Evidens ↔ krav (US-059)
+    - "Ikke relevant" (US-060)
+  - **En linje** har typen, de to tekster AI'en sammenlignede, beslutningen, grund og kommentar, score og grænse, modellerne, begrundelsen, promptversionen og datoerne.
+    - Den har ingen navne, e-mails eller bruger-id'er.
+    - Organisationer og projekter er numre (`org-1`, `org-1/project-2`), de samme inden for én eksport.
+    - Medlemmernes navne og alle e-mailadresser i teksterne erstattes med `[person]` og `[e-mail]`. Hele ord, så "Bo" ikke rører "Board".
+  - **Udvalg:** eksporten kan afgrænses til en periode (hele dage, begge med) og til typer.
+  - **Log:** hver eksport logges af systemet i hver medtaget organisations log med antal og periode, så organisationen kan se det.
+- **Begrundelse:** AI Act art. 10 kræver styring af træningsdata: hvor de kommer fra, og hvilken model og prompt der lavede forslaget. Art. 12 og 15 kræver, at en ny model trænes bevidst og måles. GDPR art. 5(1)(c) og 25 og ISO 27001 A.5.34 og A.8.11 kræver dataminimering og maskering.
+- **Fravalgt:**
+  - Træning eller automatisk læring i trackeren.
+  - At eksportere evidensfiler. Evidens er kun med som titel.
+  - Karaktererne fra US-116's vurdering af begrundelser.
+  - At maskere andre navne end medlemmernes. Fri tekst kan stadig nævne fx en kunde.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

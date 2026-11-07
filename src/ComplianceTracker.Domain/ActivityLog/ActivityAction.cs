@@ -162,6 +162,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         ReportDownloaded,
 
         // US-130 R4: a project was left out of (or taken back into) AI improvement. SubjectId points at the project.
-        ProjectAiSharingChanged
+        ProjectAiSharingChanged,
+
+        // US-123 R7: the system owner exported the organisation's shared AI decisions as training data. SubjectId points
+        // at the organisation; Details holds how many and the period. Written by the system, without a user.
+        TrainingDataExported
     }
 }

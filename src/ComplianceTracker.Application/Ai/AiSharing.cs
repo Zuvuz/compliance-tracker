@@ -8,9 +8,12 @@ namespace ComplianceTracker.Application.Ai
     public static class AiSharing
     {
         public static bool MayUse(Organization organization, IReadOnlySet<Guid> excludedProjects, MappingSuggestion decision)
+            => decision.DecidedAt is { } decidedAt && MayUse(organization, excludedProjects, decision.ProjectId, decidedAt);
+
+        // US-123: the same rule for any kind of decision (stories, evidence, "not applicable")
+        public static bool MayUse(Organization organization, IReadOnlySet<Guid> excludedProjects, Guid projectId, DateTime decidedAt)
             => organization.ShareAiFeedback
-               && !excludedProjects.Contains(decision.ProjectId)
-               && decision.DecidedAt is { } decidedAt
+               && !excludedProjects.Contains(projectId)
                && (organization.ShareAiFeedbackSince is not { } since || decidedAt >= since);
     }
 }
