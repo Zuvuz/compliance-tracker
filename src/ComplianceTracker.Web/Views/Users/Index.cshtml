@@ -50,6 +50,12 @@
                             </select>
                             <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
                         </form>
+                        @* US-132 R3 *@
+                        <form asp-action="SetSignsForManagement" method="post" class="mt-1 signs-for-management">
+                            <input type="hidden" name="memberId" value="@user.Id" />
+                            <input type="hidden" name="signs" value="@(user.SignsForManagement ? "false" : "true")" />
+                            <button type="submit" class="btn btn-sm btn-link p-0">@(user.SignsForManagement ? "Signs for the management · stop" : "Let sign for the management")</button>
+                        </form>
                     </td>
                     <td>
                         @* US-090 R1: asks once more before the member is removed *@

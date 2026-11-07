@@ -84,6 +84,8 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<Application.Scanning.IScanRepository, ScanRepository>(); // US-078
             services.AddScoped<Application.Scanning.IScanUploadTokenRepository, ScanUploadTokenRepository>(); // US-122
             services.AddScoped<Application.Reports.IReportSnapshotRepository, ReportSnapshotRepository>(); // US-050
+            services.AddScoped<Application.Reports.IReportSigningRepository, ReportSigningRepository>(); // US-132
+            services.AddSingleton<Application.Reports.IReportSealer, Reports.ReportSealer>();
             services.AddSingleton<Application.Scanning.IScanImporter, Scanning.SarifScanImporter>();
             services.AddScoped<IRiskRepository, RiskRepository>();
             services.AddScoped<Application.Projects.IClassificationRepository, ClassificationRepository>(); // US-026

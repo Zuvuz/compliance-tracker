@@ -25,6 +25,9 @@ namespace ComplianceTracker.Domain.Users
 
         public void SetGetStartedHidden(bool hidden) => HidesGetStarted = hidden;
 
+        // US-132: the member signs reports for the management (a permission given to the person, not a role)
+        public bool SignsForManagement { get; internal set; }
+
         public bool Can(Permission permission) => IsActive && RolePermissions.Can(Role, permission);
 
         internal void Remove(Guid removedById, DateTime at)

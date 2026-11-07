@@ -910,6 +910,36 @@ classDiagram
     +Matches(content: byte[]) bool
   }
   ReportSnapshot --> Project : locked for
+  class ReportSigning {
+    -id: Guid
+    -snapshotId: Guid
+    -snapshotSha256: string
+    -sealedAt: DateTime?
+    -sealedSha256: string?
+    -sealSubject: string?
+    +Request(snapshot, requestedById, at)$ ReportSigning
+    +Sign(role, signer, sha256, at) ReportSignature
+    +Seal(sealedSha256, subject, thumbprint, at)
+    +MaySign(member, role)$ bool
+  }
+  class ReportSignature {
+    -role: SignatureRole
+    -signerId: Guid
+    -signerRole: UserRole?
+    -signedAt: DateTime
+  }
+  class OrganisationSeal {
+    -subject: string
+    -thumbprint: string
+    -notBefore: DateTime
+    -notAfter: DateTime
+    -protectedCertificate: string
+    +WhyNotUsable(at) string?
+    +Remove(at)
+  }
+  ReportSigning --> ReportSnapshot : signs
+  ReportSigning "1" *-- "0..2" ReportSignature
+  OrganisationSeal --> Organization : seals for
   class Finding {
     -id: Guid
     -projectId: Guid

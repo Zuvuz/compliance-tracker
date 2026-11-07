@@ -139,6 +139,11 @@
     {
         attention.Add((Plural(overdueActions, "overdue risk action", "overdue risk actions"), RisksUrl()));
     }
+    // US-132
+    foreach (var title in Model.WaitingForSignature)
+    {
+        attention.Add(($"Waiting for your signature: {title}", Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Reports })!));
+    }
     if (doneNotLinked > 0)
     {
         attention.Add((Plural(doneNotLinked, "done story not linked to a requirement", "done stories not linked to a requirement"),

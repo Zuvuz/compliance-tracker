@@ -38,6 +38,13 @@ namespace ComplianceTracker.Specs.StepDefinitions
             ["suggestionId"] = "The fixture has no AI suggestion (that needs the pretend AI's ranking)"
         };
 
+        // Pages the own member gets "not found" for, because the fixture has nothing there yet, and why. They are still
+        // called by the other organisation, where "not found" is the right answer.
+        private static readonly Dictionary<string, string> EmptyForOwn = new()
+        {
+            ["Projects.SealedReport"] = "Only a sealed report has this file; sealing needs a seal certificate and two signers (US-132), tested in SigningReports.feature"
+        };
+
         private readonly WebScenario _web;
         private readonly DatabaseScenario _database;
         private readonly RiskRegisterStepDefinitions _risks;
@@ -112,9 +119,10 @@ namespace ComplianceTracker.Specs.StepDefinitions
             using var client = _web.CreateClient(signedInAs: userName, followRedirects: false);
             foreach (var action in Actions().Where(a => Method(a) == "GET"))
             {
-                if (Request(action) is not { } request || action.ControllerName == "System")
+                if (Request(action) is not { } request || action.ControllerName == "System"
+                    || EmptyForOwn.ContainsKey($"{action.ControllerName}.{action.ActionName}"))
                 {
-                    continue; // the system pages are for the system admin only (US-010)
+                    continue; // the system pages are for the system admin only (US-010); EmptyForOwn says why for the rest
                 }
 
                 var response = await client.GetAsync(request.Path + request.Query);

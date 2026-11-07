@@ -56,6 +56,17 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // POST /Users/SetSignsForManagement: US-132 R3, who signs reports for the management
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> SetSignsForManagement(
+            Guid memberId, bool signs, [FromServices] Application.Reports.ReportSigningService signing, CancellationToken cancellationToken)
+        {
+            await signing.SetSignsForManagementAsync(memberId, signs, cancellationToken);
+            return RedirectToAction(nameof(Index));
+        }
+
         // POST /Users/Remove: US-090 R1, R2. The member's access ends at once; their history keeps their name.
         [HttpPost]
         [ValidateAntiForgeryToken]

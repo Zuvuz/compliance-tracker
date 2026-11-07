@@ -13,5 +13,8 @@ namespace ComplianceTracker.Application.Common
 
         // US-010: the tracker's owner (the Keycloak realm role "system-admin"); not a role in any organisation
         bool IsSystemAdmin { get; }
+
+        // US-132 R2: when the person last signed in with Keycloak (not when the session was refreshed); null if unknown
+        DateTime? SignedInAt => null;
     }
 }

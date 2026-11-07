@@ -66,6 +66,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<Security.SecurityEventService>(); // US-073
             services.AddScoped<Reports.ReportFiles>(); // US-131
             services.AddScoped<Reports.ReportService>(); // US-050
+            services.AddScoped<Reports.ReportSigningService>(); // US-132
             services.AddScoped<Security.SecurityEventSuggestionService>(); // US-128
             services.AddScoped<Security.SecurityEventQueries>();
             services.AddScoped<Reports.TechnicalDocumentationQueries>(); // US-056

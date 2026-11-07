@@ -51,6 +51,9 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<Domain.Scanning.ScanUploadToken> ScanUploadTokens => Set<Domain.Scanning.ScanUploadToken>(); // US-122
         public DbSet<Domain.Reports.ReportSnapshot> ReportSnapshots => Set<Domain.Reports.ReportSnapshot>(); // US-050
         public DbSet<ReportSnapshotFile> ReportSnapshotFiles => Set<ReportSnapshotFile>();
+        public DbSet<Domain.Reports.ReportSigning> ReportSignings => Set<Domain.Reports.ReportSigning>(); // US-132
+        public DbSet<Domain.Reports.OrganisationSeal> OrganisationSeals => Set<Domain.Reports.OrganisationSeal>();
+        public DbSet<SealedReportFile> SealedReportFiles => Set<SealedReportFile>();
         public DbSet<Risk> Risks => Set<Risk>();
         public DbSet<ProjectClassification> ProjectClassifications => Set<ProjectClassification>(); // US-026
         public DbSet<Domain.Security.SecurityEvent> SecurityEvents => Set<Domain.Security.SecurityEvent>(); // US-073

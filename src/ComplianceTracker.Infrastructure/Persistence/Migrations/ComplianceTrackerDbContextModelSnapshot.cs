@@ -2655,6 +2655,138 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("ProjectFrameworks", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Reports.OrganisationSeal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("NotAfter")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("NotBefore")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ProtectedCertificate")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProtectedPassword")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("RemovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Thumbprint")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UploadedById")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("UploadedById");
+
+                    b.ToTable("OrganisationSeals", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Reports.ReportSignature", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("SignedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SignerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SignerRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("SigningId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SignerId");
+
+                    b.HasIndex("SigningId", "Role")
+                        .IsUnique();
+
+                    b.ToTable("ReportSignatures", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Reports.ReportSigning", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RequestedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SealSubject")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("SealThumbprint")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("SealedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SealedSha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("SnapshotId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SnapshotSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("RequestedById");
+
+                    b.HasIndex("SnapshotId")
+                        .IsUnique();
+
+                    b.ToTable("ReportSignings", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Reports.ReportSnapshot", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3344,6 +3476,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<bool>("SignsForManagement")
+                        .HasColumnType("boolean");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ExternalId")
@@ -3607,6 +3742,20 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasKey("VersionId");
 
                     b.ToTable("RequirementDocumentFiles", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.SealedReportFile", b =>
+                {
+                    b.Property<Guid>("SigningId")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("SigningId");
+
+                    b.ToTable("SealedReportFiles", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
@@ -4108,6 +4257,57 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Reports.OrganisationSeal", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UploadedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Reports.ReportSignature", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("SignerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Reports.ReportSigning", null)
+                        .WithMany("Signatures")
+                        .HasForeignKey("SigningId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Reports.ReportSigning", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("RequestedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Reports.ReportSnapshot", null)
+                        .WithMany()
+                        .HasForeignKey("SnapshotId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Reports.ReportSnapshot", b =>
                 {
                     b.HasOne("ComplianceTracker.Domain.Users.User", null)
@@ -4454,6 +4654,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.SealedReportFile", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Reports.ReportSigning", null)
+                        .WithOne()
+                        .HasForeignKey("ComplianceTracker.Infrastructure.Persistence.SealedReportFile", "SigningId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.Framework", b =>
                 {
                     b.Navigation("Versions");
@@ -4472,6 +4681,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("ComplianceTracker.Domain.Projects.Project", b =>
                 {
                     b.Navigation("FrameworkHistory");
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Reports.ReportSigning", b =>
+                {
+                    b.Navigation("Signatures");
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Risks.Risk", b =>

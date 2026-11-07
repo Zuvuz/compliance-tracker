@@ -22,6 +22,12 @@ namespace ComplianceTracker.Web.Security
         // US-010: the Keycloak realm role "system-admin", sent in the "roles" claim (realm role mapper)
         public bool IsSystemAdmin => Principal.HasClaim(SystemAdmin.ClaimType, SystemAdmin.Role);
 
+        // US-132 R2: stamped when Keycloak confirmed the person (Program.cs, OnTokenValidated)
+        public DateTime? SignedInAt
+            => long.TryParse(Principal.FindFirstValue(SignedInClaim), out var seconds) ? DateTimeOffset.FromUnixTimeSeconds(seconds).UtcDateTime : null;
+
+        public const string SignedInClaim = "ct_signed_in_at";
+
         private ClaimsPrincipal Principal
             => _principal.User
                ?? _httpContextAccessor.HttpContext?.User
