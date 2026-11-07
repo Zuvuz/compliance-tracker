@@ -96,12 +96,12 @@ namespace ComplianceTracker.Application.Reports
         // R4: what to do next. Applicable requirements, the not covered first, one row per story, evidence or suggestion.
         private static ReportSheet TeamSheet(FrameworkCompliance framework)
         {
-            string[] columns = ["Code", "Requirement", "Status", "Item", "Name", "State", "Details"];
+            string[] columns = ["Code", "Requirement", "Status", "Risks", "Item", "Name", "State", "Details"];
             var rows = new List<ReportRow>();
             foreach (var requirement in framework.Requirements.Where(r => r.IsApplicable).OrderBy(Urgency))
             {
                 var (status, style) = Status(requirement);
-                string[] start = [requirement.Requirement.Code, requirement.Requirement.Title, status];
+                string[] start = [requirement.Requirement.Code, requirement.Requirement.Title, status, Risks.RiskTraces.Text(requirement.Risks)];
                 var items = requirement.Links.Select(l => (Item: "Story", Name: l.WorkItem.Title, State: l.WorkItem.State.ToString(),
                         Details: l.WorkItem.ExternalReference + (l.Link.NeedsReview ? " (needs review)" : "")))
                     .Concat(requirement.Evidence.Select(e => (Item: "Evidence", Name: e.Evidence.Title, State: EvidenceState(e),
@@ -127,7 +127,7 @@ namespace ComplianceTracker.Application.Reports
         {
             string[] columns =
             [
-                "Version", "Code", "Requirement", "Status", "Reason", "Item", "Reference", "Name", "Source",
+                "Version", "Code", "Requirement", "Status", "Risks", "Reason", "Item", "Reference", "Name", "Source",
                 "Decided by", "Role", "Decided at", "SHA-256", "Valid until"
             ];
             var version = framework.Version.Number.ToString(CultureInfo.InvariantCulture);
@@ -135,7 +135,8 @@ namespace ComplianceTracker.Application.Reports
             foreach (var requirement in framework.Requirements)
             {
                 var (status, style) = Status(requirement);
-                string[] start = [version, requirement.Requirement.Code, requirement.Requirement.Title, status, requirement.NotApplicableReason ?? ""];
+                string[] start = [version, requirement.Requirement.Code, requirement.Requirement.Title, status,
+                    Risks.RiskTraces.Text(requirement.Risks), requirement.NotApplicableReason ?? ""];
                 var items = requirement.Links.Select(l => (string[])
                     [
                         "Story", l.WorkItem.ExternalReference, l.WorkItem.Title, l.Link.Source == Domain.Mappings.LinkSource.AiApproved ? "AI-approved" : "Manual",

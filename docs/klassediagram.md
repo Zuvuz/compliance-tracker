@@ -918,6 +918,12 @@ classDiagram
     +CompleteAction(actionId: Guid, hasProof: bool, userId: Guid, at: DateTime)
     +OverdueActions(today: DateOnly) int
   }
+  class RiskTraces {
+    <<static>>
+    +For(risk: Risk, compliance: ProjectCompliance)$ RiskTrace
+    +ByRequirement(risks: IEnumerable~Risk~, requirementsOfStory: ILookup~Guid,Guid~)$ IReadOnlyDictionary~Guid,IReadOnlyList~RiskReference~~
+  }
+  RiskTraces ..> Risk
   class RiskMeasure {
     -id: Guid
     -riskId: Guid
