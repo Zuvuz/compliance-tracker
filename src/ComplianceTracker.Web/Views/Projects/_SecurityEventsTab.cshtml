@@ -4,7 +4,9 @@
    awareAt), .security-event[data-title] with .security-event-closed, .security-report[data-report] holding .report-due,
    .report-status, form .mark-report-sent (sentAt, reference); form .mark-fix-available; form .close-security-event (reason).
    US-127: .no-reports, .security-event-upgraded, form .mark-disclosed (disclosedAt), form .upgrade-security-event
-   (reportableAt, reason). *@
+   (reportableAt, reason).
+   US-128: #security-event-suggestions with .event-suggestion[data-key] holding .suggestion-text and the forms
+   .record-suggestion (awareAt) and .dismiss-suggestion (reason); #exploited-lists with .exploited-list[data-name]. *@
 @using ComplianceTracker.Domain.Security
 @model ProjectDetailsViewModel
 @{
@@ -27,6 +29,53 @@
             A vulnerability that nobody exploits, or an incident that is not severe, has no reports: record it to follow it
             to its fix, and upgrade it if it becomes exploited or severe. The deadlines then start from that moment.
         </p>
+
+        @if (Model.EventSuggestions is { } suggestions && (suggestions.Pending.Count > 0 || suggestions.Lists.Count > 0))
+        {
+            @* US-128 R1: the tracker only suggests; a person records or dismisses *@
+            <section class="mb-4" id="security-event-suggestions">
+                <h3 class="h6">Suggested by the tracker</h3>
+                @if (suggestions.Lists.Count > 0)
+                {
+                    <ul class="list-unstyled small text-muted mb-2" id="exploited-lists">
+                        @foreach (var list in suggestions.Lists)
+                        {
+                            @* R5: a list that cannot be fetched says when it was last fetched *@
+                            <li class="exploited-list @(list.LastError is null ? "" : "text-warning-emphasis")" data-name="@list.Name">
+                                @list.Name: @(list.FetchedAt is { } fetched ? $"fetched {Local(fetched)}" : "not fetched yet")@(list.LastError is null ? "" : $"; the last attempt failed ({Local(list.AttemptedAt!.Value)})")
+                            </li>
+                        }
+                    </ul>
+                }
+                @foreach (var suggestion in suggestions.Pending)
+                {
+                    var exploitedNow = suggestion.Kind == SecurityEventKind.ActivelyExploitedVulnerability;
+                    <div class="card mb-2 event-suggestion @(exploitedNow ? "border-danger" : "")" data-key="@suggestion.Key">
+                        <div class="card-body py-2">
+                            <p class="mb-1 small suggestion-text"><span class="fw-semibold">@ComplianceTracker.Application.Security.SecurityEventSuggestionService.Text(suggestion, project.Name)</span>
+                                <span class="text-muted">· @suggestion.SourceName, learned @Local(suggestion.LearnedAt)</span></p>
+                            @if (canChange)
+                            {
+                                <div class="d-flex flex-wrap gap-2">
+                                    <form asp-action="RecordSuggestedSecurityEvent" method="post" class="d-flex gap-1 record-suggestion">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                        <input type="datetime-local" name="awareAt" class="form-control form-control-sm w-auto" value="@Input(suggestion.LearnedAt)" aria-label="Aware since" />
+                                        <button type="submit" class="btn btn-sm @(exploitedNow ? "btn-danger" : "btn-outline-primary") text-nowrap">@(suggestion.IsUpgrade ? "Upgrade event" : "Record event")</button>
+                                    </form>
+                                    <form asp-action="DismissSecurityEventSuggestion" method="post" class="d-flex gap-1 dismiss-suggestion">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                        <input name="reason" class="form-control form-control-sm" maxlength="1000" placeholder="Why not" aria-label="Reason for dismissing" required />
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">Dismiss</button>
+                                    </form>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </section>
+        }
 
         @if (Model.SecurityEvents.Count == 0)
         {

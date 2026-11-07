@@ -40,6 +40,9 @@ namespace ComplianceTracker.Application.Scanning
         Task<IReadOnlyList<Finding>> ListFindingsAsync(Guid projectId, CancellationToken cancellationToken = default);
 
         Task AddFindingsAsync(IEnumerable<Finding> findings, CancellationToken cancellationToken = default);
+
+        // US-128: every project, of every organisation, that has open findings
+        Task<IReadOnlyList<Guid>> ListProjectIdsWithOpenFindingsAsync(CancellationToken cancellationToken = default);
     }
 
     // What the Scans tab reads (R6: every member, also the Auditor)
@@ -59,13 +62,16 @@ namespace ComplianceTracker.Application.Scanning
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
+        private readonly Security.SecurityEventSuggestionService _suggestions;
 
         public ScanService(
             IProjectRepository projects, IScanRepository scans, IEnumerable<IScanImporter> importers, CurrentMember member,
-            IActivityLogger log, IUnitOfWork unitOfWork, TimeProvider clock, IGitHubSecurityAlerts alerts, ISecretProtector secrets)
+            IActivityLogger log, IUnitOfWork unitOfWork, TimeProvider clock, IGitHubSecurityAlerts alerts, ISecretProtector secrets,
+            Security.SecurityEventSuggestionService suggestions)
         {
             _alerts = alerts;
             _secrets = secrets;
+            _suggestions = suggestions;
             _projects = projects;
             _scans = scans;
             _importers = importers;
@@ -227,6 +233,10 @@ namespace ComplianceTracker.Application.Scanning
             await _scans.AddFindingsAsync(added, cancellationToken);
             await _log.LogAsync(ActivityAction.ScanImported, project.Id,
                 source == ScanSource.Upload ? scan.Summary : $"{scan.Summary} (from GitHub)", cancellationToken);
+
+            // US-128 R2, R3: suggested security events from the findings as they are now
+            await _suggestions.MatchAsync(project, existing.Values.Concat(added).ToList(), added.Select(f => f.Id).ToHashSet(), cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
             return scan;
         }
 

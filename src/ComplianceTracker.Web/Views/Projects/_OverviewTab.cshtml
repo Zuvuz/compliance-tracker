@@ -119,6 +119,12 @@
         attention.Add((Plural(evidenceSuggestions, "evidence suggestion", "evidence suggestions"),
             ComplianceUrl(SubWhere(f => f.EvidenceSuggestionCount > 0), null)));
     }
+    // US-128: an exploited CVE first, as its 24-hour deadline may already run
+    foreach (var suggestion in Model.EventSuggestions?.Pending ?? [])
+    {
+        var eventsTab = Url.Action("Details", new { id = project.Id, tab = ProjectTabs.SecurityEvents })!;
+        attention.Insert(0, (ComplianceTracker.Application.Security.SecurityEventSuggestionService.Text(suggestion, project.Name), eventsTab));
+    }
     if (reviewDue > 0)
     {
         attention.Add((Plural(reviewDue, "risk due for review", "risks due for review"), RisksUrl(due: "1")));

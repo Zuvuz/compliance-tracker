@@ -85,6 +85,21 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<IRiskRepository, RiskRepository>();
             services.AddScoped<Application.Projects.IClassificationRepository, ClassificationRepository>(); // US-026
             services.AddScoped<Application.Security.ISecurityEventRepository, SecurityEventRepository>(); // US-073
+
+            // US-128: suggested events, and the public lists of exploited vulnerabilities the operator switches on
+            services.AddScoped<Application.Security.ISecurityEventSuggestionRepository, SecurityEventSuggestionRepository>();
+            services.AddScoped<Application.Security.IExploitedListRepository, ExploitedListRepository>();
+            services.AddOptions<Security.ExploitedListOptions>().BindConfiguration(Security.ExploitedListOptions.Section);
+            services.AddSingleton<Application.Security.IExploitedListSettings, Security.ConfiguredExploitedListSettings>();
+            void ListClient(HttpClient client)
+            {
+                client.Timeout = TimeSpan.FromSeconds(60);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("compliance-tracker");
+            }
+            services.AddHttpClient<Security.KevExploitedList>(ListClient);
+            services.AddHttpClient<Security.EuvdExploitedList>(ListClient);
+            services.AddTransient<Application.Security.IExploitedVulnerabilityList>(provider => provider.GetRequiredService<Security.KevExploitedList>());
+            services.AddTransient<Application.Security.IExploitedVulnerabilityList>(provider => provider.GetRequiredService<Security.EuvdExploitedList>());
             services.AddScoped<IInvitationRepository, InvitationRepository>();
             services.AddScoped<IGetStartedReadModel, GetStartedReadModel>(); // US-096
             services.AddHttpClient<GitHubWorkItemSource>(client =>
