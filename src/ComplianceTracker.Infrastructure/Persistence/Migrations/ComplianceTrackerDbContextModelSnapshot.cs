@@ -3007,9 +3007,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("ClosedById")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ClosedReason")
+                        .HasColumnType("text");
+
                     b.Property<string>("Description")
                         .HasMaxLength(4000)
                         .HasColumnType("character varying(4000)");
+
+                    b.Property<DateTime?>("DisclosedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("EarlyWarningReference")
                         .HasMaxLength(200)
@@ -3023,6 +3029,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(200)");
 
                     b.Property<DateTime?>("FinalReportSentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FirstAwareAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("FixAvailableAt")
@@ -3057,6 +3066,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("UpgradeReason")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpgradedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpgradedById")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
