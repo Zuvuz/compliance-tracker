@@ -1,7 +1,8 @@
 @* US-116: the operator measures the AI against the decisions of the organisations that share them (US-036).
    Ids and classes used by the tests: #evaluate-story-matching, #ai-runs rows .ai-run (data-step) with .run-model,
    .run-decisions, .run-top1, .run-top3, .run-top10, .run-rejected-above, .run-grade; #ai-comparison li; #grade-rationales
-   with .rationale-sample (data-code) and select[name^=grade-]. *@
+   with .rationale-sample (data-code) and select[name^=grade-].
+   US-123: form #export-training-data (from, to, kinds). *@
 @model AiQualityViewModel
 @using ComplianceTracker.Domain.Ai
 @{
@@ -101,4 +102,32 @@
             </tbody>
         </table>
     }
+</section>
+
+@* US-123: the decisions leave the tracker only this way, when the system owner chooses (R3) *@
+<section class="mt-4">
+    <h2 class="h5">Training data</h2>
+    <p class="small text-muted">
+        The decided suggestions of the organisations that share them, as JSON Lines, to train or tune a model outside the tracker.
+        Nothing in the tracker learns from the decisions by itself. Each line has the two texts the AI compared, the decision,
+        the score and limit, the models and the prompt version. No names or e-mails: organisations and projects are numbered
+        (org-1, org-1/project-2). Each included organisation's log shows the export.
+    </p>
+    <form asp-action="ExportTrainingData" method="post" class="d-flex flex-wrap align-items-end gap-3" id="export-training-data">
+        <div>
+            <label class="form-label small mb-0" for="training-from">From</label>
+            <input type="date" name="from" id="training-from" class="form-control form-control-sm" />
+        </div>
+        <div>
+            <label class="form-label small mb-0" for="training-to">To</label>
+            <input type="date" name="to" id="training-to" class="form-control form-control-sm" />
+        </div>
+        <fieldset class="d-flex gap-2 small">
+            <legend class="visually-hidden">Kinds of decision</legend>
+            <label><input type="checkbox" name="kinds" value="story" checked /> Stories</label>
+            <label><input type="checkbox" name="kinds" value="evidence" checked /> Evidence</label>
+            <label><input type="checkbox" name="kinds" value="not-applicable" checked /> Not applicable</label>
+        </fieldset>
+        <button type="submit" class="btn btn-sm btn-outline-primary">Export</button>
+    </form>
 </section>

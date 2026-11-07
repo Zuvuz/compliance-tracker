@@ -828,6 +828,28 @@ classDiagram
   }
   AiEvaluationService --> IAiModels
   AiEvaluationService ..> AiEvaluation
+  class TrainingDataExport {
+    +Validate(request: TrainingDataRequest)
+    +WriteAsync(request: TrainingDataRequest, output: Stream) Task~int~
+  }
+  class TrainingDataRequest {
+    +From: DateOnly?
+    +To: DateOnly?
+    +Kinds: TrainingKind[]
+    +Includes(decidedAt: DateTime) bool
+  }
+  class Pseudonyms {
+    +Organization(id: Guid) string
+    +Project(organizationId: Guid, projectId: Guid) string
+  }
+  class PersonMask {
+    <<static>>
+    +Apply(text: string, names: string[])$ string
+  }
+  TrainingDataExport ..> TrainingDataRequest
+  TrainingDataExport ..> Pseudonyms
+  TrainingDataExport ..> PersonMask
+  TrainingDataExport ..> AiSharing : MayUse
   class RationaleService {
     +WriteMissingAsync(take: int) Task~int~
   }

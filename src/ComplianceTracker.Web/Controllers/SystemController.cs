@@ -58,6 +58,22 @@ namespace ComplianceTracker.Web.Controllers
 
         // ---------------------------------------------------------- AI quality (US-116)
 
+        // POST /System/ExportTrainingData: US-123, JSON Lines written straight to the answer (R4–R7)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(AiQuality))]
+        public async Task<IActionResult> ExportTrainingData(
+            DateOnly? from, DateOnly? to, string[]? kinds, [FromServices] Application.Ai.TrainingDataExport export, CancellationToken cancellationToken)
+        {
+            var request = new Application.Ai.TrainingDataRequest(from, to, Application.Ai.TrainingDataExport.Kinds(kinds));
+            export.Validate(request);
+
+            Response.ContentType = "application/x-ndjson; charset=utf-8";
+            Response.Headers.ContentDisposition = $"attachment; filename=\"{request.FileName}\"";
+            await export.WriteAsync(request, Response.Body, cancellationToken);
+            return new EmptyResult();
+        }
+
         // GET /System/AiQuality: the runs, newest first, and the rationales to grade
         [HttpGet]
         public async Task<IActionResult> AiQuality([FromServices] Application.Ai.AiEvaluationService evaluations, CancellationToken cancellationToken)

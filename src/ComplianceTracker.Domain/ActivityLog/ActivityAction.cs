@@ -178,6 +178,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         // US-122: an upload token for a build pipeline was created or revoked. SubjectId points at the project; Details
         // holds the token's name, never the token. Its uploads are logged as ScanImported by the system.
         ScanUploadTokenCreated,
-        ScanUploadTokenRevoked
+        ScanUploadTokenRevoked,
+
+        // US-123 R7: the system owner exported the organisation's shared AI decisions as training data. SubjectId points
+        // at the organisation; Details holds how many and the period. Written by the system, without a user.
+        TrainingDataExported
     }
 }
