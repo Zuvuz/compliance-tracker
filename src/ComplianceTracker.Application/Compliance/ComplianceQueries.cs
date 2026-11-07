@@ -108,9 +108,15 @@ namespace ComplianceTracker.Application.Compliance
                 .ToLookup(s => s.RequirementId);
 
             // US-060 R4: requirements named by the measures of an open High or Critical risk
-            var highRisk = (await _risks.ListAsync(project.Id, cancellationToken))
+            var projectRisks = await _risks.ListAsync(project.Id, cancellationToken);
+            var highRisk = projectRisks
                 .Where(r => r.Status != Domain.Risks.RiskStatus.Closed && r.Level >= Domain.Risks.RiskLevel.High)
                 .SelectMany(r => r.Measures).Select(m => m.RequirementId).OfType<Guid>().ToHashSet();
+
+            // US-124 R2: the open risks that reach each requirement, directly or through a story
+            var risksByRequirement = Risks.RiskTraces.ByRequirement(projectRisks,
+                links.Where(l => workItems.ContainsKey(l.WorkItemId) && workItems[l.WorkItemId].State != WorkItemState.Removed)
+                    .ToLookup(l => l.WorkItemId, l => l.RequirementId));
 
             // US-060 R6: pending "not applicable" suggestions. US-061 R3: decisions accepted from a suggestion that relied
             // on an earlier classification than the current one, and not decided again since.
@@ -165,6 +171,7 @@ namespace ComplianceTracker.Application.Compliance
                             .ToList(),
                         EvidenceSuggestions = evidenceSuggestions[requirement.Id].ToList(),
                         HighRisk = highRisk.Contains(requirement.Id),
+                        Risks = risksByRequirement.GetValueOrDefault(requirement.Id) ?? [],
                         ApplicabilitySuggestion = pendingApplicability[requirement.Id].OrderByDescending(s => s.CreatedAt).FirstOrDefault(),
                         NotApplicableFromOldClassification = fromOldClassification.Contains(requirement.Id)
                     })
@@ -282,6 +289,9 @@ namespace ComplianceTracker.Application.Compliance
 
         // US-060 R4: named by a measure of an open High or Critical risk
         public bool HighRisk { get; init; }
+
+        // US-124 R2: the open risks that reach this requirement, highest first
+        public IReadOnlyList<Risks.RiskReference> Risks { get; init; } = [];
 
         // US-060 R6: the AI suggests that the requirement does not apply; a person decides
         public Domain.Mappings.ApplicabilitySuggestion? ApplicabilitySuggestion { get; init; }

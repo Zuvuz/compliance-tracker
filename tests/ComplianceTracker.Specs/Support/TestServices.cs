@@ -62,6 +62,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddSingleton<ITestResultsReader, ComplianceTracker.Infrastructure.Compliance.TestResultsReader>();
                 services.AddSingleton<IPullRequestReader>(provider => (GitHubWorkItemSource)provider.GetRequiredService<IWorkItemSource>());
                 services.AddSingleton<IGitHubProjects>(provider => (GitHubWorkItemSource)provider.GetRequiredService<IWorkItemSource>()); // US-107
+                services.AddSingleton<ComplianceTracker.Application.Scanning.IGitHubSecurityAlerts>(provider => (GitHubWorkItemSource)provider.GetRequiredService<IWorkItemSource>()); // US-121
                 services.AddSingleton<IEvidenceTextReader, ComplianceTracker.Infrastructure.Compliance.EvidenceTextReader>();
 
                 // US-020: not used by these tests, but the use cases must be creatable

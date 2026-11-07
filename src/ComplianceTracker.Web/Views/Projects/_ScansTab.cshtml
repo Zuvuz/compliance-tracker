@@ -2,7 +2,7 @@
    Ids and classes used by the tests: #upload-scan (file), #scan-imported, #latest-scans rows .latest-scan (data-tool)
    with .scan-summary and the form .scan-as-evidence (requirementId); #open-findings rows .finding (data-rule) with
    .finding-severity and the form .accept-finding (reason); #closed-findings rows .finding (data-rule) with .finding-state;
-   #no-scans. *@
+   #no-scans. US-121: form #fetch-from-github, .scan-source on each latest scan, #scan-imported lines (.scan-line). *@
 @using ComplianceTracker.Domain.Scanning
 @model ProjectDetailsViewModel
 @{
@@ -26,7 +26,12 @@
 
     @if (TempData["ScanImported"] is string imported)
     {
-        <div class="alert alert-success py-2" id="scan-imported" role="status">@imported</div>
+        <div class="alert alert-success py-2" id="scan-imported" role="status">
+            @foreach (var line in imported.Split('\n'))
+            {
+                <div class="scan-line">@line</div>
+            }
+        </div>
     }
 
     @if (canChange)
@@ -38,6 +43,16 @@
         </form>
     }
 
+    @if (canChange && project.GitHub is { IsProject: false } github)
+    {
+        @* US-121: the repository's code scanning and Dependabot alerts, read-only; also fetched with the scheduled sync *@
+        <form asp-action="FetchScansFromGitHub" method="post" class="d-flex flex-wrap align-items-center gap-2 mb-4" id="fetch-from-github">
+            <input type="hidden" name="projectId" value="@project.Id" />
+            <button type="submit" class="btn btn-sm btn-outline-primary">Fetch from GitHub</button>
+            <span class="small text-muted">Code scanning and Dependabot alerts of @github.Repository@(scans?.LatestPerTool.Where(s => s.Source != ScanSource.Upload).Select(s => (DateTime?)s.ScannedAt).Max() is { } last ? $" · last fetched {last.ToLocalTime():dd-MM-yyyy HH:mm}" : "")</span>
+        </form>
+    }
+
     @if (scans is null || scans.LatestPerTool.Count == 0)
     {
         <p class="text-muted" id="no-scans">No scans yet</p>
@@ -46,12 +61,19 @@
     {
         <h2 class="h6">Latest scan per tool</h2>
         <table class="table table-sm align-middle" id="latest-scans">
-            <thead><tr><th>Tool</th><th>When</th><th>Result</th><th>SHA-256</th><th></th></tr></thead>
+            <thead><tr><th>Tool</th><th>Source</th><th>When</th><th>Result</th><th>SHA-256</th><th></th></tr></thead>
             <tbody>
                 @foreach (var scan in scans.LatestPerTool)
                 {
                     <tr class="latest-scan" data-tool="@scan.Tool">
                         <td>@scan.Tool</td>
+                        <td class="small scan-source">@(scan.Source switch
+                        {
+                            ScanSource.GitHubCodeScanning => "GitHub code scanning",
+                            ScanSource.GitHubDependabot => "GitHub Dependabot",
+                            ScanSource.CiUpload => "CI upload",
+                            _ => "Upload"
+                        })</td>
                         <td class="text-nowrap">@scan.ScannedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
                         <td class="scan-summary">@scan.Summary</td>
                         <td class="small text-muted" title="@scan.Sha256">@scan.Sha256[..8]…</td>

@@ -12,6 +12,7 @@
    US-057: #summary-evidence; per row .evidence (data-title) with .evidence-title, .evidence-sha256, .evidence-expired and
    form .remove-evidence; form .add-evidence (title, url, file, validUntil); .evidence-status "No evidence".
    US-052, US-120: form #traceability-download (audience, format, sub) with #download-traceability.
+   US-124: per row .requirement-risks with a.requirement-risk.
    US-060, US-061: form #suggest-not-applicable; per row .high-risk, .applicability-suggestion with .applicability-reason,
    .applicability-context and the forms .accept-applicability (reason) and .reject-applicability; .suggestion-context
    under a rationale; .old-classification with the form .keep-not-applicable.
@@ -230,6 +231,17 @@
                             {
                                 @* US-060 R4 *@
                                 <span class="badge text-bg-danger high-risk" title="Named by a measure of an open High or Critical risk">High risk</span>
+                            }
+                            @if (row.Risks.Count > 0)
+                            {
+                                @* US-124 R2: the open risks that reach this requirement *@
+                                <div class="small requirement-risks">Risks:
+                                    @for (var i = 0; i < row.Risks.Count; i++)
+                                    {
+                                        var risk = row.Risks[i];
+                                        <a class="requirement-risk" asp-controller="Risks" asp-action="Details" asp-route-id="@risk.Id">@risk.Title</a><span class="text-muted"> (@risk.Level)</span>@(i < row.Risks.Count - 1 ? ", " : "")
+                                    }
+                                </div>
                             }
                             @if (!string.IsNullOrEmpty(requirement.Description))
                             {

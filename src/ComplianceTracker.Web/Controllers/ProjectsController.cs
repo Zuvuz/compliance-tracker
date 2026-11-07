@@ -188,8 +188,10 @@ namespace ComplianceTracker.Web.Controllers
                 ? await _projects.SearchActivityAsync(id, activityQuery, cancellationToken)
                 : null;
 
-            // Requirements and links: for the Compliance tab, the overview's summary and the user stories' requirements
+            // Requirements and links: for the Compliance tab, the overview's summary and the user stories' requirements.
+            // US-129: the Reports tab, for which reports can be made.
             var compliance = activeTab is ProjectTabs.Compliance or ProjectTabs.Overview or ProjectTabs.ProductRequirements or ProjectTabs.Scans
+                or ProjectTabs.Reports
                 ? await _complianceQueries.ForProjectAsync(id, cancellationToken)
                 : null;
 
@@ -705,6 +707,18 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
         }
 
+        // POST /Projects/FetchScansFromGitHub: US-121 R1, R5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Scans)]
+        public async Task<IActionResult> FetchScansFromGitHub(
+            Guid projectId, [FromServices] Application.Scanning.ScanService scans, CancellationToken cancellationToken)
+        {
+            var lines = await scans.FetchFromGitHubAsync(projectId, cancellationToken);
+            TempData["ScanImported"] = string.Join("\n", lines);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
+        }
+
         // POST /Projects/AcceptFinding: R4
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -1041,6 +1055,7 @@ namespace ComplianceTracker.Web.Controllers
                 return RedirectToAction(nameof(Details), new { id });
             }
 
+            ViewData["ExcludedFromAiSharing"] = project.ExcludedFromAiSharing; // US-130
             return View(EditProjectViewModel.From(project));
         }
 
@@ -1052,6 +1067,16 @@ namespace ComplianceTracker.Web.Controllers
             await _service.UpdateAsync(
                 model.Id, model.Name ?? "", model.Description, model.IntendedPurpose ?? "", model.Scope, cancellationToken, model.Version);
             return RedirectToAction(nameof(Details), new { id = model.Id }); // Post/Redirect/Get
+        }
+
+        // POST /Projects/SetAiSharing: US-130 R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Edit), IdFrom = "projectId")]
+        public async Task<IActionResult> SetAiSharing(Guid projectId, bool excluded, CancellationToken cancellationToken)
+        {
+            await _service.SetExcludedFromAiSharingAsync(projectId, excluded, cancellationToken);
+            return RedirectToAction(nameof(Edit), new { id = projectId });
         }
 
         // POST /Projects/ChangePhase: R2, R4. US-025 R1: releasing sends the support end date (and a reason when short).

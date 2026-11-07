@@ -90,6 +90,10 @@ A new Keycloak gets the role and the "realm roles" mapper from `keycloak/complia
 
 On the **Product requirements** tab, the GitHub address can be a repository (`owner/name`), an organisation's GitHub Project (`github.com/orgs/<org>/projects/<number>`), or an organisation (`github.com/<org>`), whose projects you then choose from. A GitHub Project needs a fine-grained token with read access to the organisation's **Projects** and to the **Issues** of its repositories. GitHub cannot limit a token to one project, so use a machine user that is only a member of that project if the others must stay out of reach. The tracker itself only reads the linked project.
 
+### Security alerts from GitHub (US-121)
+
+A project linked to a repository can fetch the repository's **code scanning** alerts (CodeQL and other tools that upload SARIF to GitHub) and **Dependabot** alerts: **Fetch from GitHub** on the **Scans** tab, and with the scheduled sync. Both are free for public repositories; code scanning in a private repository needs GitHub's paid security features. Dependabot alerts must be switched on in the repository under **Settings → Code security**. A private repository's token needs read access to **Code scanning alerts** and **Dependabot alerts**. The tracker only reads.
+
 ### Feedback from users (US-063)
 
 Every page has **Send feedback** in the footer. The system admin sees the feedback under **System**, then **Feedback from users**, and can make a GitHub issue of it. That needs a fine-grained GitHub token with only **Issues: read and write** on the tracker's own repository. Set it as an environment variable, never in a file in the repo:

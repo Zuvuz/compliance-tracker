@@ -42,6 +42,6 @@ Feature: CRA technical documentation draft
   Scenario: Only for projects that follow the CRA
     Given the project "Beta App" exists
     When I open the reports of "Beta App"
-    Then there is no "Technical documentation (draft)" report
+    Then the "Technical documentation (draft)" report cannot be made because "Add the CRA to the project to make the technical documentation draft"
     When I ask for the technical documentation draft of "Beta App" directly
     Then the page is not found

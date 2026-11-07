@@ -39,5 +39,15 @@
             <button type="submit" class="btn btn-primary">Save changes</button>
             <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-link">Cancel</a>
         </form>
+
+        @* US-130 R4: a confidential project is left out of AI improvement *@
+        @{ var excluded = ViewData["ExcludedFromAiSharing"] is true; }
+        <form asp-action="SetAiSharing" method="post" class="mt-4 border-top pt-3" id="project-ai-sharing">
+            <input type="hidden" name="projectId" value="@Model.Id" />
+            <input type="hidden" name="excluded" value="@(excluded ? "false" : "true")" />
+            <p class="small mb-1">AI improvement: <strong id="project-ai-sharing-state">@(excluded ? "Left out" : "Shared")</strong></p>
+            <p class="small text-muted mb-2">Leave a confidential project out, and none of its decisions on AI suggestions are used to improve the AI.</p>
+            <button type="submit" class="btn btn-sm btn-outline-secondary">@(excluded ? "Share this project again" : "Leave this project out of AI improvement")</button>
+        </form>
     </div>
 </div>

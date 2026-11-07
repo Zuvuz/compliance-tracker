@@ -85,6 +85,7 @@ namespace ComplianceTracker.Web.Models
         public const string ProductRequirements = "product-requirements";
         public const string OldProductRequirements = "user-stories";
         public const string Activity = "activity";
+        public const string Reports = "reports"; // US-129
 
         // In the order they are shown, with the text on the tab
         public static readonly IReadOnlyList<(string Slug, string Title)> All =
@@ -97,7 +98,8 @@ namespace ComplianceTracker.Web.Models
             (SecurityEvents, "Security events"),
             (Scans, "Scans"),
             (ProductRequirements, "Product requirements"),
-            (Activity, "Activity")
+            (Activity, "Activity"),
+            (Reports, "Reports")
         ];
 
         // The tab for an address, Overview when there is none, or null for an unknown one

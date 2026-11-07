@@ -1,0 +1,60 @@
+@* US-129: every report the project can make, with who it is for (R1) and the same choices as where it came from (R2).
+   #project-reports-tab; per report .report (data-report, data-title) with .report-for, .report-contents and, when it
+   cannot be made, .report-unavailable (R3). Traceability: form #reports-traceability-download (audience, format, sub).
+   Technical documentation: a#reports-technical-documentation. Every role can download; downloads are logged (R4). *@
+@model ProjectDetailsViewModel
+@{
+    var project = Model.Project;
+    var frameworks = Model.Compliance?.Frameworks ?? [];
+}
+
+<section id="project-reports-tab">
+    <p class="text-muted small">Each report is made from the project's data when you download it, and the download is logged.</p>
+    <div class="row row-cols-1 row-cols-md-2 g-3">
+        @foreach (var report in ComplianceTracker.Application.Reports.ProjectReports.For(Model.Compliance))
+        {
+            <div class="col">
+                <div class="card h-100 report" data-report="@report.Key" data-title="@report.Title">
+                    <div class="card-body">
+                        <h2 class="h6 card-title">@report.Title</h2>
+                        <p class="small mb-1 report-for"><strong>For:</strong> @report.ForWhom · @report.Formats</p>
+                        <p class="small text-muted report-contents">@report.Contents</p>
+                        @if (!report.IsAvailable)
+                        {
+                            <p class="small text-muted mb-0 report-unavailable">@report.Unavailable</p>
+                        }
+                        else if (report.Key == ComplianceTracker.Application.Reports.ProjectReports.Traceability)
+                        {
+                            @* The same choices as on the Compliance tab (US-120); a GET form, so it is a plain download *@
+                            <form method="get" class="d-flex flex-wrap gap-1" id="reports-traceability-download"
+                                  action="@Url.Action("Traceability", new { id = project.Id })" aria-label="Download traceability report">
+                                <select name="audience" class="form-select form-select-sm w-auto" aria-label="For whom">
+                                    <option value="team">For the team</option>
+                                    <option value="auditor">For an auditor</option>
+                                    <option value="management">For the management</option>
+                                </select>
+                                <select name="format" class="form-select form-select-sm w-auto" aria-label="Format">
+                                    <option value="xlsx">Excel</option>
+                                    <option value="csv">CSV</option>
+                                </select>
+                                <select name="sub" class="form-select form-select-sm w-auto" aria-label="Regulations">
+                                    <option value="">All regulations</option>
+                                    @foreach (var framework in frameworks)
+                                    {
+                                        <option value="@FrameworkNames.Slug(framework.Framework.Name)">@FrameworkNames.Short(framework.Framework.Name)</option>
+                                    }
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">Download</button>
+                            </form>
+                        }
+                        else if (report.Key == ComplianceTracker.Application.Reports.ProjectReports.TechnicalDocumentation)
+                        {
+                            <a asp-action="TechnicalDocumentation" asp-route-id="@project.Id" class="btn btn-sm btn-outline-secondary"
+                               id="reports-technical-documentation">Download</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</section>

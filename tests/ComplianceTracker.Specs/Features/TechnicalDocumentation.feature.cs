@@ -375,7 +375,8 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I open the reports of \"Beta App\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 45
-    await testRunner.ThenAsync("there is no \"Technical documentation (draft)\" report", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the \"Technical documentation (draft)\" report cannot be made because \"Add the CRA " +
+                        "to the project to make the technical documentation draft\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 46
     await testRunner.WhenAsync("I ask for the technical documentation draft of \"Beta App\" directly", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
