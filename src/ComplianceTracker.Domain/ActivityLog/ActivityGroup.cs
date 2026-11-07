@@ -48,7 +48,11 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.RiskActionAdded or ActivityAction.RiskActionLinked or ActivityAction.RiskActionDone => ActivityGroup.Risks,
             ActivityAction.VulnerabilityRecorded or ActivityAction.IncidentRecorded or ActivityAction.SecurityReportSent
                 or ActivityAction.SecurityFixAvailable or ActivityAction.SecurityEventClosed
-                or ActivityAction.ScanImported or ActivityAction.FindingAccepted => ActivityGroup.SecurityEvents,
+                or ActivityAction.SecurityEventUpgraded or ActivityAction.SecurityEventDisclosed
+                or ActivityAction.SecurityEventSuggested or ActivityAction.SecurityEventSuggestionAccepted
+                or ActivityAction.SecurityEventSuggestionDismissed
+                or ActivityAction.ScanImported or ActivityAction.FindingAccepted
+                or ActivityAction.ScanUploadTokenCreated or ActivityAction.ScanUploadTokenRevoked => ActivityGroup.SecurityEvents,
             ActivityAction.MappingsSuggested or ActivityAction.MappingApproved or ActivityAction.MappingRejected
                 or ActivityAction.AiFeedbackSharingChanged or ActivityAction.ProjectAiSharingChanged or ActivityAction.AiFeedbackExported
                 or ActivityAction.TrainingDataExported => ActivityGroup.Ai,

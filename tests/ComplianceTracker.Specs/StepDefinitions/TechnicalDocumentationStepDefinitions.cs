@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {
-    // US-056: the "Reports" card on the Overview tab (#project-reports, a#technical-documentation) and the DOCX it gives
+    // US-056: the technical documentation report on the Reports tab (US-129, a#reports-technical-documentation) and the DOCX it gives
     [Binding]
     public class TechnicalDocumentationStepDefinitions
     {
@@ -20,8 +20,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I make the technical documentation draft of {string}")]
         public async Task WhenIMakeTheDraft(string project)
         {
-            await WhenIOpenTheReports(project);
-            var href = _web.Page!.QuerySelector("#project-reports a#technical-documentation")?.GetAttribute("href")
+            await _web.OpenAsync($"/Projects/Details/{await ProjectIdAsync(project)}/reports");
+            var href = _web.Page!.QuerySelector("a#reports-technical-documentation")?.GetAttribute("href")
                 ?? throw new Xunit.Sdk.XunitException($"'{project}' has no technical documentation report.");
             var response = await _web.Client.GetAsync(href);
             response.EnsureSuccessStatusCode();
@@ -30,10 +30,6 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 .Select(p => (p.ParagraphProperties?.ParagraphStyleId?.Val?.Value ?? "", p.InnerText))
                 .ToList();
         }
-
-        [When("I open the reports of {string}")]
-        public async Task WhenIOpenTheReports(string project)
-            => await _web.OpenAsync($"/Projects/Details/{await ProjectIdAsync(project)}/overview");
 
         [When("I ask for the technical documentation draft of {string} directly")]
         public async Task WhenIAskDirectly(string project)
@@ -68,10 +64,6 @@ namespace ComplianceTracker.Specs.StepDefinitions
             var body = _paragraphs.Skip(start + 1).TakeWhile(p => p.Style != "Heading1").Select(p => p.Text);
             Assert.Contains(body, t => t.Contains(text));
         }
-
-        [Then("there is no {string} report")]
-        public void ThenThereIsNoReport(string name)
-            => Assert.DoesNotContain(name, _web.Page!.QuerySelector("#project-reports")?.TextContent ?? "");
 
         private async Task<Guid> ProjectIdAsync(string project)
         {

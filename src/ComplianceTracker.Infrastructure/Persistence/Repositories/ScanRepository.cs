@@ -32,7 +32,38 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         public async Task<IReadOnlyList<Finding>> ListFindingsAsync(Guid projectId, CancellationToken cancellationToken = default)
             => await _db.Findings.Where(f => f.ProjectId == projectId).ToListAsync(cancellationToken);
 
+        // US-128: for the daily match against the exploited lists
+        public async Task<IReadOnlyList<Guid>> ListProjectIdsWithOpenFindingsAsync(CancellationToken cancellationToken = default)
+            => await _db.Findings.Where(f => f.State == FindingState.Open).Select(f => f.ProjectId).Distinct().ToListAsync(cancellationToken);
+
         public async Task AddFindingsAsync(IEnumerable<Finding> findings, CancellationToken cancellationToken = default)
             => await _db.Findings.AddRangeAsync(findings, cancellationToken);
+
+        // US-122 R6
+        public Task<int> CountByTokenSinceAsync(Guid tokenId, DateTime since, CancellationToken cancellationToken = default)
+            => _db.Scans.CountAsync(s => s.UploadTokenId == tokenId && s.ScannedAt >= since, cancellationToken);
+    }
+
+    // EF Core implementation of IScanUploadTokenRepository (US-122)
+    public class ScanUploadTokenRepository : IScanUploadTokenRepository
+    {
+        private readonly ComplianceTrackerDbContext _db;
+
+        public ScanUploadTokenRepository(ComplianceTrackerDbContext db)
+        {
+            _db = db;
+        }
+
+        public async Task<IReadOnlyList<ScanUploadToken>> ListAsync(Guid projectId, CancellationToken cancellationToken = default)
+            => await _db.ScanUploadTokens.Where(t => t.ProjectId == projectId).ToListAsync(cancellationToken);
+
+        public Task<ScanUploadToken?> GetAsync(Guid projectId, Guid tokenId, CancellationToken cancellationToken = default)
+            => _db.ScanUploadTokens.FirstOrDefaultAsync(t => t.Id == tokenId && t.ProjectId == projectId, cancellationToken);
+
+        public Task<ScanUploadToken?> FindByHashAsync(string hash, CancellationToken cancellationToken = default)
+            => _db.ScanUploadTokens.FirstOrDefaultAsync(t => t.Hash == hash, cancellationToken);
+
+        public async Task AddAsync(ScanUploadToken token, CancellationToken cancellationToken = default)
+            => await _db.ScanUploadTokens.AddAsync(token, cancellationToken);
     }
 }

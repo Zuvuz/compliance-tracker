@@ -62,6 +62,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddSingleton<ITestResultsReader, ComplianceTracker.Infrastructure.Compliance.TestResultsReader>();
                 services.AddSingleton<IPullRequestReader>(provider => (GitHubWorkItemSource)provider.GetRequiredService<IWorkItemSource>());
                 services.AddSingleton<IGitHubProjects>(provider => (GitHubWorkItemSource)provider.GetRequiredService<IWorkItemSource>()); // US-107
+                services.AddSingleton<ComplianceTracker.Application.Scanning.IGitHubSecurityAlerts>(provider => (GitHubWorkItemSource)provider.GetRequiredService<IWorkItemSource>()); // US-121
                 services.AddSingleton<IEvidenceTextReader, ComplianceTracker.Infrastructure.Compliance.EvidenceTextReader>();
 
                 // US-020: not used by these tests, but the use cases must be creatable
@@ -69,10 +70,14 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<IApplicabilitySuggestionRepository, ApplicabilitySuggestionRepository>(); // US-060
                 services.AddScoped<IAiEvaluationRepository, AiEvaluationRepository>(); // US-116
                 services.AddScoped<ComplianceTracker.Application.Scanning.IScanRepository, ScanRepository>(); // US-078
+                services.AddScoped<ComplianceTracker.Application.Scanning.IScanUploadTokenRepository, ScanUploadTokenRepository>(); // US-122
                 services.AddSingleton<ComplianceTracker.Application.Scanning.IScanImporter, ComplianceTracker.Infrastructure.Scanning.SarifScanImporter>();
                 services.AddScoped<IRiskRepository, RiskRepository>(); // US-042
                 services.AddScoped<IClassificationRepository, ClassificationRepository>(); // US-026
                 services.AddScoped<ComplianceTracker.Application.Security.ISecurityEventRepository, SecurityEventRepository>(); // US-073
+                services.AddScoped<ComplianceTracker.Application.Security.ISecurityEventSuggestionRepository, SecurityEventSuggestionRepository>(); // US-128
+                services.AddScoped<ComplianceTracker.Application.Security.IExploitedListRepository, ExploitedListRepository>();
+                services.AddSingleton<ComplianceTracker.Application.Security.IExploitedListSettings>(new FakeExploitedLists()); // none switched on
                 services.AddScoped<IInvitationRepository, InvitationRepository>(); // US-009
                 services.AddScoped<IGetStartedReadModel, GetStartedReadModel>(); // US-096
                 services.AddSingleton<FakeAi>();

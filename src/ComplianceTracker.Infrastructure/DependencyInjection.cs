@@ -81,10 +81,26 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<IApplicabilitySuggestionRepository, ApplicabilitySuggestionRepository>(); // US-060
             services.AddScoped<IAiEvaluationRepository, AiEvaluationRepository>(); // US-116
             services.AddScoped<Application.Scanning.IScanRepository, ScanRepository>(); // US-078
+            services.AddScoped<Application.Scanning.IScanUploadTokenRepository, ScanUploadTokenRepository>(); // US-122
             services.AddSingleton<Application.Scanning.IScanImporter, Scanning.SarifScanImporter>();
             services.AddScoped<IRiskRepository, RiskRepository>();
             services.AddScoped<Application.Projects.IClassificationRepository, ClassificationRepository>(); // US-026
             services.AddScoped<Application.Security.ISecurityEventRepository, SecurityEventRepository>(); // US-073
+
+            // US-128: suggested events, and the public lists of exploited vulnerabilities the operator switches on
+            services.AddScoped<Application.Security.ISecurityEventSuggestionRepository, SecurityEventSuggestionRepository>();
+            services.AddScoped<Application.Security.IExploitedListRepository, ExploitedListRepository>();
+            services.AddOptions<Security.ExploitedListOptions>().BindConfiguration(Security.ExploitedListOptions.Section);
+            services.AddSingleton<Application.Security.IExploitedListSettings, Security.ConfiguredExploitedListSettings>();
+            void ListClient(HttpClient client)
+            {
+                client.Timeout = TimeSpan.FromSeconds(60);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("compliance-tracker");
+            }
+            services.AddHttpClient<Security.KevExploitedList>(ListClient);
+            services.AddHttpClient<Security.EuvdExploitedList>(ListClient);
+            services.AddTransient<Application.Security.IExploitedVulnerabilityList>(provider => provider.GetRequiredService<Security.KevExploitedList>());
+            services.AddTransient<Application.Security.IExploitedVulnerabilityList>(provider => provider.GetRequiredService<Security.EuvdExploitedList>());
             services.AddScoped<IInvitationRepository, InvitationRepository>();
             services.AddScoped<IGetStartedReadModel, GetStartedReadModel>(); // US-096
             services.AddHttpClient<GitHubWorkItemSource>(client =>
@@ -98,6 +114,7 @@ namespace ComplianceTracker.Infrastructure
             services.AddTransient<IWorkItemSource>(provider => provider.GetRequiredService<GitHubWorkItemSource>());
             services.AddTransient<IPullRequestReader>(provider => provider.GetRequiredService<GitHubWorkItemSource>()); // US-058
             services.AddTransient<IGitHubProjects>(provider => provider.GetRequiredService<GitHubWorkItemSource>()); // US-107
+            services.AddTransient<Application.Scanning.IGitHubSecurityAlerts>(provider => provider.GetRequiredService<GitHubWorkItemSource>()); // US-121
 
             // US-063: feedback becomes an issue in the tracker's own repository, with its own token (B42)
             services.AddOptions<Feedback.FeedbackOptions>().BindConfiguration(Feedback.FeedbackOptions.Section);

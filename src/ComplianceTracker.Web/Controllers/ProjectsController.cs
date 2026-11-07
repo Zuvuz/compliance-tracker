@@ -155,6 +155,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] Application.Security.SecurityEventQueries securityEventQueries,
             [FromServices] EvidenceQueries evidenceQueries,
             [FromServices] Application.Scanning.ScanService scans,
+            [FromServices] Application.Security.SecurityEventSuggestionService suggestionService,
             CancellationToken cancellationToken)
         {
             // US-104 R1: shared links to the old "User stories" tab still work
@@ -187,8 +188,10 @@ namespace ComplianceTracker.Web.Controllers
                 ? await _projects.SearchActivityAsync(id, activityQuery, cancellationToken)
                 : null;
 
-            // Requirements and links: for the Compliance tab, the overview's summary and the user stories' requirements
+            // Requirements and links: for the Compliance tab, the overview's summary and the user stories' requirements.
+            // US-129: the Reports tab, for which reports can be made.
             var compliance = activeTab is ProjectTabs.Compliance or ProjectTabs.Overview or ProjectTabs.ProductRequirements or ProjectTabs.Scans
+                or ProjectTabs.Reports
                 ? await _complianceQueries.ForProjectAsync(id, cancellationToken)
                 : null;
 
@@ -204,6 +207,10 @@ namespace ComplianceTracker.Web.Controllers
                 ? await securityEventQueries.ForProjectAsync(id, cancellationToken) ?? []
                 : [];
             var scanOverview = activeTab is ProjectTabs.Scans or ProjectTabs.Overview ? await scans.ForProjectAsync(id, cancellationToken) : null;
+            // US-128: suggested security events, on their tab and under "Needs attention"
+            var eventSuggestions = activeTab is ProjectTabs.SecurityEvents or ProjectTabs.Overview
+                ? await suggestionService.ForProjectAsync(id, cancellationToken)
+                : null;
             var now = _clock.GetUtcNow().UtcDateTime;
             var risks = allRisks
                 .Where(r => string.IsNullOrEmpty(status) ? r.Status != RiskStatus.Closed : r.DisplayStatus.Equals(status, StringComparison.OrdinalIgnoreCase))
@@ -245,6 +252,7 @@ namespace ComplianceTracker.Web.Controllers
                 AllRisks = allRisks,
                 Classifications = classified,
                 SecurityEvents = securityEvents,
+                EventSuggestions = eventSuggestions,
                 Scans = scanOverview,
                 RiskStatusFilter = status,
                 RiskLevelFilter = level,
@@ -699,6 +707,40 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
         }
 
+        // POST /Projects/CreateUploadToken: US-122 R2, the token is shown once on the next page
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Scans)]
+        public async Task<IActionResult> CreateUploadToken(
+            Guid projectId, string? name, [FromServices] Application.Scanning.ScanService scans, CancellationToken cancellationToken)
+        {
+            TempData["NewUploadToken"] = await scans.CreateUploadTokenAsync(projectId, name, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
+        }
+
+        // POST /Projects/RevokeUploadToken: US-122 R3
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Scans)]
+        public async Task<IActionResult> RevokeUploadToken(
+            Guid projectId, Guid tokenId, [FromServices] Application.Scanning.ScanService scans, CancellationToken cancellationToken)
+        {
+            await scans.RevokeUploadTokenAsync(projectId, tokenId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
+        }
+
+        // POST /Projects/FetchScansFromGitHub: US-121 R1, R5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Scans)]
+        public async Task<IActionResult> FetchScansFromGitHub(
+            Guid projectId, [FromServices] Application.Scanning.ScanService scans, CancellationToken cancellationToken)
+        {
+            var lines = await scans.FetchFromGitHubAsync(projectId, cancellationToken);
+            TempData["ScanImported"] = string.Join("\n", lines);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
+        }
+
         // POST /Projects/AcceptFinding: R4
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -757,9 +799,62 @@ namespace ComplianceTracker.Web.Controllers
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.SecurityEvents)]
         public async Task<IActionResult> CloseSecurityEvent(
-            Guid projectId, Guid eventId, [FromServices] Application.Security.SecurityEventService events, CancellationToken cancellationToken)
+            Guid projectId, Guid eventId, string? reason, [FromServices] Application.Security.SecurityEventService events, CancellationToken cancellationToken)
         {
-            await events.CloseAsync(projectId, eventId, cancellationToken);
+            await events.CloseAsync(projectId, eventId, reason, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
+        }
+
+        // POST /Projects/RecordSuggestedSecurityEvent: US-128 R1, the awareness time can be changed
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.SecurityEvents)]
+        public async Task<IActionResult> RecordSuggestedSecurityEvent(
+            Guid projectId, Guid suggestionId, DateTime? awareAt, [FromServices] Application.Security.SecurityEventSuggestionService suggestions,
+            CancellationToken cancellationToken)
+        {
+            await suggestions.RecordAsync(projectId, suggestionId, awareAt is { } at ? Utc(at) : null, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
+        }
+
+        // POST /Projects/DismissSecurityEventSuggestion: US-128 R6
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.SecurityEvents)]
+        public async Task<IActionResult> DismissSecurityEventSuggestion(
+            Guid projectId, Guid suggestionId, string? reason, [FromServices] Application.Security.SecurityEventSuggestionService suggestions,
+            CancellationToken cancellationToken)
+        {
+            await suggestions.DismissAsync(projectId, suggestionId, reason, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
+        }
+
+        // POST /Projects/MarkSecurityEventDisclosed: US-127 (CRA Annex I, Part II (4))
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.SecurityEvents)]
+        public async Task<IActionResult> MarkSecurityEventDisclosed(
+            Guid projectId, Guid eventId, DateTime? disclosedAt, [FromServices] Application.Security.SecurityEventService events, CancellationToken cancellationToken)
+        {
+            var at = disclosedAt is { } d ? Utc(d) : _clock.GetUtcNow().UtcDateTime;
+            await events.MarkDisclosedAsync(projectId, eventId, at, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
+        }
+
+        // POST /Projects/UpgradeSecurityEvent: US-127 R2–R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.SecurityEvents)]
+        public async Task<IActionResult> UpgradeSecurityEvent(
+            Guid projectId, Guid eventId, DateTime? reportableAt, string? reason, [FromServices] Application.Security.SecurityEventService events,
+            CancellationToken cancellationToken)
+        {
+            if (reportableAt is not { } at)
+            {
+                throw new Domain.Common.DomainException("Give the time it became reportable");
+            }
+
+            await events.UpgradeAsync(projectId, eventId, Utc(at), reason, cancellationToken);
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
         }
 

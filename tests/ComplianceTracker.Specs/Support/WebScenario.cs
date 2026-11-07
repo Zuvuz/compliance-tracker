@@ -24,9 +24,11 @@ namespace ComplianceTracker.Specs.Support
         private int _nextCvr = 10000000;
 
         private readonly DatabaseRace _race;
+        private readonly FakeExploitedLists _exploited;
 
-        public WebScenario(DatabaseScenario database, ScenarioClock clock, FakeGitHub github, FakeAi ai, DatabaseRace race)
+        public WebScenario(DatabaseScenario database, ScenarioClock clock, FakeGitHub github, FakeAi ai, DatabaseRace race, FakeExploitedLists exploited)
         {
+            _exploited = exploited;
             _ai = ai;
             _race = race;
             _database = database;
@@ -39,7 +41,7 @@ namespace ComplianceTracker.Specs.Support
         public IDocument? Page { get; set; }
 
         // Started the first time it is used, after "Given an empty database" has set the connection string
-        public TestApp App => _app ??= TestApp.WithTestSignIn(_database.ConnectionString, _clock, github: _github, ai: _ai, race: _race);
+        public TestApp App => _app ??= TestApp.WithTestSignIn(_database.ConnectionString, _clock, github: _github, ai: _ai, race: _race, exploited: _exploited);
 
         // The client follows redirects and remembers cookies, like a browser
         public HttpClient Client => _client ??= App.Factory.CreateClient();

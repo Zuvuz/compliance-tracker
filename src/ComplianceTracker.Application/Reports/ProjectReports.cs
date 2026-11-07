@@ -1,0 +1,32 @@
+using ComplianceTracker.Application.Compliance;
+
+namespace ComplianceTracker.Application.Reports
+{
+    // US-129 R1, R3: a report on the project's Reports tab, who it is for, what it holds, and why it cannot be made yet
+    public record ProjectReport(string Key, string Title, string ForWhom, string Contents, string Formats, string? Unavailable)
+    {
+        public bool IsAvailable => Unavailable is null;
+    }
+
+    // US-129: the reports a project can make. Later reports (US-051, US-053–US-055, US-076) join this list.
+    public static class ProjectReports
+    {
+        public const string Traceability = "traceability";
+        public const string TechnicalDocumentation = "technical-documentation";
+
+        public static IReadOnlyList<ProjectReport> For(int frameworkCount, bool followsCra) =>
+        [
+            new(Traceability, "Traceability", "The team, an auditor or the management",
+                "Each requirement with the user stories and evidence that cover it. For the management, a summary.",
+                "Excel or CSV",
+                frameworkCount > 0 ? null : "Add a framework to the project to make a traceability report"),
+            new(TechnicalDocumentation, "Technical documentation (draft)", "The manufacturer's technical file",
+                "The structure of CRA Annex VII, filled in from the project's data.",
+                "Word",
+                followsCra && frameworkCount > 0 ? null : "Add the CRA to the project to make the technical documentation draft")
+        ];
+
+        public static IReadOnlyList<ProjectReport> For(ProjectCompliance? compliance)
+            => For(compliance?.Frameworks.Count ?? 0, compliance is not null && TechnicalDocumentationQueries.CraOf(compliance) is not null);
+    }
+}
