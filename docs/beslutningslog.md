@@ -941,6 +941,23 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - PDF/A. Det kan komme med låsningen.
   - Indlejrede fonte, som ville give flere tegn men større filer.
 
+### B73 – Låste rapporter med fingeraftryk
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-050)
+  - En rapport låses som PDF (US-131) på Reports-fanen. Låsningen gemmer filen, typen, titlen, tidspunktet, hvem der låste den og med hvilken rolle, og filens SHA-256-fingeraftryk (`ReportSnapshot`).
+  - **Samme kode:** den låste PDF laves af den samme kode som en download (`ReportFiles`), så det er præcis den rapport, et medlem ville hente.
+  - **Aldrig ændret:** en låst rapport kan aldrig ændres eller slettes. Databasen har triggere, der afviser UPDATE, DELETE og TRUNCATE, som for aktivitetsloggen (B40, US-091). En ny version er en ny låsning.
+  - **Lagring:** filen gemmes i databasen (`ReportSnapshotFiles`). Det er det enkleste til Docker-installationen og svarer på issuets åbne spørgsmål.
+  - **Adgang:** alle i organisationen, også auditoren, kan hente en låst rapport og se fingeraftrykket. Kun roller med `DecideCompliance` kan låse.
+  - **Tjek af fingeraftryk:** man uploader en fil, og trackeren siger, om den matcher en låst rapport i organisationen og hvornår den blev låst.
+  - Låsningen logges med fingeraftrykket (`ReportLocked`) og bekræftes i en dialog (US-135).
+- **Begrundelse:** ISO 27001 7.5.3 og A.5.33 kræver beskyttede optegnelser. CRA bilag VII kræver, at dokumentationen for hver version gemmes. En auditor skal kunne stole på, at rapporten er den, der blev lavet.
+- **Fravalgt (endnu):**
+  - At knytte låsningen til en release. Det kommer, når releases findes.
+  - Signatur, som er US-132.
+  - Låsning af Excel og Word. Kun PDF, så filen ikke ændrer sig ved åbning.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

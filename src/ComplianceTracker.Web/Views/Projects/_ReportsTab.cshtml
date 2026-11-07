@@ -1,11 +1,14 @@
 @* US-129: every report the project can make, with who it is for (R1) and the same choices as where it came from (R2).
    #project-reports-tab; per report .report (data-report, data-title) with .report-for, .report-contents and, when it
    cannot be made, .report-unavailable (R3). Traceability: form #reports-traceability-download (audience, format, sub).
-   Technical documentation: a#reports-technical-documentation. Every role can download; downloads are logged (R4). *@
+   Technical documentation: a#reports-technical-documentation. Every role can download; downloads are logged (R4).
+   US-050: form.lock-report (report, audience, sub) for DecideCompliance, #locked-reports with li.locked-report (data-title)
+   holding a.locked-report-download and .locked-report-sha256, form #check-fingerprint (file), #fingerprint-result. *@
 @model ProjectDetailsViewModel
 @{
     var project = Model.Project;
     var frameworks = Model.Compliance?.Frameworks ?? [];
+    var canLock = !project.IsClosed && await Permissions.CanAsync(ComplianceTracker.Domain.Users.Permission.DecideCompliance);
 }
 
 <section id="project-reports-tab">
@@ -47,6 +50,28 @@
                                 </select>
                                 <button type="submit" class="btn btn-sm btn-outline-secondary">Download</button>
                             </form>
+                            @if (canLock)
+                            {
+                                @* US-050: locks the report as PDF for the chosen reader and regulations *@
+                                <form asp-action="LockReport" method="post" class="d-flex flex-wrap gap-1 mt-2 lock-report" data-report="@report.Key"
+                                      data-confirm="The report is made now as PDF and kept with its fingerprint. A locked report can never be changed or deleted.">
+                                    <input type="hidden" name="projectId" value="@project.Id" />
+                                    <input type="hidden" name="report" value="@report.Key" />
+                                    <select name="audience" class="form-select form-select-sm w-auto" aria-label="Lock for whom">
+                                        <option value="team">For the team</option>
+                                        <option value="auditor">For an auditor</option>
+                                        <option value="management">For the management</option>
+                                    </select>
+                                    <select name="sub" class="form-select form-select-sm w-auto" aria-label="Regulations to lock">
+                                        <option value="">All regulations</option>
+                                        @foreach (var framework in frameworks)
+                                        {
+                                            <option value="@FrameworkNames.Slug(framework.Framework.Name)">@FrameworkNames.Short(framework.Framework.Name)</option>
+                                        }
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Lock as PDF</button>
+                                </form>
+                            }
                         }
                         else if (report.Key == ComplianceTracker.Application.Reports.ProjectReports.TechnicalDocumentation)
                         {
@@ -55,10 +80,58 @@
                             @* US-131 *@
                             <a asp-action="TechnicalDocumentation" asp-route-id="@project.Id" asp-route-format="pdf" class="btn btn-sm btn-outline-secondary"
                                id="reports-technical-documentation-pdf">PDF</a>
+                            @if (canLock)
+                            {
+                                <form asp-action="LockReport" method="post" class="d-inline lock-report" data-report="@report.Key"
+                                      data-confirm="The draft is made now as PDF and kept with its fingerprint. A locked report can never be changed or deleted.">
+                                    <input type="hidden" name="projectId" value="@project.Id" />
+                                    <input type="hidden" name="report" value="@report.Key" />
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Lock as PDF</button>
+                                </form>
+                            }
                         }
                     </div>
                 </div>
             </div>
         }
     </div>
+
+    @* US-050: the locked reports, never changed or deleted, with their fingerprints (R1–R3) *@
+    <h2 class="h5 mt-4">Locked reports</h2>
+    @if (TempData["ReportLocked"] is string locked)
+    {
+        <div class="alert alert-success py-2" id="report-locked" role="status">@locked</div>
+    }
+    @if (Model.LockedReports.Count == 0)
+    {
+        <p class="text-muted small" id="no-locked-reports">No report has been locked yet.</p>
+    }
+    else
+    {
+        <ul class="list-unstyled" id="locked-reports">
+            @foreach (var item in Model.LockedReports)
+            {
+                var snapshot = item.Snapshot;
+                <li class="locked-report border-bottom py-2" data-title="@snapshot.Title">
+                    <a class="locked-report-download fw-semibold" asp-action="LockedReport" asp-route-id="@project.Id" asp-route-snapshotId="@snapshot.Id">@snapshot.Title</a>
+                    <div class="small text-muted">
+                        Locked @snapshot.LockedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm") by <span class="locked-by">@item.LockedBy@(snapshot.LockedRole is { } role ? $" ({ComplianceTracker.Domain.Users.RolePermissions.Title(role)})" : "")</span>
+                        · <span class="locked-report-sha256 font-monospace" title="SHA-256 @snapshot.Sha256">SHA-256 @snapshot.Sha256</span>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+
+    @* R4: anyone can check a file they were given against the locked reports *@
+    <h3 class="h6 mt-3">Check a fingerprint</h3>
+    @if (TempData["FingerprintCheck"] is string result)
+    {
+        <div class="alert @(result.StartsWith("Matches") ? "alert-success" : "alert-warning") py-2" id="fingerprint-result" role="status">@result</div>
+    }
+    <form asp-action="CheckFingerprint" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2" id="check-fingerprint">
+        <input type="hidden" name="projectId" value="@project.Id" />
+        <input type="file" name="file" class="form-control form-control-sm w-auto" aria-label="File to check" />
+        <button type="submit" class="btn btn-sm btn-outline-secondary">Check fingerprint</button>
+    </form>
 </section>

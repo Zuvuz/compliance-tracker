@@ -19,6 +19,7 @@ Feature: No organisation can reach another organisation's data
     And I have added the action "Phishing training" to the risk "Phishing"
     And "Acme Portal" has a "Trivy" scan with the findings "CVE-2026-1111" and "CVE-2026-2222"
     And I have created the upload token "GitHub Actions" for "Acme Portal"
+    And I have locked the traceability report of "Acme Portal" for "team"
     And I have recorded the actively exploited vulnerability "CVE-2026-1234" for "Acme Portal", aware since "2026-11-01T08:00:00Z"
     And "Acme Portal" has version 1 of "kravspec.xlsx" with "REQ-001 Log in"
     And the framework "Security policy" has a draft with "A.5.15 Access control"

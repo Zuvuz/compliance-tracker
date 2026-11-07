@@ -182,6 +182,9 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-123 R7: the system owner exported the organisation's shared AI decisions as training data. SubjectId points
         // at the organisation; Details holds how many and the period. Written by the system, without a user.
-        TrainingDataExported
+        TrainingDataExported,
+
+        // US-050: a report was locked as PDF with its SHA-256 fingerprint. SubjectId points at the project.
+        ReportLocked
     }
 }

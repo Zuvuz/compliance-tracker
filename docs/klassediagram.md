@@ -894,6 +894,22 @@ classDiagram
     +Revoke(userId: Guid, now: DateTime)
   }
   Scan --> ScanUploadToken : sent with
+  class ReportSnapshot {
+    -id: Guid
+    -organizationId: Guid
+    -projectId: Guid?
+    -kind: string
+    -title: string
+    -fileName: string
+    -sha256: string
+    -lockedById: Guid
+    -lockedRole: UserRole?
+    -lockedAt: DateTime
+    +Lock(organizationId, projectId, kind, title, fileName, contentType, content, lockedById, role, at)$ ReportSnapshot
+    +Fingerprint(content: byte[])$ string
+    +Matches(content: byte[]) bool
+  }
+  ReportSnapshot --> Project : locked for
   class Finding {
     -id: Guid
     -projectId: Guid
