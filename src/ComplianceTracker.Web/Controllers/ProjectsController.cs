@@ -156,6 +156,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] EvidenceQueries evidenceQueries,
             [FromServices] Application.Scanning.ScanService scans,
             [FromServices] Application.Security.SecurityEventSuggestionService suggestionService,
+            [FromServices] Application.Organizations.OrganisationDocumentService documentService,
             CancellationToken cancellationToken)
         {
             // US-104 R1: shared links to the old "User stories" tab still work
@@ -211,6 +212,8 @@ namespace ComplianceTracker.Web.Controllers
             var eventSuggestions = activeTab is ProjectTabs.SecurityEvents or ProjectTabs.Overview
                 ? await suggestionService.ForProjectAsync(id, cancellationToken)
                 : null;
+            // US-136 R4: the organisation's documents due for review
+            var documentsDue = activeTab is ProjectTabs.Overview ? await documentService.DueForReviewAsync(cancellationToken) : [];
             var now = _clock.GetUtcNow().UtcDateTime;
             var risks = allRisks
                 .Where(r => string.IsNullOrEmpty(status) ? r.Status != RiskStatus.Closed : r.DisplayStatus.Equals(status, StringComparison.OrdinalIgnoreCase))
@@ -253,6 +256,7 @@ namespace ComplianceTracker.Web.Controllers
                 Classifications = classified,
                 SecurityEvents = securityEvents,
                 EventSuggestions = eventSuggestions,
+                DocumentsDue = documentsDue,
                 Scans = scanOverview,
                 RiskStatusFilter = status,
                 RiskLevelFilter = level,

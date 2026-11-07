@@ -68,7 +68,12 @@
                                     }
                                 </span>
                                 <button type="button" class="btn btn-sm btn-link p-0 fold-toggle ms-auto" data-fold-target="@foldKey" aria-expanded="true" hidden>Fold</button>
-                                @if (canChange)
+                                @if (evidence.IsFromOrganisation)
+                                {
+                                    @* US-136: changed on the organisation's Documents page *@
+                                    <a class="badge text-bg-light border from-organisation" asp-controller="Documents" asp-action="Index">From the organisation</a>
+                                }
+                                else if (canChange)
                                 {
                                     <form asp-action="RemoveProjectEvidence" method="post" class="remove-project-evidence">
                                         <input type="hidden" name="projectId" value="@project.Id" />

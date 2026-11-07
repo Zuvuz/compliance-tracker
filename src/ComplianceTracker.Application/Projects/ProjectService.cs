@@ -25,6 +25,7 @@ namespace ComplianceTracker.Application.Projects
         private readonly TimeProvider _clock;
         private readonly VersionCarryOver _carryOver;
         private readonly Security.ISecurityEventRepository _securityEvents;
+        private readonly Organizations.OrganisationDocumentService _documents;
 
         public ProjectService(
             IProjectRepository projects,
@@ -34,8 +35,10 @@ namespace ComplianceTracker.Application.Projects
             IUnitOfWork unitOfWork,
             TimeProvider clock,
             VersionCarryOver carryOver,
-            Security.ISecurityEventRepository securityEvents)
+            Security.ISecurityEventRepository securityEvents,
+            Organizations.OrganisationDocumentService documents)
         {
+            _documents = documents;
             _securityEvents = securityEvents;
             _carryOver = carryOver;
             _projects = projects;
@@ -82,6 +85,7 @@ namespace ComplianceTracker.Application.Projects
 
             // 5. Save it all at once
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await SyncDocumentsAsync(project, cancellationToken); // US-136 R1
             return project;
         }
 
@@ -218,6 +222,14 @@ namespace ComplianceTracker.Application.Projects
             project.UseFramework(framework, version, userId, Now);
             await _log.LogAsync(ActivityAction.ProjectFrameworkAdded, project.Id, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await SyncDocumentsAsync(project, cancellationToken); // US-136 R1
+        }
+
+        // US-136 R1: the organisation's documents become evidence for the requirements the project now follows
+        private async Task SyncDocumentsAsync(Project project, CancellationToken cancellationToken)
+        {
+            await _documents.SyncAsync(project.OrganizationId, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         // US-011 R6: moves the project to the newest version of a framework it uses (US-007: the current active one).
@@ -237,6 +249,7 @@ namespace ComplianceTracker.Application.Projects
                 var carried = await _carryOver.CarryAsync(project, framework.Id, from!.Value, version.Id, cancellationToken);
                 await _log.LogAsync(ActivityAction.ProjectFrameworkVersionChanged, project.Id, carried.Describe(framework.Name, version.Number), cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
+                await SyncDocumentsAsync(project, cancellationToken); // US-136 R1
             }
         }
 

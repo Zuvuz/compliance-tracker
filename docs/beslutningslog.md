@@ -923,6 +923,27 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Karaktererne fra US-116's vurdering af begrundelser.
   - At maskere andre navne end medlemmernes. Fri tekst kan stadig nævne fx en kunde.
 
+### B71 – Organisationens dokumenter som fælles evidens
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-136)
+  - Politikker, procedurer og risikotabeller lægges én gang på organisationens side "Documents". De har en type, ejer, version og næste review-dato.
+  - **Links:** et dokument kobles til krav på ramme og kode, ikke på et bestemt krav-id. Linket holder derfor, når rammen får en ny version med samme kode.
+  - **Evidens i projekterne:** hvert projekt, der følger kravet, får dokumentet som almindelig evidens, markeret "From the organisation".
+    - Det er en kopi af posten, men filen gemmes kun én gang, hos organisationen.
+    - Så virker compliance, rapporter, isolation og fanerne uden ændringer, fordi en politik er evidens.
+    - Projekterne opdateres, når dokumentet ændres, og når et projekt begynder at følge en rammeversion.
+  - **Ændringer:** evidens fra organisationen kan ikke fjernes i et projekt. Den ændres på Documents-siden.
+  - **Ny version:** den erstatter den gamle i alle links, og den gamle fil gemmes.
+  - **Review:** et dokument, hvis review-dato er passeret, vises under "Needs attention" på Documents-siden og på projekternes Overview.
+  - **Fjernelse:** at fjerne et dokument kræver bekræftelse, og dialogen nævner de krav, der mister evidensen. Projekterne mister den samtidig.
+  - Ændringer kræver `ManageFrameworks`, og alt logges.
+- **Begrundelse:** ISO 27001 5.2 og A.5.1 kræver politikker, og 7.5.2–7.5.3 kræver styring af dokumenter. En politik gælder for hele organisationen, så den skal ikke lægges op i hvert projekt.
+- **Fravalgt (endnu):**
+  - AI-forslag til links (R2). Når de kommer, er de forslag, som en person godkender, som for evidens (US-059).
+  - At importere en risikotabel i risikoregistret (US-113).
+  - At et projekt fravælger et organisationsdokument.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

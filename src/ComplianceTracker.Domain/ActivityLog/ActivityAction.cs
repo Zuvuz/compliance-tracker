@@ -182,6 +182,14 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-123 R7: the system owner exported the organisation's shared AI decisions as training data. SubjectId points
         // at the organisation; Details holds how many and the period. Written by the system, without a user.
-        TrainingDataExported
+        TrainingDataExported,
+
+        // US-136: the organisation's documents (policies, procedures, risk tables): uploaded or a new version, reviewed,
+        // linked to or unlinked from a requirement, and removed. SubjectId points at the organisation.
+        OrganisationDocumentUploaded,
+        OrganisationDocumentReviewed,
+        OrganisationDocumentLinked,
+        OrganisationDocumentUnlinked,
+        OrganisationDocumentRemoved
     }
 }

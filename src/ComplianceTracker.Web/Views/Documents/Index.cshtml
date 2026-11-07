@@ -1,0 +1,166 @@
+@* US-136: the organisation's policies, procedures and risk tables. Each is evidence for every project that follows a
+   requirement it is linked to. UI contract: #upload-document, li.organisation-document[data-title] with .document-links,
+   form.link-document, form.unlink-document, form.new-version, form.review-document, form.remove-document, .review-due,
+   .used-by, #documents-due *@
+@using ComplianceTracker.Application.Organizations
+@using ComplianceTracker.Domain.Organizations
+@model OrganisationDocumentsView
+@{
+    ViewData["Title"] = "Documents";
+    var due = Model.Documents.Where(d => d.IsReviewDue(Model.Today)).ToList();
+    static string KindName(OrganisationDocumentKind kind) => kind switch
+    {
+        OrganisationDocumentKind.RiskTable => "Risk table",
+        _ => kind.ToString()
+    };
+}
+
+<h1 class="h3">Documents</h1>
+<p class="text-muted">Policies, procedures and risk tables kept once for the organisation. A document linked to a requirement is evidence for it in every project that follows the requirement.</p>
+
+<div asp-validation-summary="All" class="text-danger"></div>
+
+@if (due.Count > 0)
+{
+    @* R4 *@
+    <div class="alert alert-warning" id="documents-due" role="status">
+        <strong>Needs attention</strong>
+        <ul class="mb-0">
+            @foreach (var document in due)
+            {
+                <li>@document.Title is due for review</li>
+            }
+        </ul>
+    </div>
+}
+
+@if (Model.Documents.Count == 0)
+{
+    <p class="text-muted" id="no-documents">No documents yet.</p>
+}
+
+<ul class="list-unstyled" id="organisation-documents">
+    @foreach (var document in Model.Documents)
+    {
+        var links = document.ActiveLinks;
+        var projects = Model.ProjectsUsing.GetValueOrDefault(document.Id) ?? [];
+        <li class="organisation-document border rounded p-3 mb-3" data-title="@document.Title">
+            <div class="d-flex justify-content-between flex-wrap gap-2">
+                <div>
+                    <span class="badge text-bg-secondary me-1">@KindName(document.Kind)</span>
+                    <a asp-action="File" asp-route-id="@document.Id" class="fw-semibold document-title">@document.Title</a>
+                    <span class="document-version">@document.Version</span>
+                </div>
+                <div class="small text-muted">
+                    Owner @Model.Members.GetValueOrDefault(document.OwnerId, "?")
+                    @if (document.ReviewDueOn is { } reviewOn)
+                    {
+                        <text> · </text><span class="@(document.IsReviewDue(Model.Today) ? "text-danger fw-semibold review-due" : "")">review by @reviewOn.ToString("dd-MM-yyyy")</span>
+                    }
+                </div>
+            </div>
+
+            <div class="small mt-2">
+                Evidence for:
+                <span class="document-links">
+                    @if (links.Count == 0)
+                    {
+                        <span class="text-muted">no requirement yet</span>
+                    }
+                    @foreach (var link in links)
+                    {
+                        var requirement = Model.Requirements.FirstOrDefault(r => r.FrameworkId == link.FrameworkId && r.Code == link.RequirementCode);
+                        <span class="badge text-bg-light border me-1 document-link" data-code="@link.RequirementCode">
+                            @link.RequirementCode
+                            @if (Model.CanManage)
+                            {
+                                <form asp-action="Unlink" method="post" class="d-inline unlink-document"
+                                      data-confirm="The document is no longer evidence for @link.RequirementCode in any project.">
+                                    <input type="hidden" name="documentId" value="@document.Id" />
+                                    <input type="hidden" name="linkId" value="@link.Id" />
+                                    <button type="submit" class="btn btn-link btn-sm p-0 ms-1" aria-label="Unlink @link.RequirementCode">×</button>
+                                </form>
+                            }
+                        </span>
+                    }
+                </span>
+            </div>
+            <div class="small text-muted mt-1 used-by">
+                @(projects.Count == 0 ? "Used by no project yet" : $"Used by {string.Join(", ", projects)}")
+            </div>
+
+            @if (document.Versions.Count > 0)
+            {
+                @* R3: the old versions are kept *@
+                <div class="small text-muted mt-1 earlier-versions">Earlier: @string.Join(", ", document.Versions.Select(v => $"{v.Version} ({v.ReplacedAt.ToLocalTime():dd-MM-yyyy})"))</div>
+            }
+
+            @if (Model.CanManage)
+            {
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    <form asp-action="Link" method="post" class="d-flex gap-1 link-document">
+                        <input type="hidden" name="documentId" value="@document.Id" />
+                        <select name="requirement" class="form-select form-select-sm" aria-label="Requirement">
+                            <option value="">Link to a requirement…</option>
+                            @foreach (var group in Model.Requirements.GroupBy(r => r.Framework))
+                            {
+                                <optgroup label="@group.Key">
+                                    @foreach (var requirement in group.Where(r => !links.Any(l => l.FrameworkId == r.FrameworkId && l.RequirementCode == r.Code)))
+                                    {
+                                        <option value="@requirement.FrameworkId|@requirement.Code">@requirement.Code @requirement.Title</option>
+                                    }
+                                </optgroup>
+                            }
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Link</button>
+                    </form>
+                    <form asp-action="NewVersion" method="post" enctype="multipart/form-data" class="d-flex gap-1 new-version">
+                        <input type="hidden" name="documentId" value="@document.Id" />
+                        <input name="version" class="form-control form-control-sm ct-max-w-11" placeholder="New version, e.g. v4" aria-label="New version" />
+                        <input type="file" name="file" class="form-control form-control-sm" aria-label="File of the new version" />
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Upload</button>
+                    </form>
+                    <form asp-action="Review" method="post" class="d-flex gap-1 review-document">
+                        <input type="hidden" name="documentId" value="@document.Id" />
+                        <input type="date" name="nextReviewOn" class="form-control form-control-sm" aria-label="Next review" />
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Reviewed</button>
+                    </form>
+                    @* R5: the confirmation names the requirements that lose the evidence *@
+                    <form asp-action="Remove" method="post" class="remove-document" data-confirm-final="true"
+                          data-confirm="@(links.Count == 0 ? $"{document.Title} is removed." : $"{document.Title} is removed, and {string.Join(", ", links.Select(l => l.RequirementCode))} lose it as evidence in {(projects.Count == 0 ? "every project" : string.Join(", ", projects))}.")">
+                        <input type="hidden" name="documentId" value="@document.Id" />
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                    </form>
+                </div>
+            }
+        </li>
+    }
+</ul>
+
+@if (Model.CanManage)
+{
+    <h2 class="h5 mt-4">Add a document</h2>
+    <form asp-action="Upload" method="post" enctype="multipart/form-data" class="row g-2" id="upload-document">
+        <div class="col-md-2">
+            <select name="kind" class="form-select" aria-label="Kind">
+                <option value="Policy">Policy</option>
+                <option value="Procedure">Procedure</option>
+                <option value="RiskTable">Risk table</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+        <div class="col-md-3"><input name="title" class="form-control" maxlength="200" placeholder="Title, e.g. Access control policy" aria-label="Title" /></div>
+        <div class="col-md-1"><input name="version" class="form-control" maxlength="50" placeholder="v1" aria-label="Version" /></div>
+        <div class="col-md-2">
+            <select name="ownerId" class="form-select" aria-label="Owner">
+                @foreach (var (id, name) in Model.Members.OrderBy(m => m.Value))
+                {
+                    <option value="@id">@name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2"><input type="date" name="reviewDueOn" class="form-control" aria-label="Review by" title="Review by" /></div>
+        <div class="col-md-2"><input type="file" name="file" class="form-control" aria-label="File" /></div>
+        <div class="col-12"><button type="submit" class="btn btn-primary">Add document</button></div>
+    </form>
+}

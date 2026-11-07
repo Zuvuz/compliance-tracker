@@ -40,10 +40,16 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         public async Task AddLinkAsync(EvidenceLink link, CancellationToken cancellationToken = default)
             => await _db.EvidenceLinks.AddAsync(link, cancellationToken);
 
-        public Task<byte[]?> GetContentAsync(Guid evidenceId, CancellationToken cancellationToken = default)
-            => _db.EvidenceDocuments
-                .Where(d => d.EvidenceId == evidenceId)
-                .Select(d => d.Content)
-                .FirstOrDefaultAsync(cancellationToken);
+        // US-136: evidence from an organisation's document has no file of its own; the document's current one is used
+        public async Task<byte[]?> GetContentAsync(Guid evidenceId, CancellationToken cancellationToken = default)
+            => await _db.EvidenceDocuments
+                   .Where(d => d.EvidenceId == evidenceId)
+                   .Select(d => d.Content)
+                   .FirstOrDefaultAsync(cancellationToken)
+               ?? await (from e in _db.Evidence
+                         join d in _db.OrganisationDocuments on e.OrganisationDocumentId equals d.Id
+                         join f in _db.OrganisationDocumentFiles on new { DocumentId = d.Id, d.Sha256 } equals new { f.DocumentId, f.Sha256 }
+                         where e.Id == evidenceId
+                         select f.Content).FirstOrDefaultAsync(cancellationToken);
     }
 }
