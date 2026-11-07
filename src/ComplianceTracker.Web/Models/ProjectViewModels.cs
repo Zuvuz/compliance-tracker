@@ -243,6 +243,9 @@ namespace ComplianceTracker.Web.Models
         // US-073: the project's security events (CRA Art. 14), for their tab and the Overview's deadlines
         public IReadOnlyList<Domain.Security.SecurityEvent> SecurityEvents { get; init; } = [];
 
+        // US-128: suggested security events and the exploited lists' status
+        public Application.Security.SuggestionOverview? EventSuggestions { get; init; }
+
         // US-078: the Scans tab, and the Overview's count of open high and critical findings
         public Application.Scanning.ScanOverview? Scans { get; init; }
 

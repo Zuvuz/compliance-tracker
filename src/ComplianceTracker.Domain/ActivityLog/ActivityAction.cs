@@ -164,6 +164,12 @@ namespace ComplianceTracker.Domain.ActivityLog
         // US-127: a security event was upgraded to reportable, or a vulnerability that is not exploited was disclosed.
         // SubjectId points at the project.
         SecurityEventUpgraded,
-        SecurityEventDisclosed
+        SecurityEventDisclosed,
+
+        // US-128: the tracker suggested a security event (from a scan or an exploited-vulnerability list), and a person
+        // recorded or dismissed it. SubjectId points at the project.
+        SecurityEventSuggested,
+        SecurityEventSuggestionAccepted,
+        SecurityEventSuggestionDismissed
     }
 }

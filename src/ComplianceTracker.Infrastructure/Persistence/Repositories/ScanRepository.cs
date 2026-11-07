@@ -32,6 +32,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         public async Task<IReadOnlyList<Finding>> ListFindingsAsync(Guid projectId, CancellationToken cancellationToken = default)
             => await _db.Findings.Where(f => f.ProjectId == projectId).ToListAsync(cancellationToken);
 
+        // US-128: for the daily match against the exploited lists
+        public async Task<IReadOnlyList<Guid>> ListProjectIdsWithOpenFindingsAsync(CancellationToken cancellationToken = default)
+            => await _db.Findings.Where(f => f.State == FindingState.Open).Select(f => f.ProjectId).Distinct().ToListAsync(cancellationToken);
+
         public async Task AddFindingsAsync(IEnumerable<Finding> findings, CancellationToken cancellationToken = default)
             => await _db.Findings.AddRangeAsync(findings, cancellationToken);
     }

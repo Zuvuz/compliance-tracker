@@ -70,6 +70,9 @@ builder.Services
     .ValidateOnStart();
 builder.Services.AddHostedService<ScheduledWorkItemSync>();
 
+// US-128: the exploited-vulnerability lists, fetched once a day when the operator switches them on
+builder.Services.AddHostedService<ScheduledExploitedListRefresh>();
+
 // US-020: writes the AI suggestions' rationales in the background
 builder.Services.AddSingleton<RationaleWorker>();
 builder.Services.AddSingleton<IRationaleQueue>(provider => provider.GetRequiredService<RationaleWorker>());

@@ -75,6 +75,8 @@ namespace ComplianceTracker.Specs.Support
                 """
                 DELETE FROM "Invitations";
                 DELETE FROM "ProjectClassifications";
+                DELETE FROM "SecurityEventSuggestions";
+                DELETE FROM "ExploitedLists";
                 DELETE FROM "SecurityEvents";
                 DELETE FROM "RiskActionLinks";
                 DELETE FROM "RiskActions";

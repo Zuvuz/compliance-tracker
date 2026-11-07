@@ -784,6 +784,35 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At nedgradere en hændelse, der først er indberetningspligtig. Indberetningerne er sendt eller skulle have været.
   - Forslag til hændelser ud fra fund og lister over udnyttede sårbarheder. Det kommer med US-128.
 
+### B66 – Forslag til sikkerhedshændelser fra fund og lister over udnyttede sårbarheder
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-128)
+  - Trackeren foreslår sikkerhedshændelser. Den opretter dem aldrig selv. En person registrerer eller afviser hvert forslag.
+  - **Udnyttede sårbarheder:**
+    - Åbne fund matches på CVE-nummer mod de offentlige lister over udnyttede sårbarheder: CISA's Known Exploited Vulnerabilities (KEV) og EU's sårbarhedsdatabase (EUVD, ENISA).
+    - CVE-nummeret findes i fundets regel-id eller besked, uanset store og små bogstaver.
+    - Et match foreslår "Actively exploited vulnerability" én gang pr. CVE og projekt, også når flere fund har samme CVE.
+  - **Kritiske fund:** et nyt kritisk fund uden match foreslår "Vulnerability, not exploited" (B64). Det gælder også et fund uden CVE, fx en CodeQL-regel.
+  - **Når der allerede er en hændelse:**
+    - En CVE, der allerede har en hændelse, får ikke et nyt forslag.
+    - Er hændelsen en åben "not exploited", foreslås en opgradering i stedet.
+    - Et ventende "not exploited"-forslag trækkes tilbage, når CVE'en bliver udnyttet.
+  - **Registrering:** opmærksomhedstidspunktet er, da trackeren lærte det, og det kan ændres. Fristen for den tidlige advarsel løber altså fra det tidspunkt.
+  - **Afvisning:** et afvist forslag beholder sin grund. Det kommer kun igen, hvis CVE'en dukker op i et nyt fund.
+  - **Hvornår der matches:** efter hver scanningsimport, og når listerne hentes.
+  - **Listerne:**
+    - Listerne hentes kun, når operatøren slår dem til (`Security:ExploitedLists:Enabled`, fx `["KEV", "EUVD"]`). De hentes ved start og derefter hver 24. time.
+    - Den sidst hentede udgave gemmes. Hvis hentningen fejler, viser fanen, hvornår listen sidst blev hentet, og intet andet ændres.
+    - En tracker uden internet virker som før.
+  - Forslagene vises øverst på fanen Security events og under "Needs attention", hvor en udnyttet CVE står først. Det kræver `ManageRisks` at beslutte, som i US-073. Forslag, registrering og afvisning logges.
+- **Begrundelse:** CRA art. 14(2)(a) giver 24 timer til den tidlige advarsel fra, man ved, at en sårbarhed udnyttes aktivt. Listerne er det offentlige bevis for det, og produktets fund viser, at sårbarheden er i produktet (ISO 27001 A.5.7, A.8.8). Trackeren gætter ikke på alvoren alene. Mennesket beslutter (AI Act art. 14 som princip).
+- **Fravalgt:**
+  - GitHub's private security advisories som kilde. De kommer, når US-121 (GitHub-alarmer) er flettet.
+  - EPSS-scorer (sandsynligheden for udnyttelse).
+  - Hændelser fra drift og logs (US-098).
+  - At trackeren selv opretter hændelser.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

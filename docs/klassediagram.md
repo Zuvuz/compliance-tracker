@@ -1116,6 +1116,55 @@ classDiagram
   class ISecurityEventRepository {
     <<interface>>
   }
+  class SecurityEventSuggestion {
+    -id: Guid
+    -projectId: Guid
+    -key: string
+    -title: string
+    -source: SuggestionSource
+    -sourceName: string
+    -kind: SecurityEventKind
+    -upgradeEventId: Guid?
+    -findingIds: List~Guid~
+    -learnedAt: DateTime
+    -status: SuggestionStatus
+    -dismissedReason: string?
+    -eventId: Guid?
+    +Create(...)$ SecurityEventSuggestion
+    +Accept(userId: Guid, now: DateTime)
+    +Dismiss(reason: string, userId: Guid, now: DateTime)
+    +Supersede(reason: string, now: DateTime)
+  }
+  class ExploitedList {
+    -name: string
+    -cves: List~string~
+    -fetchedAt: DateTime?
+    -lastError: string?
+    +Refreshed(cves: string[], at: DateTime)
+    +Failed(error: string, at: DateTime)
+  }
+  class SuggestionMatcher {
+    <<static>>
+    +Match(...)$ SecurityEventSuggestion[]
+  }
+  class SecurityEventSuggestionService {
+    +MatchAsync(...) Task
+    +RefreshAsync() Task
+    +RecordAsync(...) Task
+    +DismissAsync(...) Task
+  }
+  class IExploitedVulnerabilityList {
+    <<interface>>
+    +FetchAsync() Task~string[]~
+  }
+  IExploitedVulnerabilityList <|.. KevExploitedList
+  IExploitedVulnerabilityList <|.. EuvdExploitedList
+  SecurityEventSuggestion --> SecurityEventKind
+  SecurityEventSuggestion ..> SecurityEvent : upgrade or recorded
+  SecurityEventSuggestionService ..> SuggestionMatcher
+  SecurityEventSuggestionService --> IExploitedVulnerabilityList
+  SecurityEventSuggestionService --> SecurityEventService
+  ScanService --> SecurityEventSuggestionService : after import
   SecurityEvent --> SecurityEventKind
   SecurityEvent ..> SecurityReportKind
   SecurityEventService --> ISecurityEventRepository

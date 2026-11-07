@@ -31,7 +31,8 @@ namespace ComplianceTracker.Specs.Support
         // overrides: settings to change, e.g. an empty ClientId to test the start-up check (US-029 R3)
         // github: the pretend GitHub the app reads user stories from (US-018); without one, an empty one
         // ai: the pretend local AI (US-020); without one, a new one
-        public static TestApp WithTestSignIn(string connectionString, TimeProvider clock, IDictionary<string, string?>? overrides = null, FakeGitHub? github = null, FakeAi? ai = null, DatabaseRace? race = null)
+        // exploited: the pretend exploited-vulnerability lists and the operator's switch (US-128); without one, none is on
+        public static TestApp WithTestSignIn(string connectionString, TimeProvider clock, IDictionary<string, string?>? overrides = null, FakeGitHub? github = null, FakeAi? ai = null, DatabaseRace? race = null, FakeExploitedLists? exploited = null)
         {
             github ??= new FakeGitHub();
             ai ??= new FakeAi();
@@ -70,6 +71,14 @@ namespace ComplianceTracker.Specs.Support
                 services.AddSingleton<IAiLimits>(ai); // US-105
                 services.AddSingleton<IRationaleWriter>(ai);
                 services.AddSingleton<IAiModels>(new FakeAiModels(ai)); // US-117
+
+                // US-128: the list adapters read the pretend lists, and a scenario switches them on
+                if (exploited is not null)
+                {
+                    services.AddSingleton<ComplianceTracker.Application.Security.IExploitedListSettings>(exploited);
+                    services.AddHttpClient<ComplianceTracker.Infrastructure.Security.KevExploitedList>().ConfigurePrimaryHttpMessageHandler(exploited.CreateHandler);
+                    services.AddHttpClient<ComplianceTracker.Infrastructure.Security.EuvdExploitedList>().ConfigurePrimaryHttpMessageHandler(exploited.CreateHandler);
+                }
 
                 // US-015: lets a scenario save something at the same moment as the app
                 if (race is not null)
