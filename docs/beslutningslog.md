@@ -770,6 +770,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At CSV får én række pr. kobling og læserens kolonner (US-120 R7). Det ville ændre et format, andre værktøjer kan læse.
   - PDF (US-051, US-082) og låsning af rapporten med fingeraftryk (US-050).
 
+### B65 – Alle rapporter på én fane
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-129)
+  - Projektet har en fane "Reports" efter "Activity". Den viser hver rapport som et kort med navn, hvem den er til, hvad den indeholder og formatet.
+  - Sporbarhedsrapporten har de samme valg som på Compliance-fanen (læser, format og regulativ, B60), men her er "All regulations" standard. Udkastet til teknisk dokumentation (US-056) hentes som Word.
+  - En rapport, der ikke kan laves, står der stadig og siger hvorfor, fx "Add a framework to the project to make a traceability report". Reglen ligger i `ProjectReports` i Application, så nye rapporter kommer til samme sted.
+  - Overview's kort "Reports" viser, hvilke rapporter der kan laves, og linker til fanen. Den forkerte tekst "Traceability matrix (CSV)" er væk.
+  - Compliance-fanen beholder sin download for det åbne regulativ. Alle roller kan hente, og hver download logges som før.
+- **Begrundelse:** Rapporterne lå forskellige steder. Den, der skal aflevere en rapport til en auditor eller ledelsen, skal kunne finde den ét sted (ISO 27001 7.5.3, 9.1, 9.3; CRA bilag VII).
+- **Fravalgt:**
+  - At fanen husker de sidste valg pr. bruger.
+  - Siden for eksterne auditorer. Den hører til US-076.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

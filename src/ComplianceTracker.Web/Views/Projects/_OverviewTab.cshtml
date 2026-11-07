@@ -275,27 +275,15 @@
             </div>
         </div>
 
-        @* US-056: reports made from the project's data. #project-reports, a#technical-documentation *@
+        @* US-056, US-129 R5: the reports are on the Reports tab. #project-reports, a#reports-link *@
+        @{
+            var reports = ComplianceTracker.Application.Reports.ProjectReports.For(Model.Compliance);
+        }
         <div class="card mb-3">
             <div class="card-body small" id="project-reports">
                 <h2 class="h6 card-title">Reports</h2>
-                <ul class="list-unstyled mb-0">
-                    @if (frameworks.Count > 0)
-                    {
-                        <li><a asp-action="Traceability" asp-route-id="@project.Id" id="traceability-report">Traceability matrix (CSV)</a></li>
-                    }
-                    @if (Model.Compliance is { } compliance && ComplianceTracker.Application.Reports.TechnicalDocumentationQueries.CraOf(compliance) is not null)
-                    {
-                        <li>
-                            <a asp-action="TechnicalDocumentation" asp-route-id="@project.Id" id="technical-documentation">Technical documentation (draft)</a>
-                            <span class="text-muted">– CRA Annex VII, as DOCX</span>
-                        </li>
-                    }
-                    @if (frameworks.Count == 0)
-                    {
-                        <li class="text-muted">Reports come when the project follows a framework.</li>
-                    }
-                </ul>
+                <p class="mb-1 text-muted">@string.Join(", ", reports.Where(r => r.IsAvailable).Select(r => r.Title).DefaultIfEmpty("Reports come when the project follows a framework"))</p>
+                <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Reports" id="reports-link">Open the Reports tab</a>
             </div>
         </div>
 
