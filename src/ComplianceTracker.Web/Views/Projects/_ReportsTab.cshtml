@@ -36,6 +36,7 @@
                                 <select name="format" class="form-select form-select-sm w-auto" aria-label="Format">
                                     <option value="xlsx">Excel</option>
                                     <option value="csv">CSV</option>
+                                    <option value="pdf">PDF</option>
                                 </select>
                                 <select name="sub" class="form-select form-select-sm w-auto" aria-label="Regulations">
                                     <option value="">All regulations</option>
@@ -50,7 +51,10 @@
                         else if (report.Key == ComplianceTracker.Application.Reports.ProjectReports.TechnicalDocumentation)
                         {
                             <a asp-action="TechnicalDocumentation" asp-route-id="@project.Id" class="btn btn-sm btn-outline-secondary"
-                               id="reports-technical-documentation">Download</a>
+                               id="reports-technical-documentation">Word</a>
+                            @* US-131 *@
+                            <a asp-action="TechnicalDocumentation" asp-route-id="@project.Id" asp-route-format="pdf" class="btn btn-sm btn-outline-secondary"
+                               id="reports-technical-documentation-pdf">PDF</a>
                         }
                     </div>
                 </div>

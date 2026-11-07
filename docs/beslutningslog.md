@@ -923,6 +923,24 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Karaktererne fra US-116's vurdering af begrundelser.
   - At maskere andre navne end medlemmernes. Fri tekst kan stadig nævne fx en kunde.
 
+### B72 – Alle rapporter som PDF
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-131)
+  - Sporbarhedsrapporten (US-120) og udkastet til den tekniske dokumentation (US-056) kan hentes som PDF på Reports-fanen. PDF'en laves fra den samme rapportmodel som Excel- og Word-filen, så tallene er de samme i alle formater.
+  - **Bibliotek:** PdfPig (Apache-2.0), som trackeren allerede bruger til at læse rammernes PDF'er. Det er gratis til kommerciel brug, og der skal ikke hentes noget nyt. PDFsharp/MigraDoc og QuestPDF er fravalgt.
+  - **Hver side** viser organisation, projekt, rapport, hvornår og af hvem den er lavet, og "Page x of y".
+  - **Tabeller:**
+    - Kolonnebredden følger indholdet. Tekst ombrydes, så intet skæres af.
+    - En tabel, der fortsætter på næste side, gentager sin overskrift.
+    - Mange kolonner udskrives på tværs (landskab).
+  - **Tegn:** PDF'en bruger standardfonten Helvetica (Windows-1252), så æ, ø og å virker. Pile bliver til "->", og andre tegn, fonten ikke kan vise, bliver til "?", så en rapport aldrig fejler.
+  - **Log:** hver download logges som `ReportDownloaded` med formatet, nu også for den tekniske dokumentation.
+- **Begrundelse:** ISO 27001 7.5.2 og 9.3 kræver dokumenteret information i et passende format til ledelse og auditor. PDF er også grundlaget for låsning (US-050) og signatur (US-132).
+- **Fravalgt:**
+  - PDF/A. Det kan komme med låsningen.
+  - Indlejrede fonte, som ville give flere tegn men større filer.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
