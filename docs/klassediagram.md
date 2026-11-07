@@ -25,6 +25,8 @@ classDiagram
 
   %% ================= Organisation og brugere =================
   class Organization {
+    -shareAiFeedback: bool
+    -shareAiFeedbackSince: DateTime?
     -id: Guid
     -name: string
     -cvr: string
@@ -200,6 +202,7 @@ classDiagram
 
   %% ================= Projekt og releases =================
   class Project {
+    -excludedFromAiSharing: bool
     -id: Guid
     -version: uint
     -organizationId: Guid
@@ -865,6 +868,18 @@ classDiagram
     +MissingFrom(scanId: Guid, at: DateTime) bool
     +Accept(reason: string, userId: Guid, at: DateTime)
   }
+  class ScanSource {
+    <<enumeration>>
+    Upload
+    GitHubCodeScanning
+    GitHubDependabot
+    CiUpload
+  }
+  class IGitHubSecurityAlerts {
+    <<interface>>
+    +ReadAsync(repository: string, token: string?) Task~IReadOnlyList~GitHubAlertRead~~
+  }
+  Scan --> ScanSource
   class IScanImporter {
     <<interface>>
     +CanRead(fileName: string, content: byte[]) bool
@@ -906,6 +921,12 @@ classDiagram
     +CompleteAction(actionId: Guid, hasProof: bool, userId: Guid, at: DateTime)
     +OverdueActions(today: DateOnly) int
   }
+  class RiskTraces {
+    <<static>>
+    +For(risk: Risk, compliance: ProjectCompliance)$ RiskTrace
+    +ByRequirement(risks: IEnumerable~Risk~, requirementsOfStory: ILookup~Guid,Guid~)$ IReadOnlyDictionary~Guid,IReadOnlyList~RiskReference~~
+  }
+  RiskTraces ..> Risk
   class RiskMeasure {
     -id: Guid
     -riskId: Guid

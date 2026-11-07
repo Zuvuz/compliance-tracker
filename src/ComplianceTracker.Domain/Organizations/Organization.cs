@@ -33,6 +33,10 @@ namespace ComplianceTracker.Domain.Organizations
         // Off until an Admin switches it on.
         public bool ShareAiFeedback { get; private set; }
 
+        // US-130 R5: when sharing was last switched on; only decisions from then on are used. Null: shared from the start
+        // (an organisation that switched it on itself before US-130).
+        public DateTime? ShareAiFeedbackSince { get; private set; }
+
         // For EF Core only. Everyone else must use Create, so the rules always run.
         private Organization() { }
 
@@ -70,6 +74,8 @@ namespace ComplianceTracker.Domain.Organizations
             // Everything is checked before the object is built, so a half-created organisation never exists
             var organization = new Organization
             {
+                // US-130 R1: shared by default; the organisation is told and can switch it off
+                ShareAiFeedback = true,
                 Name = name,
                 Cvr = cvr,
                 Sector = sector.Value,
@@ -82,7 +88,7 @@ namespace ComplianceTracker.Domain.Organizations
         }
 
         // US-036 R6: only an Admin may change it. Returns false when nothing changed.
-        public bool SetShareAiFeedback(bool share, Guid userId)
+        public bool SetShareAiFeedback(bool share, Guid userId, DateTime? at = null)
         {
             if (_users.FirstOrDefault(u => u.Id == userId)?.Role != UserRole.Admin)
             {
@@ -95,6 +101,12 @@ namespace ComplianceTracker.Domain.Organizations
             }
 
             ShareAiFeedback = share;
+            if (share)
+            {
+                // US-130 R5: switched on again; the decisions made while it was off are never used
+                ShareAiFeedbackSince = at ?? DateTime.UtcNow;
+            }
+
             return true;
         }
 

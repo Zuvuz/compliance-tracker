@@ -98,6 +98,7 @@ namespace ComplianceTracker.Infrastructure
             services.AddTransient<IWorkItemSource>(provider => provider.GetRequiredService<GitHubWorkItemSource>());
             services.AddTransient<IPullRequestReader>(provider => provider.GetRequiredService<GitHubWorkItemSource>()); // US-058
             services.AddTransient<IGitHubProjects>(provider => provider.GetRequiredService<GitHubWorkItemSource>()); // US-107
+            services.AddTransient<Application.Scanning.IGitHubSecurityAlerts>(provider => provider.GetRequiredService<GitHubWorkItemSource>()); // US-121
 
             // US-063: feedback becomes an issue in the tracker's own repository, with its own token (B42)
             services.AddOptions<Feedback.FeedbackOptions>().BindConfiguration(Feedback.FeedbackOptions.Section);

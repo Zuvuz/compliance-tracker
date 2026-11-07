@@ -161,6 +161,9 @@ namespace ComplianceTracker.Domain.ActivityLog
         // "Excel for Auditor: CRA".
         ReportDownloaded,
 
+        // US-130 R4: a project was left out of (or taken back into) AI improvement. SubjectId points at the project.
+        ProjectAiSharingChanged,
+
         // US-127: a security event was upgraded to reportable, or a vulnerability that is not exploited was disclosed.
         // SubjectId points at the project.
         SecurityEventUpgraded,

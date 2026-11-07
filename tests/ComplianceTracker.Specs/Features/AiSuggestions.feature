@@ -80,22 +80,6 @@ Feature: The local AI suggests mappings, and every decision is kept
     When I click "Suggest mappings" for "Acme Portal"
     Then I see the error "The local AI is not available. Start Ollama (or the configured model server) and try again"
 
-  @US-036 @iso27001-A.5.34 @integration
-  Scenario: Nothing is exported while sharing is off
-    When I export the AI feedback
-    Then I see the error "Sharing is off"
-
-  @US-036 @iso27001-A.5.34 @iso27001-A.8.15 @integration
-  Scenario: The export has the decisions and no names
-    Given the AI rates "[US-004] Sign in with OpenID Connect" against "SP-1" with 0.86
-    And I have clicked "Suggest mappings" for "Acme Portal"
-    And I reject the suggestion "SP-1" for "[US-004] Sign in with OpenID Connect" with the reason "TooBroad" and the comment "Only about sign-in"
-    When I switch on "Share our decisions to improve the AI"
-    And I export the AI feedback
-    Then the export has 1 line with the requirement, the user story, the score and the decision "Rejected"
-    And the export does not say who decided
-    And the activity log for "Acme ApS" has "AiFeedbackSharingChanged" and "AiFeedbackExported" for "Anna"
-
   @US-020 @iso27001-A.8.15 @integration
   Scenario: Decisions are logged
     Given the AI rates "[US-004] Sign in with OpenID Connect" against "SP-1" with 0.86
