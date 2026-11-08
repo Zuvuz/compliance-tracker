@@ -1,6 +1,8 @@
 using ComplianceTracker.Domain.Frameworks;
 using ComplianceTracker.Domain.Users;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ComplianceTracker.Infrastructure.Persistence.Configurations
@@ -8,6 +10,8 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
     // How FrameworkVersion is stored in the table "FrameworkVersions" (the PDF itself is in CatalogDocuments)
     public class FrameworkVersionConfiguration : IEntityTypeConfiguration<FrameworkVersion>
     {
+        private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+
         public void Configure(EntityTypeBuilder<FrameworkVersion> builder)
         {
             builder.ToTable("FrameworkVersions");
@@ -30,6 +34,17 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             // US-007: Draft or Active, stored as text
             builder.Property(v => v.Status).HasConversion<string>().HasMaxLength(20);
             builder.Ignore(v => v.IsActive);
+
+            // US-070: the extraction check as JSON; null for versions without one
+            builder.Property(v => v.Extraction)
+                .HasColumnType("jsonb")
+                .HasConversion(
+                    check => check == null ? null : JsonSerializer.Serialize(check, Json),
+                    json => json == null ? null : JsonSerializer.Deserialize<ExtractionCheck>(json, Json),
+                    new ValueComparer<ExtractionCheck?>(
+                        (a, b) => JsonSerializer.Serialize(a, Json) == JsonSerializer.Serialize(b, Json),
+                        c => c == null ? 0 : JsonSerializer.Serialize(c, Json).GetHashCode(),
+                        c => c));
 
             // Who activated it; null for drafts and built-in versions
             builder.HasOne<User>()

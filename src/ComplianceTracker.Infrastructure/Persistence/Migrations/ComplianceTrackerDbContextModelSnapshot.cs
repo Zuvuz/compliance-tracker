@@ -346,6 +346,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<DateOnly?>("AppliesFrom")
                         .HasColumnType("date");
 
+                    b.Property<string>("Extraction")
+                        .HasColumnType("jsonb");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasMaxLength(255)

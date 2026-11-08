@@ -280,6 +280,7 @@ classDiagram
     -activatedAt: DateTime?
     -activatedById: Guid?
     -appliesFrom: DateOnly?
+    -extraction: ExtractionCheck?
     -requirements: List~Requirement~
     +IsActive: bool
     +AppliesOn(today: DateOnly) bool

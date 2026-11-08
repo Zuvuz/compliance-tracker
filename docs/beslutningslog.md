@@ -945,6 +945,29 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - En ny "godkender"-rolle. Rettighederne findes allerede.
   - At lade en eneste administrator godkende sig selv.
 
+### B70 – Tjek af udtrækningen fra en PDF
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-070)
+  - Udtrækningen læser nu PDF'en side for side, og en ren parser (`RequirementParser`, uden AI) finder både kravene og det, der ikke blev brugt. Resultatet gemmes som JSON på kladden (`ExtractionCheck`).
+  - **Kladdens side viser** antal krav, sider uden krav, hvor stor en del af teksten der er dækket, og en advarsel over 20 % sider uden krav.
+  - **Den viser også:**
+    - tekst, der ikke blev til et krav, pr. side og afkortet til 300 tegn
+    - huller i nummereringen ("5.15 mangler måske")
+    - koder, der findes to gange
+    - punkter i indholdsfortegnelsen, der ikke blev fundet
+    - "shall/must"-sætninger uden for et krav
+  - **En side uden krav** er en side, hvor intet krav starter. Dens tekst vises, også når den er lagt til kravet før, for det kan være et krav uden nummer.
+  - **Ikke vist:** sidetal, indholdsfortegnelse, og sidehoveder og -fødder (en linje, der står på mindst halvdelen af siderne, dog mindst tre).
+  - **EU-retsakter:** "Article 14" med stykker "1." og litra "(a)", og "ANNEX I" og "Part II" med "(1)" og "(a)" giver koder som "Art. 14(2)(a)" og "Annex I Part II (1)". Det fineste niveau med en selvstændig forpligtelse bliver kravet, og overskrifter over det gør ikke. Betragtningerne før første artikel er ikke krav.
+  - **Krav tilføjet i hånden** fjerner den tekst, de dækker, fra listen. Kun krav, der ikke blev fundet ved udtrækningen, tæller.
+  - Versionen kan stadig aktiveres med en advarsel. Tallene skrives i loggens `CatalogActivated`.
+- **Begrundelse:** ISO 27001 A.5.31 kræver, at alle krav er identificeret, og A.8.32 kræver styrede ændringer. En udtrækning, der stille springer krav over, ville give en falsk dækning. US-137 henter EU-retsakter fra EUR-Lex og bruger dette tjek for PDF'er.
+- **Fravalgt:**
+  - OCR af scannede PDF'er.
+  - AI, der foreslår krav ud fra den tekst, der er tilbage.
+  - At blokere aktivering ved en advarsel.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
