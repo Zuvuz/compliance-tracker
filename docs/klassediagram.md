@@ -951,6 +951,22 @@ classDiagram
   OrganisationDocument "1" *-- "0..*" OrganisationDocumentLink : covers
   OrganisationDocument "1" *-- "0..*" OrganisationDocumentVersion : earlier files
   Evidence --> OrganisationDocument : from
+  class ReportSnapshot {
+    -id: Guid
+    -organizationId: Guid
+    -projectId: Guid?
+    -kind: string
+    -title: string
+    -fileName: string
+    -sha256: string
+    -lockedById: Guid
+    -lockedRole: UserRole?
+    -lockedAt: DateTime
+    +Lock(organizationId, projectId, kind, title, fileName, contentType, content, lockedById, role, at)$ ReportSnapshot
+    +Fingerprint(content: byte[])$ string
+    +Matches(content: byte[]) bool
+  }
+  ReportSnapshot --> Project : locked for
   class Finding {
     -id: Guid
     -projectId: Guid

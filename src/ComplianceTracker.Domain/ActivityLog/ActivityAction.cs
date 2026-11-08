@@ -200,6 +200,9 @@ namespace ComplianceTracker.Domain.ActivityLog
         OrganisationDocumentReviewed,
         OrganisationDocumentLinked,
         OrganisationDocumentUnlinked,
-        OrganisationDocumentRemoved
+        OrganisationDocumentRemoved,
+
+        // US-050: a report was locked as PDF with its SHA-256 fingerprint. SubjectId points at the project.
+        ReportLocked
     }
 }

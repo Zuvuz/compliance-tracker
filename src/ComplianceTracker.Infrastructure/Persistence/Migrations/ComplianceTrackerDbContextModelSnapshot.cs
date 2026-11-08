@@ -2896,6 +2896,66 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("ProjectFrameworks", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Reports.ReportSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("LockedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("LockedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("LockedRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<long>("SizeInBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LockedById");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("OrganizationId", "Sha256");
+
+                    b.ToTable("ReportSnapshots", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Risks.Risk", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3780,6 +3840,20 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("OrganisationDocumentFiles", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.ReportSnapshotFile", b =>
+                {
+                    b.Property<Guid>("SnapshotId")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("SnapshotId");
+
+                    b.ToTable("ReportSnapshotFiles", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.RequirementDocumentFile", b =>
                 {
                     b.Property<Guid>("VersionId")
@@ -4396,6 +4470,26 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Reports.ReportSnapshot", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("LockedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Risks.Risk", b =>
                 {
                     b.HasOne("ComplianceTracker.Domain.Users.User", null)
@@ -4709,6 +4803,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasOne("ComplianceTracker.Domain.Organizations.OrganisationDocument", null)
                         .WithMany()
                         .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.ReportSnapshotFile", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Reports.ReportSnapshot", null)
+                        .WithOne()
+                        .HasForeignKey("ComplianceTracker.Infrastructure.Persistence.ReportSnapshotFile", "SnapshotId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

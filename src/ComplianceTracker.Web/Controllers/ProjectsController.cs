@@ -158,6 +158,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] Application.Security.SecurityEventSuggestionService suggestionService,
             [FromServices] Application.Approvals.ApprovalService approvalService,
             [FromServices] Application.Organizations.OrganisationDocumentService documentService,
+            [FromServices] Application.Reports.ReportService reportService,
             CancellationToken cancellationToken)
         {
             // US-104 R1: shared links to the old "User stories" tab still work
@@ -217,6 +218,8 @@ namespace ComplianceTracker.Web.Controllers
             var approvals = activeTab is ProjectTabs.Overview ? await approvalService.ForProjectAsync(id, cancellationToken) : [];
             // US-136 R4: the organisation's documents due for review
             var documentsDue = activeTab is ProjectTabs.Overview ? await documentService.DueForReviewAsync(cancellationToken) : [];
+            // US-050: the locked reports on the Reports tab
+            var lockedReports = activeTab is ProjectTabs.Reports ? await reportService.ForProjectAsync(id, cancellationToken) : [];
             var now = _clock.GetUtcNow().UtcDateTime;
             var risks = allRisks
                 .Where(r => string.IsNullOrEmpty(status) ? r.Status != RiskStatus.Closed : r.DisplayStatus.Equals(status, StringComparison.OrdinalIgnoreCase))
@@ -261,6 +264,7 @@ namespace ComplianceTracker.Web.Controllers
                 EventSuggestions = eventSuggestions,
                 Approvals = approvals,
                 DocumentsDue = documentsDue,
+                LockedReports = lockedReports,
                 Scans = scanOverview,
                 RiskStatusFilter = status,
                 RiskLevelFilter = level,
@@ -903,10 +907,9 @@ namespace ComplianceTracker.Web.Controllers
             Guid id, string? format,
             [FromServices] Application.Reports.TechnicalDocumentationQueries drafts,
             [FromServices] Application.Reports.IDocumentWriter writer,
-            [FromServices] Application.Reports.IPdfWriter pdfWriter,
+            [FromServices] Application.Reports.ReportFiles files,
             [FromServices] Application.ActivityLog.IActivityLogger log,
             [FromServices] Application.Common.IUnitOfWork unitOfWork,
-            [FromServices] Application.Common.ICurrentUser currentUser,
             CancellationToken cancellationToken)
         {
             var draft = await drafts.DraftAsync(id, cancellationToken);
@@ -923,11 +926,9 @@ namespace ComplianceTracker.Web.Controllers
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
             Response.Headers["X-Content-Type-Options"] = "nosniff";
-            if (pdf)
+            if (pdf && await files.TechnicalDocumentationAsync(id, cancellationToken) is { } made)
             {
-                var header = new Application.Reports.PdfHeader(organization.Name, project.Name, "Technical documentation (draft)",
-                    _clock.GetUtcNow().UtcDateTime, currentUser.Identity.Name);
-                return File(pdfWriter.FromDocument(draft, header), "application/pdf", Path.ChangeExtension(draft.FileName, ".pdf"));
+                return File(made.Pdf.Content, made.Pdf.ContentType, made.Pdf.FileName);
             }
 
             return File(writer.ToDocx(draft), "application/vnd.openxmlformats-officedocument.wordprocessingml.document", draft.FileName);
@@ -943,7 +944,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> Traceability(
             Guid id, string? sub, string? format, string? audience,
             [FromServices] Application.Reports.ISpreadsheetWriter spreadsheet,
-            [FromServices] Application.Reports.IPdfWriter pdfWriter,
+            [FromServices] Application.Reports.ReportFiles files,
             [FromServices] Application.Security.SecurityEventQueries securityEvents,
             [FromServices] Application.Scanning.ScanService scans,
             [FromServices] Application.ActivityLog.IActivityLogger log,
@@ -996,14 +997,67 @@ namespace ComplianceTracker.Web.Controllers
                 project.SupportEndsOn);
             var document = Application.Reports.TraceabilityReport.Build(reader, project, frameworks, NameOf,
                 currentUser.Identity.Name, now, facts);
-            if (pdf)
+            if (pdf && await files.TraceabilityAsync(id, reader, sub, cancellationToken) is { } made)
             {
-                // US-131 R2: the same report model as the Excel file
-                var header = new Application.Reports.PdfHeader(organization.Name, project.Name, document.Title, now, currentUser.Identity.Name);
-                return File(pdfWriter.FromReport(document, header), "application/pdf", name + ".pdf");
+                // US-131 R2: the same report model as the Excel file; the same code as a locked report (US-050)
+                return File(made.Pdf.Content, made.Pdf.ContentType, made.Pdf.FileName);
             }
 
             return File(spreadsheet.ToXlsx(document), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", name + ".xlsx");
+        }
+
+        // ---------------------------------------------------------- Locked reports (US-050)
+
+        // POST /Projects/LockReport: R1, R5, R6. report is "traceability" (with audience and sub) or "technical-documentation".
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Reports)]
+        public async Task<IActionResult> LockReport(
+            Guid projectId, string? report, string? audience, string? sub, [FromServices] Application.Reports.ReportService reports,
+            CancellationToken cancellationToken)
+        {
+            var snapshot = report == Application.Reports.ProjectReports.TechnicalDocumentation
+                ? await reports.LockTechnicalDocumentationAsync(projectId, cancellationToken)
+                : await reports.LockTraceabilityAsync(projectId,
+                    Enum.TryParse<Application.Reports.ReportAudience>(audience, ignoreCase: true, out var reader) ? reader : Application.Reports.ReportAudience.Team,
+                    string.IsNullOrEmpty(sub) ? null : sub, cancellationToken);
+            TempData["ReportLocked"] = $"Locked \"{snapshot.Title}\" with the fingerprint {snapshot.Sha256}";
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Reports });
+        }
+
+        // GET /Projects/LockedReport/{id}?snapshotId=...: R3, for anyone in the organisation, also the Auditor
+        [HttpGet]
+        public async Task<IActionResult> LockedReport(Guid id, Guid snapshotId, [FromServices] Application.Reports.ReportService reports, CancellationToken cancellationToken)
+        {
+            if (await reports.DownloadAsync(snapshotId, cancellationToken) is not { } locked || locked.Snapshot.ProjectId != id)
+            {
+                return NotFound();
+            }
+
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+            return File(locked.Content, locked.Snapshot.ContentType, locked.Snapshot.FileName);
+        }
+
+        // POST /Projects/CheckFingerprint: R4, an uploaded file against the organisation's locked reports
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(MaxEvidenceRequestSize)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaxEvidenceRequestSize)]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Reports)]
+        public async Task<IActionResult> CheckFingerprint(
+            Guid projectId, IFormFile? file, [FromServices] Application.Reports.ReportService reports, CancellationToken cancellationToken)
+        {
+            using var buffer = new MemoryStream();
+            if (file is { Length: > 0 })
+            {
+                await file.CopyToAsync(buffer, cancellationToken);
+            }
+
+            var check = await reports.CheckAsync(buffer.ToArray(), cancellationToken);
+            TempData["FingerprintCheck"] = check.Match is { } match
+                ? $"Matches the report locked on {match.LockedAt.ToLocalTime():dd-MM-yyyy HH:mm}: {match.Title}"
+                : $"Does not match any locked report (SHA-256 {check.Sha256})";
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Reports });
         }
 
         // ---------------------------------------------------------- AI suggestions (US-020, US-036)

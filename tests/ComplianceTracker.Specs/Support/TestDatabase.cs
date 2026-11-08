@@ -101,6 +101,12 @@ namespace ComplianceTracker.Specs.Support
                 DELETE FROM "OrganisationDocuments";
                 DELETE FROM "RequirementLinks";
                 DELETE FROM "RequirementApplicability";
+                ALTER TABLE "ReportSnapshotFiles" DISABLE TRIGGER USER;
+                DELETE FROM "ReportSnapshotFiles";
+                ALTER TABLE "ReportSnapshotFiles" ENABLE TRIGGER USER;
+                ALTER TABLE "ReportSnapshots" DISABLE TRIGGER USER;
+                DELETE FROM "ReportSnapshots";
+                ALTER TABLE "ReportSnapshots" ENABLE TRIGGER USER;
                 ALTER TABLE "ActivityLog" DISABLE TRIGGER USER;
                 DELETE FROM "ActivityLog";
                 ALTER TABLE "ActivityLog" ENABLE TRIGGER USER;

@@ -52,6 +52,8 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<Domain.Approvals.ApprovalRequest> ApprovalRequests => Set<Domain.Approvals.ApprovalRequest>(); // US-135
         public DbSet<Domain.Organizations.OrganisationDocument> OrganisationDocuments => Set<Domain.Organizations.OrganisationDocument>(); // US-136
         public DbSet<OrganisationDocumentFile> OrganisationDocumentFiles => Set<OrganisationDocumentFile>();
+        public DbSet<Domain.Reports.ReportSnapshot> ReportSnapshots => Set<Domain.Reports.ReportSnapshot>(); // US-050
+        public DbSet<ReportSnapshotFile> ReportSnapshotFiles => Set<ReportSnapshotFile>();
         public DbSet<Risk> Risks => Set<Risk>();
         public DbSet<ProjectClassification> ProjectClassifications => Set<ProjectClassification>(); // US-026
         public DbSet<Domain.Security.SecurityEvent> SecurityEvents => Set<Domain.Security.SecurityEvent>(); // US-073
