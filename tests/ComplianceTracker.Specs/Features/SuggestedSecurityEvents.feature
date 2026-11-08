@@ -37,9 +37,12 @@ Feature: Suggested security events
 
   @US-128 @cra-annexI @integration
   Scenario: A new critical finding is suggested as a vulnerability that is not exploited
+    Given "Bo" is in "Acme ApS" with the role "ComplianceManager"
     When "Acme Portal" gets a critical finding "CVE-2026-5678" from "Trivy"
     Then the Security events tab suggests "CVE-2026-5678" from "Trivy"
     When I record the suggested event "CVE-2026-5678"
+    Then I see that it waits for another member's approval
+    When "Bo" approves the request
     Then the event "CVE-2026-5678" needs no reports
 
   @US-128 @cra-Art.14 @integration

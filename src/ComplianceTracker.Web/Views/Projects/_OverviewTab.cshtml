@@ -139,6 +139,15 @@
     {
         attention.Add((Plural(overdueActions, "overdue risk action", "overdue risk actions"), RisksUrl()));
     }
+    // US-135: requests the member may approve, and their own that wait
+    foreach (var approval in Model.Approvals.Where(a => a.CanApprove))
+    {
+        attention.Add(($"Waiting for your approval: {approval.Request.Summary}", "#approvals"));
+    }
+    foreach (var approval in Model.Approvals.Where(a => a.CanWithdraw))
+    {
+        attention.Add(($"Waiting for another member's approval: {approval.Request.Summary}", "#approvals"));
+    }
     if (doneNotLinked > 0)
     {
         attention.Add((Plural(doneNotLinked, "done story not linked to a requirement", "done stories not linked to a requirement"),
@@ -197,6 +206,73 @@
             </ul>
         </section>
 
+        @* US-135: four-eyes. Pending requests first, then the five latest decided ones. *@
+        @{
+            var pendingApprovals = Model.Approvals.Where(a => a.Request.IsPending && (a.CanApprove || a.CanWithdraw || a.NoOneElseMayApprove)).ToList();
+            var decidedApprovals = Model.Approvals.Where(a => !a.Request.IsPending).Take(5).ToList();
+        }
+        @if (pendingApprovals.Count > 0 || decidedApprovals.Count > 0)
+        {
+            <section class="mb-4" id="approvals">
+                <h2 class="h6">Waiting for approval</h2>
+                @if (pendingApprovals.Count == 0)
+                {
+                    <p class="text-muted small">Nothing waits for approval.</p>
+                }
+                <ul class="list-unstyled mb-2">
+                    @foreach (var approval in pendingApprovals)
+                    {
+                        var request = approval.Request;
+                        <li class="approval border rounded p-2 mb-2" data-request="@request.Id">
+                            <div class="approval-summary">@request.Summary</div>
+                            <div class="small text-muted">Asked by @approval.RequestedBy, @request.RequestedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm") · expires @request.ExpiresAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</div>
+                            @if (approval.NoOneElseMayApprove)
+                            {
+                                <div class="small text-warning-emphasis no-approver">No other member may approve this. Invite one with the right role, or withdraw the request.</div>
+                            }
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                @if (approval.CanApprove)
+                                {
+                                    <form asp-controller="Approvals" asp-action="Approve" method="post" class="approve-request"
+                                          data-confirm="@request.Summary" data-confirm-title="Approve this?" data-confirm-button="Approve">
+                                        <input type="hidden" name="id" value="@request.Id" />
+                                        <input type="hidden" name="projectId" value="@request.ProjectId" />
+                                        <button type="submit" class="btn btn-sm btn-primary">Approve</button>
+                                    </form>
+                                    <form asp-controller="Approvals" asp-action="Reject" method="post" class="reject-request d-flex gap-1">
+                                        <input type="hidden" name="id" value="@request.Id" />
+                                        <input type="hidden" name="projectId" value="@request.ProjectId" />
+                                        <input name="reason" class="form-control form-control-sm" maxlength="1000" placeholder="Why not?" aria-label="Reason for rejecting" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                    </form>
+                                }
+                                @if (approval.CanWithdraw)
+                                {
+                                    <form asp-controller="Approvals" asp-action="Withdraw" method="post" class="withdraw-request">
+                                        <input type="hidden" name="id" value="@request.Id" />
+                                        <input type="hidden" name="projectId" value="@request.ProjectId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary">Withdraw</button>
+                                    </form>
+                                }
+                            </div>
+                        </li>
+                    }
+                </ul>
+                @if (decidedApprovals.Count > 0)
+                {
+                    <ul class="list-unstyled small text-muted mb-0" id="decided-approvals">
+                        @foreach (var approval in decidedApprovals)
+                        {
+                            var request = approval.Request;
+                            <li class="decided-approval" data-status="@request.Status">
+                                @request.Status: @request.Summary (asked by @approval.RequestedBy@(approval.DecidedBy is { } by ? $", {request.Status.ToString().ToLowerInvariant()} by {by}" : "")@(request.DecisionNote is { } note && request.Status != ComplianceTracker.Domain.Approvals.ApprovalStatus.Approved ? $": {note}" : ""))
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+        }
+
         @* US-048 R5: the five latest entries, with who, role and when *@
         <section>
             <h2 class="h6">Latest activity</h2>
@@ -229,7 +305,7 @@
                 @* US-024 R2: EndOfSupport is final. US-048 R8: only roles that may edit the project. *@
                 @if (canChangePhase)
                 {
-                    <form asp-action="ChangePhase" method="post" class="d-flex flex-wrap gap-1" id="change-phase">
+                    <form asp-action="ChangePhase" method="post" data-confirm="The project moves to another lifecycle phase. End of support is final and needs another member's approval." data-confirm-final="true" class="d-flex flex-wrap gap-1" id="change-phase">
                         <input type="hidden" name="projectId" value="@project.Id" />
                         <select name="phase" class="form-select form-select-sm w-auto" aria-label="New lifecycle phase">
                             @foreach (var phase in otherPhases)

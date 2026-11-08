@@ -137,6 +137,72 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("AiEvaluations", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Approvals.ApprovalRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DecidedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DecisionNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RequestedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid?>("SubjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SubjectStamp")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DecidedById");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("RequestedById");
+
+                    b.HasIndex("OrganizationId", "Status");
+
+                    b.ToTable("ApprovalRequests", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Feedback.Feedback", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3566,6 +3632,32 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Approvals.ApprovalRequest", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("DecidedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("RequestedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Feedback.Feedback", b =>

@@ -49,6 +49,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
             }
 
             await _web.PostFormAsync("/Projects/ChangePhase", fields);
+            // US-135: the action waits for a second member, who approves it here; the four-eyes rules are tested in FourEyes.feature
+            await FourEyes.ApproveAllAsync(_web);
         }
 
         private async Task<Guid> ProjectIdAsync(string project)

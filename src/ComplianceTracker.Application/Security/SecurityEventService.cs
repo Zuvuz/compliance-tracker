@@ -1,4 +1,7 @@
 using ComplianceTracker.Application.ActivityLog;
+using ComplianceTracker.Application.Approvals;
+using ComplianceTracker.Domain.Approvals;
+using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Projects;
 using ComplianceTracker.Domain.ActivityLog;
@@ -20,9 +23,14 @@ namespace ComplianceTracker.Application.Security
         Task AddAsync(SecurityEvent securityEvent, CancellationToken cancellationToken = default);
     }
 
+    // US-135: what an approved "not reportable" event needs; SuggestionId when it came from a suggestion (US-128)
+    public record NotReportableEventPayload(
+        SecurityEventKind Kind, string Title, string? Description, DateTime AwareAt, Guid? SuggestionId);
+
     // US-073: record actively exploited vulnerabilities and severe incidents of a released product, mark their
     // reports as sent and close them (CRA Art. 14). The same roles as the risk register (ManageRisks).
-    public class SecurityEventService
+    // US-135 R2: an event that is not reportable waits for a second person (the IApprovalExecutor for it).
+    public class SecurityEventService : IApprovalExecutor
     {
         private readonly IProjectRepository _projects;
         private readonly ISecurityEventRepository _events;
@@ -31,10 +39,15 @@ namespace ComplianceTracker.Application.Security
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
 
+        private readonly ApprovalGate _approvals;
+        private readonly ISecurityEventSuggestionRepository _suggestions;
+
         public SecurityEventService(
             IProjectRepository projects, ISecurityEventRepository events, CurrentMember member, IActivityLogger log,
-            IUnitOfWork unitOfWork, TimeProvider clock)
+            IUnitOfWork unitOfWork, TimeProvider clock, ApprovalGate approvals, ISecurityEventSuggestionRepository suggestions)
         {
+            _approvals = approvals;
+            _suggestions = suggestions;
             _projects = projects;
             _events = events;
             _member = member;
@@ -43,20 +56,96 @@ namespace ComplianceTracker.Application.Security
             _clock = clock;
         }
 
-        public async Task<SecurityEvent> RecordAsync(
+        // US-135 R2: an event that is not reportable waits for a second person; null when it waits
+        public async Task<SecurityEvent?> RecordAsync(
             Guid projectId, SecurityEventKind kind, string title, string? description, DateTime awareAtUtc,
             CancellationToken cancellationToken = default)
         {
             var (user, project) = await OpenProjectAsync(projectId, cancellationToken);
-            var securityEvent = SecurityEvent.Record(project.Id, kind, title, description, awareAtUtc, user.Id, user.Role, Now);
+            if (IsNotReportable(kind))
+            {
+                await RequestNotReportableAsync(user, project, new NotReportableEventPayload(kind, title, description, awareAtUtc, null), cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                return null;
+            }
 
-            await _events.AddAsync(securityEvent, cancellationToken);
-            await _log.LogAsync(
-                kind is SecurityEventKind.ActivelyExploitedVulnerability or SecurityEventKind.VulnerabilityNotExploited
-                    ? ActivityAction.VulnerabilityRecorded : ActivityAction.IncidentRecorded,
-                project.Id, $"{securityEvent.Title}, aware {securityEvent.AwareAt:dd-MM-yyyy HH:mm} UTC", cancellationToken);
+            var securityEvent = await AddAsync(project, kind, title, description, awareAtUtc, user, null, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return securityEvent;
+        }
+
+        public static bool IsNotReportable(SecurityEventKind kind)
+            => kind is SecurityEventKind.VulnerabilityNotExploited or SecurityEventKind.IncidentNotSevere;
+
+        // US-135: also used by the suggestions (US-128); does not save
+        internal async Task RequestNotReportableAsync(User user, Project project, NotReportableEventPayload payload, CancellationToken cancellationToken)
+        {
+            // The same checks as recording, so a request is never made for an event that cannot be recorded
+            SecurityEvent.Record(project.Id, payload.Kind, payload.Title, payload.Description, payload.AwareAt, user.Id, user.Role, Now);
+            var organization = (await _member.RequireAsync(cancellationToken)).Organization;
+            var kind = payload.Kind == SecurityEventKind.VulnerabilityNotExploited ? "vulnerability, not exploited" : "incident, not severe";
+            await _approvals.RequestAsync(
+                organization, user, project.Id, ApprovalAction.RecordNotReportableEvent, payload.SuggestionId, null,
+                $"Record \"{payload.Title.Trim()}\" as {kind}, so it is not reported", payload, cancellationToken);
+        }
+
+        private async Task<SecurityEvent> AddAsync(
+            Project project, SecurityEventKind kind, string title, string? description, DateTime awareAtUtc, User user, User? approver,
+            CancellationToken cancellationToken)
+        {
+            var securityEvent = SecurityEvent.Record(project.Id, kind, title, description, awareAtUtc, user.Id, user.Role, Now);
+            await _events.AddAsync(securityEvent, cancellationToken);
+
+            var action = kind is SecurityEventKind.ActivelyExploitedVulnerability or SecurityEventKind.VulnerabilityNotExploited
+                ? ActivityAction.VulnerabilityRecorded : ActivityAction.IncidentRecorded;
+            var details = $"{securityEvent.Title}, aware {securityEvent.AwareAt:dd-MM-yyyy HH:mm} UTC";
+            if (approver is null)
+            {
+                await _log.LogAsync(action, project.Id, details, cancellationToken);
+            }
+            else
+            {
+                await _log.LogAsAsync(project.OrganizationId, user, action, project.Id, $"{details} (approved by {approver.Name})", cancellationToken);
+            }
+
+            return securityEvent;
+        }
+
+        // ---------------------------------------------------------- US-135: the approved event
+
+        ApprovalAction IApprovalExecutor.Action => ApprovalAction.RecordNotReportableEvent;
+
+        Permission IApprovalExecutor.Permission => Permission.ManageRisks;
+
+        async Task<string?> IApprovalExecutor.WhyStaleAsync(ApprovalRequest request, CancellationToken cancellationToken)
+        {
+            var payload = ApprovalGate.Read<NotReportableEventPayload>(request);
+            return payload.SuggestionId is { } id
+                   && (await _suggestions.GetAsync(request.ProjectId, id, cancellationToken))?.IsPending != true
+                ? "the suggestion was decided already"
+                : null;
+        }
+
+        async Task IApprovalExecutor.ExecuteAsync(ApprovalRequest request, Organization organization, User requester, User approver, CancellationToken cancellationToken)
+        {
+            var payload = ApprovalGate.Read<NotReportableEventPayload>(request);
+            var project = await _projects.GetAsync(organization.Id, request.ProjectId, cancellationToken)
+                ?? throw new DomainException("Project not found");
+            if (project.IsClosed)
+            {
+                throw new DomainException("A project at end of support cannot be changed");
+            }
+
+            var recorded = await AddAsync(project, payload.Kind, payload.Title, payload.Description, payload.AwareAt, requester, approver, cancellationToken);
+            if (payload.SuggestionId is { } suggestionId
+                && await _suggestions.GetAsync(project.Id, suggestionId, cancellationToken) is { } suggestion)
+            {
+                // US-128: the suggestion is accepted by the person who asked
+                suggestion.Accept(requester.Id, Now);
+                suggestion.LinkEvent(recorded.Id);
+                await _log.LogAsAsync(organization.Id, requester, ActivityAction.SecurityEventSuggestionAccepted, project.Id,
+                    SecurityEventSuggestionService.Describe(suggestion), cancellationToken);
+            }
         }
 
         // R4
