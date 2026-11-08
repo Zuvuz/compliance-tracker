@@ -173,6 +173,20 @@ namespace ComplianceTracker.Application.Security
                 ?? throw new DomainException("Suggestion not found");
             var awareAt = awareAtUtc ?? suggestion.LearnedAt;
 
+            // US-135 R2: a new event that is not reportable waits for a second person; the suggestion stays until then
+            if (suggestion.UpgradeEventId is null && SecurityEventService.IsNotReportable(suggestion.Kind))
+            {
+                if (!suggestion.IsPending)
+                {
+                    throw new DomainException("The suggestion is decided already");
+                }
+
+                await _eventService.RequestNotReportableAsync(user, project,
+                    new NotReportableEventPayload(suggestion.Kind, suggestion.Title, Description(suggestion), awareAt, suggestion.Id), cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                return;
+            }
+
             // Decided before the event is saved, so both are saved together
             suggestion.Accept(user.Id, Now);
             await _log.LogAsync(ActivityAction.SecurityEventSuggestionAccepted, project.Id, Describe(suggestion), cancellationToken);
@@ -184,7 +198,8 @@ namespace ComplianceTracker.Application.Security
             else
             {
                 var recorded = await _eventService.RecordAsync(
-                    project.Id, suggestion.Kind, suggestion.Title, Description(suggestion), awareAt, cancellationToken);
+                    project.Id, suggestion.Kind, suggestion.Title, Description(suggestion), awareAt, cancellationToken)
+                    ?? throw new InvalidOperationException("A reportable event never waits for approval");
                 suggestion.LinkEvent(recorded.Id);
             }
 

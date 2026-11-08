@@ -34,7 +34,9 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.SupportPeriodSet
                 or ActivityAction.ProjectClassified
                 or ActivityAction.ProjectFrameworkAdded or ActivityAction.ProjectFrameworkRemoved
-                or ActivityAction.ProjectFrameworkVersionChanged or ActivityAction.ProjectMethodsChanged => ActivityGroup.Projects,
+                or ActivityAction.ProjectFrameworkVersionChanged or ActivityAction.ProjectMethodsChanged
+                or ActivityAction.ApprovalRequested or ActivityAction.ApprovalGiven or ActivityAction.ApprovalRejected
+                or ActivityAction.ApprovalWithdrawn or ActivityAction.ApprovalCancelled or ActivityAction.ApprovalExpired => ActivityGroup.Projects,
             ActivityAction.RepositoryConnected or ActivityAction.WorkItemsSynced or ActivityAction.AccessTokenChanged
                 or ActivityAction.RequirementDocumentUploaded => ActivityGroup.WorkItems,
             ActivityAction.RequirementLinked or ActivityAction.RequirementUnlinked or ActivityAction.RequirementMarkedNotApplicable
