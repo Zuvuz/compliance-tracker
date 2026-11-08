@@ -145,6 +145,24 @@ namespace ComplianceTracker.Domain.Organizations
             return SetRole(memberId, role);
         }
 
+        // US-132: an Admin chooses who signs reports for the management. Returns the change, or null when nothing changed.
+        public ProjectChange? SetSignsForManagement(Guid memberId, bool signs, Guid changedById)
+        {
+            if (_users.FirstOrDefault(u => u.Id == changedById)?.Can(Permission.ManageMembers) != true)
+            {
+                throw new DomainException("Your role does not allow this");
+            }
+
+            var member = Members.FirstOrDefault(u => u.Id == memberId) ?? throw new DomainException("Member not found");
+            if (member.SignsForManagement == signs)
+            {
+                return null;
+            }
+
+            member.SignsForManagement = signs;
+            return new ProjectChange("Signs for the management", signs ? "No" : "Yes", signs ? "Yes" : "No");
+        }
+
         // US-090 R1, R2: an Admin removes a member. The member is kept, so their name stays on what they did (R4).
         public User RemoveMember(Guid memberId, Guid removedById, DateTime at)
         {

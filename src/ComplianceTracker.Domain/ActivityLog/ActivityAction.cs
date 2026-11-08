@@ -203,6 +203,16 @@ namespace ComplianceTracker.Domain.ActivityLog
         OrganisationDocumentRemoved,
 
         // US-050: a report was locked as PDF with its SHA-256 fingerprint. SubjectId points at the project.
-        ReportLocked
+        ReportLocked,
+
+        // US-132: signatures on a locked report were asked for, a member signed it in a role, and the report was sealed
+        // with the organisation's certificate. The seal certificate was uploaded or removed, and a member was marked as
+        // signing for the management. SubjectId points at the project (or the organisation for the seal and members).
+        ReportSignatureRequested,
+        ReportSigned,
+        ReportSealed,
+        SealUploaded,
+        SealRemoved,
+        MemberSignsForManagementChanged
     }
 }

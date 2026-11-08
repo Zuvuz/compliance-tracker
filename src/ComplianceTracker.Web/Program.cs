@@ -127,6 +127,13 @@ builder.Services
         // Log every sign-in once Keycloak has confirmed the user (US-004 R6)
         options.Events.OnTokenValidated = async context =>
         {
+            // US-132 R2: when the person signed in, so signing a report can ask for a fresh sign-in
+            if (context.Principal?.Identity is System.Security.Claims.ClaimsIdentity signedIn)
+            {
+                signedIn.AddClaim(new System.Security.Claims.Claim(ComplianceTracker.Web.Security.HttpContextCurrentUser.SignedInClaim,
+                    DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            }
+
             var externalId = context.Principal?.FindFirstValue("sub");
             if (externalId is not null)
             {

@@ -74,6 +74,8 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<ComplianceTracker.Application.Approvals.IApprovalRequestRepository, ApprovalRequestRepository>(); // US-135
                 services.AddScoped<ComplianceTracker.Application.Organizations.IOrganisationDocumentRepository, OrganisationDocumentRepository>(); // US-136
                 services.AddScoped<ComplianceTracker.Application.Reports.IReportSnapshotRepository, ReportSnapshotRepository>(); // US-050
+                services.AddScoped<ComplianceTracker.Application.Reports.IReportSigningRepository, ReportSigningRepository>(); // US-132
+                services.AddSingleton<ComplianceTracker.Application.Reports.IReportSealer, ComplianceTracker.Infrastructure.Reports.ReportSealer>();
                 services.AddSingleton<ComplianceTracker.Application.Reports.IPdfWriter, ComplianceTracker.Infrastructure.Reports.PdfPigReportWriter>(); // US-131
                 services.AddSingleton<ComplianceTracker.Application.Scanning.IScanImporter, ComplianceTracker.Infrastructure.Scanning.SarifScanImporter>();
                 services.AddScoped<IRiskRepository, RiskRepository>(); // US-042

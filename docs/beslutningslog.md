@@ -1024,6 +1024,29 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Signatur, som er US-132.
   - Låsning af Excel og Word. Kun PDF, så filen ikke ændrer sig ved åbning.
 
+### B74 – Signering i trackeren og virksomhedens segl
+
+- **Status:** Vedtaget
+- **Beslutning:** (US-132)
+  - **Hvem signerer:** en låst rapport (US-050) signeres af en compliance-ansvarlig og en leder. Det skal være to forskellige personer, og hver rolle signerer én gang. Det giver i sig selv fire-øjne (US-135).
+    - Compliance-ansvarlig er et medlem med `DecideCompliance` (Admin eller Compliance manager).
+    - Leder er et medlem, som administratoren har markeret "signs for the management" på Users-siden. Det er en rettighed på personen, ikke en ny rolle.
+  - **Frisk login:** man skal have logget ind inden for de sidste 10 minutter. Ellers sendes man til Keycloak med `prompt=login` og tilbage igen. Login-tidspunktet stemples på hvert Keycloak-login.
+  - **Kun den låste fil:** hver signatur gælder netop den låste fil (dens SHA-256). Rapporten ændres aldrig, og en ny version er en ny låsning med nye signaturer.
+  - **Forsegling:** når begge har signeret, laves en forseglet PDF:
+    - den låste rapports sider uændret
+    - en side med underskriverne, deres roller og tidspunkter og den låste rapports fingeraftryk
+    - en digital signatur over hele filen med organisationens certifikat. Signaturen er en PDF-signatur (ISO 32000, `adbe.pkcs7.detached`, SHA-256) og tilføjes som en inkrementel opdatering.
+  - **Certifikatet:** organisationens administrator uploader det som .pfx på Settings. Filen og adgangskoden gemmes krypteret og vises aldrig igen. Et udløbet eller endnu ikke gyldigt certifikat kan ikke forsegle. Er der intet gyldigt segl, er rapporten signeret men ikke forseglet, og den kan forsegles senere.
+  - **Værktøjer:** signaturen laves med .NET's egen `System.Security.Cryptography.Pkcs` og PdfPig. Der bruges ingen betalt tjeneste eller ekstern komponent.
+  - Alt logges.
+- **Begrundelse:** ISO 27001 5.1 og 9.3 kræver, at ledelsen godkender, og 7.5.3 og A.5.33 kræver beskyttede optegnelser. CRA art. 28 kræver, at producenten underskriver. Efter eIDAS er dette en avanceret elektronisk signatur og et segl. Den kvalificerede signatur er US-133.
+- **Fravalgt:**
+  - At organisationen vælger roller pr. rapporttype. Begge roller kræves altid.
+  - Online tjek af tilbagekaldelse (CRL/OCSP), som kræver netværk.
+  - PAdES-baseline med tidsstempel fra en ekstern tjeneste.
+  - At kræve et certifikat fra en betroet udsteder. Organisationens eget certifikat accepteres.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

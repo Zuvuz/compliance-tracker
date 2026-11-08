@@ -24,7 +24,7 @@ namespace ComplianceTracker.Web.Controllers
 
         // GET /Settings
         [HttpGet]
-        public async Task<IActionResult> Index(CancellationToken cancellationToken)
+        public async Task<IActionResult> Index([FromServices] Application.Reports.ReportSigningService signing, CancellationToken cancellationToken)
         {
             var organization = await _organizations.MineAsync(cancellationToken);
             if (organization is null)
@@ -38,6 +38,7 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             ViewData["SharedCount"] = await _aiFeedback.SharedCountAsync(cancellationToken); // US-130 R6
+            ViewData["Seal"] = await signing.SealAsync(cancellationToken); // US-132
             return View(organization);
         }
 
@@ -48,6 +49,34 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> SetAiSharing(bool share, CancellationToken cancellationToken)
         {
             await _aiFeedback.SetSharingAsync(share, cancellationToken);
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST /Settings/UploadSeal: US-132, the organisation's certificate (.pfx) for sealing signed reports
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(1024 * 1024)]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> UploadSeal(
+            IFormFile? file, string? password, [FromServices] Application.Reports.ReportSigningService signing, CancellationToken cancellationToken)
+        {
+            using var buffer = new MemoryStream();
+            if (file is { Length: > 0 })
+            {
+                await file.CopyToAsync(buffer, cancellationToken);
+            }
+
+            await signing.UploadSealAsync(buffer.ToArray(), password, cancellationToken);
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST /Settings/RemoveSeal
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> RemoveSeal([FromServices] Application.Reports.ReportSigningService signing, CancellationToken cancellationToken)
+        {
+            await signing.RemoveSealAsync(cancellationToken);
             return RedirectToAction(nameof(Index));
         }
     }

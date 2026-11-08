@@ -159,6 +159,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] Application.Approvals.ApprovalService approvalService,
             [FromServices] Application.Organizations.OrganisationDocumentService documentService,
             [FromServices] Application.Reports.ReportService reportService,
+            [FromServices] Application.Reports.ReportSigningService signingService,
             CancellationToken cancellationToken)
         {
             // US-104 R1: shared links to the old "User stories" tab still work
@@ -220,6 +221,11 @@ namespace ComplianceTracker.Web.Controllers
             var documentsDue = activeTab is ProjectTabs.Overview ? await documentService.DueForReviewAsync(cancellationToken) : [];
             // US-050: the locked reports on the Reports tab
             var lockedReports = activeTab is ProjectTabs.Reports ? await reportService.ForProjectAsync(id, cancellationToken) : [];
+            // US-132: their signatures, and the reports waiting for the member's signature
+            var signings = lockedReports.Count > 0 ? await signingService.ForSnapshotsAsync(lockedReports.Select(r => r.Snapshot.Id).ToList(), cancellationToken) : new Dictionary<Guid, Application.Reports.SigningView>();
+            var waitingForSignature = activeTab is ProjectTabs.Overview
+                ? (await signingService.WaitingForMeAsync(cancellationToken)).Where(w => w.ProjectId == id).Select(w => w.Title).ToList()
+                : [];
             var now = _clock.GetUtcNow().UtcDateTime;
             var risks = allRisks
                 .Where(r => string.IsNullOrEmpty(status) ? r.Status != RiskStatus.Closed : r.DisplayStatus.Equals(status, StringComparison.OrdinalIgnoreCase))
@@ -265,6 +271,8 @@ namespace ComplianceTracker.Web.Controllers
                 Approvals = approvals,
                 DocumentsDue = documentsDue,
                 LockedReports = lockedReports,
+                Signings = signings,
+                WaitingForSignature = waitingForSignature,
                 Scans = scanOverview,
                 RiskStatusFilter = status,
                 RiskLevelFilter = level,
@@ -1023,6 +1031,70 @@ namespace ComplianceTracker.Web.Controllers
                     string.IsNullOrEmpty(sub) ? null : sub, cancellationToken);
             TempData["ReportLocked"] = $"Locked \"{snapshot.Title}\" with the fingerprint {snapshot.Sha256}";
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Reports });
+        }
+
+        // ---------------------------------------------------------- Signatures (US-132)
+
+        // POST /Projects/RequestSignatures
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Reports)]
+        public async Task<IActionResult> RequestSignatures(Guid projectId, Guid snapshotId, [FromServices] Application.Reports.ReportSigningService signing, CancellationToken cancellationToken)
+        {
+            await signing.RequestAsync(snapshotId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Reports });
+        }
+
+        // POST /Projects/SignReport: R2 a fresh sign-in, R3 the role. Sealed at once when both have signed (R4).
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Reports)]
+        public async Task<IActionResult> SignReport(
+            Guid projectId, Guid snapshotId, Domain.Reports.SignatureRole role, [FromServices] Application.Reports.ReportSigningService signing,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                TempData["ReportSigned"] = await signing.SignAsync(snapshotId, role, cancellationToken)
+                    ? "Signed. Both have signed, and the report is sealed."
+                    : $"Signed as {Domain.Reports.ReportSigning.Title(role)}.";
+            }
+            catch (Application.Reports.ReauthenticationRequiredException)
+            {
+                // R2: back to Keycloak to sign in again, then back to the Reports tab to sign
+                var back = Url.Action(nameof(Details), new { id = projectId, tab = ProjectTabs.Reports })!;
+                return Challenge(new Microsoft.AspNetCore.Authentication.OpenIdConnect.OpenIdConnectChallengeProperties
+                {
+                    RedirectUri = back,
+                    Prompt = "login",
+                    MaxAge = TimeSpan.Zero
+                });
+            }
+
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Reports });
+        }
+
+        // POST /Projects/SealReport: R4 when the seal came after the last signature
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Reports)]
+        public async Task<IActionResult> SealReport(Guid projectId, Guid snapshotId, [FromServices] Application.Reports.ReportSigningService signing, CancellationToken cancellationToken)
+        {
+            await signing.SealReportAsync(snapshotId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Reports });
+        }
+
+        // GET /Projects/SealedReport/{id}?snapshotId=...: the signed and sealed PDF, for anyone in the organisation
+        [HttpGet]
+        public async Task<IActionResult> SealedReport(Guid id, Guid snapshotId, [FromServices] Application.Reports.ReportSigningService signing, CancellationToken cancellationToken)
+        {
+            if (await signing.SealedFileAsync(snapshotId, cancellationToken) is not { } file)
+            {
+                return NotFound();
+            }
+
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+            return File(file.Content, "application/pdf", file.FileName);
         }
 
         // GET /Projects/LockedReport/{id}?snapshotId=...: R3, for anyone in the organisation, also the Auditor

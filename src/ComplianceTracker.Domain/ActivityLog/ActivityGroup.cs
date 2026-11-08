@@ -25,9 +25,11 @@ namespace ComplianceTracker.Domain.ActivityLog
         {
             ActivityAction.UserSignedIn or ActivityAction.UserSignedOut => ActivityGroup.SignIn,
             ActivityAction.MemberRoleChanged or ActivityAction.InvitationCreated or ActivityAction.InvitationRevoked
-                or ActivityAction.InvitationAccepted or ActivityAction.MemberRemoved => ActivityGroup.Members,
+                or ActivityAction.InvitationAccepted or ActivityAction.MemberRemoved
+                or ActivityAction.MemberSignsForManagementChanged => ActivityGroup.Members,
             ActivityAction.OrganizationCreated or ActivityAction.FeedbackSent or ActivityAction.FeedbackIssueCreated
-                or ActivityAction.FeedbackDismissed => ActivityGroup.Organisation,
+                or ActivityAction.FeedbackDismissed
+                or ActivityAction.SealUploaded or ActivityAction.SealRemoved => ActivityGroup.Organisation,
             ActivityAction.CatalogImported or ActivityAction.CatalogActivated or ActivityAction.FrameworkEnabled
                 or ActivityAction.FrameworkDisabled => ActivityGroup.Frameworks,
             ActivityAction.ProjectCreated or ActivityAction.ProjectUpdated or ActivityAction.ProjectPhaseChanged
@@ -37,7 +39,8 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.ProjectFrameworkVersionChanged or ActivityAction.ProjectMethodsChanged
                 or ActivityAction.ApprovalRequested or ActivityAction.ApprovalGiven or ActivityAction.ApprovalRejected
                 or ActivityAction.ApprovalWithdrawn or ActivityAction.ApprovalCancelled or ActivityAction.ApprovalExpired
-                or ActivityAction.ReportLocked => ActivityGroup.Projects,
+                or ActivityAction.ReportLocked or ActivityAction.ReportSignatureRequested or ActivityAction.ReportSigned
+                or ActivityAction.ReportSealed => ActivityGroup.Projects,
             ActivityAction.RepositoryConnected or ActivityAction.WorkItemsSynced or ActivityAction.AccessTokenChanged
                 or ActivityAction.RequirementDocumentUploaded => ActivityGroup.WorkItems,
             ActivityAction.RequirementLinked or ActivityAction.RequirementUnlinked or ActivityAction.RequirementMarkedNotApplicable

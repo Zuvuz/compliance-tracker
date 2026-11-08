@@ -98,6 +98,10 @@
 
     @* US-050: the locked reports, never changed or deleted, with their fingerprints (R1–R3) *@
     <h2 class="h5 mt-4">Locked reports</h2>
+    @if (TempData["ReportSigned"] is string signed)
+    {
+        <div class="alert alert-success py-2" id="report-signed" role="status">@signed</div>
+    }
     @if (TempData["ReportLocked"] is string locked)
     {
         <div class="alert alert-success py-2" id="report-locked" role="status">@locked</div>
@@ -118,6 +122,58 @@
                         Locked @snapshot.LockedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm") by <span class="locked-by">@item.LockedBy@(snapshot.LockedRole is { } role ? $" ({ComplianceTracker.Domain.Users.RolePermissions.Title(role)})" : "")</span>
                         · <span class="locked-report-sha256 font-monospace" title="SHA-256 @snapshot.Sha256">SHA-256 @snapshot.Sha256</span>
                     </div>
+                    @* US-132: the signatures, signing and the sealed PDF *@
+                    @if (Model.Signings.GetValueOrDefault(snapshot.Id) is { } signing)
+                    {
+                        <div class="small mt-1 report-signing">
+                            @if (signing.Signing is { } s)
+                            {
+                                @foreach (var signature in signing.Signatures)
+                                {
+                                    <span class="badge text-bg-light border me-1 report-signature" data-role="@signature.Role">Signed by @signature.Name as @ComplianceTracker.Domain.Reports.ReportSigning.Title(signature.Role) @signature.At.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</span>
+                                }
+                                @if (s.IsSealed)
+                                {
+                                    <a class="btn btn-sm btn-outline-success sealed-report-download" asp-action="SealedReport" asp-route-id="@project.Id" asp-route-snapshotId="@snapshot.Id">Sealed PDF</a>
+                                    <span class="text-muted sealed-by">sealed by @s.SealSubject</span>
+                                }
+                                else if (s.Missing.Count > 0)
+                                {
+                                    <span class="text-muted signing-missing">Waiting for @string.Join(" and ", s.Missing.Select(ComplianceTracker.Domain.Reports.ReportSigning.Title))</span>
+                                }
+                                else
+                                {
+                                    <span class="text-warning-emphasis not-sealed">Signed; not sealed yet (the organisation's seal is missing or not valid)</span>
+                                }
+                                @foreach (var signAs in signing.ICanSign)
+                                {
+                                    <form asp-action="SignReport" method="post" class="d-inline sign-report" data-role="@signAs"
+                                          data-confirm="You sign &quot;@snapshot.Title&quot; (SHA-256 @snapshot.Sha256) as @ComplianceTracker.Domain.Reports.ReportSigning.Title(signAs). You may be asked to sign in again first.">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="snapshotId" value="@snapshot.Id" />
+                                        <input type="hidden" name="role" value="@signAs" />
+                                        <button type="submit" class="btn btn-sm btn-primary">Sign as @ComplianceTracker.Domain.Reports.ReportSigning.Title(signAs)</button>
+                                    </form>
+                                }
+                                @if (signing.CanSeal)
+                                {
+                                    <form asp-action="SealReport" method="post" class="d-inline seal-report">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="snapshotId" value="@snapshot.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">Seal now</button>
+                                    </form>
+                                }
+                            }
+                            else if (signing.CanRequest)
+                            {
+                                <form asp-action="RequestSignatures" method="post" class="d-inline request-signatures">
+                                    <input type="hidden" name="projectId" value="@project.Id" />
+                                    <input type="hidden" name="snapshotId" value="@snapshot.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Ask for signatures</button>
+                                </form>
+                            }
+                        </div>
+                    }
                 </li>
             }
         </ul>

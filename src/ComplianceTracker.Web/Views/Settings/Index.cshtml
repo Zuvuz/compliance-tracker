@@ -27,3 +27,26 @@
         <span class="small text-muted" id="ai-shared-count">@ViewData["SharedCount"] decisions shared</span>
     </div>
 </section>
+
+@* US-132: the certificate signed reports are sealed with. The file and password are kept encrypted and never shown. *@
+<section id="organisation-seal" class="mt-4">
+    <h2 class="h4">Seal for signed reports</h2>
+    <p class="small text-muted mb-2">When a locked report has been signed by a compliance officer and a manager, it is sealed with this certificate as a digital signature in the PDF. Upload the organisation's certificate as .pfx with its private key.</p>
+    @if (ViewData["Seal"] is ComplianceTracker.Domain.Reports.OrganisationSeal seal)
+    {
+        <p id="seal-status">Seal: <strong>@seal.Subject</strong>, valid until <span id="seal-valid-until">@seal.NotAfter.ToString("dd-MM-yyyy")</span></p>
+        <form asp-action="RemoveSeal" method="post" id="remove-seal" class="mb-2"
+              data-confirm="Signed reports can no longer be sealed until a new certificate is uploaded. Reports sealed already stay sealed.">
+            <button type="submit" class="btn btn-sm btn-outline-danger">Remove the seal</button>
+        </form>
+    }
+    else
+    {
+        <p class="text-muted" id="seal-status">No seal yet.</p>
+    }
+    <form asp-action="UploadSeal" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2" id="upload-seal">
+        <input type="file" name="file" accept=".pfx,.p12" class="form-control form-control-sm w-auto" aria-label="Certificate (.pfx)" />
+        <input type="password" name="password" autocomplete="off" class="form-control form-control-sm w-auto" placeholder="Password" aria-label="Certificate password" />
+        <button type="submit" class="btn btn-sm btn-outline-primary">Upload seal</button>
+    </form>
+</section>

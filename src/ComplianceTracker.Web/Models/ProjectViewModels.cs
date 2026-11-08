@@ -255,6 +255,10 @@ namespace ComplianceTracker.Web.Models
         // US-050: the project's locked reports, newest first
         public IReadOnlyList<Application.Reports.LockedReport> LockedReports { get; init; } = [];
 
+        // US-132: per locked report, its signatures; and the reports of this project waiting for the member's signature
+        public IReadOnlyDictionary<Guid, Application.Reports.SigningView> Signings { get; init; } = new Dictionary<Guid, Application.Reports.SigningView>();
+        public IReadOnlyList<string> WaitingForSignature { get; init; } = [];
+
         // US-078: the Scans tab, and the Overview's count of open high and critical findings
         public Application.Scanning.ScanOverview? Scans { get; init; }
 

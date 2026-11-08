@@ -16,6 +16,9 @@ namespace ComplianceTracker.Specs.Support
         public const string UserHeader = "X-Test-User";
         public const string EmailHeader = "X-Test-Email";
 
+        // US-132: how long ago the person signed in, in minutes
+        public const string SignedInMinutesAgoHeader = "X-Test-Signed-In-Minutes-Ago";
+
         // US-010: Keycloak realm roles, comma separated, e.g. "system-admin"
         public const string RolesHeader = "X-Test-Roles";
         public const string SignInPath = "/test-sign-in";
@@ -49,6 +52,11 @@ namespace ComplianceTracker.Specs.Support
             };
 
             // Like Keycloak's realm role mapper: one "roles" claim per realm role
+            // US-132 R2: when the person signed in; "now" unless the scenario says it was earlier
+            var minutesAgo = int.TryParse(Request.Headers[SignedInMinutesAgoHeader].ToString(), out var minutes) ? minutes : 0;
+            claims.Add(new Claim(ComplianceTracker.Web.Security.HttpContextCurrentUser.SignedInClaim,
+                (Context.RequestServices.GetService(typeof(TimeProvider)) as TimeProvider ?? TimeProvider.System).GetUtcNow().AddMinutes(-minutesAgo).ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture)));
+
             foreach (var role in Request.Headers[RolesHeader].ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
                 claims.Add(new Claim("roles", role));
