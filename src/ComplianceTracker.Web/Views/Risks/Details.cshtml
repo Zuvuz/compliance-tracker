@@ -302,7 +302,7 @@
         </form>
         @if (risk.Status != RiskStatus.Accepted && canDecide)
         {
-            <form asp-action="Accept" method="post" class="d-flex gap-1" id="accept-risk">
+            <form asp-action="Accept" method="post" data-confirm="The risk is accepted with your reason. A High or Critical risk needs another member's approval." data-confirm-final="true" class="d-flex gap-1" id="accept-risk">
                 <input type="hidden" name="id" value="@risk.Id" />
                 <input name="reason" class="form-control form-control-sm" placeholder="Why the risk is accepted" aria-label="Reason for accepting" />
                 <button type="submit" class="btn btn-outline-warning btn-sm text-nowrap">Accept risk</button>
@@ -310,7 +310,7 @@
         }
         @if (canDecide)
         {
-        <form asp-action="Close" method="post" class="d-flex gap-1" id="close-risk">
+        <form asp-action="Close" method="post" data-confirm="The risk is closed and leaves the open register." data-confirm-final="true" class="d-flex gap-1" id="close-risk">
             <input type="hidden" name="id" value="@risk.Id" />
             <input name="reason" class="form-control form-control-sm" placeholder="Why the risk no longer applies" aria-label="Reason for closing" />
             <button type="submit" class="btn btn-outline-danger btn-sm text-nowrap">Close risk</button>

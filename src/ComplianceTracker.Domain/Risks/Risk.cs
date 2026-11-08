@@ -116,6 +116,20 @@ namespace ComplianceTracker.Domain.Risks
             return Diff(before, Snapshot());
         }
 
+        // US-135 R2: accepting a High or Critical risk needs a second person. The residual level counts when it is given,
+        // since that is what is accepted.
+        public bool NeedsApprovalToAccept => (ResidualLevel ?? Level) >= RiskLevel.High;
+
+        // US-135: the checks of Accept without accepting, so a request for approval is never made for something that fails
+        public void CheckAccept(string? reason)
+        {
+            EnsureNotClosed();
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                throw new DomainException("Give a reason for accepting the risk");
+            }
+        }
+
         // R4: accepting needs a reason; the person and time are kept
         public ProjectChange Accept(string? reason, Guid userId, DateTime at, UserRole? role = null)
         {

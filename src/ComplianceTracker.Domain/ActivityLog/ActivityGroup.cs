@@ -37,6 +37,8 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.ProjectClassified
                 or ActivityAction.ProjectFrameworkAdded or ActivityAction.ProjectFrameworkRemoved
                 or ActivityAction.ProjectFrameworkVersionChanged or ActivityAction.ProjectMethodsChanged
+                or ActivityAction.ApprovalRequested or ActivityAction.ApprovalGiven or ActivityAction.ApprovalRejected
+                or ActivityAction.ApprovalWithdrawn or ActivityAction.ApprovalCancelled or ActivityAction.ApprovalExpired
                 or ActivityAction.ReportLocked or ActivityAction.ReportSignatureRequested or ActivityAction.ReportSigned
                 or ActivityAction.ReportSealed => ActivityGroup.Projects,
             ActivityAction.RepositoryConnected or ActivityAction.WorkItemsSynced or ActivityAction.AccessTokenChanged
@@ -47,7 +49,10 @@ namespace ComplianceTracker.Domain.ActivityLog
             ActivityAction.EvidenceAdded or ActivityAction.EvidenceRemoved or ActivityAction.EvidenceLinked
                 or ActivityAction.EvidenceUnlinked or ActivityAction.EvidenceLinkSuggested or ActivityAction.EvidenceLinkApproved
                 or ActivityAction.EvidenceLinkRejected or ActivityAction.EvidenceSuggested or ActivityAction.EvidenceSuggestionAccepted
-                or ActivityAction.EvidenceSuggestionRejected => ActivityGroup.Evidence,
+                or ActivityAction.EvidenceSuggestionRejected
+                or ActivityAction.OrganisationDocumentUploaded or ActivityAction.OrganisationDocumentReviewed
+                or ActivityAction.OrganisationDocumentLinked or ActivityAction.OrganisationDocumentUnlinked
+                or ActivityAction.OrganisationDocumentRemoved => ActivityGroup.Evidence,
             ActivityAction.RiskAdded or ActivityAction.RiskUpdated or ActivityAction.RiskReviewed
                 or ActivityAction.RiskActionAdded or ActivityAction.RiskActionLinked or ActivityAction.RiskActionDone => ActivityGroup.Risks,
             ActivityAction.VulnerabilityRecorded or ActivityAction.IncidentRecorded or ActivityAction.SecurityReportSent

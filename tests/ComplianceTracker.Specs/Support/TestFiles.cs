@@ -38,6 +38,25 @@ namespace ComplianceTracker.Specs.Support
             return builder.Build();
         }
 
+        // US-070: a real PDF with several pages, each with its lines top to bottom
+        public static byte[] PdfWithPages(params string[][] pages)
+        {
+            var builder = new PdfDocumentBuilder();
+            var font = builder.AddStandard14Font(Standard14Font.Helvetica);
+            foreach (var lines in pages)
+            {
+                var page = builder.AddPage(UglyToad.PdfPig.Content.PageSize.A4);
+                var y = 800.0;
+                foreach (var line in lines)
+                {
+                    page.AddText(line, 11, new PdfPoint(50, y), font);
+                    y -= 20;
+                }
+            }
+
+            return builder.Build();
+        }
+
         // Not a PDF, even if it is uploaded with a .pdf name
         public static byte[] TextFile() => Encoding.UTF8.GetBytes("This is not a PDF");
     }

@@ -69,6 +69,9 @@ namespace ComplianceTracker.Domain.Frameworks
             }
         }
 
+        // US-070: what the extraction from the PDF did not use; null for versions from before US-070 and built-in ones
+        public ExtractionCheck? Extraction { get; private set; }
+
         // In the order of the document. Only loaded when asked for (IFrameworkRepository).
         public IReadOnlyList<Requirement> Requirements => _requirements.OrderBy(r => r.Position).ToList();
 
@@ -99,6 +102,13 @@ namespace ComplianceTracker.Domain.Frameworks
                 code, title, description);
             _requirements.Add(requirement);
             return requirement;
+        }
+
+        // US-070 R1: kept with the draft, so it can be checked before activation
+        public void RecordExtraction(ExtractionCheck check)
+        {
+            EnsureDraft();
+            Extraction = check;
         }
 
         // R2: corrects a requirement in the draft

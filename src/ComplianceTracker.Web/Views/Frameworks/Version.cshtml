@@ -105,7 +105,7 @@ else
                                 <input type="hidden" name="rowVersion" value="@requirement.Version" />
                                 <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
                             </form>
-                            <form asp-action="RemoveRequirement" method="post" class="d-inline">
+                            <form asp-action="RemoveRequirement" method="post" data-confirm="The requirement is removed from this draft version." class="d-inline">
                                 <input type="hidden" name="versionId" value="@version.Id" />
                                 <input type="hidden" name="requirementId" value="@requirement.Id" />
                                 <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
@@ -116,6 +116,65 @@ else
             }
         </tbody>
     </table>
+}
+
+@if (!version.IsActive && version.Extraction is { } extraction)
+{
+    @* US-070: what the extraction did not use, less what has been added by hand since (R6) *@
+    var check = extraction.Without(version.Requirements.Select(r => (r.Code, r.Title, (string?)r.Description)));
+    <section class="mb-4 border rounded p-3" id="extraction-check">
+        <h2 class="h5">Extraction check</h2>
+        <p class="mb-2" id="extraction-numbers">@check.RequirementsFound requirements found · @check.PagesWithoutRequirements of @check.PagesWithText pages gave none · @check.CoveredPercent % of the text is part of a requirement or recognised as not one</p>
+        @if (check.NeedsWarning)
+        {
+            @* R4 *@
+            <div class="alert alert-warning py-2" id="extraction-warning" role="status">Check the extraction: @check.PercentWithoutRequirements % of the pages gave no requirements</div>
+        }
+        @if (check.PossiblyMissing.Count > 0 || check.FoundTwice.Count > 0 || check.NotFoundFromContents.Count > 0)
+        {
+            @* R8, R9 *@
+            <ul class="mb-2" id="extraction-numbering">
+                @foreach (var missing in check.PossiblyMissing)
+                {
+                    <li class="possibly-missing">@missing</li>
+                }
+                @foreach (var twice in check.FoundTwice)
+                {
+                    <li class="found-twice">@twice is found twice; the one with the most text is kept</li>
+                }
+                @foreach (var code in check.NotFoundFromContents)
+                {
+                    <li class="not-found-from-contents">@code is in the table of contents but was not found</li>
+                }
+            </ul>
+        }
+        @if (check.ShallSentences.Count > 0)
+        {
+            @* R10 *@
+            <h3 class="h6 mt-3">Possible missed requirements</h3>
+            <ul class="small mb-2" id="extraction-shall">
+                @foreach (var sentence in check.ShallSentences)
+                {
+                    <li class="shall-sentence" data-page="@sentence.Page"><span class="text-muted">Page @sentence.Page:</span> @sentence.Text</li>
+                }
+            </ul>
+        }
+        @if (check.LeftOver.Count > 0)
+        {
+            @* R2, R3 *@
+            <h3 class="h6 mt-3">Text that did not become a requirement</h3>
+            <ul class="small mb-0" id="extraction-left-over">
+                @foreach (var block in check.LeftOver)
+                {
+                    <li class="left-over" data-page="@block.Page"><span class="text-muted">Page @block.Page:</span> @block.Text</li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p class="text-success small mb-0" id="extraction-complete">All text is part of a requirement or recognised as not one.</p>
+        }
+    </section>
 }
 
 @if (!version.IsActive)

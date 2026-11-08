@@ -339,15 +339,24 @@ namespace ComplianceTracker.Specs.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 40
-    await testRunner.WhenAsync("\"Acme Portal\" gets a critical finding \"CVE-2026-5678\" from \"Trivy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.GivenAsync("\"Bo\" is in \"Acme ApS\" with the role \"ComplianceManager\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 41
-    await testRunner.ThenAsync("the Security events tab suggests \"CVE-2026-5678\" from \"Trivy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.WhenAsync("\"Acme Portal\" gets a critical finding \"CVE-2026-5678\" from \"Trivy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 42
-    await testRunner.WhenAsync("I record the suggested event \"CVE-2026-5678\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.ThenAsync("the Security events tab suggests \"CVE-2026-5678\" from \"Trivy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 43
+    await testRunner.WhenAsync("I record the suggested event \"CVE-2026-5678\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 44
+    await testRunner.ThenAsync("I see that it waits for another member\'s approval", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 45
+    await testRunner.WhenAsync("\"Bo\" approves the request", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 46
     await testRunner.ThenAsync("the event \"CVE-2026-5678\" needs no reports", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -371,7 +380,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A vulnerability that is not exploited gets an upgrade suggestion", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 46
+#line 49
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -384,24 +393,24 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 47
+#line 50
     await testRunner.GivenAsync("\"Acme Portal\" has an open high finding \"CVE-2026-1234\" from \"Trivy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 48
+#line 51
     await testRunner.AndAsync("I have recorded the vulnerability \"CVE-2026-1234 in the parser\", not exploited, f" +
                         "or \"Acme Portal\", aware since \"2026-10-30T08:00:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 49
+#line 52
     await testRunner.WhenAsync("\"CVE-2026-1234\" is added to the list \"KEV\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 50
+#line 53
     await testRunner.ThenAsync("the Security events tab suggests \'CVE-2026-1234 is now exploited – upgrade \"CVE-2" +
                         "026-1234 in the parser\"?\'", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 51
+#line 54
     await testRunner.WhenAsync("I record the suggested event \"CVE-2026-1234\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 52
+#line 55
     await testRunner.ThenAsync("the \"Early warning\" for \"CVE-2026-1234 in the parser\" is due \"2026-11-02T08:12:00" +
                         "Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
@@ -424,7 +433,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A dismissed suggestion keeps its reason and does not come back", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 55
+#line 58
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -437,23 +446,23 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 56
+#line 59
     await testRunner.GivenAsync("\"Acme Portal\" has an open high finding \"CVE-2026-1234\" from \"Trivy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 57
+#line 60
     await testRunner.AndAsync("\"CVE-2026-1234\" is added to the list \"KEV\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 58
+#line 61
     await testRunner.WhenAsync("I dismiss the suggestion \"CVE-2026-1234\" because \"The vulnerable function is not " +
                         "used\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 59
+#line 62
     await testRunner.AndAsync("the lists are fetched again", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 60
+#line 63
     await testRunner.ThenAsync("nothing is suggested for \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 61
+#line 64
     await testRunner.AndAsync("the dismissal of \"CVE-2026-1234\" is logged with \"The vulnerable function is not u" +
                         "sed\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
@@ -476,7 +485,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A list that cannot be fetched says when it was last fetched", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 64
+#line 67
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -489,23 +498,23 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 65
+#line 68
     await testRunner.GivenAsync("\"Acme Portal\" has an open high finding \"CVE-2026-1234\" from \"Trivy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 66
+#line 69
     await testRunner.AndAsync("\"CVE-2026-1234\" is added to the list \"KEV\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 67
+#line 70
     await testRunner.AndAsync("the time is \"2026-11-02T08:12:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 68
+#line 71
     await testRunner.WhenAsync("the lists cannot be fetched", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 69
+#line 72
     await testRunner.ThenAsync("the list \"CISA KEV\" says it was fetched \"2026-11-01T08:12:00Z\" and failed \"2026-1" +
                         "1-02T08:12:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 70
+#line 73
     await testRunner.AndAsync("the Security events tab suggests \"CVE-2026-1234\" from \"CISA KEV\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -527,7 +536,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Nothing is fetched while no list is switched on", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 73
+#line 76
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -540,13 +549,13 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 74
+#line 77
     await testRunner.GivenAsync("the exploited-vulnerability list \"KEV\" is switched off", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 75
+#line 78
     await testRunner.WhenAsync("the lists are fetched again", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 76
+#line 79
     await testRunner.ThenAsync("no list was fetched", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }

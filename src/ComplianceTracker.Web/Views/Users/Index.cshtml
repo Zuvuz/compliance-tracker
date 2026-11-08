@@ -40,7 +40,7 @@
                 {
                     <td>
                         @* US-010 R2: earlier decisions keep the role the member had then *@
-                        <form asp-action="ChangeRole" method="post" class="d-flex gap-1 change-role">
+                        <form asp-action="ChangeRole" method="post" data-confirm="The member's role, and what they may do, changes at once." class="d-flex gap-1 change-role">
                             <input type="hidden" name="memberId" value="@user.Id" />
                             <select name="role" class="form-select form-select-sm" aria-label="New role for @user.Name">
                                 @foreach (var role in roles)
@@ -61,7 +61,7 @@
                         @* US-090 R1: asks once more before the member is removed *@
                         <details class="remove-member-confirm">
                             <summary class="btn btn-sm btn-outline-danger">Remove</summary>
-                            <form asp-action="Remove" method="post" class="remove-member mt-1">
+                            <form asp-action="Remove" method="post" data-confirm="The member can no longer sign in to the organisation. Their earlier decisions stay in the log." data-confirm-final="true" class="remove-member mt-1">
                                 <input type="hidden" name="memberId" value="@user.Id" />
                                 <button type="submit" class="btn btn-sm btn-danger">Remove @user.Name now</button>
                             </form>
@@ -121,7 +121,7 @@
                             <td>@invitation.CreatedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
                             <td>@invitation.ExpiresAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
                             <td>
-                                <form asp-action="RevokeInvitation" method="post" class="revoke-invitation">
+                                <form asp-action="RevokeInvitation" method="post" data-confirm="The invitation link stops working." data-confirm-final="true" class="revoke-invitation">
                                     <input type="hidden" name="invitationId" value="@invitation.Id" />
                                     <button type="submit" class="btn btn-sm btn-outline-danger">Revoke</button>
                                 </form>

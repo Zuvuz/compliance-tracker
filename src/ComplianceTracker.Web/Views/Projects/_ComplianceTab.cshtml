@@ -318,9 +318,14 @@
                                     {
                                         <span class="text-muted">valid until @until.ToString("dd-MM-yyyy")</span>
                                     }
-                                    @if (!project.IsClosed && canLink)
+                                    @if (evidence.IsFromOrganisation)
                                     {
-                                        <form asp-action="RemoveEvidence" method="post" class="d-inline remove-evidence">
+                                        @* US-136 *@
+                                        <span class="badge text-bg-light border from-organisation">From the organisation</span>
+                                    }
+                                    else if (!project.IsClosed && canLink)
+                                    {
+                                        <form asp-action="RemoveEvidence" method="post" data-confirm="The evidence is no longer linked to this requirement." class="d-inline remove-evidence">
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="evidenceId" value="@evidence.Id" />
                                             <input type="hidden" name="requirementId" value="@requirement.Id" />

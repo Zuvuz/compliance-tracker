@@ -1,5 +1,8 @@
+using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Application.ActivityLog;
+using ComplianceTracker.Application.Approvals;
+using ComplianceTracker.Domain.Approvals;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Compliance;
 using ComplianceTracker.Application.Frameworks;
@@ -8,14 +11,18 @@ using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Domain.Frameworks;
 using ComplianceTracker.Domain.Projects;
 
+
 namespace ComplianceTracker.Application.Projects
 {
+    // US-135: what an approved end of support needs
+    public record EndSupportPayload(DateOnly LastPlacedOnMarket, DateOnly? KeepUntil);
+
     // Use cases that change projects: create a project (US-008), choose its frameworks (US-011),
     // and edit it or change its lifecycle phase (US-024).
     // The domain checks the fields and the rules about one project; this class checks the rules
     // that need the database and saves the changes and their log entries together.
     // Always acts for the signed-in member (CurrentMember); reading is done by ProjectQueries.
-    public class ProjectService
+    public class ProjectService : IApprovalExecutor
     {
         private readonly IProjectRepository _projects;
         private readonly IFrameworkRepository _frameworks;
@@ -25,6 +32,8 @@ namespace ComplianceTracker.Application.Projects
         private readonly TimeProvider _clock;
         private readonly VersionCarryOver _carryOver;
         private readonly Security.ISecurityEventRepository _securityEvents;
+        private readonly ApprovalGate _approvals;
+        private readonly Organizations.OrganisationDocumentService _documents;
 
         public ProjectService(
             IProjectRepository projects,
@@ -34,8 +43,12 @@ namespace ComplianceTracker.Application.Projects
             IUnitOfWork unitOfWork,
             TimeProvider clock,
             VersionCarryOver carryOver,
-            Security.ISecurityEventRepository securityEvents)
+            Security.ISecurityEventRepository securityEvents,
+            ApprovalGate approvals,
+            Organizations.OrganisationDocumentService documents)
         {
+            _approvals = approvals;
+            _documents = documents;
             _securityEvents = securityEvents;
             _carryOver = carryOver;
             _projects = projects;
@@ -82,6 +95,7 @@ namespace ComplianceTracker.Application.Projects
 
             // 5. Save it all at once
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await SyncDocumentsAsync(project, cancellationToken); // US-136 R1
             return project;
         }
 
@@ -119,13 +133,72 @@ namespace ComplianceTracker.Application.Projects
         // US-024 R2, R3, R4: moves the project to another phase; EndOfSupport is final
         // US-025 R1: releasing can set the support end date in the same step
         // US-074 R1: end of support takes the day the product was last placed on the market and an optional later retention date
-        public async Task ChangePhaseAsync(
+        // US-135 R2: end of support waits for a second person; returns false when it waits
+        public async Task<bool> ChangePhaseAsync(
             Guid projectId, LifecyclePhase phase, DateOnly? supportEndsOn = null, string? supportReason = null,
             CancellationToken cancellationToken = default, DateOnly? lastPlacedOnMarket = null, DateOnly? keepUntil = null)
         {
             var project = await ProjectAsync(projectId, cancellationToken);
             var today = _clock.Today();
 
+            if (phase == LifecyclePhase.EndOfSupport && project.Phase != LifecyclePhase.EndOfSupport)
+            {
+                var placed = lastPlacedOnMarket ?? today;
+                project.CheckEndSupport(placed, keepUntil, today);
+                await EnsureNoOpenEventsAsync(project, cancellationToken);
+                var (organization, user) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
+                await _approvals.RequestAsync(
+                    organization, user, project.Id, ApprovalAction.EndSupport, project.Id, project.Version.ToString(),
+                    $"Set \"{project.Name}\" to end of support (last placed on the market {placed:dd-MM-yyyy}"
+                    + (keepUntil is { } until ? $", kept until {until:dd-MM-yyyy})" : ")"),
+                    new EndSupportPayload(placed, keepUntil), cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                return false;
+            }
+
+            await ApplyPhaseAsync(project, phase, supportEndsOn, supportReason, today, null, null, null, null, cancellationToken);
+            return true;
+        }
+
+        // US-073 R1: every security event is closed before the product leaves the market
+        private async Task EnsureNoOpenEventsAsync(Project project, CancellationToken cancellationToken)
+        {
+            if ((await _securityEvents.ListAsync(project.Id, cancellationToken)).Any(e => e.IsOpen))
+            {
+                throw new DomainException("Close every security event before end of support");
+            }
+        }
+
+        // ---------------------------------------------------------- US-135: the approved end of support
+
+        ApprovalAction IApprovalExecutor.Action => ApprovalAction.EndSupport;
+
+        Permission IApprovalExecutor.Permission => Permission.EditProjects;
+
+        async Task<string?> IApprovalExecutor.WhyStaleAsync(ApprovalRequest request, CancellationToken cancellationToken)
+        {
+            var project = await _projects.GetAsync(request.OrganizationId, request.ProjectId, cancellationToken);
+            return project is null ? "the project is gone"
+                : project.IsClosed ? "the project is at end of support already"
+                : project.Version.ToString() != request.SubjectStamp ? "the project changed after the request was made"
+                : null;
+        }
+
+        async Task IApprovalExecutor.ExecuteAsync(ApprovalRequest request, Organization organization, User requester, User approver, CancellationToken cancellationToken)
+        {
+            var payload = ApprovalGate.Read<EndSupportPayload>(request);
+            var project = await _projects.GetAsync(organization.Id, request.ProjectId, cancellationToken)
+                ?? throw new DomainException("Project not found");
+            await EnsureNoOpenEventsAsync(project, cancellationToken);
+            await ApplyPhaseAsync(project, LifecyclePhase.EndOfSupport, null, null, _clock.Today(),
+                payload.LastPlacedOnMarket, payload.KeepUntil, requester, approver, cancellationToken, save: false);
+        }
+
+        private async Task ApplyPhaseAsync(
+            Project project, LifecyclePhase phase, DateOnly? supportEndsOn, string? supportReason, DateOnly today,
+            DateOnly? lastPlacedOnMarket, DateOnly? keepUntil, User? asUser, User? approver, CancellationToken cancellationToken,
+            bool save = true)
+        {
             if (phase == LifecyclePhase.Released && supportEndsOn is { } endsOn && project.Phase != LifecyclePhase.Released)
             {
                 if (project.SetSupportPeriod(endsOn, supportReason, today) is { } support)
@@ -134,24 +207,26 @@ namespace ComplianceTracker.Application.Projects
                 }
             }
 
-            // US-073 R1: every security event is closed before the product leaves the market
-            if (phase == LifecyclePhase.EndOfSupport && project.Phase != LifecyclePhase.EndOfSupport
-                && (await _securityEvents.ListAsync(project.Id, cancellationToken)).Any(e => e.IsOpen))
-            {
-                throw new DomainException("Close every security event before end of support");
-            }
-
             var change = phase == LifecyclePhase.EndOfSupport && project.Phase != LifecyclePhase.EndOfSupport
                 ? project.EndSupport(lastPlacedOnMarket ?? today, keepUntil, today)
                 : project.ChangePhase(phase, today);
-            if (change is null)
+            if (change is not null)
             {
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
-                return;
+                if (asUser is null)
+                {
+                    await _log.LogAsync(ActivityAction.ProjectPhaseChanged, project.Id, change.ToString(), cancellationToken);
+                }
+                else
+                {
+                    await _log.LogAsAsync(project.OrganizationId, asUser, ActivityAction.ProjectPhaseChanged, project.Id,
+                        $"{change} (approved by {approver?.Name})", cancellationToken);
+                }
             }
 
-            await _log.LogAsync(ActivityAction.ProjectPhaseChanged, project.Id, change.ToString(), cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            if (save)
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
         }
 
         // US-104 R2, R4: the methods the project uses to describe its requirements (EditProjects), logged with old and new
@@ -218,6 +293,14 @@ namespace ComplianceTracker.Application.Projects
             project.UseFramework(framework, version, userId, Now);
             await _log.LogAsync(ActivityAction.ProjectFrameworkAdded, project.Id, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await SyncDocumentsAsync(project, cancellationToken); // US-136 R1
+        }
+
+        // US-136 R1: the organisation's documents become evidence for the requirements the project now follows
+        private async Task SyncDocumentsAsync(Project project, CancellationToken cancellationToken)
+        {
+            await _documents.SyncAsync(project.OrganizationId, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         // US-011 R6: moves the project to the newest version of a framework it uses (US-007: the current active one).
@@ -237,6 +320,7 @@ namespace ComplianceTracker.Application.Projects
                 var carried = await _carryOver.CarryAsync(project, framework.Id, from!.Value, version.Id, cancellationToken);
                 await _log.LogAsync(ActivityAction.ProjectFrameworkVersionChanged, project.Id, carried.Describe(framework.Name, version.Number), cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
+                await SyncDocumentsAsync(project, cancellationToken); // US-136 R1
             }
         }
 

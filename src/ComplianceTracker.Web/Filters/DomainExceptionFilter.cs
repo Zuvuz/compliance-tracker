@@ -30,6 +30,9 @@ namespace ComplianceTracker.Web.Filters
 
         // The action's parameter holding the sub-tab to go back to, e.g. "security-policy" (US-041)
         public string? SubFrom { get; init; }
+
+        // The controller of the page to go back to, when it is another one (US-135)
+        public string? Controller { get; init; }
     }
 
     // The one place that turns a broken domain rule (DomainException) into an error the user can see (US-029 R4).
@@ -75,7 +78,7 @@ namespace ComplianceTracker.Web.Filters
                     sub = target.SubFrom is not null && context.ActionArguments.TryGetValue(target.SubFrom, out var sub) ? sub : null
                 }
                 : null;
-            executed.Result = controller.RedirectToAction(target.Action, routeValues);
+            executed.Result = controller.RedirectToAction(target.Action, target.Controller, routeValues);
             executed.ExceptionHandled = true;
         }
     }
