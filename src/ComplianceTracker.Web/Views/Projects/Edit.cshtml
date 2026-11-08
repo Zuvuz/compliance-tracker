@@ -42,7 +42,7 @@
 
         @* US-130 R4: a confidential project is left out of AI improvement *@
         @{ var excluded = ViewData["ExcludedFromAiSharing"] is true; }
-        <form asp-action="SetAiSharing" method="post" class="mt-4 border-top pt-3" id="project-ai-sharing">
+        <form asp-action="SetAiSharing" method="post" data-confirm="This changes whether the project's AI decisions may be used to improve the AI." class="mt-4 border-top pt-3" id="project-ai-sharing">
             <input type="hidden" name="projectId" value="@Model.Id" />
             <input type="hidden" name="excluded" value="@(excluded ? "false" : "true")" />
             <p class="small mb-1">AI improvement: <strong id="project-ai-sharing-state">@(excluded ? "Left out" : "Shared")</strong></p>

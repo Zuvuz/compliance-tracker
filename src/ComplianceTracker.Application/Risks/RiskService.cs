@@ -1,5 +1,7 @@
 using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Application.ActivityLog;
+using ComplianceTracker.Application.Approvals;
+using ComplianceTracker.Domain.Approvals;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Compliance;
 using ComplianceTracker.Application.Projects;
@@ -30,8 +32,12 @@ namespace ComplianceTracker.Application.Risks
         string Title, string? Description, int Likelihood, int Impact, Guid OwnerId, RiskTreatment Treatment,
         int? ResidualLikelihood = null, int? ResidualImpact = null);
 
+    // US-135: what an approved "accept the risk" needs
+    public record AcceptRiskPayload(Guid RiskId, string Reason);
+
     // US-042: the project's risk register. Every change is logged with the old and new values (R9).
-    public class RiskService
+    // US-135: accepting a High or Critical risk waits for a second person (it is the IApprovalExecutor for AcceptRisk).
+    public class RiskService : IApprovalExecutor
     {
         private readonly IProjectRepository _projects;
         private readonly IRiskRepository _risks;
@@ -41,6 +47,7 @@ namespace ComplianceTracker.Application.Risks
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
+        private readonly ApprovalGate _approvals;
 
         public RiskService(
             IProjectRepository projects,
@@ -50,8 +57,10 @@ namespace ComplianceTracker.Application.Risks
             CurrentMember member,
             IActivityLogger log,
             IUnitOfWork unitOfWork,
-            TimeProvider clock)
+            TimeProvider clock,
+            ApprovalGate approvals)
         {
+            _approvals = approvals;
             _evidence = evidence;
             _projects = projects;
             _risks = risks;
@@ -97,12 +106,57 @@ namespace ComplianceTracker.Application.Risks
             }
         }
 
-        // R4
-        public async Task AcceptAsync(Guid projectId, Guid riskId, string? reason, CancellationToken cancellationToken = default)
+        // R4. US-135 R2: a High or Critical risk waits for a second person; returns false when it waits.
+        public async Task<bool> AcceptAsync(Guid projectId, Guid riskId, string? reason, CancellationToken cancellationToken = default)
         {
             var (organization, userId, project, risk) = await RiskAsync(projectId, riskId, cancellationToken, Permission.DecideCompliance);
-            await LogChangeAsync(organization, project, risk, [risk.Accept(reason, userId, Now, organization.Users.First(u => u.Id == userId).Role)], cancellationToken);
+            var user = organization.Users.First(u => u.Id == userId);
+            if (risk.NeedsApprovalToAccept)
+            {
+                risk.CheckAccept(reason);
+                await _approvals.RequestAsync(
+                    organization, user, project.Id, ApprovalAction.AcceptRisk, risk.Id, risk.Version.ToString(),
+                    $"Accept the risk \"{risk.Title}\" ({risk.ResidualLevel ?? risk.Level}): {reason!.Trim()}",
+                    new AcceptRiskPayload(risk.Id, reason.Trim()), cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                return false;
+            }
+
+            await LogChangeAsync(organization, project, risk, [risk.Accept(reason, userId, Now, user.Role)], cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+
+        // ---------------------------------------------------------- US-135: the approved acceptance
+
+        ApprovalAction IApprovalExecutor.Action => ApprovalAction.AcceptRisk;
+
+        Permission IApprovalExecutor.Permission => Permission.DecideCompliance;
+
+        async Task<string?> IApprovalExecutor.WhyStaleAsync(ApprovalRequest request, CancellationToken cancellationToken)
+        {
+            var payload = ApprovalGate.Read<AcceptRiskPayload>(request);
+            var risk = await _risks.GetAsync(request.ProjectId, payload.RiskId, cancellationToken);
+            return risk is null ? "the risk is gone"
+                : risk.Status != RiskStatus.Open ? $"the risk is {risk.Status.ToString().ToLowerInvariant()} already"
+                : risk.Version.ToString() != request.SubjectStamp ? "the risk changed after the request was made"
+                : null;
+        }
+
+        async Task IApprovalExecutor.ExecuteAsync(ApprovalRequest request, Organization organization, User requester, User approver, CancellationToken cancellationToken)
+        {
+            var payload = ApprovalGate.Read<AcceptRiskPayload>(request);
+            var project = await _projects.GetAsync(organization.Id, request.ProjectId, cancellationToken)
+                ?? throw new DomainException("Project not found");
+            if (project.IsClosed)
+            {
+                throw new DomainException("A project at end of support cannot be changed");
+            }
+
+            var risk = await _risks.GetAsync(project.Id, payload.RiskId, cancellationToken)
+                ?? throw new DomainException("Risk not found");
+            var change = risk.Accept(payload.Reason, requester.Id, Now, requester.Role);
+            await LogChangeAsync(organization, project, risk, [change], cancellationToken, requester, approver);
         }
 
         // R7
@@ -216,13 +270,24 @@ namespace ComplianceTracker.Application.Risks
         }
 
         // R9: e.g. "Stolen session cookie: Likelihood: 3 → 2". Owners are shown by name, not by id.
-        private async Task LogChangeAsync(Organization organization, Project project, Risk risk, IEnumerable<ProjectChange> changes, CancellationToken cancellationToken)
+        // US-135: an approved change is logged as the person who asked, naming the approver
+        private async Task LogChangeAsync(
+            Organization organization, Project project, Risk risk, IEnumerable<ProjectChange> changes, CancellationToken cancellationToken,
+            User? asUser = null, User? approver = null)
         {
             string Name(string value)
                 => Guid.TryParse(value, out var id) ? organization.Users.FirstOrDefault(u => u.Id == id)?.Name ?? value : value;
 
             var text = string.Join("; ", changes.Select(c => c.Field == "Owner" ? c with { OldValue = Name(c.OldValue), NewValue = Name(c.NewValue) } : c));
-            await _log.LogAsync(ActivityAction.RiskUpdated, project.Id, $"{risk.Title}: {text}", cancellationToken);
+            if (asUser is null)
+            {
+                await _log.LogAsync(ActivityAction.RiskUpdated, project.Id, $"{risk.Title}: {text}", cancellationToken);
+            }
+            else
+            {
+                await _log.LogAsAsync(organization.Id, asUser, ActivityAction.RiskUpdated, project.Id,
+                    $"{risk.Title}: {text} (approved by {approver?.Name})", cancellationToken);
+            }
         }
 
         private static void EnsureMember(Organization organization, Guid userId)

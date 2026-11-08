@@ -64,6 +64,14 @@ namespace ComplianceTracker.Application
             services.AddScoped<RiskQueries>();
             services.AddScoped<ClassificationService>(); // US-026
             services.AddScoped<Security.SecurityEventService>(); // US-073
+
+            // US-135: four-eyes. The use cases that own an action also do it once it is approved.
+            services.AddScoped<Approvals.ApprovalGate>();
+            services.AddScoped<Approvals.ApprovalService>();
+            services.AddScoped<Approvals.IApprovalExecutor, RiskService>();
+            services.AddScoped<Approvals.IApprovalExecutor, Security.SecurityEventService>();
+            services.AddScoped<Approvals.IApprovalExecutor, ProjectService>();
+            services.AddScoped<Organizations.OrganisationDocumentService>(); // US-136
             services.AddScoped<Security.SecurityEventSuggestionService>(); // US-128
             services.AddScoped<Security.SecurityEventQueries>();
             services.AddScoped<Reports.TechnicalDocumentationQueries>(); // US-056

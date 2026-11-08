@@ -156,6 +156,8 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] EvidenceQueries evidenceQueries,
             [FromServices] Application.Scanning.ScanService scans,
             [FromServices] Application.Security.SecurityEventSuggestionService suggestionService,
+            [FromServices] Application.Approvals.ApprovalService approvalService,
+            [FromServices] Application.Organizations.OrganisationDocumentService documentService,
             CancellationToken cancellationToken)
         {
             // US-104 R1: shared links to the old "User stories" tab still work
@@ -211,6 +213,10 @@ namespace ComplianceTracker.Web.Controllers
             var eventSuggestions = activeTab is ProjectTabs.SecurityEvents or ProjectTabs.Overview
                 ? await suggestionService.ForProjectAsync(id, cancellationToken)
                 : null;
+            // US-135: the requests that wait for approval, and the latest decided ones
+            var approvals = activeTab is ProjectTabs.Overview ? await approvalService.ForProjectAsync(id, cancellationToken) : [];
+            // US-136 R4: the organisation's documents due for review
+            var documentsDue = activeTab is ProjectTabs.Overview ? await documentService.DueForReviewAsync(cancellationToken) : [];
             var now = _clock.GetUtcNow().UtcDateTime;
             var risks = allRisks
                 .Where(r => string.IsNullOrEmpty(status) ? r.Status != RiskStatus.Closed : r.DisplayStatus.Equals(status, StringComparison.OrdinalIgnoreCase))
@@ -253,6 +259,8 @@ namespace ComplianceTracker.Web.Controllers
                 Classifications = classified,
                 SecurityEvents = securityEvents,
                 EventSuggestions = eventSuggestions,
+                Approvals = approvals,
+                DocumentsDue = documentsDue,
                 Scans = scanOverview,
                 RiskStatusFilter = status,
                 RiskLevelFilter = level,
@@ -664,6 +672,10 @@ namespace ComplianceTracker.Web.Controllers
         // The forms send local times (datetime-local); the domain keeps UTC
         private static DateTime Utc(DateTime local) => DateTime.SpecifyKind(local, DateTimeKind.Local).ToUniversalTime();
 
+        // US-135 R2
+        private const string NotReportableWaits =
+            "An event that is not reported needs another member's approval. It waits on the project's Overview.";
+
         // POST /Projects/RecordSecurityEvent: R2
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -677,7 +689,11 @@ namespace ComplianceTracker.Web.Controllers
                 throw new Domain.Common.DomainException("Give the time you became aware of it");
             }
 
-            await events.RecordAsync(projectId, kind, title ?? "", description, Utc(aware), cancellationToken);
+            if (await events.RecordAsync(projectId, kind, title ?? "", description, Utc(aware), cancellationToken) is null)
+            {
+                TempData["ApprovalRequested"] = NotReportableWaits;
+            }
+
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
         }
 
@@ -811,9 +827,15 @@ namespace ComplianceTracker.Web.Controllers
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.SecurityEvents)]
         public async Task<IActionResult> RecordSuggestedSecurityEvent(
             Guid projectId, Guid suggestionId, DateTime? awareAt, [FromServices] Application.Security.SecurityEventSuggestionService suggestions,
-            CancellationToken cancellationToken)
+            [FromServices] Application.Approvals.ApprovalService approvals, CancellationToken cancellationToken)
         {
             await suggestions.RecordAsync(projectId, suggestionId, awareAt is { } at ? Utc(at) : null, cancellationToken);
+            if (await approvals.PendingAsync(projectId, cancellationToken) is { } pending
+                && pending.Any(p => p.Request.SubjectId == suggestionId))
+            {
+                TempData["ApprovalRequested"] = NotReportableWaits;
+            }
+
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
         }
 
@@ -1138,7 +1160,12 @@ namespace ComplianceTracker.Web.Controllers
             DateOnly? lastPlacedOnMarket, DateOnly? keepUntil, CancellationToken cancellationToken)
         {
             // US-074: for End of support, the last day on the market and an optional later retention date
-            await _service.ChangePhaseAsync(projectId, phase, supportEndsOn, supportReason, cancellationToken, lastPlacedOnMarket, keepUntil);
+            if (!await _service.ChangePhaseAsync(projectId, phase, supportEndsOn, supportReason, cancellationToken, lastPlacedOnMarket, keepUntil))
+            {
+                // US-135 R2
+                TempData["ApprovalRequested"] = "End of support needs another member's approval. It waits under \"Waiting for approval\" below.";
+            }
+
             return RedirectToAction(nameof(Details), new { id = projectId });
         }
 

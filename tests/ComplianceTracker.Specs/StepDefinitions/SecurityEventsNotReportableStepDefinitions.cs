@@ -109,6 +109,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
             fields["title"] = title;
             fields["awareAt"] = Local(awareAtUtc).ToString("yyyy-MM-ddTHH:mm", CultureInfo.InvariantCulture);
             await _web.PostFormAsync(form.GetAttribute("action")!, fields);
+            // US-135: the action waits for a second member, who approves it here; the four-eyes rules are tested in FourEyes.feature
+            await FourEyes.ApproveAllAsync(_web);
         }
 
         private static DateTime Local(string utc) => ClockStepDefinitions.Parse(utc).UtcDateTime.ToLocalTime();

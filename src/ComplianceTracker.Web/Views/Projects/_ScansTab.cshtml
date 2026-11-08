@@ -101,7 +101,7 @@
                                         }
                                         else if (canManageTokens)
                                         {
-                                            <form asp-action="RevokeUploadToken" method="post" class="revoke-upload-token">
+                                            <form asp-action="RevokeUploadToken" method="post" data-confirm="Pipelines using this token can no longer upload scans." data-confirm-final="true" class="revoke-upload-token">
                                                 <input type="hidden" name="projectId" value="@project.Id" />
                                                 <input type="hidden" name="tokenId" value="@token.Id" />
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">Revoke</button>
@@ -191,7 +191,7 @@
                                 @if (canChange)
                                 {
                                     @* R4 *@
-                                    <form asp-action="AcceptFinding" method="post" class="d-flex gap-1 accept-finding">
+                                    <form asp-action="AcceptFinding" method="post" data-confirm="The finding is accepted with your reason and no longer counts as open." data-confirm-final="true" class="d-flex gap-1 accept-finding">
                                         <input type="hidden" name="projectId" value="@project.Id" />
                                         <input type="hidden" name="findingId" value="@finding.Id" />
                                         <input name="reason" class="form-control form-control-sm" maxlength="@Finding.MaxReasonLength" placeholder="Why it is acceptable" aria-label="Reason for accepting @finding.RuleId" required />

@@ -248,6 +248,11 @@ namespace ComplianceTracker.Web.Models
         // US-128: suggested security events and the exploited lists' status
         public Application.Security.SuggestionOverview? EventSuggestions { get; init; }
 
+        // US-135: the project's approval requests, newest first
+        public IReadOnlyList<Application.Approvals.ApprovalView> Approvals { get; init; } = [];
+        // US-136 R4: the organisation's documents whose review date has passed
+        public IReadOnlyList<Domain.Organizations.OrganisationDocument> DocumentsDue { get; init; } = [];
+
         // US-078: the Scans tab, and the Overview's count of open high and critical findings
         public Application.Scanning.ScanOverview? Scans { get; init; }
 

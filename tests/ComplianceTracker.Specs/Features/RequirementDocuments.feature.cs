@@ -181,25 +181,25 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table4 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table13 = new global::Reqnroll.Table(new string[] {
                             "ID",
                             "Title",
                             "Acceptance criteria"});
-                table4.AddRow(new string[] {
+                table13.AddRow(new string[] {
                             "REQ-001",
                             "Log in",
                             "The user can log in"});
-                table4.AddRow(new string[] {
+                table13.AddRow(new string[] {
                             "REQ-002",
                             "Export as PDF",
                             "A report can be exported"});
-                table4.AddRow(new string[] {
+                table13.AddRow(new string[] {
                             "",
                             "Missing ID",
                             ""});
 #line 15
     await testRunner.WhenAsync("I upload the requirement specification \"kravspec.xlsx\" to \"Acme Portal\" with thes" +
-                        "e rows:", ((string)(null)), table4, "When ");
+                        "e rows:", ((string)(null)), table13, "When ");
 #line hidden
 #line 20
     await testRunner.ThenAsync("the project has the requirements \"REQ-001\" and \"REQ-002\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -278,17 +278,17 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table5 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table14 = new global::Reqnroll.Table(new string[] {
                             "Krav-ID",
                             "Titel",
                             "Acceptkriterier"});
-                table5.AddRow(new string[] {
+                table14.AddRow(new string[] {
                             "REQ-001",
                             "Log ind",
                             "Brugeren kan logge ind"});
 #line 30
     await testRunner.WhenAsync("I upload the requirement specification \"kravspec.xlsx\" to \"Acme Portal\" with thes" +
-                        "e rows:", ((string)(null)), table5, "When ");
+                        "e rows:", ((string)(null)), table14, "When ");
 #line hidden
 #line 33
     await testRunner.ThenAsync("the project has the requirement \"REQ-001\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");

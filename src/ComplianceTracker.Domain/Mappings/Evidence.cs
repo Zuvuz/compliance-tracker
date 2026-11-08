@@ -36,6 +36,12 @@ namespace ComplianceTracker.Domain.Mappings
         public Guid? RemovedById { get; private set; }
         public DateTime? RemovedAt { get; private set; }
 
+        // US-136: the organisation's document this evidence comes from; null for the project's own evidence.
+        // Its file is the document's, so it is not stored again for the project.
+        public Guid? OrganisationDocumentId { get; private set; }
+
+        public bool IsFromOrganisation => OrganisationDocumentId is not null;
+
         public bool IsActive => RemovedAt is null;
 
         public bool IsFile => FileName is not null;
@@ -75,6 +81,30 @@ namespace ComplianceTracker.Domain.Mappings
             evidence.SizeInBytes = file.Content.Length;
             evidence.Sha256 = file.Sha256;
             return evidence;
+        }
+
+        // US-136 R1: the organisation's document as evidence in one project
+        public static Evidence FromOrganisation(Guid projectId, Organizations.OrganisationDocument document, DateTime at)
+        {
+            var evidence = New(projectId, document.Title, null, document.AddedById, null, at);
+            evidence.OrganisationDocumentId = document.Id;
+            evidence.Follow(document);
+            return evidence;
+        }
+
+        // US-136 R3: a new title or file of the document is shown in the projects too
+        public void Follow(Organizations.OrganisationDocument document)
+        {
+            if (OrganisationDocumentId != document.Id)
+            {
+                throw new DomainException("The evidence does not come from this document");
+            }
+
+            Title = document.Title;
+            FileName = document.FileName;
+            ContentType = document.ContentType;
+            SizeInBytes = document.SizeInBytes;
+            Sha256 = document.Sha256;
         }
 
         // R3: valid through the "valid until" day itself

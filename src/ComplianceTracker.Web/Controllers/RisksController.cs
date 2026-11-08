@@ -109,7 +109,12 @@ namespace ComplianceTracker.Web.Controllers
         [OnDomainError(nameof(Details), IdFrom = "id")]
         public async Task<IActionResult> Accept(Guid id, string? reason, CancellationToken cancellationToken)
         {
-            await _service.AcceptAsync(await ProjectOfAsync(id, cancellationToken), id, reason, cancellationToken);
+            if (!await _service.AcceptAsync(await ProjectOfAsync(id, cancellationToken), id, reason, cancellationToken))
+            {
+                // US-135 R2
+                TempData["ApprovalRequested"] = "The risk is High or Critical, so another member must approve accepting it. It waits on the project's Overview.";
+            }
+
             return RedirectToAction(nameof(Details), new { id });
         }
 

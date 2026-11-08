@@ -24,6 +24,9 @@ namespace ComplianceTracker.Application.ActivityLog
 
         // When the system acts on its own, without a user (US-018 R6: the scheduled check of GitHub)
         Task LogSystemAsync(Guid organizationId, ActivityAction action, Guid? subjectId, string? details, CancellationToken cancellationToken = default);
+
+        // US-135: as a given member with their role, e.g. the person who asked for an action that another person approved
+        Task LogAsAsync(Guid organizationId, User user, ActivityAction action, Guid? subjectId, string? details, CancellationToken cancellationToken = default);
     }
 
     public class ActivityLogger : IActivityLogger
@@ -53,6 +56,11 @@ namespace ComplianceTracker.Application.ActivityLog
         public Task LogSystemAsync(Guid organizationId, ActivityAction action, Guid? subjectId, string? details, CancellationToken cancellationToken = default)
             => _log.AppendAsync(
                 new ActivityLogEntry(organizationId, null, action, _clock.GetUtcNow().UtcDateTime, subjectId, details),
+                cancellationToken);
+
+        public Task LogAsAsync(Guid organizationId, User user, ActivityAction action, Guid? subjectId, string? details, CancellationToken cancellationToken = default)
+            => _log.AppendAsync(
+                new ActivityLogEntry(organizationId, user.Id, action, _clock.GetUtcNow().UtcDateTime, subjectId, details, user.Role),
                 cancellationToken);
 
         public Task LogAsync(Guid organizationId, Guid userId, ActivityAction action, Guid? subjectId = null, CancellationToken cancellationToken = default)

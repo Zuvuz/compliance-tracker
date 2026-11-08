@@ -378,7 +378,7 @@ namespace ComplianceTracker.Specs.Features
 #line hidden
 #line 45
     await testRunner.ThenAsync("the \"ProjectPhaseChanged\" entry says \"Phase: Released → EndOfSupport, kept until " +
-                        "31-12-2036\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+                        "31-12-2036 (approved by Approver)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
