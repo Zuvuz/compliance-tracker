@@ -918,6 +918,39 @@ classDiagram
     +ExpireIfDue(now: DateTime) bool
   }
   ApprovalRequest --> Project : waits in
+  class OrganisationDocument {
+    -id: Guid
+    -organizationId: Guid
+    -kind: OrganisationDocumentKind
+    -title: string
+    -ownerId: Guid
+    -version: string
+    -fileName: string
+    -sha256: string
+    -reviewDueOn: DateOnly?
+    -removedAt: DateTime?
+    +Create(organizationId, kind, title, ownerId, version, file, reviewDueOn, addedById, at)$ OrganisationDocument
+    +UploadNewVersion(file, version, userId, at)
+    +MarkReviewed(nextReviewOn, userId, at)
+    +Link(frameworkId, requirementCode, userId, at) OrganisationDocumentLink
+    +Unlink(linkId, userId, at)
+    +Remove(userId, at)
+    +IsReviewDue(today) bool
+  }
+  class OrganisationDocumentLink {
+    -frameworkId: Guid
+    -requirementCode: string
+    -removedAt: DateTime?
+  }
+  class OrganisationDocumentVersion {
+    -version: string
+    -fileName: string
+    -sha256: string
+    -replacedAt: DateTime
+  }
+  OrganisationDocument "1" *-- "0..*" OrganisationDocumentLink : covers
+  OrganisationDocument "1" *-- "0..*" OrganisationDocumentVersion : earlier files
+  Evidence --> OrganisationDocument : from
   class Finding {
     -id: Guid
     -projectId: Guid

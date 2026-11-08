@@ -240,6 +240,11 @@ namespace ComplianceTracker.Application.Compliance
             var (organizationId, userId, project) = await OpenProjectAsync(projectId, cancellationToken);
             var evidence = await _evidence.GetAsync(project.Id, evidenceId, cancellationToken)
                 ?? throw new DomainException("Evidence not found");
+            if (evidence.IsFromOrganisation)
+            {
+                throw new DomainException("This evidence comes from the organisation's documents; change it on the Documents page");
+            }
+
             var links = (await _evidence.ListActiveLinksAsync(project.Id, cancellationToken)).Where(l => l.EvidenceId == evidence.Id).ToList();
             var link = links.FirstOrDefault(l => l.RequirementId == requirementId)
                 ?? throw new DomainException("The evidence is not linked to the requirement");

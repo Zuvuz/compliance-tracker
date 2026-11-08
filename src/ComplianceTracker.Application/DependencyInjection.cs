@@ -71,6 +71,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<Approvals.IApprovalExecutor, RiskService>();
             services.AddScoped<Approvals.IApprovalExecutor, Security.SecurityEventService>();
             services.AddScoped<Approvals.IApprovalExecutor, ProjectService>();
+            services.AddScoped<Organizations.OrganisationDocumentService>(); // US-136
             services.AddScoped<Security.SecurityEventSuggestionService>(); // US-128
             services.AddScoped<Security.SecurityEventQueries>();
             services.AddScoped<Reports.TechnicalDocumentationQueries>(); // US-056

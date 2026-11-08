@@ -148,6 +148,11 @@
     {
         attention.Add(($"Waiting for another member's approval: {approval.Request.Summary}", "#approvals"));
     }
+    // US-136 R4
+    foreach (var document in Model.DocumentsDue)
+    {
+        attention.Add(($"{document.Title} is due for review", Url.Action("Index", "Documents")!));
+    }
     if (doneNotLinked > 0)
     {
         attention.Add((Plural(doneNotLinked, "done story not linked to a requirement", "done stories not linked to a requirement"),

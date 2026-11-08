@@ -192,6 +192,14 @@ namespace ComplianceTracker.Domain.ActivityLog
         ApprovalRejected,
         ApprovalWithdrawn,
         ApprovalCancelled,
-        ApprovalExpired
+        ApprovalExpired,
+
+        // US-136: the organisation's documents (policies, procedures, risk tables): uploaded or a new version, reviewed,
+        // linked to or unlinked from a requirement, and removed. SubjectId points at the organisation.
+        OrganisationDocumentUploaded,
+        OrganisationDocumentReviewed,
+        OrganisationDocumentLinked,
+        OrganisationDocumentUnlinked,
+        OrganisationDocumentRemoved
     }
 }

@@ -204,6 +204,10 @@ namespace ComplianceTracker.Application.Compliance
         {
             var (_, user, project) = await OpenProjectAsync(projectId, cancellationToken);
             var evidence = await RequireEvidenceAsync(project, evidenceId, cancellationToken);
+            if (evidence.IsFromOrganisation)
+            {
+                throw new DomainException("This evidence comes from the organisation's documents; change it on the Documents page");
+            }
 
             evidence.Remove(user.Id, Now);
             foreach (var suggestion in (await _suggestions.ListAsync(project.Id, cancellationToken)).Where(s => s.EvidenceId == evidence.Id))
