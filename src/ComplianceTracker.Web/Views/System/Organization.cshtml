@@ -19,7 +19,7 @@
                 <td>@user.Email</td>
                 <td class="member-role">@user.Role</td>
                 <td>
-                    <form asp-action="ChangeRole" asp-route-id="@Model.Id" method="post" class="d-flex gap-1 system-change-role">
+                    <form asp-action="ChangeRole" asp-route-id="@Model.Id" method="post" data-confirm="The member's role, and what they may do, changes at once." class="d-flex gap-1 system-change-role">
                         <input type="hidden" name="memberId" value="@user.Id" />
                         <select name="role" class="form-select form-select-sm" aria-label="New role for @user.Name">
                             @foreach (var role in Enum.GetValues<UserRole>())

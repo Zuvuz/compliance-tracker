@@ -76,7 +76,7 @@
                                     </form>
                                 }
                                 @* US-011 R7: removing keeps the history *@
-                                <form asp-action="RemoveFramework" method="post" class="d-inline">
+                                <form asp-action="RemoveFramework" method="post" data-confirm="The project no longer follows this framework; its coverage disappears from the Compliance tab." class="d-inline">
                                     <input type="hidden" name="projectId" value="@project.Id" />
                                     <input type="hidden" name="frameworkId" value="@row.Framework.Id" />
                                     <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>

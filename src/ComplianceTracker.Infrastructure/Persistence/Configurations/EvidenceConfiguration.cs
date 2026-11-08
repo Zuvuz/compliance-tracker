@@ -32,6 +32,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(e => e.ProjectId);
 
+            // US-136: evidence made from an organisation's document
+            builder.Ignore(e => e.IsFromOrganisation);
+            builder.HasOne<Domain.Organizations.OrganisationDocument>().WithMany().HasForeignKey(e => e.OrganisationDocumentId)
+                .IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+
             // R1: exactly one of a link and a file
             builder.ToTable(t => t.HasCheckConstraint("CK_Evidence_LinkOrFile", "(\"Url\" IS NULL) <> (\"FileName\" IS NULL)"));
         }

@@ -326,6 +326,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             var ids = _ids!;
             var frameworks = action.ControllerName == "Frameworks";
+            var documents = action.ControllerName == "Documents"; // US-136
             return name.ToLowerInvariant() switch
             {
                 "id" => action.ControllerName switch
@@ -334,13 +335,15 @@ namespace ComplianceTracker.Specs.StepDefinitions
                     "Risks" => ids.Risk,
                     "Frameworks" => action.ActionName == "Versions" ? ids.Framework : ids.FrameworkVersion,
                     "Organizations" or "System" => ids.Organization,
+                    "Approvals" => ids.ApprovalRequest, // US-135
+                    "Documents" => ids.OrganisationDocument,
                     _ => null
                 },
                 "projectid" => ids.Project,
                 "riskid" => ids.Risk,
                 "requirementid" => frameworks ? ids.FrameworkRequirement : ids.CraRequirement,
                 "workitemid" => ids.WorkItem,
-                "linkid" => ids.Link,
+                "linkid" => documents ? ids.OrganisationDocumentLink : ids.Link,
                 "evidenceid" => ids.Evidence,
                 "versionid" => frameworks ? ids.FrameworkVersion : ids.DocumentVersion,
                 "frameworkid" => ids.Framework,
@@ -354,7 +357,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "findingid" => ids.Finding,
                 "tokenid" => ids.UploadToken, // US-122
                 "snapshotid" => ids.ReportSnapshot, // US-050
-                "documentid" => ids.Document,
+                "documentid" => documents ? ids.OrganisationDocument : ids.Document,
                 "frameworkids" => ids.Framework,
                 "requirementids" => ids.CraRequirement,
                 _ => null
@@ -374,10 +377,10 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Guid Organization, Guid Project, Guid Risk, Guid Measure, Guid Evidence, Guid WorkItem, Guid Link,
             Guid Document, Guid DocumentVersion, Guid Framework, Guid FrameworkVersion, Guid FrameworkRequirement,
             Guid CraRequirement, Guid Member, Guid Invitation, Guid SecurityEvent, Guid RiskAction, Guid Scan, Guid Finding, Guid UploadToken,
-            Guid ReportSnapshot)
+            Guid ApprovalRequest, Guid OrganisationDocument, Guid OrganisationDocumentLink, Guid ReportSnapshot)
         {
             public IEnumerable<Guid> All => [Organization, Project, Risk, Measure, Evidence, WorkItem, Link, Document,
-                DocumentVersion, Framework, FrameworkVersion, FrameworkRequirement, Member, Invitation, SecurityEvent, RiskAction, Scan, Finding, UploadToken, ReportSnapshot];
+                DocumentVersion, Framework, FrameworkVersion, FrameworkRequirement, Member, Invitation, SecurityEvent, RiskAction, Scan, Finding, UploadToken, ApprovalRequest, OrganisationDocument, OrganisationDocumentLink, ReportSnapshot];
         }
 
         private async Task<Ids> IdsAsync(string organisation)
@@ -396,7 +399,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 project.Id,
                 risk.Id,
                 risk.Measures.Single().Id,
-                await db.Evidence.Where(e => e.ProjectId == project.Id).Select(e => e.Id).SingleAsync(),
+                await db.Evidence.Where(e => e.ProjectId == project.Id && e.OrganisationDocumentId == null).Select(e => e.Id).SingleAsync(),
                 link.WorkItemId,
                 link.Id,
                 document.Id,
@@ -412,6 +415,9 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 await db.Scans.Where(s => s.ProjectId == project.Id).Select(s => s.Id).SingleAsync(), // US-078
                 await db.Findings.Where(f => f.ProjectId == project.Id).OrderBy(f => f.RuleId).Select(f => f.Id).FirstAsync(),
                 await db.ScanUploadTokens.Where(t => t.ProjectId == project.Id).Select(t => t.Id).SingleAsync(), // US-122
+                await db.ApprovalRequests.Where(r => r.ProjectId == project.Id).Select(r => r.Id).SingleAsync(), // US-135
+                await db.OrganisationDocuments.Where(d => d.OrganizationId == org.Id).Select(d => d.Id).SingleAsync(), // US-136
+                await db.OrganisationDocuments.Where(d => d.OrganizationId == org.Id).SelectMany(d => d.Links).Select(l => l.Id).SingleAsync(), // US-136
                 await db.ReportSnapshots.Where(s => s.ProjectId == project.Id).Select(s => s.Id).SingleAsync()); // US-050
         }
 
