@@ -898,19 +898,38 @@ namespace ComplianceTracker.Web.Controllers
         // GET /Projects/TechnicalDocumentation/{id}: a DOCX draft with the headings of CRA Annex VII.
         // For anyone in the organisation; 404 for other organisations and for projects that do not follow the CRA (R6).
         [HttpGet]
+        // US-131: format "pdf" gives the same draft as PDF. Every download is logged (R5).
         public async Task<IActionResult> TechnicalDocumentation(
-            Guid id,
+            Guid id, string? format,
             [FromServices] Application.Reports.TechnicalDocumentationQueries drafts,
             [FromServices] Application.Reports.IDocumentWriter writer,
+            [FromServices] Application.Reports.IPdfWriter pdfWriter,
+            [FromServices] Application.ActivityLog.IActivityLogger log,
+            [FromServices] Application.Common.IUnitOfWork unitOfWork,
+            [FromServices] Application.Common.ICurrentUser currentUser,
             CancellationToken cancellationToken)
         {
             var draft = await drafts.DraftAsync(id, cancellationToken);
-            if (draft is null)
+            var project = await _projects.GetAsync(id, cancellationToken);
+            var organization = await _organizations.MineAsync(cancellationToken);
+            if (draft is null || project is null || organization is null)
             {
                 return NotFound();
             }
 
+            var pdf = string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase);
+            await log.LogAsync(Domain.ActivityLog.ActivityAction.ReportDownloaded, project.Id,
+                $"{(pdf ? "PDF" : "Word")} for Technical documentation (draft)", cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
             Response.Headers["X-Content-Type-Options"] = "nosniff";
+            if (pdf)
+            {
+                var header = new Application.Reports.PdfHeader(organization.Name, project.Name, "Technical documentation (draft)",
+                    _clock.GetUtcNow().UtcDateTime, currentUser.Identity.Name);
+                return File(pdfWriter.FromDocument(draft, header), "application/pdf", Path.ChangeExtension(draft.FileName, ".pdf"));
+            }
+
             return File(writer.ToDocx(draft), "application/vnd.openxmlformats-officedocument.wordprocessingml.document", draft.FileName);
         }
 
@@ -924,6 +943,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> Traceability(
             Guid id, string? sub, string? format, string? audience,
             [FromServices] Application.Reports.ISpreadsheetWriter spreadsheet,
+            [FromServices] Application.Reports.IPdfWriter pdfWriter,
             [FromServices] Application.Security.SecurityEventQueries securityEvents,
             [FromServices] Application.Scanning.ScanService scans,
             [FromServices] Application.ActivityLog.IActivityLogger log,
@@ -950,13 +970,14 @@ namespace ComplianceTracker.Web.Controllers
             string NameOf(Guid userId) => organization.Users.FirstOrDefault(u => u.Id == userId)?.Name ?? "Unknown";
             var reader = Enum.TryParse<Application.Reports.ReportAudience>(audience, ignoreCase: true, out var chosen) ? chosen : Application.Reports.ReportAudience.Team;
             var csv = string.Equals(format, "csv", StringComparison.OrdinalIgnoreCase) && reader != Application.Reports.ReportAudience.Management;
+            var pdf = string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase); // US-131
             var name = $"traceability-{FrameworkNames.Slug(project.Name)}{(sub is null ? "" : "-" + sub)}"
                        + (csv ? "" : $"-{reader.ToString().ToLowerInvariant()}") + $"-{_clock.Today():yyyy-MM-dd}";
 
             // R8: every download is logged
             var what = string.Join(", ", frameworks.Select(f => FrameworkNames.Short(f.Framework.Name)));
             await log.LogAsync(Domain.ActivityLog.ActivityAction.ReportDownloaded, project.Id,
-                $"{(csv ? "CSV" : "Excel")} for {Application.Reports.TraceabilityReport.Title(reader)}: {what}", cancellationToken);
+                $"{(csv ? "CSV" : pdf ? "PDF" : "Excel")} for {Application.Reports.TraceabilityReport.Title(reader)}: {what}", cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
             Response.Headers["X-Content-Type-Options"] = "nosniff";
@@ -975,6 +996,13 @@ namespace ComplianceTracker.Web.Controllers
                 project.SupportEndsOn);
             var document = Application.Reports.TraceabilityReport.Build(reader, project, frameworks, NameOf,
                 currentUser.Identity.Name, now, facts);
+            if (pdf)
+            {
+                // US-131 R2: the same report model as the Excel file
+                var header = new Application.Reports.PdfHeader(organization.Name, project.Name, document.Title, now, currentUser.Identity.Name);
+                return File(pdfWriter.FromReport(document, header), "application/pdf", name + ".pdf");
+            }
+
             return File(spreadsheet.ToXlsx(document), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", name + ".xlsx");
         }
 

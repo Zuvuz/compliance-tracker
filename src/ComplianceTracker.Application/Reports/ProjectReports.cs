@@ -18,11 +18,11 @@ namespace ComplianceTracker.Application.Reports
         [
             new(Traceability, "Traceability", "The team, an auditor or the management",
                 "Each requirement with the user stories and evidence that cover it. For the management, a summary.",
-                "Excel or CSV",
+                "Excel, CSV or PDF",
                 frameworkCount > 0 ? null : "Add a framework to the project to make a traceability report"),
             new(TechnicalDocumentation, "Technical documentation (draft)", "The manufacturer's technical file",
                 "The structure of CRA Annex VII, filled in from the project's data.",
-                "Word",
+                "Word or PDF",
                 followsCra && frameworkCount > 0 ? null : "Add the CRA to the project to make the technical documentation draft")
         ];
 
