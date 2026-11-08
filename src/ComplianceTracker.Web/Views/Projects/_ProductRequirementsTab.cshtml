@@ -100,7 +100,7 @@
             @if (github.HasToken)
             {
                 <span class="small" id="token-status">Token set (changed @github.TokenChangedAt?.ToLocalTime().ToString("dd-MM-yyyy"))</span>
-                <form asp-action="RemoveGitHubToken" method="post" class="d-inline">
+                <form asp-action="RemoveGitHubToken" method="post" data-confirm="The tracker can no longer read GitHub for this project until a new token is set." class="d-inline">
                     <input type="hidden" name="projectId" value="@project.Id" />
                     <button type="submit" class="btn btn-sm btn-outline-danger">Remove token</button>
                 </form>

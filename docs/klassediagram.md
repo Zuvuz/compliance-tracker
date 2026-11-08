@@ -895,6 +895,29 @@ classDiagram
     +Revoke(userId: Guid, now: DateTime)
   }
   Scan --> ScanUploadToken : sent with
+  class ApprovalRequest {
+    -id: Guid
+    -organizationId: Guid
+    -projectId: Guid
+    -action: ApprovalAction
+    -subjectId: Guid?
+    -subjectStamp: string?
+    -summary: string
+    -payload: json
+    -requestedById: Guid
+    -requestedAt: DateTime
+    -status: ApprovalStatus
+    -decidedById: Guid?
+    -decidedAt: DateTime?
+    -decisionNote: string?
+    +Create(organizationId, projectId, action, subjectId, stamp, summary, payload, requestedById, now)$ ApprovalRequest
+    +Approve(approverId: Guid, now: DateTime)
+    +Reject(approverId: Guid, reason: string, now: DateTime)
+    +Withdraw(userId: Guid, now: DateTime)
+    +Cancel(reason: string, now: DateTime)
+    +ExpireIfDue(now: DateTime) bool
+  }
+  ApprovalRequest --> Project : waits in
   class Finding {
     -id: Guid
     -projectId: Guid

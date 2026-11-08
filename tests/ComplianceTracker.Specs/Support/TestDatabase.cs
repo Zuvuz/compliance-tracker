@@ -74,6 +74,7 @@ namespace ComplianceTracker.Specs.Support
             await db.Database.ExecuteSqlRawAsync(
                 """
                 DELETE FROM "Invitations";
+                DELETE FROM "ApprovalRequests";
                 DELETE FROM "ProjectClassifications";
                 DELETE FROM "SecurityEventSuggestions";
                 DELETE FROM "ExploitedLists";
