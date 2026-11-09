@@ -83,3 +83,33 @@ Feature: NIS2 at organisation level
     Then there is no NIS2 scope check form
     When I post the NIS2 scope check anyway
     Then the NIS2 result is "none"
+
+  @US-142 @integration
+  Scenario: NIS2 can be switched off and on again, and the coverage comes back
+    Given I have done the NIS2 scope check as an important entity
+    And I have uploaded the policy "Incident response plan" version "v1" with the content "How we handle incidents"
+    And I link the document "Incident response plan" to "Art. 21(2)(b)"
+    When I switch NIS2 off on the organisation's Overview
+    Then NIS2 is "Off"
+    And the organisation follows no framework
+    And the activity log has "ProjectFrameworkRemoved" saying "NIS2 – Directive (EU) 2022/2555"
+    When I switch NIS2 on on the organisation's Overview
+    Then NIS2 is "On"
+    And the organisation follows "NIS2 – Directive (EU) 2022/2555" and "NIS 2-loven – Lov nr. 434 af 6. maj 2025 (Denmark)"
+    And the organisation's Compliance tab for "NIS2" shows "Art. 21(2)(b)" as "Covered"
+
+  @US-142 @integration
+  Scenario: NIS2 can be switched on by choice without being covered
+    When I do the NIS2 scope check with sector "Manufacturing", 20 employees and a turnover of 3 million euro
+    And I switch NIS2 on on the organisation's Overview
+    Then NIS2 is "On"
+    And the organisation follows "NIS2 – Directive (EU) 2022/2555"
+    And the page says "NIS2 is followed by choice"
+
+  @US-142 @integration
+  Scenario: Only members who decide on compliance can switch NIS2 on or off
+    Given "Bo" is in "Acme ApS" with the role "Developer"
+    And I am signed in as "Bo"
+    When I open "Organisation" from the top bar
+    Then NIS2 is "Off"
+    And there is no NIS2 switch

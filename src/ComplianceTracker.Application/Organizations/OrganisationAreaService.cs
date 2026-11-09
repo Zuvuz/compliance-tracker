@@ -28,10 +28,14 @@ namespace ComplianceTracker.Application.Organizations
         bool DesignatedByAuthority);
 
     // The organisation area page: the area, the newest check and the earlier ones
-    public record OrganisationAreaView(Project Area, Organization Organization, Nis2Assessment? Latest, IReadOnlyList<Nis2Assessment> History)
+    public record OrganisationAreaView(Project Area, Organization Organization, Nis2Assessment? Latest, IReadOnlyList<Nis2Assessment> History,
+        Guid Nis2FrameworkId)
     {
+        // Whether the area follows NIS2 now (switched on by the scope check or by hand)
+        public bool FollowsNis2 => Area.FrameworkInUse(Nis2FrameworkId) is not null;
+
         // R4: NIS2 is followed although the newest check says the organisation is not covered (or there is no check)
-        public bool FollowsNis2ByChoice(Guid nis2Id) => Area.FrameworkInUse(nis2Id) is not null && Latest is not { IsCovered: true };
+        public bool FollowsNis2ByChoice => FollowsNis2 && Latest is not { IsCovered: true };
     }
 
     // US-142: the organisation area, where the whole company follows NIS2 and other organisation-level frameworks.
@@ -84,7 +88,7 @@ namespace ComplianceTracker.Application.Organizations
             var (organization, _) = await _member.RequireAsync(cancellationToken);
             var area = await AreaAsync(organization.Id, cancellationToken);
             var history = await _assessments.ListAsync(organization.Id, cancellationToken);
-            return new OrganisationAreaView(area, organization, history.FirstOrDefault(), history);
+            return new OrganisationAreaView(area, organization, history.FirstOrDefault(), history, _catalogues.Directive);
         }
 
         // R3, R6, R7: does the scope check, keeps it, and switches on what it finds: NIS2, the national law of the
@@ -94,12 +98,7 @@ namespace ComplianceTracker.Application.Organizations
         {
             var (organization, user) = await _member.RequireAsync(Permission.DecideCompliance, cancellationToken);
 
-            // US-086: only from the organisation's own area page; another organisation's id is "not found"
-            if (await _projects.GetOrganisationAreaAsync(organization.Id, cancellationToken) is not { } own || own.Id != areaId)
-            {
-                throw new DomainException("Project not found");
-            }
-
+            await OwnAreaAsync(organization.Id, areaId, cancellationToken);
             var assessment = Nis2Assessment.Assess(organization.Id, answers.Sector, answers.Service, answers.Employees,
                 answers.TurnoverMillions, answers.BalanceSheetMillions, answers.DesignatedByAuthority, user.Id, Now);
             await _assessments.AddAsync(assessment, cancellationToken);
@@ -107,23 +106,51 @@ namespace ComplianceTracker.Application.Organizations
 
             if (assessment.IsCovered)
             {
-                var area = await AreaAsync(organization.Id, cancellationToken);
-                await FollowAsync(organization.Id, area, _catalogues.Directive, user.Id, cancellationToken);
-                if (organization.Country == "DK")
-                {
-                    await FollowAsync(organization.Id, area, _catalogues.DanishLaw, user.Id, cancellationToken);
-                }
-
-                if (assessment.Uses2024_2690)
-                {
-                    await FollowAsync(organization.Id, area, _catalogues.TechnicalMeasures, user.Id, cancellationToken);
-                }
+                await SwitchOnAsync(organization, await AreaAsync(organization.Id, cancellationToken), assessment, user.Id, cancellationToken);
             }
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             await _documents.SyncAsync(organization.Id, cancellationToken); // US-136 R1
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return assessment;
+        }
+
+        // Switches NIS2 on or off in the organisation area by hand, whatever the scope check says (R4: e.g. a customer
+        // requires it). On: NIS2, the national law of the organisation's country, and 2024/2690 when the newest check
+        // says it applies. Off: all three stop being followed; the history, links and evidence are kept, so switching
+        // on again brings the coverage back. Returns false when nothing changed. A compliance decision (DecideCompliance).
+        public async Task<bool> SetNis2Async(Guid areaId, bool on, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.DecideCompliance, cancellationToken);
+            var area = await OwnAreaAsync(organization.Id, areaId, cancellationToken);
+            var followedBefore = area.Frameworks.Count();
+
+            if (on)
+            {
+                var latest = (await _assessments.ListAsync(organization.Id, cancellationToken)).FirstOrDefault();
+                await SwitchOnAsync(organization, area, latest, user.Id, cancellationToken);
+            }
+            else
+            {
+                foreach (var id in new[] { _catalogues.TechnicalMeasures, _catalogues.DanishLaw, _catalogues.Directive })
+                {
+                    if (area.FrameworkInUse(id) is not null && await _frameworks.GetBuiltInAsync(id, cancellationToken) is { } framework)
+                    {
+                        area.RemoveFramework(framework, user.Id, Now);
+                        await _log.LogAsync(ActivityAction.ProjectFrameworkRemoved, area.Id, framework.Name, cancellationToken);
+                    }
+                }
+            }
+
+            if (area.Frameworks.Count() == followedBefore)
+            {
+                return false;
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _documents.SyncAsync(organization.Id, cancellationToken); // US-136 R1
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return true;
         }
 
         // R6: an Admin sets the EU country the organisation is established in
@@ -155,6 +182,27 @@ namespace ComplianceTracker.Application.Organizations
             await _projects.AddAsync(area, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return area;
+        }
+
+        // US-086: only the organisation's own area; another organisation's id is "not found"
+        private async Task<Project> OwnAreaAsync(Guid organizationId, Guid areaId, CancellationToken cancellationToken)
+            => await _projects.GetOrganisationAreaAsync(organizationId, cancellationToken) is { } own && own.Id == areaId
+                ? own
+                : throw new DomainException("Project not found");
+
+        // NIS2, the national law of the country (only Denmark so far) and, for the digital providers it covers, 2024/2690
+        private async Task SwitchOnAsync(Organization organization, Project area, Nis2Assessment? latest, Guid userId, CancellationToken cancellationToken)
+        {
+            await FollowAsync(organization.Id, area, _catalogues.Directive, userId, cancellationToken);
+            if (organization.Country == "DK")
+            {
+                await FollowAsync(organization.Id, area, _catalogues.DanishLaw, userId, cancellationToken);
+            }
+
+            if (latest is { Uses2024_2690: true })
+            {
+                await FollowAsync(organization.Id, area, _catalogues.TechnicalMeasures, userId, cancellationToken);
+            }
         }
 
         // Switches the built-in framework on for the organisation (US-006) and lets the area follow its current version

@@ -37,11 +37,13 @@
         @if (!latest.IsCovered)
         {
             @* R4 *@
-            <p class="small text-muted" id="nis2-by-choice-hint">You can still follow NIS2 by choice, e.g. if a customer requires it: switch it on under Frameworks and add it on the Frameworks tab here.</p>
+            <p class="small text-muted" id="nis2-by-choice-hint">You can still follow NIS2 by choice, e.g. if a customer requires it: switch it on here.</p>
         }
         <p class="small text-muted">Checked @latest.AssessedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm") by @(Model.Organization?.Users.FirstOrDefault(u => u.Id == latest.AssessedById)?.Name ?? "Unknown").
             The result is a guide from Art. 2 and 3 of the directive; the authority decides in the end.</p>
     }
+
+    <partial name="_Nis2Toggle" model="Model" />
 
     @if (canDecide)
     {

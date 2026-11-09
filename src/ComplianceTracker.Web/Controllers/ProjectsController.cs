@@ -300,6 +300,18 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Nis2Scope });
         }
 
+        // POST /Projects/SetNis2: US-142, NIS2 switched on or off in the organisation area by hand (DecideCompliance)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Overview)]
+        public async Task<IActionResult> SetNis2(
+            Guid projectId, bool on, string? tab, [FromServices] Application.Organizations.OrganisationAreaService areaService,
+            CancellationToken cancellationToken)
+        {
+            await areaService.SetNis2Async(projectId, on, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = tab == ProjectTabs.Nis2Scope ? ProjectTabs.Nis2Scope : null });
+        }
+
         // ---------------------------------------------------------- User stories from GitHub (US-018)
 
         // GET /Projects/WorkItems/{id}: only the work items section, fetched again by the page when SignalR says it changed (R7)

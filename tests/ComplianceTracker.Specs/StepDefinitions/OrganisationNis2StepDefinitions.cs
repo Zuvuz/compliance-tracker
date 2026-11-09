@@ -99,6 +99,18 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task WhenIOpenTheComplianceTabIn(string project, string language)
             => await OpenInAsync($"/Projects/Details/{await ProjectIdAsync(project)}/compliance", language);
 
+        [When("I switch NIS2 {word} on the organisation's Overview")]
+        public async Task WhenISwitchNis2(string state)
+        {
+            await WhenIOpenFromTheTopBar("Organisation");
+            var form = _web.Page!.QuerySelector("form#nis2-toggle") ?? throw new Xunit.Sdk.XunitException("The Overview has no NIS2 switch.");
+            Assert.Equal(state == "on" ? "true" : "false", form.QuerySelector("input[name=on]")!.GetAttribute("value"));
+            Assert.NotNull(form.GetAttribute("data-confirm")); // US-135: asks before it changes what the organisation follows
+            await _web.PostFormAsync(form.GetAttribute("action")!, form.QuerySelectorAll("input[type=hidden]")
+                .Where(i => i.GetAttribute("name") != "__RequestVerificationToken")
+                .ToDictionary(i => i.GetAttribute("name")!, i => i.GetAttribute("value") ?? ""));
+        }
+
         // ---------------------------------------------------------- Then
 
         [Then("I see the organisation area of {string} with the tabs {string}, {string}, {string} and {string}")]
@@ -130,6 +142,12 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Then("the NIS2 result is {string}")]
         public void ThenTheNis2ResultIsOnly(string result)
             => Assert.Equal(result, _web.Page!.QuerySelector("#nis2-result")?.GetAttribute("data-result"));
+
+        [Then("NIS2 is {string}")]
+        public void ThenNis2Is(string state) => Assert.Equal(state, _web.Page!.QuerySelector("#nis2-state")?.TextContent.Trim());
+
+        [Then("there is no NIS2 switch")]
+        public void ThenThereIsNoNis2Switch() => Assert.Null(_web.Page!.QuerySelector("form#nis2-toggle"));
 
         [Then("there is no NIS2 scope check form")]
         public void ThenThereIsNoScopeCheckForm() => Assert.Null(_web.Page!.QuerySelector("form#nis2-scope-check"));

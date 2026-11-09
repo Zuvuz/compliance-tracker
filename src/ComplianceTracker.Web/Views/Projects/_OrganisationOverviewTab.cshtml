@@ -4,7 +4,6 @@
 @model ProjectDetailsViewModel
 @{
     var area = Model.OrganisationArea!;
-    var nis2 = Model.AvailableFrameworks.FirstOrDefault(f => f.Name.StartsWith("NIS2 –", StringComparison.Ordinal));
 }
 
 <section class="mb-4" id="area-nis2" data-result="@(area.Latest?.Result.ToString() ?? "none")">
@@ -17,11 +16,12 @@
     {
         <p class="mb-1 text-muted">Not checked yet.</p>
     }
-    @if (nis2 is not null && area.FollowsNis2ByChoice(nis2.Id))
+    @if (area.FollowsNis2ByChoice)
     {
         @* R4 *@
         <p class="small" id="area-nis2-by-choice">NIS2 is followed by choice: the scope check does not say the organisation is covered.</p>
     }
+    <partial name="_Nis2Toggle" model="Model" />
     <a asp-action="Details" asp-route-id="@Model.Project.Id" asp-route-tab="@ProjectTabs.Nis2Scope" class="small">Do the scope check</a>
 </section>
 
