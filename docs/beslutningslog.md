@@ -1066,6 +1066,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At tjekke CVR-registret for landet.
   - Indberetning af NIS2-hændelser, ledelsens godkendelse (art. 20) og forslag fra ISO 27001-evidens: senere stories.
 
+### B76 – AI-forslag til organisationens dokumenter (US-136 R2)
+
+- **Beslutning:**
+  - Når en politik, procedure eller risikotabel uploades (eller får en ny version), foreslår den lokale AI, hvilke krav den beviser. Det sker på samme måde som for evidens på et projekt (US-059): samme embedding-model, samme minimumsscore og højst 4 ad gangen, med "spørg om flere".
+  - Kandidaterne er kravene i den nyeste aktive version af alle regelsæt, organisationen bruger, både på organisationsniveau (NIS2) og for produkter (CRA). Det er de samme krav, man kan koble til i hånden.
+  - **Forslaget hører til dokumentet,** ikke til hver kopi i projekterne. Det afgøres derfor én gang. Godkendes det, kobles dokumentet til kravet (framework og kode), og det bliver evidens alle steder, hvor kravet følges. Afvises det med en grund, foreslås parret aldrig igen.
+  - En ny version erstatter de ventende forslag, fordi teksten er ændret. Afgjorte forslag foreslås ikke igen.
+  - Uden AI gemmes dokumentet alligevel, og siden siger hvorfor der ingen forslag er.
+  - Ventende forslag vises på Documents-siden og under "Needs attention" for dem, der må afgøre dem (`ManageFrameworks`).
+- **Begrundelse:** Ét flow for AI-forslag i hele trackeren, og én beslutning pr. dokument i stedet for én pr. projekt.
+- **Fravalgt:**
+  - At genbruge `EvidenceLinkSuggestion`, som er bundet til ét projekt og ét krav-id.
+  - En begrundelse skrevet af AI'en (som på projekterne) og deling af beslutningerne til træning: senere.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

@@ -358,6 +358,23 @@ classDiagram
   Framework --> FrameworkLevel
   Project --> ProjectKind
   Organization "1" --> "0..*" Nis2Assessment : NIS2 checks
+  class DocumentLinkSuggestion {
+    -id: Guid
+    -organizationId: Guid
+    -documentId: Guid
+    -frameworkId: Guid
+    -requirementCode: string
+    -score: double
+    -rank: int
+    -embeddingModel: string
+    -promptVersion: string
+    -status: SuggestionStatus
+    +Approve(userId: Guid, at: DateTime, role: UserRole?)
+    +Reject(reason: RejectionReason?, comment: string?, userId: Guid, at: DateTime, role: UserRole?)
+    +Replace()
+  }
+  OrganisationDocument "1" --> "0..*" DocumentLinkSuggestion : AI suggestions
+  DocumentSuggestionService ..> DocumentLinkSuggestion : opretter
   OrganisationAreaService ..> Project : organisation area
   OrganisationAreaService ..> Nis2Assessment : opretter
   class RequirementApplicability {
