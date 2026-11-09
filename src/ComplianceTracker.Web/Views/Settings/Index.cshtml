@@ -28,6 +28,21 @@
     </div>
 </section>
 
+@* US-142 R6: the EU country the organisation is established in, which decides the national laws (e.g. the Danish NIS2 law) *@
+<section id="organisation-country" class="mt-4">
+    <h2 class="h4">Country</h2>
+    <form asp-action="SetCountry" method="post" class="d-flex flex-wrap gap-2 align-items-center" id="set-country">
+        <select name="country" class="form-select form-select-sm w-auto" aria-label="Country">
+            @foreach (var code in Organization.EuCountries)
+            {
+                <option value="@code" selected="@(Model.Country == code)">@code</option>
+            }
+        </select>
+        <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+        <span class="small text-muted">Decides which national laws are offered, e.g. the Danish NIS2 law for DK.</span>
+    </form>
+</section>
+
 @* US-132: the certificate signed reports are sealed with. The file and password are kept encrypted and never shown. *@
 <section id="organisation-seal" class="mt-4">
     <h2 class="h4">Seal for signed reports</h2>

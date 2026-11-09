@@ -86,6 +86,7 @@ namespace ComplianceTracker.Web.Models
         public const string OldProductRequirements = "user-stories";
         public const string Activity = "activity";
         public const string Reports = "reports"; // US-129
+        public const string Nis2Scope = "nis2-scope"; // US-142
 
         // In the order they are shown, with the text on the tab
         public static readonly IReadOnlyList<(string Slug, string Title)> All =
@@ -102,9 +103,27 @@ namespace ComplianceTracker.Web.Models
             (Reports, "Reports")
         ];
 
-        // The tab for an address, Overview when there is none, or null for an unknown one
-        public static string? Find(string? slug)
-            => string.IsNullOrEmpty(slug) ? Overview : All.Select(t => t.Slug).FirstOrDefault(t => t == slug.ToLowerInvariant());
+        // US-142: the organisation area's tabs; only what makes sense for the whole organisation
+        public static readonly IReadOnlyList<(string Slug, string Title)> OrganisationArea =
+        [
+            (Overview, "Overview"),
+            (Nis2Scope, "NIS2 scope"),
+            (Frameworks, "Frameworks"),
+            (Compliance, "Compliance"),
+            (Evidence, "Evidence"),
+            (Risks, "Risks"),
+            (Activity, "Activity"),
+            (Reports, "Reports")
+        ];
+
+        public static IReadOnlyList<(string Slug, string Title)> For(Domain.Projects.Project project)
+            => project.IsOrganisationArea ? OrganisationArea : All;
+
+        // The tab for an address, Overview when there is none, or null for an unknown one (or one the page does not have)
+        public static string? Find(string? slug, bool organisationArea = false)
+            => string.IsNullOrEmpty(slug)
+                ? Overview
+                : (organisationArea ? OrganisationArea : All).Select(t => t.Slug).FirstOrDefault(t => t == slug.ToLowerInvariant());
     }
 
     // US-044 R2: the Compliance tab's filters, as ?show=... so a filtered view can be shared
@@ -220,6 +239,10 @@ namespace ComplianceTracker.Web.Models
         // US-022: the tab being shown (ProjectTabs), the organisation (for names) and the Activity tab's log entries
         public string Tab { get; init; } = ProjectTabs.Overview;
         public Organization? Organization { get; init; }
+
+        // US-142: the organisation area's NIS2 scope checks (Overview and NIS2 scope tabs), and the page language (R8)
+        public Application.Organizations.OrganisationAreaView? OrganisationArea { get; init; }
+        public string Language { get; init; } = Domain.Frameworks.Requirement.DefaultLanguage;
         public IReadOnlyList<ActivityLogEntry> Activity { get; init; } = [];
 
         // US-101: the Activity tab's page of entries, the filters behind it, and filters that were ignored (R9)
@@ -317,8 +340,10 @@ namespace ComplianceTracker.Web.Models
 
         // The frameworks that can still be added (the project uses each framework at most once, R3),
         // and that have an active version (US-007)
+        // US-142 R2: only frameworks of the right level (organisation-level ones only in the organisation area)
         public IEnumerable<Framework> CanBeAdded
-            => AvailableFrameworks.Where(f => Project.FrameworkInUse(f.Id) is null && f.CurrentVersion(Today) is not null);
+            => AvailableFrameworks.Where(f => Project.FrameworkInUse(f.Id) is null && f.CurrentVersion(Today) is not null
+                && f.Level == (Project.IsOrganisationArea ? FrameworkLevel.Organisation : FrameworkLevel.Product));
     }
 
     // One line in the organisation overview: a framework version and the projects using it (US-011 R5)

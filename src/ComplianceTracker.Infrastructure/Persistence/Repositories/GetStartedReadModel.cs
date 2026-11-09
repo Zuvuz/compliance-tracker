@@ -1,5 +1,6 @@
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Domain.Frameworks;
+using ComplianceTracker.Domain.Projects;
 using Microsoft.EntityFrameworkCore;
 
 namespace ComplianceTracker.Infrastructure.Persistence.Repositories
@@ -16,7 +17,8 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
 
         public async Task<GetStartedStatus> StatusAsync(Guid organizationId, CancellationToken cancellationToken = default)
         {
-            var projects = _db.Projects.Where(p => p.OrganizationId == organizationId).Select(p => p.Id);
+            // US-142: the organisation area is not a project here
+            var projects = _db.Projects.Where(p => p.OrganizationId == organizationId && p.Kind == ProjectKind.Product).Select(p => p.Id);
 
             // A built-in regulation switched on, or one of the organisation's own frameworks activated
             var regulationOn = await _db.OrganizationFrameworks.AnyAsync(f => f.OrganizationId == organizationId && f.DisabledAt == null, cancellationToken)
@@ -24,7 +26,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
                     && _db.Frameworks.Any(f => f.Id == v.FrameworkId && f.OwnerOrganizationId == organizationId), cancellationToken);
 
             var firstProject = await _db.Projects
-                .Where(p => p.OrganizationId == organizationId)
+                .Where(p => p.OrganizationId == organizationId && p.Kind == ProjectKind.Product)
                 .OrderBy(p => p.Name)
                 .Select(p => (Guid?)p.Id)
                 .FirstOrDefaultAsync(cancellationToken);

@@ -13,6 +13,14 @@
     };
 }
 
+@if (project.IsOrganisationArea)
+{
+    @* US-142: the organisation area: no lifecycle, no support period, nothing to edit *@
+    <h1 class="mb-1" id="organisation-area-title">Organisation <span class="text-muted fs-4" id="project-name">@Model.Organization?.Name</span></h1>
+    <p class="text-muted mb-3" id="project-intended-purpose">The frameworks the whole organisation follows, such as NIS2.</p>
+}
+else
+{
 <p class="mb-1"><a asp-controller="Projects" asp-action="Index">← Projects</a></p>
 <div class="d-flex align-items-start justify-content-between gap-3">
     <div>
@@ -42,9 +50,10 @@
         <a asp-action="Edit" asp-route-id="@project.Id" class="btn btn-outline-primary" id="edit-project-link">Edit</a>
     }
 </div>
+}
 
 <ul class="nav nav-tabs mb-3" id="project-tabs">
-    @foreach (var (slug, title) in ProjectTabs.All)
+    @foreach (var (slug, title) in ProjectTabs.For(project))
     {
         <li class="nav-item">
             <a class="nav-link @(Model.Tab == slug ? "active" : "")" data-tab="@slug"

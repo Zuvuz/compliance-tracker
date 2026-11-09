@@ -39,5 +39,40 @@ namespace ComplianceTracker.Infrastructure.Persistence
             // US-035: Article 113, the day the regulation applies from (some articles apply earlier or later)
             public static readonly DateOnly AppliesFrom = new(2026, 8, 2);
         }
+        // US-142: NIS2 and its national and technical layers, all at organisation level
+        public static class Nis2
+        {
+            public static readonly Guid FrameworkId = Guid.Parse("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c06");
+            public static readonly Guid VersionId = Guid.Parse("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07");
+            public const string Name = "NIS2 – Directive (EU) 2022/2555";
+            public const string SourceReference = "https://eur-lex.europa.eu/eli/dir/2022/2555/oj";
+            public static readonly DateTime PublishedAt = new(2022, 12, 27, 0, 0, 0, DateTimeKind.Utc);
+
+            // Art. 41: the member states apply their laws from 18 October 2024
+            public static readonly DateOnly AppliesFrom = new(2024, 10, 18);
+        }
+
+        public static class Nis2Denmark
+        {
+            public static readonly Guid FrameworkId = Guid.Parse("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c08");
+            public static readonly Guid VersionId = Guid.Parse("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09");
+            public const string Name = "NIS 2-loven – Lov nr. 434 af 6. maj 2025 (Denmark)";
+            public const string Country = "DK";
+            public const string SourceReference = "https://www.retsinformation.dk/eli/lta/2025/434";
+            public static readonly DateTime PublishedAt = new(2025, 5, 6, 0, 0, 0, DateTimeKind.Utc);
+
+            // § 33, stk. 1
+            public static readonly DateOnly AppliesFrom = new(2025, 7, 1);
+        }
+
+        public static class Nis2Technical
+        {
+            public static readonly Guid FrameworkId = Guid.Parse("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0a");
+            public static readonly Guid VersionId = Guid.Parse("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0b");
+            public const string Name = "NIS2 technical measures – Implementing Regulation (EU) 2024/2690";
+            public const string SourceReference = "https://eur-lex.europa.eu/eli/reg_impl/2024/2690/oj";
+            public static readonly DateTime PublishedAt = new(2024, 10, 18, 0, 0, 0, DateTimeKind.Utc);
+            public static readonly DateOnly AppliesFrom = new(2024, 10, 18);
+        }
     }
 }

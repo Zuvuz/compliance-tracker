@@ -28,6 +28,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(o => o.Sector).HasConversion<string>().HasMaxLength(50);
             builder.Property(o => o.Size).HasConversion<string>().HasMaxLength(50);
 
+            // US-142 R6
+            builder.Property(o => o.Country).IsRequired().HasMaxLength(2).HasDefaultValue(Organization.DefaultCountry);
+
             // The users belong to the organisation. The foreign key only exists in the database
             // (a "shadow property"), so the User class in the domain does not need it.
             builder.HasMany(o => o.Users)

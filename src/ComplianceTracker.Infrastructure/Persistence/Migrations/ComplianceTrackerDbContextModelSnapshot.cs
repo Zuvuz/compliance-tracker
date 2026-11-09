@@ -301,6 +301,20 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Country")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
+
+                    b.Property<Guid?>("ImplementsFrameworkId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Product");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -311,6 +325,8 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ImplementsFrameworkId");
+
                     b.HasIndex("OwnerOrganizationId", "Name");
 
                     b.ToTable("Frameworks", (string)null);
@@ -319,12 +335,35 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c01"),
+                            Level = "Product",
                             Name = "CRA – Regulation (EU) 2024/2847"
                         },
                         new
                         {
                             Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c03"),
+                            Level = "Product",
                             Name = "AI Act – Regulation (EU) 2024/1689"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c06"),
+                            Level = "Organisation",
+                            Name = "NIS2 – Directive (EU) 2022/2555"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c08"),
+                            Country = "DK",
+                            ImplementsFrameworkId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c06"),
+                            Level = "Organisation",
+                            Name = "NIS 2-loven – Lov nr. 434 af 6. maj 2025 (Denmark)"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0a"),
+                            ImplementsFrameworkId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c06"),
+                            Level = "Organisation",
+                            Name = "NIS2 technical measures – Implementing Regulation (EU) 2024/2690"
                         });
                 });
 
@@ -436,6 +475,48 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                             SourceReference = "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
                             Status = "Active",
                             UploadedAt = new DateTime(2024, 7, 12, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            ActivatedAt = new DateTime(2022, 12, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            AppliesFrom = new DateOnly(2024, 10, 18),
+                            FileName = "",
+                            FrameworkId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c06"),
+                            Number = 1,
+                            Sha256 = "",
+                            SizeInBytes = 0L,
+                            SourceReference = "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
+                            Status = "Active",
+                            UploadedAt = new DateTime(2022, 12, 27, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            ActivatedAt = new DateTime(2025, 5, 6, 0, 0, 0, 0, DateTimeKind.Utc),
+                            AppliesFrom = new DateOnly(2025, 7, 1),
+                            FileName = "",
+                            FrameworkId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c08"),
+                            Number = 1,
+                            Sha256 = "",
+                            SizeInBytes = 0L,
+                            SourceReference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Status = "Active",
+                            UploadedAt = new DateTime(2025, 5, 6, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0b"),
+                            ActivatedAt = new DateTime(2024, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            AppliesFrom = new DateOnly(2024, 10, 18),
+                            FileName = "",
+                            FrameworkId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0a"),
+                            Number = 1,
+                            Sha256 = "",
+                            SizeInBytes = 0L,
+                            SourceReference = "https://eur-lex.europa.eu/eli/reg_impl/2024/2690/oj",
+                            Status = "Active",
+                            UploadedAt = new DateTime(2024, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 
@@ -496,6 +577,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<string>("Group")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Implements")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<int>("Position")
                         .HasColumnType("integer");
@@ -1897,6 +1982,1196 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                             Position = 31,
                             Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689#art_50",
                             Title = "Disclose deep fakes and AI-generated public texts"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0501"),
+                            Code = "Art. 20(1)",
+                            Description = "The management body approves the cybersecurity risk-management measures taken under Art. 21, oversees how they are carried out, and can be held liable when the entity does not comply.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Governance (Art. 20)",
+                            Position = 1,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_20",
+                            Title = "Management approves and oversees the measures"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0502"),
+                            Code = "Art. 20(2)",
+                            Description = "Members of the management body follow training to gain enough knowledge and skills to identify risks and assess cybersecurity practices, and the entity encourages similar training for its employees regularly.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Governance (Art. 20)",
+                            Position = 2,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_20",
+                            Title = "Management takes cybersecurity training"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0503"),
+                            Code = "Art. 21(1)",
+                            Description = "The entity takes appropriate and proportionate technical, operational and organisational measures to manage the risks to its network and information systems and to prevent or minimise the impact of incidents, based on an all-hazards approach and in proportion to its exposure, size and the likely impact.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Cybersecurity risk-management measures (Art. 21)",
+                            Position = 3,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_21",
+                            Title = "Appropriate and proportionate measures"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0504"),
+                            Code = "Art. 21(2)(a)",
+                            Description = "Policies on risk analysis and on the security of information systems.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Cybersecurity risk-management measures (Art. 21)",
+                            Position = 4,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_21",
+                            Title = "Risk analysis and information system security policies"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0505"),
+                            Code = "Art. 21(2)(b)",
+                            Description = "How incidents are prevented, detected, analysed, contained, responded to and recovered from.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Cybersecurity risk-management measures (Art. 21)",
+                            Position = 5,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_21",
+                            Title = "Incident handling"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0506"),
+                            Code = "Art. 21(2)(c)",
+                            Description = "Business continuity, such as backup management and disaster recovery, and crisis management.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Cybersecurity risk-management measures (Art. 21)",
+                            Position = 6,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_21",
+                            Title = "Business continuity and crisis management"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0507"),
+                            Code = "Art. 21(2)(d)",
+                            Description = "Security of the supply chain, including the security of the relationships with direct suppliers and service providers.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Cybersecurity risk-management measures (Art. 21)",
+                            Position = 7,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_21",
+                            Title = "Supply chain security"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0508"),
+                            Code = "Art. 21(2)(e)",
+                            Description = "Security when network and information systems are acquired, developed and maintained, including vulnerability handling and disclosure.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Cybersecurity risk-management measures (Art. 21)",
+                            Position = 8,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_21",
+                            Title = "Security in acquisition, development and maintenance"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0509"),
+                            Code = "Art. 21(2)(f)",
+                            Description = "Policies and procedures to assess whether the cybersecurity risk-management measures are effective.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Cybersecurity risk-management measures (Art. 21)",
+                            Position = 9,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_21",
+                            Title = "Assessing the effectiveness of the measures"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0510"),
+                            Code = "Art. 21(2)(g)",
+                            Description = "Basic cyber hygiene practices and cybersecurity training.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Cybersecurity risk-management measures (Art. 21)",
+                            Position = 10,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_21",
+                            Title = "Basic cyber hygiene and cybersecurity training"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0511"),
+                            Code = "Art. 21(2)(h)",
+                            Description = "Policies and procedures on the use of cryptography and, where relevant, encryption.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Cybersecurity risk-management measures (Art. 21)",
+                            Position = 11,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_21",
+                            Title = "Cryptography and encryption"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0512"),
+                            Code = "Art. 21(2)(i)",
+                            Description = "Human resources security, access control policies and asset management.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Cybersecurity risk-management measures (Art. 21)",
+                            Position = 12,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_21",
+                            Title = "Human resources security, access control and asset management"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0513"),
+                            Code = "Art. 21(2)(j)",
+                            Description = "Multi-factor or continuous authentication, secured voice, video and text communications, and secured emergency communication systems within the entity, where appropriate.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Cybersecurity risk-management measures (Art. 21)",
+                            Position = 13,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_21",
+                            Title = "Multi-factor authentication and secured communications"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0514"),
+                            Code = "Art. 21(3)",
+                            Description = "When deciding the supply chain measures, the entity takes into account the vulnerabilities of each direct supplier and service provider, the overall quality of their products and cybersecurity practices, and their secure development procedures.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Cybersecurity risk-management measures (Art. 21)",
+                            Position = 14,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_21",
+                            Title = "Suppliers' vulnerabilities and practices"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0515"),
+                            Code = "Art. 21(4)",
+                            Description = "An entity that finds it does not comply with the measures takes all necessary, appropriate and proportionate corrective measures without undue delay.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Cybersecurity risk-management measures (Art. 21)",
+                            Position = 15,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_21",
+                            Title = "Corrective measures without undue delay"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0516"),
+                            Code = "Art. 23(1)",
+                            Description = "The entity notifies its CSIRT or competent authority without undue delay of any significant incident, and informs the recipients of its services of significant incidents likely to affect the services.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Reporting obligations (Art. 23)",
+                            Position = 16,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_23",
+                            Title = "Notify significant incidents"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0517"),
+                            Code = "Art. 23(2)",
+                            Description = "The entity tells the recipients of its services who may be affected by a significant cyber threat which measures or remedies they can take, and where appropriate about the threat itself.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Reporting obligations (Art. 23)",
+                            Position = 17,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_23",
+                            Title = "Inform recipients about significant cyber threats"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0518"),
+                            Code = "Art. 23(4)(a)",
+                            Description = "An early warning within 24 hours of becoming aware of the significant incident, saying whether it is suspected to be caused by unlawful or malicious acts and whether it could have a cross-border impact.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Reporting obligations (Art. 23)",
+                            Position = 18,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_23",
+                            Title = "Early warning within 24 hours"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0519"),
+                            Code = "Art. 23(4)(b)",
+                            Description = "An incident notification within 72 hours of becoming aware of the significant incident, updating the early warning with an initial assessment of its severity and impact and the indicators of compromise, where available.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Reporting obligations (Art. 23)",
+                            Position = 19,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_23",
+                            Title = "Incident notification within 72 hours"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0520"),
+                            Code = "Art. 23(4)(c)",
+                            Description = "An intermediate report on relevant status updates when the CSIRT or the competent authority asks for one.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Reporting obligations (Art. 23)",
+                            Position = 20,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_23",
+                            Title = "Intermediate report on request"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0521"),
+                            Code = "Art. 23(4)(d)",
+                            Description = "A final report no later than one month after the incident notification, with a detailed description of the incident, the likely root cause, the mitigation applied and ongoing, and any cross-border impact; a progress report instead if the incident is still ongoing.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Reporting obligations (Art. 23)",
+                            Position = 21,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_23",
+                            Title = "Final report within one month"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0522"),
+                            Code = "Art. 3(4)",
+                            Description = "The entity submits at least its name, address and up-to-date contact details, its sector and sub-sector, and the other member states where it provides services, so the authority can keep its list of essential and important entities, and notifies changes.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Registration (Art. 3 and 27)",
+                            Position = 22,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_3",
+                            Title = "Register with the authority"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0523"),
+                            Code = "Art. 27(2)",
+                            Description = "Only for DNS, top-level domain, domain registration, cloud, data centre, content delivery network, managed (security) service providers, online marketplaces, search engines and social networking platforms: register with the authority, including the main establishment, IP ranges and the member states served, and notify changes within three months.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c07"),
+                            Group = "Registration (Art. 3 and 27)",
+                            Position = 23,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#art_27",
+                            Title = "Registration of digital providers"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0601"),
+                            Code = "§ 6, stk. 1",
+                            Description = "Essential and important entities take appropriate and proportionate technical, operational and organisational measures to manage the risks to their network and information systems, as a minimum those in points 1 to 10.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Foranstaltninger (§ 6-7)",
+                            Implements = "Art. 21(1)",
+                            Position = 1,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Appropriate and proportionate measures"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0602"),
+                            Code = "§ 6, stk. 1, nr. 1",
+                            Description = "Policies on risk analysis and information system security.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Foranstaltninger (§ 6-7)",
+                            Implements = "Art. 21(2)(a)",
+                            Position = 2,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Risk analysis and information system security policies"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0603"),
+                            Code = "§ 6, stk. 1, nr. 2",
+                            Description = "Handling of incidents.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Foranstaltninger (§ 6-7)",
+                            Implements = "Art. 21(2)(b)",
+                            Position = 3,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Incident handling"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0604"),
+                            Code = "§ 6, stk. 1, nr. 3",
+                            Description = "Business continuity, including backup management, disaster recovery and crisis management.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Foranstaltninger (§ 6-7)",
+                            Implements = "Art. 21(2)(c)",
+                            Position = 4,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Business continuity and crisis management"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0605"),
+                            Code = "§ 6, stk. 1, nr. 4",
+                            Description = "Supply chain security, including the relationships with direct suppliers and service providers.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Foranstaltninger (§ 6-7)",
+                            Implements = "Art. 21(2)(d)",
+                            Position = 5,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Supply chain security"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0606"),
+                            Code = "§ 6, stk. 1, nr. 5",
+                            Description = "Security in acquiring, developing and maintaining network and information systems, including vulnerability handling and disclosure.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Foranstaltninger (§ 6-7)",
+                            Implements = "Art. 21(2)(e)",
+                            Position = 6,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Security in acquisition, development and maintenance"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0607"),
+                            Code = "§ 6, stk. 1, nr. 6",
+                            Description = "Policies and procedures to assess the effectiveness of the measures.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Foranstaltninger (§ 6-7)",
+                            Implements = "Art. 21(2)(f)",
+                            Position = 7,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Assessing the effectiveness of the measures"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0608"),
+                            Code = "§ 6, stk. 1, nr. 7",
+                            Description = "Basic cyber hygiene practices and cybersecurity training.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Foranstaltninger (§ 6-7)",
+                            Implements = "Art. 21(2)(g)",
+                            Position = 8,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Basic cyber hygiene and cybersecurity training"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0609"),
+                            Code = "§ 6, stk. 1, nr. 8",
+                            Description = "Policies and procedures on cryptography and, where relevant, encryption.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Foranstaltninger (§ 6-7)",
+                            Implements = "Art. 21(2)(h)",
+                            Position = 9,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Cryptography and encryption"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0610"),
+                            Code = "§ 6, stk. 1, nr. 9",
+                            Description = "Human resources security, access control policies and asset management.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Foranstaltninger (§ 6-7)",
+                            Implements = "Art. 21(2)(i)",
+                            Position = 10,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Human resources security, access control and asset management"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0611"),
+                            Code = "§ 6, stk. 1, nr. 10",
+                            Description = "Multi-factor or continuous authentication, secured voice, video and text communication and secured internal emergency communication, where relevant.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Foranstaltninger (§ 6-7)",
+                            Implements = "Art. 21(2)(j)",
+                            Position = 11,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Multi-factor authentication and secured communications"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0612"),
+                            Code = "§ 6, stk. 2",
+                            Description = "An entity that does not meet the requirements for the measures takes the necessary corrective measures without undue delay.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Foranstaltninger (§ 6-7)",
+                            Implements = "Art. 21(4)",
+                            Position = 12,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Corrective measures without undue delay"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0613"),
+                            Code = "§ 7, stk. 1",
+                            Description = "The entity's management body approves the measures and oversees that they are carried out.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Foranstaltninger (§ 6-7)",
+                            Implements = "Art. 20(1)",
+                            Position = 13,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Management approves and oversees the measures"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0614"),
+                            Code = "§ 7, stk. 2",
+                            Description = "Members of the management body take relevant courses in managing cybersecurity risks and encourage similar courses for the other employees.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Foranstaltninger (§ 6-7)",
+                            Implements = "Art. 20(2)",
+                            Position = 14,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Management takes cybersecurity courses"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0615"),
+                            Code = "§ 9",
+                            Description = "DNS, top-level domain and domain registration services, cloud, data centre, content delivery network, managed (security) service providers, online marketplaces, search engines and social networking platforms register with the competent authority within 3 months of being covered, and report changes within 3 months.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Registrering (§ 9-10)",
+                            Implements = "Art. 27(2)",
+                            Position = 15,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Registration of digital providers within 3 months"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0616"),
+                            Code = "§ 10",
+                            Description = "Essential and important entities register with the competent authority (on virk.dk) within 2 weeks of being covered, with name, address and contact details including IP ranges, sector and sub-sector, and the other EU countries served, and report changes within 2 weeks.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Registrering (§ 9-10)",
+                            Implements = "Art. 3(4)",
+                            Position = 16,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Registration within 2 weeks"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0617"),
+                            Code = "§ 12",
+                            Description = "Essential and important entities notify the competent authority and the CSIRT of every significant incident: one that has caused or can cause serious disruption or financial loss, or considerable damage to others.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Underretning (§ 12-15)",
+                            Implements = "Art. 23(1)",
+                            Position = 17,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Notify significant incidents"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0618"),
+                            Code = "§ 13, stk. 1, nr. 1",
+                            Description = "An early warning without undue delay and within 24 hours of becoming aware of the significant incident.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Underretning (§ 12-15)",
+                            Implements = "Art. 23(4)(a)",
+                            Position = 18,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Early warning within 24 hours"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0619"),
+                            Code = "§ 13, stk. 1, nr. 2",
+                            Description = "An incident notification within 72 hours of becoming aware of the incident, with an initial assessment (24 hours for trust service providers, stk. 2).",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Underretning (§ 12-15)",
+                            Implements = "Art. 23(4)(b)",
+                            Position = 19,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Incident notification within 72 hours"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0620"),
+                            Code = "§ 13, stk. 1, nr. 3",
+                            Description = "An intermediate report with relevant status updates when the CSIRT asks for one.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Underretning (§ 12-15)",
+                            Implements = "Art. 23(4)(c)",
+                            Position = 20,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Intermediate report on request"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0621"),
+                            Code = "§ 13, stk. 1, nr. 4",
+                            Description = "A final report no later than one month after the incident notification, with a detailed description, the likely root cause, the mitigation and any cross-border impact.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Underretning (§ 12-15)",
+                            Implements = "Art. 23(4)(d)",
+                            Position = 21,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Final report within one month"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0622"),
+                            Code = "§ 15, stk. 1",
+                            Description = "Essential and important entities inform the recipients of their services without undue delay of significant incidents likely to affect the services.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Underretning (§ 12-15)",
+                            Implements = "Art. 23(1)",
+                            Position = 22,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Inform recipients of significant incidents"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0623"),
+                            Code = "§ 15, stk. 2",
+                            Description = "Essential and important entities tell the recipients potentially affected by a significant cyber threat which measures they can take, and about the threat where relevant.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c09"),
+                            Group = "Underretning (§ 12-15)",
+                            Implements = "Art. 23(2)",
+                            Position = 23,
+                            Reference = "https://www.retsinformation.dk/eli/lta/2025/434",
+                            Title = "Inform recipients of significant cyber threats"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0701"),
+                            Code = "Annex 1",
+                            Description = "A security policy approved by management, with roles and responsibilities, reviewed at least yearly and after significant incidents or changes.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0b"),
+                            Group = "Technical and methodological requirements (Annex)",
+                            Implements = "Art. 21(2)(a)",
+                            Position = 1,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R2690#anx_1",
+                            Title = "Policy on the security of network and information systems"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0702"),
+                            Code = "Annex 2",
+                            Description = "A risk management framework: identify, analyse, evaluate and treat risks, a risk treatment plan with owners, compliance monitoring and independent review.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0b"),
+                            Group = "Technical and methodological requirements (Annex)",
+                            Implements = "Art. 21(2)(a)",
+                            Position = 2,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R2690#anx_1",
+                            Title = "Risk management policy"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0703"),
+                            Code = "Annex 3",
+                            Description = "An incident handling policy, monitoring and logging, event reporting, assessment and classification of events, response, and post-incident reviews.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0b"),
+                            Group = "Technical and methodological requirements (Annex)",
+                            Implements = "Art. 21(2)(b)",
+                            Position = 3,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R2690#anx_1",
+                            Title = "Incident handling"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0704"),
+                            Code = "Annex 4",
+                            Description = "A business continuity and disaster recovery plan, backup and redundancy management, and a crisis management process.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0b"),
+                            Group = "Technical and methodological requirements (Annex)",
+                            Implements = "Art. 21(2)(c)",
+                            Position = 4,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R2690#anx_1",
+                            Title = "Business continuity and crisis management"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0705"),
+                            Code = "Annex 5",
+                            Description = "A supply chain security policy and a directory of suppliers and service providers, with security requirements in contracts.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0b"),
+                            Group = "Technical and methodological requirements (Annex)",
+                            Implements = "Art. 21(2)(d)",
+                            Position = 5,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R2690#anx_1",
+                            Title = "Supply chain security"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0706"),
+                            Code = "Annex 6",
+                            Description = "Security in acquiring ICT services and products, a secure development life cycle, configuration and change management, security testing, patch management, network security and segmentation, protection against malicious software, and vulnerability handling and disclosure.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0b"),
+                            Group = "Technical and methodological requirements (Annex)",
+                            Implements = "Art. 21(2)(e)",
+                            Position = 6,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R2690#anx_1",
+                            Title = "Security in acquisition, development and maintenance"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0707"),
+                            Code = "Annex 7",
+                            Description = "Policies and procedures to assess whether the cybersecurity risk-management measures are effective, with what is monitored and measured, how and when.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0b"),
+                            Group = "Technical and methodological requirements (Annex)",
+                            Implements = "Art. 21(2)(f)",
+                            Position = 7,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R2690#anx_1",
+                            Title = "Assessing the effectiveness of the measures"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0708"),
+                            Code = "Annex 8",
+                            Description = "Awareness raising and basic cyber hygiene for all employees, and security training for those whose roles need it, reviewed regularly.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0b"),
+                            Group = "Technical and methodological requirements (Annex)",
+                            Implements = "Art. 21(2)(g)",
+                            Position = 8,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R2690#anx_1",
+                            Title = "Basic cyber hygiene and security training"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0709"),
+                            Code = "Annex 9",
+                            Description = "A policy on cryptography: when and how encryption is used, the algorithms and protocols, and key management.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0b"),
+                            Group = "Technical and methodological requirements (Annex)",
+                            Implements = "Art. 21(2)(h)",
+                            Position = 9,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R2690#anx_1",
+                            Title = "Cryptography"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0710"),
+                            Code = "Annex 10",
+                            Description = "Employees understand their security responsibilities, background checks where relevant, procedures for leaving or changing roles, and a disciplinary process.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0b"),
+                            Group = "Technical and methodological requirements (Annex)",
+                            Implements = "Art. 21(2)(i)",
+                            Position = 10,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R2690#anx_1",
+                            Title = "Human resources security"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0711"),
+                            Code = "Annex 11",
+                            Description = "An access control policy, management of access rights and privileged accounts, administration systems, identification, authentication (including multi-factor) and regular review of access.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0b"),
+                            Group = "Technical and methodological requirements (Annex)",
+                            Implements = "Art. 21(2)(i)",
+                            Position = 11,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R2690#anx_1",
+                            Title = "Access control"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0712"),
+                            Code = "Annex 12",
+                            Description = "Classification of assets, handling of assets and removable media, an inventory of assets, and the return or deletion of assets when employment ends.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0b"),
+                            Group = "Technical and methodological requirements (Annex)",
+                            Implements = "Art. 21(2)(i)",
+                            Position = 12,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R2690#anx_1",
+                            Title = "Asset management"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0713"),
+                            Code = "Annex 13",
+                            Description = "Protection against the loss of supporting utilities, physical and environmental threats, and physical access control to the premises.",
+                            FrameworkVersionId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3b4c0b"),
+                            Group = "Technical and methodological requirements (Annex)",
+                            Implements = "Art. 21(1)",
+                            Position = 13,
+                            Reference = "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R2690#anx_1",
+                            Title = "Environmental and physical security"
+                        });
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.RequirementText", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
+
+                    b.Property<Guid>("RequirementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RequirementId", "Language")
+                        .IsUnique();
+
+                    b.ToTable("RequirementTexts", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0501"),
+                            Description = "Ledelsesorganet godkender de foranstaltninger til styring af cybersikkerhedsrisici, der træffes efter art. 21, fører tilsyn med gennemførelsen og kan holdes ansvarlig, hvis enheden ikke overholder dem.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0501"),
+                            Title = "Ledelsen godkender og fører tilsyn med foranstaltningerne"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0502"),
+                            Description = "Ledelsens medlemmer deltager i kurser, så de kan identificere risici og vurdere praksis for cybersikkerhed, og enheden tilskynder til, at de øvrige ansatte jævnligt får tilsvarende kurser.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0502"),
+                            Title = "Ledelsen deltager i cybersikkerhedskurser"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0503"),
+                            Description = "Enheden træffer passende og forholdsmæssige tekniske, operationelle og organisatoriske foranstaltninger for at styre risiciene for sine net- og informationssystemer og forhindre eller begrænse virkningen af hændelser, ud fra en tilgang med alle farer og i forhold til eksponering, størrelse og sandsynlig virkning.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0503"),
+                            Title = "Passende og forholdsmæssige foranstaltninger"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0504"),
+                            Description = "Politikker for risikoanalyse og for sikkerheden i informationssystemer.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0504"),
+                            Title = "Politikker for risikoanalyse og informationssystemsikkerhed"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0505"),
+                            Description = "Hvordan hændelser forebygges, opdages, analyseres, inddæmmes, håndteres og genoprettes.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0505"),
+                            Title = "Håndtering af hændelser"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0506"),
+                            Description = "Driftskontinuitet, f.eks. backupstyring og reetablering efter en katastrofe, og krisestyring.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0506"),
+                            Title = "Driftskontinuitet og krisestyring"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0507"),
+                            Description = "Sikkerhed i forsyningskæden, herunder sikkerheden i forholdet til direkte leverandører og tjenesteudbydere.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0507"),
+                            Title = "Forsyningskædesikkerhed"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0508"),
+                            Description = "Sikkerhed når net- og informationssystemer erhverves, udvikles og vedligeholdes, herunder håndtering og offentliggørelse af sårbarheder.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0508"),
+                            Title = "Sikkerhed ved erhvervelse, udvikling og vedligeholdelse"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0509"),
+                            Description = "Politikker og procedurer til at vurdere, om foranstaltningerne til styring af cybersikkerhedsrisici virker.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0509"),
+                            Title = "Vurdering af foranstaltningernes effektivitet"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0510"),
+                            Description = "Grundlæggende cyberhygiejnepraksis og uddannelse i cybersikkerhed.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0510"),
+                            Title = "Grundlæggende cyberhygiejne og cybersikkerhedsuddannelse"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0511"),
+                            Description = "Politikker og procedurer for brug af kryptografi og, hvor det er relevant, kryptering.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0511"),
+                            Title = "Kryptografi og kryptering"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0512"),
+                            Description = "Personalesikkerhed, politikker for adgangskontrol og forvaltning af aktiver.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0512"),
+                            Title = "Personalesikkerhed, adgangskontrol og forvaltning af aktiver"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0513"),
+                            Description = "Multifaktor- eller kontinuerlig autentificering, sikret tale-, video- og tekstkommunikation og sikrede nødkommunikationssystemer internt, hvor det er relevant.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0513"),
+                            Title = "Multifaktorautentificering og sikret kommunikation"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0514"),
+                            Description = "Når enheden fastlægger foranstaltninger for forsyningskæden, tager den højde for den enkelte direkte leverandørs sårbarheder, den samlede kvalitet af produkter og cybersikkerhedspraksis og deres procedurer for sikker udvikling.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0514"),
+                            Title = "Leverandørers sårbarheder og praksis"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0515"),
+                            Description = "En enhed, der ikke overholder foranstaltningerne, træffer uden unødigt ophold alle nødvendige, passende og forholdsmæssige korrigerende foranstaltninger.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0515"),
+                            Title = "Korrigerende foranstaltninger uden unødigt ophold"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0516"),
+                            Description = "Enheden underretter uden unødigt ophold sin CSIRT eller kompetente myndighed om enhver væsentlig hændelse og orienterer modtagerne af sine tjenester om væsentlige hændelser, der sandsynligvis påvirker tjenesterne.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0516"),
+                            Title = "Underret om væsentlige hændelser"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0517"),
+                            Description = "Enheden fortæller de modtagere af sine tjenester, der kan blive berørt af en væsentlig cybertrussel, hvilke foranstaltninger de kan træffe, og hvor det er relevant om selve truslen.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0517"),
+                            Title = "Orienter modtagere om væsentlige cybertrusler"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0518"),
+                            Description = "En tidlig varsling inden for 24 timer efter kendskab til den væsentlige hændelse, der angiver, om den mistænkes at skyldes ulovlige eller ondsindede handlinger, og om den kan få grænseoverskridende virkning.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0518"),
+                            Title = "Tidlig varsling inden for 24 timer"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0519"),
+                            Description = "En hændelsesunderretning inden for 72 timer efter kendskab til hændelsen, som opdaterer den tidlige varsling med en første vurdering af alvor og virkning og kompromitteringsindikatorer, hvor de findes.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0519"),
+                            Title = "Hændelsesunderretning inden for 72 timer"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0520"),
+                            Description = "En foreløbig rapport med relevante statusopdateringer, når CSIRT'en eller den kompetente myndighed beder om det.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0520"),
+                            Title = "Foreløbig rapport efter anmodning"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0521"),
+                            Description = "En endelig rapport senest en måned efter hændelsesunderretningen med en detaljeret beskrivelse, den sandsynlige grundlæggende årsag, de afbødende foranstaltninger og eventuel grænseoverskridende virkning; en statusrapport i stedet, hvis hændelsen stadig pågår.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0521"),
+                            Title = "Endelig rapport inden for en måned"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0522"),
+                            Description = "Enheden indsender mindst navn, adresse og ajourførte kontaktoplysninger, sektor og delsektor og de øvrige medlemsstater, hvor den leverer tjenester, så myndigheden kan føre sin liste over væsentlige og vigtige enheder, og melder ændringer.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0522"),
+                            Title = "Registrer jer hos myndigheden"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0523"),
+                            Description = "Kun for udbydere af DNS, topdomæner, domænenavnsregistrering, cloud, datacentre, indholdsleveringsnetværk, administrerede (sikkerheds)tjenester, onlinemarkedspladser, søgemaskiner og sociale netværk: registrering hos myndigheden med hovedforretningssted, ip-intervaller og de medlemsstater, der betjenes, og ændringer inden for tre måneder.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0523"),
+                            Title = "Registrering af digitale udbydere"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0601"),
+                            Description = "Væsentlige og vigtige enheder træffer passende og forholdsmæssige tekniske, operationelle og organisatoriske foranstaltninger for at styre risiciene for deres net- og informationssystemer, som minimum dem i nr. 1-10.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0601"),
+                            Title = "Passende og forholdsmæssige foranstaltninger"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0602"),
+                            Description = "Politikker for risikoanalyse og informationssystemsikkerhed.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0602"),
+                            Title = "Politikker for risikoanalyse og informationssystemsikkerhed"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0603"),
+                            Description = "Håndtering af hændelser.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0603"),
+                            Title = "Håndtering af hændelser"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0604"),
+                            Description = "Driftskontinuitet, herunder backupstyring, reetablering efter en katastrofe og krisestyring.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0604"),
+                            Title = "Driftskontinuitet og krisestyring"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0605"),
+                            Description = "Forsyningskædesikkerhed, herunder forholdet til direkte leverandører og tjenesteudbydere.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0605"),
+                            Title = "Forsyningskædesikkerhed"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0606"),
+                            Description = "Sikkerhed ved erhvervelse, udvikling og vedligeholdelse af net- og informationssystemer, herunder håndtering og offentliggørelse af sårbarheder.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0606"),
+                            Title = "Sikkerhed ved erhvervelse, udvikling og vedligeholdelse"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0607"),
+                            Description = "Politikker og procedurer til at vurdere effektiviteten af foranstaltningerne.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0607"),
+                            Title = "Vurdering af foranstaltningernes effektivitet"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0608"),
+                            Description = "Grundlæggende cyberhygiejnepraksis og cybersikkerhedsuddannelse.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0608"),
+                            Title = "Grundlæggende cyberhygiejne og cybersikkerhedsuddannelse"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0609"),
+                            Description = "Politikker og procedurer for brug af kryptografi og, hvor det er relevant, kryptering.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0609"),
+                            Title = "Kryptografi og kryptering"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0610"),
+                            Description = "Personalesikkerhed, politikker for adgangskontrol og forvaltning af aktiver.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0610"),
+                            Title = "Personalesikkerhed, adgangskontrol og forvaltning af aktiver"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0611"),
+                            Description = "Multifaktor- eller kontinuerlig autentificering, sikret tale-, video- og tekstkommunikation og sikrede interne nødkommunikationssystemer, hvor det er relevant.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0611"),
+                            Title = "Multifaktorautentificering og sikret kommunikation"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0612"),
+                            Description = "En enhed, der ikke overholder kravene til foranstaltningerne, træffer uden unødigt ophold de nødvendige korrigerende foranstaltninger.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0612"),
+                            Title = "Korrigerende foranstaltninger uden unødigt ophold"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0613"),
+                            Description = "Enhedens ledelsesorgan godkender foranstaltningerne og fører tilsyn med, at de gennemføres.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0613"),
+                            Title = "Ledelsen godkender og fører tilsyn med foranstaltningerne"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0614"),
+                            Description = "Ledelsens medlemmer deltager i relevante kurser om styring af cybersikkerhedsrisici og tilskynder til, at de øvrige ansatte tilbydes tilsvarende kurser.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0614"),
+                            Title = "Ledelsen deltager i cybersikkerhedskurser"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0615"),
+                            Description = "Udbydere af DNS, topdomæner, domænenavnsregistrering, cloud, datacentre, indholdsleveringsnetværk, administrerede (sikkerheds)tjenester, onlinemarkedspladser, søgemaskiner og sociale netværk registrerer sig hos den kompetente myndighed senest 3 måneder efter, at de er omfattet, og melder ændringer inden for 3 måneder.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0615"),
+                            Title = "Registrering af digitale udbydere inden for 3 måneder"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0616"),
+                            Description = "Væsentlige og vigtige enheder registrerer sig hos den kompetente myndighed (på virk.dk) senest 2 uger efter, at de er omfattet, med navn, adresse og kontaktoplysninger inkl. ip-intervaller, sektor og delsektor og de øvrige EU-lande, der betjenes, og melder ændringer inden for 2 uger.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0616"),
+                            Title = "Registrering inden for 2 uger"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0617"),
+                            Description = "Væsentlige og vigtige enheder underretter den kompetente myndighed og CSIRT'en om enhver væsentlig hændelse: en hændelse, der har forårsaget eller kan forårsage alvorlige driftsforstyrrelser eller økonomiske tab, eller betydelig skade for andre.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0617"),
+                            Title = "Underret om væsentlige hændelser"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0618"),
+                            Description = "En tidlig varsling uden unødigt ophold og senest 24 timer efter, at enheden har fået kendskab til den væsentlige hændelse.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0618"),
+                            Title = "Tidlig varsling inden for 24 timer"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0619"),
+                            Description = "En hændelsesunderretning senest 72 timer efter kendskab til hændelsen med en indledende vurdering (24 timer for tillidstjenesteudbydere, stk. 2).",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0619"),
+                            Title = "Hændelsesunderretning inden for 72 timer"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0620"),
+                            Description = "En foreløbig rapport med relevante statusopdateringer efter anmodning fra CSIRT'en.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0620"),
+                            Title = "Foreløbig rapport efter anmodning"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0621"),
+                            Description = "En endelig rapport senest en måned efter hændelsesunderretningen med en detaljeret beskrivelse, den sandsynlige årsag, de afbødende foranstaltninger og eventuel grænseoverskridende virkning.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0621"),
+                            Title = "Endelig rapport inden for en måned"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0622"),
+                            Description = "Væsentlige og vigtige enheder underretter uden unødigt ophold modtagerne af deres tjenester om væsentlige hændelser, der sandsynligvis påvirker leveringen negativt.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0622"),
+                            Title = "Orienter modtagere om væsentlige hændelser"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0623"),
+                            Description = "Væsentlige og vigtige enheder oplyser modtagere, der kan blive berørt af en væsentlig cybertrussel, om de foranstaltninger, de kan træffe, og om truslen, hvor det er relevant.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0623"),
+                            Title = "Orienter modtagere om væsentlige cybertrusler"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0701"),
+                            Description = "En sikkerhedspolitik godkendt af ledelsen med roller og ansvar, som gennemgås mindst årligt og efter væsentlige hændelser eller ændringer.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0701"),
+                            Title = "Politik for sikkerhed i net- og informationssystemer"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0702"),
+                            Description = "En ramme for risikostyring: identificér, analysér, vurdér og behandl risici, en risikobehandlingsplan med ejere, overvågning af overholdelse og uafhængig gennemgang.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0702"),
+                            Title = "Politik for risikostyring"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0703"),
+                            Description = "En politik for hændelseshåndtering, overvågning og logning, rapportering, vurdering og klassificering af hændelser, respons og evaluering efter hændelser.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0703"),
+                            Title = "Håndtering af hændelser"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0704"),
+                            Description = "En plan for driftskontinuitet og reetablering, styring af backup og redundans og en proces for krisestyring.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0704"),
+                            Title = "Driftskontinuitet og krisestyring"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0705"),
+                            Description = "En politik for forsyningskædesikkerhed og en fortegnelse over leverandører og tjenesteudbydere med sikkerhedskrav i kontrakterne.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0705"),
+                            Title = "Forsyningskædesikkerhed"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0706"),
+                            Description = "Sikkerhed ved indkøb af ikt-tjenester og -produkter, en sikker udviklingslivscyklus, konfigurations- og ændringsstyring, sikkerhedstest, patchstyring, netværkssikkerhed og segmentering, beskyttelse mod skadelig software og håndtering og offentliggørelse af sårbarheder.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0706"),
+                            Title = "Sikkerhed ved erhvervelse, udvikling og vedligeholdelse"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0707"),
+                            Description = "Politikker og procedurer til at vurdere, om foranstaltningerne virker, med hvad der overvåges og måles, hvordan og hvornår.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0707"),
+                            Title = "Vurdering af foranstaltningernes effektivitet"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0708"),
+                            Description = "Bevidstgørelse og grundlæggende cyberhygiejne for alle ansatte og sikkerhedsuddannelse for dem, hvis roller kræver det, gennemgået jævnligt.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0708"),
+                            Title = "Grundlæggende cyberhygiejne og sikkerhedsuddannelse"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0709"),
+                            Description = "En politik for kryptografi: hvornår og hvordan der krypteres, algoritmer og protokoller og nøglehåndtering.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0709"),
+                            Title = "Kryptografi"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0710"),
+                            Description = "Ansatte forstår deres sikkerhedsansvar, baggrundstjek hvor det er relevant, procedurer ved fratræden eller nye roller og en disciplinær proces.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0710"),
+                            Title = "Personalesikkerhed"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0711"),
+                            Description = "En politik for adgangskontrol, styring af adgangsrettigheder og privilegerede konti, administrationssystemer, identifikation, autentificering (også multifaktor) og jævnlig gennemgang af adgange.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0711"),
+                            Title = "Adgangskontrol"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0712"),
+                            Description = "Klassificering af aktiver, håndtering af aktiver og flytbare medier, en fortegnelse over aktiver og aflevering eller sletning, når ansættelsen ophører.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0712"),
+                            Title = "Forvaltning af aktiver"
+                        },
+                        new
+                        {
+                            Id = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3e0713"),
+                            Description = "Beskyttelse mod svigt i forsyninger, fysiske og miljømæssige trusler og fysisk adgangskontrol til lokalerne.",
+                            Language = "da",
+                            RequirementId = new Guid("6a1f8c2e-0c4b-4d4e-9a51-5f1c2a3d0713"),
+                            Title = "Fysisk og miljømæssig sikkerhed"
                         });
                 });
 
@@ -2528,6 +3803,64 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("Invitations", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Nis2Assessment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AssessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("AssessedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("BalanceSheetMillions")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
+                    b.Property<bool>("DesignatedByAuthority")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Employees")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Result")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Sector")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Service")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<decimal>("TurnoverMillions")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
+                    b.Property<bool>("Uses2024_2690")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "AssessedAt");
+
+                    b.ToTable("Nis2Assessments", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Organizations.OrganisationDocument", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2700,6 +4033,13 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasDefaultValue("DK");
+
                     b.Property<string>("Cvr")
                         .IsRequired()
                         .HasMaxLength(8)
@@ -2758,6 +4098,13 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Product");
+
                     b.Property<DateOnly?>("LastPlacedOnMarketOn")
                         .HasColumnType("date");
 
@@ -2805,6 +4152,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasColumnName("xmin");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Projects_OrganisationArea")
+                        .HasFilter("\"Kind\" = 'Organisation'");
 
                     b.HasIndex("OrganizationId", "Name");
 
@@ -4093,6 +5445,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.Framework", b =>
                 {
+                    b.HasOne("ComplianceTracker.Domain.Frameworks.Framework", null)
+                        .WithMany()
+                        .HasForeignKey("ImplementsFrameworkId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
                         .WithMany()
                         .HasForeignKey("OwnerOrganizationId")
@@ -4149,6 +5506,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasOne("ComplianceTracker.Domain.Frameworks.FrameworkVersion", null)
                         .WithMany("Requirements")
                         .HasForeignKey("FrameworkVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.RequirementText", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Frameworks.Requirement", null)
+                        .WithMany("Texts")
+                        .HasForeignKey("RequirementId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -4388,6 +5754,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Nis2Assessment", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
@@ -5042,6 +6417,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.FrameworkVersion", b =>
                 {
                     b.Navigation("Requirements");
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.Requirement", b =>
+                {
+                    b.Navigation("Texts");
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Organizations.OrganisationDocument", b =>

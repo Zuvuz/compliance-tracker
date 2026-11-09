@@ -20,10 +20,11 @@ namespace ComplianceTracker.Application.Projects
             _member = member;
         }
 
-        // The organisation's projects in alphabetical order (empty without an organisation)
+        // The organisation's projects in alphabetical order (empty without an organisation).
+        // US-142: the organisation area is not one of the projects; it has its own page.
         public async Task<IReadOnlyList<Project>> ListAsync(CancellationToken cancellationToken = default)
             => await _member.FindOrganizationAsync(cancellationToken) is { } organization
-                ? await _projects.ListAsync(organization.Id, cancellationToken)
+                ? (await _projects.ListAsync(organization.Id, cancellationToken)).Where(p => !p.IsOrganisationArea).ToList()
                 : [];
 
         // One of the organisation's projects, or null

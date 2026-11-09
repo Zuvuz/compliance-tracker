@@ -17,6 +17,16 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(f => f.Id).ValueGeneratedNever();
             builder.Property(f => f.Name).IsRequired().HasMaxLength(200);
 
+            // US-142: the level, and the directive a national law implements in a country
+            builder.Property(f => f.Level).HasConversion<string>().HasMaxLength(20).HasDefaultValue(FrameworkLevel.Product);
+            builder.Property(f => f.Country).HasMaxLength(2);
+            builder.HasOne<Framework>()
+                .WithMany()
+                .HasForeignKey(f => f.ImplementsFrameworkId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.Ignore(f => f.ShortName);
+
             // An uploaded framework belongs to exactly one organisation (US-005 R7).
             // Built-in frameworks have no owner, so the foreign key is optional (US-006).
             builder.HasOne<Organization>()
@@ -30,8 +40,14 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
 
             // The built-in frameworks that come with every database (US-006)
             builder.HasData(
-                new { Id = BuiltInFrameworks.Cra.FrameworkId, OwnerOrganizationId = (Guid?)null, Name = BuiltInFrameworks.Cra.Name },
-                new { Id = BuiltInFrameworks.AiAct.FrameworkId, OwnerOrganizationId = (Guid?)null, Name = BuiltInFrameworks.AiAct.Name });
+                BuiltIn(BuiltInFrameworks.Cra.FrameworkId, BuiltInFrameworks.Cra.Name, FrameworkLevel.Product),
+                BuiltIn(BuiltInFrameworks.AiAct.FrameworkId, BuiltInFrameworks.AiAct.Name, FrameworkLevel.Product),
+                // US-142
+                BuiltIn(BuiltInFrameworks.Nis2.FrameworkId, BuiltInFrameworks.Nis2.Name, FrameworkLevel.Organisation),
+                BuiltIn(BuiltInFrameworks.Nis2Denmark.FrameworkId, BuiltInFrameworks.Nis2Denmark.Name, FrameworkLevel.Organisation,
+                    BuiltInFrameworks.Nis2.FrameworkId, BuiltInFrameworks.Nis2Denmark.Country),
+                BuiltIn(BuiltInFrameworks.Nis2Technical.FrameworkId, BuiltInFrameworks.Nis2Technical.Name, FrameworkLevel.Organisation,
+                    BuiltInFrameworks.Nis2.FrameworkId));
 
             // Speeds up "does this organisation already have a framework with this name?"
             builder.HasIndex(f => new { f.OwnerOrganizationId, f.Name });
@@ -52,5 +68,16 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             // LatestVersion is calculated from Versions and not stored (CurrentVersion is a method, US-035)
             builder.Ignore(f => f.LatestVersion);
         }
+
+        private static object BuiltIn(Guid id, string name, FrameworkLevel level, Guid? implements = null, string? country = null)
+            => new
+            {
+                Id = id,
+                OwnerOrganizationId = (Guid?)null,
+                Name = name,
+                Level = level,
+                ImplementsFrameworkId = implements,
+                Country = country
+            };
     }
 }

@@ -23,7 +23,7 @@ namespace ComplianceTracker.Web.ViewComponents
         public async Task<IViewComponentResult> InvokeAsync(IReadOnlyCollection<Guid> selected)
         {
             var usable = (await _frameworks.ListAsync(HttpContext.RequestAborted))
-                .Where(f => f.CurrentVersion(_clock.Today()) is not null)
+                .Where(f => f.CurrentVersion(_clock.Today()) is not null && f.Level == Domain.Frameworks.FrameworkLevel.Product) // US-142 R2
                 .ToList();
             return View(new FrameworkChoicesViewModel(usable, selected));
         }

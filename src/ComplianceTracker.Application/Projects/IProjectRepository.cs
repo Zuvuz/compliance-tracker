@@ -21,6 +21,9 @@ namespace ComplianceTracker.Application.Projects
         // The organisation's projects in alphabetical order
         Task<IReadOnlyList<Project>> ListAsync(Guid organizationId, CancellationToken cancellationToken = default);
 
+        // US-142: the organisation's organisation area, or null before it is made
+        Task<Project?> GetOrganisationAreaAsync(Guid organizationId, CancellationToken cancellationToken = default);
+
         // The organisation's projects that use any version of this framework now (US-011 R4, R8)
         Task<IReadOnlyList<Project>> ListUsingFrameworkAsync(Guid organizationId, Guid frameworkId, CancellationToken cancellationToken = default);
 

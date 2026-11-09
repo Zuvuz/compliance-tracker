@@ -23,6 +23,18 @@ namespace ComplianceTracker.Domain.Organizations
         public Sector Sector { get; private set; }
         public OrganizationSize Size { get; private set; }
 
+        // US-142 R6: the EU country the organisation is established in (ISO 3166 code), which decides the national laws,
+        // e.g. the Danish NIS2 law for "DK". Denmark until an admin changes it.
+        public string Country { get; private set; } = DefaultCountry;
+        public const string DefaultCountry = "DK";
+
+        // The 27 EU member states
+        public static readonly IReadOnlyList<string> EuCountries =
+        [
+            "AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU",
+            "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK"
+        ];
+
         // Every user who has been a member, also removed ones, so names stay on history (US-090)
         public IReadOnlyList<User> Users => _users;
 
@@ -107,6 +119,29 @@ namespace ComplianceTracker.Domain.Organizations
                 ShareAiFeedbackSince = at ?? DateTime.UtcNow;
             }
 
+            return true;
+        }
+
+        // US-142 R6: only an Admin may change it. Returns false when nothing changed.
+        public bool SetCountry(string? country, Guid userId)
+        {
+            if (_users.FirstOrDefault(u => u.Id == userId && u.IsActive)?.Role != UserRole.Admin)
+            {
+                throw new DomainException("Only an Admin can change the country");
+            }
+
+            var code = (country ?? "").Trim().ToUpperInvariant();
+            if (!EuCountries.Contains(code))
+            {
+                throw new DomainException("Choose an EU country");
+            }
+
+            if (code == Country)
+            {
+                return false;
+            }
+
+            Country = code;
             return true;
         }
 

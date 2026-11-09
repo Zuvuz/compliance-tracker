@@ -73,6 +73,11 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<ComplianceTracker.Application.Scanning.IScanUploadTokenRepository, ScanUploadTokenRepository>(); // US-122
                 services.AddScoped<ComplianceTracker.Application.Approvals.IApprovalRequestRepository, ApprovalRequestRepository>(); // US-135
                 services.AddScoped<ComplianceTracker.Application.Organizations.IOrganisationDocumentRepository, OrganisationDocumentRepository>(); // US-136
+                services.AddScoped<ComplianceTracker.Application.Organizations.INis2AssessmentRepository, Nis2AssessmentRepository>(); // US-142
+                services.AddSingleton(new ComplianceTracker.Application.Organizations.Nis2Catalogues(
+                    ComplianceTracker.Infrastructure.Persistence.BuiltInFrameworks.Nis2.FrameworkId,
+                    ComplianceTracker.Infrastructure.Persistence.BuiltInFrameworks.Nis2Denmark.FrameworkId,
+                    ComplianceTracker.Infrastructure.Persistence.BuiltInFrameworks.Nis2Technical.FrameworkId));
                 services.AddScoped<ComplianceTracker.Application.Reports.IReportSnapshotRepository, ReportSnapshotRepository>(); // US-050
                 services.AddScoped<ComplianceTracker.Application.Reports.IReportSigningRepository, ReportSigningRepository>(); // US-132
                 services.AddSingleton<ComplianceTracker.Application.Reports.IReportSealer, ComplianceTracker.Infrastructure.Reports.ReportSealer>();
