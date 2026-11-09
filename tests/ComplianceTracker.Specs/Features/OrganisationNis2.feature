@@ -32,9 +32,9 @@ Feature: NIS2 at organisation level
     And the page says "You can still follow NIS2 by choice"
 
   @US-142 @nis2-art3 @integration
-  Scenario: A cloud provider is essential and gets the technical measures too
+  Scenario: A medium-sized cloud provider is important and gets the technical measures too
     When I do the NIS2 scope check with sector "DigitalInfrastructure" and service "CloudComputing", 120 employees and a turnover of 30 million euro
-    Then the NIS2 result is "Essential" with the reason "Annex I, medium-sized"
+    Then the NIS2 result is "Important" with the reason "Annex I, medium-sized"
     And the organisation follows "NIS2 technical measures – Implementing Regulation (EU) 2024/2690"
 
   @US-142 @nis2-art3 @integration

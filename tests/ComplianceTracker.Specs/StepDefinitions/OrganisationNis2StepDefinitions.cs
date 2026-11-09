@@ -32,7 +32,11 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         [When("I open the NIS2 scope tab")]
-        public async Task WhenIOpenTheNis2ScopeTab() => await _web.OpenAsync($"/Projects/Details/{await AreaIdAsync()}/nis2-scope");
+        public async Task WhenIOpenTheNis2ScopeTab()
+        {
+            await WhenIOpenFromTheTopBar("Organisation");
+            await _web.OpenAsync($"/Projects/Details/{await AreaIdAsync()}/nis2-scope");
+        }
 
         [When("I do the NIS2 scope check with sector {string}, {int} employees and a turnover of {int} million euro")]
         public Task WhenIDoTheScopeCheck(string sector, int employees, int turnover) => CheckAsync(sector, "None", employees, turnover);
