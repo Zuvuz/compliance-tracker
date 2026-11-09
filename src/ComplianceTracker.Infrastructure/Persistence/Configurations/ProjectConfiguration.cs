@@ -46,6 +46,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             // Speeds up "does this organisation already have a project with this name?"
             builder.HasIndex(p => new { p.OrganizationId, p.Name });
 
+            // US-142: product or organisation area; at most one organisation area per organisation
+            builder.Property(p => p.Kind).HasConversion<string>().HasMaxLength(20).HasDefaultValue(ProjectKind.Product);
+            builder.Ignore(p => p.IsOrganisationArea);
+            builder.HasIndex(p => p.OrganizationId).IsUnique().HasFilter("\"Kind\" = 'Organisation'").HasDatabaseName("IX_Projects_OrganisationArea");
+
             // US-011: the project's frameworks, also removed ones (the history).
             // EF writes straight into the private field _frameworks; AutoInclude loads them with the project.
             builder.HasMany(p => p.FrameworkHistory)

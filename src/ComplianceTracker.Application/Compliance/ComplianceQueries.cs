@@ -171,6 +171,8 @@ namespace ComplianceTracker.Application.Compliance
                             .ToList(),
                         EvidenceSuggestions = evidenceSuggestions[requirement.Id].ToList(),
                         HighRisk = highRisk.Contains(requirement.Id),
+                        // US-142: the organisation area has no user stories; its policies and other evidence cover
+                        EvidenceCovers = project.IsOrganisationArea,
                         Risks = risksByRequirement.GetValueOrDefault(requirement.Id) ?? [],
                         ApplicabilitySuggestion = pendingApplicability[requirement.Id].OrderByDescending(s => s.CreatedAt).FirstOrDefault(),
                         NotApplicableFromOldClassification = fromOldClassification.Contains(requirement.Id)
@@ -179,6 +181,9 @@ namespace ComplianceTracker.Application.Compliance
 
                 result.Add(new FrameworkCompliance(framework, version, rows));
             }
+
+            // US-142 R6: a national law (or an implementing act) and the directive cover each other where they match
+            result = NationalLayers.Apply(result);
 
             // US-020: the pending AI suggestions, best first per story
             var requirements = result.SelectMany(f => f.Requirements).ToDictionary(r => r.Requirement.Id, r => r.Requirement);
@@ -273,7 +278,16 @@ namespace ComplianceTracker.Application.Compliance
         public bool IsApplicable => NotApplicableReason is null;
 
         // US-021 R2, R5: covered when at least one active link exists. US-110 R3: a link waiting for review does not count.
-        public bool IsCovered => Links.Any(l => !l.Link.NeedsReview);
+        // US-142: in the organisation area, evidence that counts covers too; and coverage can come through another layer.
+        public bool IsCovered => IsOwnCovered || CoveredThrough is not null;
+
+        public bool IsOwnCovered => Links.Any(l => !l.Link.NeedsReview) || (EvidenceCovers && HasEvidence);
+
+        // US-142: evidence covers the requirement (the organisation area)
+        public bool EvidenceCovers { get; init; }
+
+        // US-142 R6: covered through the matching requirement of another layer, e.g. "NIS2 Art. 21(2)(b)"; null otherwise
+        public string? CoveredThrough { get; init; }
 
         // US-110 R3: linked, but only by links that wait for review: "Covered, needs review"
         public bool IsCoveredNeedingReview => !IsCovered && Links.Count > 0;

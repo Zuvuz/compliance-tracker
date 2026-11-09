@@ -1,0 +1,111 @@
+@* US-142 R3: the NIS2 scope check of the organisation area. Anyone with DecideCompliance can do it; earlier checks are kept.
+   Ids used by the tests: #nis2-result (data-result), #nis2-reason, form#nis2-scope-check, #nis2-history rows. *@
+@using ComplianceTracker.Domain.Organizations
+@using ComplianceTracker.Application.Organizations
+@model ProjectDetailsViewModel
+@{
+    var area = Model.OrganisationArea!;
+    var latest = area.Latest;
+    var canDecide = await Permissions.CanAsync(Permission.DecideCompliance);
+    string Words(string name) => System.Text.RegularExpressions.Regex.Replace(name, "(?<=[a-z0-9])([A-Z])", " $1");
+    string AnnexOf(Sector sector) => Nis2Assessment.AnnexI.Contains(sector) ? " (Annex I)" : Nis2Assessment.AnnexII.Contains(sector) ? " (Annex II)" : "";
+    var answers = latest;
+}
+
+<section id="nis2-scope">
+    <h2 class="h4">Is the organisation covered by NIS2?</h2>
+    @if (latest is null)
+    {
+        <p class="text-muted" id="nis2-result" data-result="none">Not checked yet.</p>
+    }
+    else
+    {
+        var badge = latest.Result switch
+        {
+            Nis2Result.Essential => "text-bg-danger",
+            Nis2Result.Important => "text-bg-warning",
+            _ => "text-bg-secondary"
+        };
+        <p id="nis2-result" data-result="@latest.Result">
+            <span class="badge @badge fs-6">@OrganisationAreaService.Text(latest.Result)</span>
+            <span id="nis2-reason">@latest.Reason</span>
+        </p>
+        @if (latest.Uses2024_2690)
+        {
+            <p class="small" id="nis2-technical">Implementing Regulation (EU) 2024/2690 applies too: it sets the technical measures for this kind of digital provider.</p>
+        }
+        @if (!latest.IsCovered)
+        {
+            @* R4 *@
+            <p class="small text-muted" id="nis2-by-choice-hint">You can still follow NIS2 by choice, e.g. if a customer requires it: switch it on here.</p>
+        }
+        <p class="small text-muted">Checked @latest.AssessedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm") by @(Model.Organization?.Users.FirstOrDefault(u => u.Id == latest.AssessedById)?.Name ?? "Unknown").
+            The result is a guide from Art. 2 and 3 of the directive; the authority decides in the end.</p>
+    }
+
+    <partial name="_Nis2Toggle" model="Model" />
+
+    @if (canDecide)
+    {
+        <form asp-action="AssessNis2" method="post" class="row g-2 mt-2" id="nis2-scope-check">
+            <input type="hidden" name="projectId" value="@Model.Project.Id" />
+            <div class="col-md-6">
+                <label class="form-label" for="nis2-sector">Sector</label>
+                <select id="nis2-sector" name="sector" class="form-select">
+                    @foreach (var sector in Enum.GetValues<Sector>())
+                    {
+                        <option value="@sector" selected="@((answers?.Sector ?? Model.Organization?.Sector) == sector)">@Words(sector.ToString())@AnnexOf(sector)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="nis2-service">Special service</label>
+                <select id="nis2-service" name="service" class="form-select">
+                    @foreach (var service in Enum.GetValues<Nis2Service>())
+                    {
+                        <option value="@service" selected="@(answers?.Service == service)">@(service == Nis2Service.None ? "None of these" : Words(service.ToString()))</option>
+                    }
+                </select>
+                <div class="form-text">Some digital services are covered whatever the size of the company.</div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="nis2-employees">Employees</label>
+                <input id="nis2-employees" name="employees" type="number" min="0" class="form-control" value="@(answers?.Employees ?? 0)" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="nis2-turnover">Annual turnover (million euro)</label>
+                <input id="nis2-turnover" name="turnover" type="number" min="0" step="0.01" class="form-control" value="@((answers?.TurnoverMillions ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture))" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="nis2-balance">Balance sheet total (million euro)</label>
+                <input id="nis2-balance" name="balanceSheet" type="number" min="0" step="0.01" class="form-control" value="@((answers?.BalanceSheetMillions ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture))" />
+            </div>
+            <div class="col-12 form-check ms-2">
+                <input id="nis2-designated" name="designated" type="checkbox" value="true" class="form-check-input" checked="@(answers?.DesignatedByAuthority == true)" />
+                <label class="form-check-label" for="nis2-designated">The authority has designated us as an essential entity</label>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Check</button>
+                <span class="small text-muted ms-2">When covered, NIS2 is switched on here@(Model.Organization?.Country == "DK" ? " together with the Danish NIS2 law" : "").</span>
+            </div>
+        </form>
+    }
+
+    @if (area.History.Count > 1)
+    {
+        <h3 class="h6 mt-4">Earlier checks</h3>
+        <table class="table table-sm" id="nis2-history">
+            <thead><tr><th>When</th><th>Result</th><th>Reason</th></tr></thead>
+            <tbody>
+                @foreach (var check in area.History.Skip(1))
+                {
+                    <tr>
+                        <td>@check.AssessedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
+                        <td>@OrganisationAreaService.Text(check.Result)</td>
+                        <td>@check.Reason</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>

@@ -56,7 +56,14 @@
             var current = framework.LatestVersion;
             <tr data-framework-id="@framework.Id">
                 <td class="framework-name">@framework.Name</td>
-                <td class="framework-source">@(framework.IsBuiltIn ? "Built-in" : "Uploaded")</td>
+                <td class="framework-source">
+                    @(framework.IsBuiltIn ? "Built-in" : "Uploaded")
+                    @* US-142 R2 *@
+                    @if (framework.Level == ComplianceTracker.Domain.Frameworks.FrameworkLevel.Organisation)
+                    {
+                        <span class="badge text-bg-info framework-level" title="Followed by the whole organisation, under Organisation">Organisation</span>
+                    }
+                </td>
                 <td>
                     <span class="framework-version">@current.Number</span>
                     @if (current.IsUpcomingOn(Model.Today) && framework.CurrentVersion(Model.Today) != current)

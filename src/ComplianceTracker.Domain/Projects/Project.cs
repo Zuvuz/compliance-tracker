@@ -32,6 +32,13 @@ namespace ComplianceTracker.Domain.Projects
 
         public LifecyclePhase Phase { get; private set; }
 
+        // US-142: a product (the usual project), or the organisation area: one per organisation, for the frameworks the
+        // whole company follows (e.g. NIS2). The area reuses compliance, evidence, risks and reports, but has no
+        // lifecycle, no support period and no user stories, and is not shown among the projects.
+        public ProjectKind Kind { get; private set; } = ProjectKind.Product;
+        public bool IsOrganisationArea => Kind == ProjectKind.Organisation;
+        public const string OrganisationAreaName = "Organisation";
+
         // US-025: the end of the support period (CRA Art. 13(8), (19)), why it is shorter than five years if it is,
         // and the day the project was released, from which the five years count
         public DateOnly? SupportEndsOn { get; private set; }
@@ -96,6 +103,26 @@ namespace ComplianceTracker.Domain.Projects
             };
         }
 
+        // US-142: the organisation area of an organisation. Its name is fixed; the page shows the organisation's name.
+        public static Project CreateOrganisationArea(Guid organizationId)
+            => new()
+            {
+                OrganizationId = organizationId,
+                Kind = ProjectKind.Organisation,
+                Name = OrganisationAreaName,
+                IntendedPurpose = "The frameworks the whole organisation follows, such as NIS2",
+                Phase = LifecyclePhase.Development
+            };
+
+        // US-142: what only a product has
+        private void EnsureProduct(string what)
+        {
+            if (IsOrganisationArea)
+            {
+                throw new DomainException($"The organisation area has no {what}");
+            }
+        }
+
         // ---------------------------------------------------------- Methods (US-104)
 
         // R2, R4: one or more methods. Turning one off hides it on the tab and deletes nothing (R5).
@@ -158,6 +185,7 @@ namespace ComplianceTracker.Domain.Projects
         public ProjectChange? ChangePhase(LifecyclePhase phase, DateOnly? today = null)
         {
             EnsureOpen();
+            EnsureProduct("lifecycle phase");
             EnsureKnown(phase);
 
             if (phase == Phase)
@@ -202,6 +230,11 @@ namespace ComplianceTracker.Domain.Projects
         // R3: a project at end of support may not be archived or deleted before its retention date (used by US-028)
         public void EnsureMayBeRemoved(DateOnly today)
         {
+            if (IsOrganisationArea)
+            {
+                throw new DomainException("The organisation area cannot be removed");
+            }
+
             if (RetainUntil is { } until && today <= until)
             {
                 throw new DomainException($"The project must be kept until {until:dd-MM-yyyy}");
@@ -257,6 +290,7 @@ namespace ComplianceTracker.Domain.Projects
         public ProjectChange? SetSupportPeriod(DateOnly endsOn, string? reason, DateOnly today)
         {
             EnsureOpen();
+            EnsureProduct("support period");
             if (endsOn <= today)
             {
                 throw new DomainException("The support end date must be in the future");
@@ -389,6 +423,7 @@ namespace ComplianceTracker.Domain.Projects
         {
             EnsureOpen();
             EnsureVersionOf(framework, version);
+            EnsureLevel(framework);
 
             // R3: never two versions of the same framework
             if (FrameworkInUse(framework.Id) is not null)
@@ -429,6 +464,20 @@ namespace ComplianceTracker.Domain.Projects
                 ?? throw new DomainException($"The project does not use {framework.Name}");
 
             current.Remove(userId, at);
+        }
+
+        // US-142 R2: an organisation-level framework only in the organisation area, a product one only in a project
+        private void EnsureLevel(Framework framework)
+        {
+            if (framework.Level == FrameworkLevel.Organisation && !IsOrganisationArea)
+            {
+                throw new DomainException($"{framework.ShortName} applies to the organisation, not to a project");
+            }
+
+            if (framework.Level == FrameworkLevel.Product && IsOrganisationArea)
+            {
+                throw new DomainException($"{framework.ShortName} applies to a product, not to the organisation");
+            }
         }
 
         private static void EnsureVersionOf(Framework framework, FrameworkVersion version)

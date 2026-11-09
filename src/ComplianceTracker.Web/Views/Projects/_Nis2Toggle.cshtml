@@ -1,0 +1,22 @@
+@* US-142: NIS2 switched on or off in the organisation area by hand, whatever the scope check says.
+   Ids used by the tests: #nis2-state (On/Off), form#nis2-toggle. *@
+@model ProjectDetailsViewModel
+@{
+    var area = Model.OrganisationArea!;
+    var canDecide = await Permissions.CanAsync(Permission.DecideCompliance);
+}
+<div class="d-flex flex-wrap gap-2 align-items-center my-2">
+    <span>NIS2 is <strong id="nis2-state">@(area.FollowsNis2 ? "On" : "Off")</strong></span>
+    @if (canDecide)
+    {
+        <form asp-action="SetNis2" method="post" id="nis2-toggle"
+              data-confirm="@(area.FollowsNis2
+                  ? "NIS2, the national NIS2 law and the technical measures are no longer followed here, and their coverage disappears from the Compliance tab. Links and evidence are kept and come back if NIS2 is switched on again."
+                  : "NIS2 is followed here from now on, with the national NIS2 law of the organisation's country.")">
+            <input type="hidden" name="projectId" value="@Model.Project.Id" />
+            <input type="hidden" name="on" value="@(area.FollowsNis2 ? "false" : "true")" />
+            <input type="hidden" name="tab" value="@Model.Tab" />
+            <button type="submit" class="btn btn-sm @(area.FollowsNis2 ? "btn-outline-danger" : "btn-outline-primary")">@(area.FollowsNis2 ? "Switch NIS2 off" : "Switch NIS2 on")</button>
+        </form>
+    }
+</div>

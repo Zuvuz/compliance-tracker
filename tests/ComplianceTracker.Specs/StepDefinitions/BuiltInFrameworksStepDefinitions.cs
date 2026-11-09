@@ -92,7 +92,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             var builtInVersions = await db.FrameworkVersions
                 .Where(v => db.Frameworks.Any(f => f.Id == v.FrameworkId && f.OwnerOrganizationId == null))
                 .CountAsync();
-            Assert.Equal(3, builtInVersions); // CRA versions 1 and 2 (US-069), and the AI Act
+            Assert.Equal(6, builtInVersions); // CRA versions 1 and 2 (US-069), the AI Act, and NIS2 with its Danish and technical layers (US-142)
         }
 
         // US-016 R5: the "switched on" record is still there, now with the time it was switched off

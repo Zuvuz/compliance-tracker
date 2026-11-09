@@ -32,6 +32,38 @@ namespace ComplianceTracker.Domain.Frameworks
         // US-043: a link to the official text, e.g. the annex on EUR-Lex. Only for built-in requirements.
         public string? Reference { get; private set; }
 
+        // US-142 R6: in a national law, the code of the directive's requirement it implements, e.g. "Art. 21(2)(a)"
+        public string? Implements { get; private set; }
+
+        // US-142 R8: Title and Description are English; other languages are kept here
+        public const string DefaultLanguage = "en";
+        private readonly List<RequirementText> _texts = new();
+        public IReadOnlyList<RequirementText> Texts => _texts;
+
+        // The text in a language, or null when it has none (English always has one)
+        public (string Title, string Description)? TextIn(string? language)
+        {
+            var code = RequirementText.Normalize(language) ?? DefaultLanguage;
+            if (code == DefaultLanguage)
+            {
+                return (Title, Description);
+            }
+
+            return _texts.FirstOrDefault(t => t.Language == code) is { } text ? (text.Title, text.Description) : null;
+        }
+
+        // R8: the text in the language when there is one, otherwise English, and whether it fell back
+        public (string Title, string Description, bool Translated) Show(string? language)
+            => TextIn(language) is { } text ? (text.Title, text.Description, true) : (Title, Description, false);
+
+        // Adds or replaces the text in a language
+        public void SetText(string language, string title, string? description)
+        {
+            var text = new RequirementText(Id, language, title, description);
+            _texts.RemoveAll(t => t.Language == text.Language);
+            _texts.Add(text);
+        }
+
         // For EF Core only
         private Requirement() { }
 

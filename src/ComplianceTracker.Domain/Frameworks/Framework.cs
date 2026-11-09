@@ -20,6 +20,17 @@ namespace ComplianceTracker.Domain.Frameworks
         public string Name { get; private set; } = "";
         public IReadOnlyList<FrameworkVersion> Versions => _versions;
 
+        // US-142 R2: whether a project (a product) or the whole organisation follows it. Uploaded frameworks are for products.
+        public FrameworkLevel Level { get; private set; } = FrameworkLevel.Product;
+
+        // US-142 R6: a national law that implements a directive, e.g. the Danish NIS2 law (country "DK") implements NIS2.
+        // Each of its requirements says which of the directive's requirements it implements (Requirement.Implements).
+        public Guid? ImplementsFrameworkId { get; private set; }
+        public string? Country { get; private set; }
+
+        // The short name before " – ", e.g. "NIS2" for "NIS2 – Directive (EU) 2022/2555"
+        public string ShortName => Name.Split(" – ")[0].Trim();
+
         // Built-in frameworks have no owner (US-006)
         public bool IsBuiltIn => OwnerOrganizationId is null;
 
@@ -64,14 +75,21 @@ namespace ComplianceTracker.Domain.Frameworks
 
         // A framework is always created together with its first version, so it never has zero versions.
         // The rule that names are unique per organisation needs the database and lives in FrameworkService.
-        public static Framework Create(Guid organizationId, string name, CatalogFile file, Guid uploadedById, DateTime uploadedAt)
+        // US-142: an uploaded framework is for products unless told otherwise (e.g. an ISO 27001 ISMS for the organisation)
+        public static Framework Create(Guid organizationId, string name, CatalogFile file, Guid uploadedById, DateTime uploadedAt,
+            FrameworkLevel level = FrameworkLevel.Product)
         {
+            if (!Enum.IsDefined(level))
+            {
+                throw new DomainException("Unknown framework level");
+            }
+
             if (string.IsNullOrWhiteSpace(name))
             {
                 throw new DomainException("Framework name is required");
             }
 
-            var framework = new Framework { OwnerOrganizationId = organizationId, Name = name.Trim() };
+            var framework = new Framework { OwnerOrganizationId = organizationId, Name = name.Trim(), Level = level };
             framework.AddVersion(file, uploadedById, uploadedAt);
             return framework;
         }

@@ -19,7 +19,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         // R3: "Acme Portal" and "acme portal" count as the same name
         public Task<bool> NameExistsAsync(Guid organizationId, string name, Guid? exceptProjectId = null, CancellationToken cancellationToken = default)
             => _db.Projects.AnyAsync(
-                p => p.OrganizationId == organizationId && p.Name.ToLower() == name.ToLower()
+                p => p.OrganizationId == organizationId && p.Kind == ProjectKind.Product && p.Name.ToLower() == name.ToLower()
                     && (exceptProjectId == null || p.Id != exceptProjectId),
                 cancellationToken);
 
@@ -37,6 +37,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
                 .Where(p => p.OrganizationId == organizationId)
                 .OrderBy(p => p.Name)
                 .ToListAsync(cancellationToken);
+
+        public Task<Project?> GetOrganisationAreaAsync(Guid organizationId, CancellationToken cancellationToken = default)
+            => _db.Projects.FirstOrDefaultAsync(p => p.OrganizationId == organizationId && p.Kind == ProjectKind.Organisation, cancellationToken);
 
         public async Task<IReadOnlyList<Guid>> ListIdsLinkedToGitHubAsync(CancellationToken cancellationToken = default)
             => await _db.Projects

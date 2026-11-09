@@ -55,6 +55,9 @@
 
     @{
         var framework = active!;
+        // US-142 R8: whether this framework has any text in the page language
+        var hasTranslations = Model.Language == ComplianceTracker.Domain.Frameworks.Requirement.DefaultLanguage
+            || framework.Requirements.Any(r => r.Requirement.TextIn(Model.Language) is not null);
         var current = framework.Framework.CurrentVersion(Model.Today);
         var rows = framework.Requirements.AsEnumerable();
         if (!string.IsNullOrWhiteSpace(Model.Search))
@@ -189,6 +192,11 @@
         }
     </div>
 
+    @if (!hasTranslations)
+    {
+        @* US-142 R8: one note instead of one on every row *@
+        <p class="small text-muted" id="not-translated">Not translated yet: the requirements are shown in English.</p>
+    }
     @if (shown.Count == 0)
     {
         <p class="text-muted" id="no-matching-requirements">No requirements match</p>
@@ -209,6 +217,7 @@
                 @foreach (var row in shown)
                 {
                     var requirement = row.Requirement;
+                    var text = requirement.Show(Model.Language); // US-142 R8
                     var linkable = openStories.Where(w => row.Links.All(l => l.WorkItem.Id != w.Id)).ToList();
                     var canLinkHere = !project.IsClosed && canLink && linkable.Count > 0 && row.IsApplicable;
                     var canAddEvidence = !project.IsClosed && canLink && row.IsApplicable;
@@ -226,7 +235,16 @@
                     <tr class="requirement-row @(row.IsApplicable ? "" : "text-muted")" data-code="@requirement.Code" data-group="@requirement.Group" data-attention="@(rowAttention ? "true" : "false")">
                         <td class="requirement-code text-nowrap align-top">@requirement.Code</td>
                         <td class="requirement-title align-top">
-                            @requirement.Title
+                            @text.Title
+                            @if (!text.Translated && hasTranslations)
+                            {
+                                <span class="badge text-bg-light border not-translated" title="Shown in English">Not translated yet</span>
+                            }
+                            @if (requirement.Implements is not null && framework.Framework.ImplementsFrameworkId is not null)
+                            {
+                                @* US-142 R6 *@
+                                <div class="small text-muted requirement-implements">Implements @(Model.Compliance!.Frameworks.FirstOrDefault(f => f.Framework.Id == framework.Framework.ImplementsFrameworkId)?.Framework.ShortName ?? "the directive") @requirement.Implements</div>
+                            }
                             @if (row.HighRisk)
                             {
                                 @* US-060 R4 *@
@@ -243,18 +261,18 @@
                                     }
                                 </div>
                             }
-                            @if (!string.IsNullOrEmpty(requirement.Description))
+                            @if (!string.IsNullOrEmpty(text.Description))
                             {
                                 @* US-044: long descriptions can be expanded *@
-                                if (requirement.Description.Length <= ShortDescription)
+                                if (text.Description.Length <= ShortDescription)
                                 {
-                                    <div class="small text-muted">@requirement.Description</div>
+                                    <div class="small text-muted">@text.Description</div>
                                 }
                                 else
                                 {
                                     <details class="small text-muted requirement-description">
-                                        <summary>@requirement.Description[..ShortDescription].TrimEnd()…</summary>
-                                        @requirement.Description
+                                        <summary>@text.Description[..ShortDescription].TrimEnd()…</summary>
+                                        @text.Description
                                     </details>
                                 }
                             }
@@ -576,6 +594,11 @@
                             else if (row.IsCovered)
                             {
                                 <span class="requirement-status badge text-bg-success">Covered</span>
+                                @if (row.CoveredThrough is { } through)
+                                {
+                                    @* US-142 R6 *@
+                                    <div class="small text-muted covered-through">through @through</div>
+                                }
                                 @if (!row.HasEvidence)
                                 {
                                     @* US-057 R4 *@

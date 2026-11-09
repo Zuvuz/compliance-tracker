@@ -213,6 +213,11 @@ namespace ComplianceTracker.Domain.ActivityLog
         ReportSealed,
         SealUploaded,
         SealRemoved,
-        MemberSignsForManagementChanged
+        MemberSignsForManagementChanged,
+
+        // US-142: the NIS2 scope check was done (Details holds the result and the reason), and the organisation's
+        // country was changed. SubjectId points at the organisation.
+        Nis2ScopeChecked,
+        OrganisationCountryChanged
     }
 }

@@ -32,6 +32,7 @@ classDiagram
     -cvr: string
     -sector: Sector
     -size: OrganizationSize
+    -country: string
     -users: List~User~
     -projects: List~Project~
     -controls: List~Control~
@@ -39,6 +40,7 @@ classDiagram
     +Create(name: string, cvr: string, sector: Sector?, size: OrganizationSize?, creator: UserIdentity)$ Organization
     +Members: List~User~
     +RemoveMember(memberId: Guid, removedById: Guid, at: DateTime) User
+    +SetCountry(country: string, userId: Guid) bool
   }
   class User {
     -id: Guid
@@ -211,6 +213,7 @@ classDiagram
     -intendedPurpose: string
     -scope: string
     -phase: LifecyclePhase
+    -kind: ProjectKind
     -requirementMethods: RequirementMethods
     -supportEndsOn: DateOnly?
     -supportPeriodReason: string?
@@ -255,6 +258,9 @@ classDiagram
     -ownerOrganizationId: Guid?
     -name: string
     -scope: FrameworkScope
+    -level: FrameworkLevel
+    -implementsFrameworkId: Guid?
+    -country: string?
     -versions: List~FrameworkVersion~
     +LatestVersion: FrameworkVersion
     +CurrentVersion(today: DateOnly) FrameworkVersion?
@@ -308,8 +314,52 @@ classDiagram
     -position: int
     -group: string?
     -reference: string?
+    -implements: string?
+    -texts: List~RequirementText~
     +HasSameTextAs(other: Requirement) bool
+    +Show(language: string?) (string, string, bool)
   }
+  class RequirementText {
+    -id: Guid
+    -requirementId: Guid
+    -language: string
+    -title: string
+    -description: string
+  }
+  class FrameworkLevel {
+    <<enumeration>>
+    Product
+    Organisation
+  }
+  class ProjectKind {
+    <<enumeration>>
+    Product
+    Organisation
+  }
+  class Nis2Assessment {
+    -id: Guid
+    -organizationId: Guid
+    -sector: Sector
+    -service: Nis2Service
+    -employees: int
+    -turnoverMillions: decimal
+    -balanceSheetMillions: decimal
+    -designatedByAuthority: bool
+    -result: Nis2Result
+    -reason: string
+    -uses2024_2690: bool
+    -assessedById: Guid
+    -assessedAt: DateTime
+    +Assess(...)$ Nis2Assessment
+    +SizeOf(employees: int, turnover: decimal, balance: decimal)$ OrganizationSize
+  }
+  Requirement "1" *-- "0..*" RequirementText : texts
+  Framework "0..*" --> "0..1" Framework : implements
+  Framework --> FrameworkLevel
+  Project --> ProjectKind
+  Organization "1" --> "0..*" Nis2Assessment : NIS2 checks
+  OrganisationAreaService ..> Project : organisation area
+  OrganisationAreaService ..> Nis2Assessment : opretter
   class RequirementApplicability {
     -id: Guid
     -projectId: Guid

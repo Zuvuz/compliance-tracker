@@ -81,7 +81,14 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
                 BuiltInVersion(BuiltInFrameworks.Cra.Version2Id, BuiltInFrameworks.Cra.FrameworkId,
                     BuiltInFrameworks.Cra.PublishedAt, BuiltInFrameworks.Cra.SourceReference, BuiltInFrameworks.Cra.Version2AppliesFrom, number: 2),
                 BuiltInVersion(BuiltInFrameworks.AiAct.VersionId, BuiltInFrameworks.AiAct.FrameworkId,
-                    BuiltInFrameworks.AiAct.PublishedAt, BuiltInFrameworks.AiAct.SourceReference, BuiltInFrameworks.AiAct.AppliesFrom));
+                    BuiltInFrameworks.AiAct.PublishedAt, BuiltInFrameworks.AiAct.SourceReference, BuiltInFrameworks.AiAct.AppliesFrom),
+                // US-142
+                BuiltInVersion(BuiltInFrameworks.Nis2.VersionId, BuiltInFrameworks.Nis2.FrameworkId,
+                    BuiltInFrameworks.Nis2.PublishedAt, BuiltInFrameworks.Nis2.SourceReference, BuiltInFrameworks.Nis2.AppliesFrom),
+                BuiltInVersion(BuiltInFrameworks.Nis2Denmark.VersionId, BuiltInFrameworks.Nis2Denmark.FrameworkId,
+                    BuiltInFrameworks.Nis2Denmark.PublishedAt, BuiltInFrameworks.Nis2Denmark.SourceReference, BuiltInFrameworks.Nis2Denmark.AppliesFrom),
+                BuiltInVersion(BuiltInFrameworks.Nis2Technical.VersionId, BuiltInFrameworks.Nis2Technical.FrameworkId,
+                    BuiltInFrameworks.Nis2Technical.PublishedAt, BuiltInFrameworks.Nis2Technical.SourceReference, BuiltInFrameworks.Nis2Technical.AppliesFrom));
         }
 
         // Seed data for a built-in version: no file, no uploader, a link to the official text

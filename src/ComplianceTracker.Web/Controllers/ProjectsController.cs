@@ -160,6 +160,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] Application.Organizations.OrganisationDocumentService documentService,
             [FromServices] Application.Reports.ReportService reportService,
             [FromServices] Application.Reports.ReportSigningService signingService,
+            [FromServices] Application.Organizations.OrganisationAreaService areaService,
             CancellationToken cancellationToken)
         {
             // US-104 R1: shared links to the old "User stories" tab still work
@@ -175,9 +176,9 @@ namespace ComplianceTracker.Web.Controllers
                 return RedirectToActionPermanent(nameof(Details), values);
             }
 
-            var activeTab = ProjectTabs.Find(tab);
             var project = await _projects.GetAsync(id, cancellationToken);
             var organization = await _organizations.MineAsync(cancellationToken);
+            var activeTab = ProjectTabs.Find(tab, project?.IsOrganisationArea ?? false); // US-142: the area has fewer tabs
             if (project is null || organization is null || activeTab is null)
             {
                 return NotFound(); // US-008 R5: also when the project belongs to another organisation
@@ -254,6 +255,11 @@ namespace ComplianceTracker.Web.Controllers
                     : [],
                 Tab = activeTab,
                 Organization = organization,
+                // US-142
+                OrganisationArea = project.IsOrganisationArea && activeTab is ProjectTabs.Overview or ProjectTabs.Nis2Scope
+                    ? await areaService.ViewAsync(cancellationToken)
+                    : null,
+                Language = PageLanguage.From(Request),
                 Activity = activity,
                 ActivityPage = activityPage,
                 ActivityQuery = activityQuery,
@@ -279,6 +285,31 @@ namespace ComplianceTracker.Web.Controllers
                 OnlyReviewDue = due == "1",
                 Now = now
             });
+        }
+
+        // POST /Projects/AssessNis2: US-142 R3, the NIS2 scope check of the organisation (DecideCompliance)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Nis2Scope)]
+        public async Task<IActionResult> AssessNis2(
+            Guid projectId, Domain.Organizations.Sector sector, Domain.Organizations.Nis2Service service, int employees,
+            decimal turnover, decimal balanceSheet, bool designated,
+            [FromServices] Application.Organizations.OrganisationAreaService areaService, CancellationToken cancellationToken)
+        {
+            await areaService.AssessNis2Async(projectId, new Application.Organizations.Nis2Answers(sector, service, employees, turnover, balanceSheet, designated), cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Nis2Scope });
+        }
+
+        // POST /Projects/SetNis2: US-142, NIS2 switched on or off in the organisation area by hand (DecideCompliance)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Overview)]
+        public async Task<IActionResult> SetNis2(
+            Guid projectId, bool on, string? tab, [FromServices] Application.Organizations.OrganisationAreaService areaService,
+            CancellationToken cancellationToken)
+        {
+            await areaService.SetNis2Async(projectId, on, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = tab == ProjectTabs.Nis2Scope ? ProjectTabs.Nis2Scope : null });
         }
 
         // ---------------------------------------------------------- User stories from GitHub (US-018)

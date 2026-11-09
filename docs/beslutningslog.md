@@ -1047,6 +1047,25 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - PAdES-baseline med tidsstempel fra en ekstern tjeneste.
   - At kræve et certifikat fra en betroet udsteder. Organisationens eget certifikat accepteres.
 
+### B75 – NIS2 på organisationsniveau (US-142)
+
+- **Beslutning:**
+  - **Organisationsområdet** er et projekt af typen `Organisation`, ét pr. organisation. Det oprettes første gang nogen åbner "Organisation" i topbaren. Det genbruger dækning, evidens, risici, rapporter, låsning og signering fra projekterne. Det har ingen livscyklus, ingen supportperiode og ingen user stories, og det vises ikke blandt projekterne.
+  - **Niveau på regelsæt:** et regelsæt er enten for et produkt (CRA, AI Act) eller for organisationen (NIS2). Et regelsæt på organisationsniveau kan kun bruges i organisationsområdet, og omvendt. Uploadede regelsæt er for produkter.
+  - **Dækning i organisationsområdet:** der er ingen user stories, så evidens, der tæller (ikke udløbet og ikke til gennemgang), dækker et krav. En politik fra Documents (US-136) dækker altså et NIS2-krav.
+  - **Nationalt lag:** et regelsæt kan gennemføre et andet i et land, f.eks. den danske NIS2-lov (lov nr. 434 af 6. maj 2025, "DK"), der gennemfører NIS2. Hvert krav siger, hvilket krav i direktivet det gennemfører. Når begge følges, dækker de hinanden, hvor de passer sammen, og det vises som "through NIS2 Art. 21(2)(b)". Kun egen dækning gives videre, så det aldrig går i ring. Gennemførelsesforordning (EU) 2024/2690 er lagt ind på samme måde, som detaljer til NIS2 art. 21.
+  - **Sprog og land er to ting:** en oversættelse er tekst på et andet sprog (`RequirementText`, f.eks. "da"), mens en anden lands lov er et nyt nationalt lag. Engelsk er altid reserven. Siden viser teksten på browserens sprog, når den findes, ellers engelsk med "Not translated yet". Et nyt sprog kræver kun tekster, ingen kode.
+  - **NIS2-tjekket** følger art. 2 og 3 med bilag I og II. Størrelsen følger Kommissionens henstilling 2003/361/EF: mellemstor fra 50 ansatte, stor fra 250, eller når både omsætning og balance er over grænsen (10/10 og 50/43 mio. euro). Særlige tjenester (DNS, topdomæner, kvalificerede tillidstjenester, offentlig elektronisk kommunikation, offentlig forvaltning) er omfattet uanset størrelse. Hvert tjek gemmes; det nyeste gælder.
+  - Er virksomheden omfattet, slås NIS2 til, og den danske lov, når landet er DK, og 2024/2690 for de digitale udbydere, den gælder for. Intet slås fra automatisk. NIS2 kan slås til og fra med en knap i organisationsområdet (med bekræftelse), også uden at virksomheden er omfattet. Slås NIS2 fra, følges den danske lov og 2024/2690 heller ikke længere; koblinger og evidens gemmes og kommer tilbage, når NIS2 slås til igen.
+  - Alle med `DecideCompliance` kan lave tjekket. Landet er en indstilling (standard DK), som administratoren ændrer under Settings.
+  - Kravteksterne er resuméer med egne ord, som for AI Act (B58), med link til den bindende tekst på EUR-Lex og retsinformation.dk. EU-retsakter og danske love må genbruges frit.
+- **Begrundelse:** NIS2 gælder virksomheden, ikke et produkt. At genbruge projektets struktur giver det samme flow uden en ny model for dækning og rapporter. Et nationalt lag gør det muligt senere at tilføje f.eks. den tyske NIS2-lov uden at ændre koden.
+- **Fravalgt:**
+  - En særskilt model for organisationens dækning, som ville kopiere projektets kode.
+  - At slå regelsæt fra automatisk, når et nyt tjek siger noget andet.
+  - At tjekke CVR-registret for landet.
+  - Indberetning af NIS2-hændelser, ledelsens godkendelse (art. 20) og forslag fra ISO 27001-evidens: senere stories.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

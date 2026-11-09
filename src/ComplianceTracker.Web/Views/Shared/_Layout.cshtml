@@ -26,7 +26,10 @@
                     @{
                         var signedIn = User.Identity?.IsAuthenticated == true;
                         var current = ViewContext.RouteData.Values["controller"] as string;
-                        string Active(params string[] controllers) => controllers.Contains(current) ? "active fw-semibold" : "";
+                        // US-142: the organisation area is shown on the project page, but belongs to "Organisation"
+                        var organisationArea = ViewData["OrganisationArea"] is true;
+                        string Active(params string[] controllers)
+                            => (organisationArea ? controllers.Contains("Organisation") : controllers.Contains(current)) ? "active fw-semibold" : "";
                     }
                     <ul class="navbar-nav flex-grow-1" id="top-bar">
                         @if (signedIn)
@@ -36,6 +39,10 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link @Active("Frameworks")" id="nav-frameworks" asp-area="" asp-controller="Frameworks" asp-action="Index">Frameworks</a>
+                            </li>
+                            <li class="nav-item">
+                                @* US-142 R1 *@
+                                <a class="nav-link @Active("Organisation")" id="nav-organisation" asp-area="" asp-controller="Organisation" asp-action="Index">Organisation</a>
                             </li>
                             <li class="nav-item">
                                 @* US-136 *@

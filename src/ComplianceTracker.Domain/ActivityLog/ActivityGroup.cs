@@ -29,7 +29,8 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.MemberSignsForManagementChanged => ActivityGroup.Members,
             ActivityAction.OrganizationCreated or ActivityAction.FeedbackSent or ActivityAction.FeedbackIssueCreated
                 or ActivityAction.FeedbackDismissed
-                or ActivityAction.SealUploaded or ActivityAction.SealRemoved => ActivityGroup.Organisation,
+                or ActivityAction.SealUploaded or ActivityAction.SealRemoved
+                or ActivityAction.Nis2ScopeChecked or ActivityAction.OrganisationCountryChanged => ActivityGroup.Organisation,
             ActivityAction.CatalogImported or ActivityAction.CatalogActivated or ActivityAction.FrameworkEnabled
                 or ActivityAction.FrameworkDisabled => ActivityGroup.Frameworks,
             ActivityAction.ProjectCreated or ActivityAction.ProjectUpdated or ActivityAction.ProjectPhaseChanged

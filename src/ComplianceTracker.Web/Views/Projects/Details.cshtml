@@ -3,7 +3,8 @@
    The ids and classes used by the tests are listed in each partial. *@
 @model ProjectDetailsViewModel
 @{
-    ViewData["Title"] = Model.Project.Name;
+    ViewData["Title"] = Model.Project.IsOrganisationArea ? $"Organisation – {Model.Organization?.Name}" : Model.Project.Name;
+    ViewData["OrganisationArea"] = Model.Project.IsOrganisationArea; // US-142: the top bar marks "Organisation"
 }
 
 <partial name="_ProjectHeader" model="Model" />
@@ -37,8 +38,18 @@
     case ProjectTabs.Reports:
         <partial name="_ReportsTab" model="Model" />
         break;
+    case ProjectTabs.Nis2Scope:
+        <partial name="_Nis2ScopeTab" model="Model" />
+        break;
     default:
-        <partial name="_OverviewTab" model="Model" />
+        if (Model.Project.IsOrganisationArea)
+        {
+            <partial name="_OrganisationOverviewTab" model="Model" />
+        }
+        else
+        {
+            <partial name="_OverviewTab" model="Model" />
+        }
         break;
 }
 

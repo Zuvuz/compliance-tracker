@@ -52,6 +52,16 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // POST /Settings/SetCountry: US-142 R6
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> SetCountry(string? country, [FromServices] Application.Organizations.OrganisationAreaService area, CancellationToken cancellationToken)
+        {
+            await area.SetCountryAsync(country ?? "", cancellationToken);
+            return RedirectToAction(nameof(Index));
+        }
+
         // POST /Settings/UploadSeal: US-132, the organisation's certificate (.pfx) for sealing signed reports
         [HttpPost]
         [ValidateAntiForgeryToken]

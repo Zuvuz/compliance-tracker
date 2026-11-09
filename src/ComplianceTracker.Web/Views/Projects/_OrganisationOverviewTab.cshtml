@@ -1,0 +1,50 @@
+@* US-142: the organisation area's Overview: the NIS2 result, the frameworks it follows with their coverage, and the country.
+   Ids used by the tests: #area-nis2 (data-result), #area-nis2-by-choice, #area-frameworks rows (data-framework), #area-country. *@
+@using ComplianceTracker.Application.Organizations
+@model ProjectDetailsViewModel
+@{
+    var area = Model.OrganisationArea!;
+}
+
+<section class="mb-4" id="area-nis2" data-result="@(area.Latest?.Result.ToString() ?? "none")">
+    <h2 class="h5">NIS2</h2>
+    @if (area.Latest is { } latest)
+    {
+        <p class="mb-1"><strong>@OrganisationAreaService.Text(latest.Result)</strong> · @latest.Reason</p>
+    }
+    else
+    {
+        <p class="mb-1 text-muted">Not checked yet.</p>
+    }
+    @if (area.FollowsNis2ByChoice)
+    {
+        @* R4 *@
+        <p class="small" id="area-nis2-by-choice">NIS2 is followed by choice: the scope check does not say the organisation is covered.</p>
+    }
+    <partial name="_Nis2Toggle" model="Model" />
+    <a asp-action="Details" asp-route-id="@Model.Project.Id" asp-route-tab="@ProjectTabs.Nis2Scope" class="small">Do the scope check</a>
+</section>
+
+<section class="mb-4">
+    <h2 class="h5">Frameworks</h2>
+    @if (Model.Compliance is null || Model.Compliance.Frameworks.Count == 0)
+    {
+        <p class="text-muted" id="area-no-frameworks">The organisation follows no organisation-level framework yet.</p>
+    }
+    else
+    {
+        <table class="table table-sm" id="area-frameworks">
+            <tbody>
+                @foreach (var framework in Model.Compliance.Frameworks)
+                {
+                    <tr data-framework="@framework.Framework.ShortName">
+                        <td><a asp-action="Details" asp-route-id="@Model.Project.Id" asp-route-tab="@ProjectTabs.Compliance" asp-route-sub="@FrameworkNames.Slug(framework.Framework.Name)">@framework.Framework.Name</a></td>
+                        <td class="text-nowrap">@framework.CoverageText</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<p class="small text-muted" id="area-country">Country: @area.Organization.Country. The country decides the national laws, e.g. the Danish NIS2 law; an admin changes it under Settings.</p>

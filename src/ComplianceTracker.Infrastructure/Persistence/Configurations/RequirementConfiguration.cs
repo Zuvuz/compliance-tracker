@@ -7,6 +7,14 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
     // How Requirement is stored in the table "Requirements" (US-007)
     public class RequirementConfiguration : IEntityTypeConfiguration<Requirement>
     {
+        // US-142: the NIS2 catalogues and the built-in versions they belong to
+        public static readonly IReadOnlyList<(IReadOnlyList<BuiltInNis2Requirements.Item> Catalogue, Guid VersionId)> Nis2Catalogues =
+        [
+            (BuiltInNis2Requirements.Nis2, BuiltInFrameworks.Nis2.VersionId),
+            (BuiltInNis2Requirements.Danish, BuiltInFrameworks.Nis2Denmark.VersionId),
+            (BuiltInNis2Requirements.Technical, BuiltInFrameworks.Nis2Technical.VersionId)
+        ];
+
         public void Configure(EntityTypeBuilder<Requirement> builder)
         {
             builder.ToTable("Requirements");
@@ -25,6 +33,17 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             // US-043: the part of the document and the link to the official text (built-in requirements only)
             builder.Property(r => r.Group).HasMaxLength(200);
             builder.Property(r => r.Reference).HasMaxLength(500);
+
+            // US-142 R6, R8: the directive requirement a national one implements, and the texts in other languages
+            builder.Property(r => r.Implements).HasMaxLength(50);
+            builder.HasMany(r => r.Texts)
+                .WithOne()
+                .HasForeignKey(t => t.RequirementId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Navigation(r => r.Texts)
+                .HasField("_texts")
+                .UsePropertyAccessMode(PropertyAccessMode.Field)
+                .AutoInclude();
 
             // US-043: the CRA's Annex I comes with every database, on the built-in CRA version 1
             builder.HasData(BuiltInCraRequirements.All.Select(item => new
@@ -64,6 +83,23 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
                 item.Group,
                 Reference = (string?)item.Reference
             }));
+
+            // US-142: NIS2, the Danish NIS2 law and Implementing Regulation (EU) 2024/2690
+            foreach (var (catalogue, versionId) in Nis2Catalogues)
+            {
+                builder.HasData(catalogue.Select(item => new
+                {
+                    item.Id,
+                    FrameworkVersionId = versionId,
+                    item.Code,
+                    item.Title,
+                    item.Description,
+                    item.Position,
+                    item.Group,
+                    Reference = (string?)item.Reference,
+                    item.Implements
+                }));
+            }
 
             // A code is used once per version (the domain checks it first, the index is the safety net)
             builder.HasIndex(r => new { r.FrameworkVersionId, r.Code }).IsUnique();
