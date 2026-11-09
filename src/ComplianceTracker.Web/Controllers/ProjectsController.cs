@@ -296,7 +296,7 @@ namespace ComplianceTracker.Web.Controllers
             decimal turnover, decimal balanceSheet, bool designated,
             [FromServices] Application.Organizations.OrganisationAreaService areaService, CancellationToken cancellationToken)
         {
-            await areaService.AssessNis2Async(new Application.Organizations.Nis2Answers(sector, service, employees, turnover, balanceSheet, designated), cancellationToken);
+            await areaService.AssessNis2Async(projectId, new Application.Organizations.Nis2Answers(sector, service, employees, turnover, balanceSheet, designated), cancellationToken);
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Nis2Scope });
         }
 

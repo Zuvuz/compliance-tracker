@@ -90,9 +90,16 @@ namespace ComplianceTracker.Application.Organizations
         // R3, R6, R7: does the scope check, keeps it, and switches on what it finds: NIS2, the national law of the
         // organisation's country, and 2024/2690 for the digital providers it covers. Nothing is switched off: a framework
         // that no longer applies is removed by a person on the Frameworks tab. A compliance decision (DecideCompliance).
-        public async Task<Nis2Assessment> AssessNis2Async(Nis2Answers answers, CancellationToken cancellationToken = default)
+        public async Task<Nis2Assessment> AssessNis2Async(Guid areaId, Nis2Answers answers, CancellationToken cancellationToken = default)
         {
             var (organization, user) = await _member.RequireAsync(Permission.DecideCompliance, cancellationToken);
+
+            // US-086: only from the organisation's own area page; another organisation's id is "not found"
+            if (await _projects.GetOrganisationAreaAsync(organization.Id, cancellationToken) is not { } own || own.Id != areaId)
+            {
+                throw new DomainException("Project not found");
+            }
+
             var assessment = Nis2Assessment.Assess(organization.Id, answers.Sector, answers.Service, answers.Employees,
                 answers.TurnoverMillions, answers.BalanceSheetMillions, answers.DesignatedByAuthority, user.Id, Now);
             await _assessments.AddAsync(assessment, cancellationToken);
