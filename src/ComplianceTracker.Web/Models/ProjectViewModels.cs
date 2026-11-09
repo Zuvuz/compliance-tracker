@@ -275,6 +275,9 @@ namespace ComplianceTracker.Web.Models
         public IReadOnlyList<Application.Approvals.ApprovalView> Approvals { get; init; } = [];
         // US-136 R4: the organisation's documents whose review date has passed
         public IReadOnlyList<Domain.Organizations.OrganisationDocument> DocumentsDue { get; init; } = [];
+
+        // US-136 R2: the AI's suggestions on the organisation's documents that wait for a decision
+        public int DocumentSuggestionsWaiting { get; init; }
         // US-050: the project's locked reports, newest first
         public IReadOnlyList<Application.Reports.LockedReport> LockedReports { get; init; } = [];
 

@@ -153,6 +153,11 @@
     {
         attention.Add(($"{document.Title} is due for review", Url.Action("Index", "Documents")!));
     }
+    // US-136 R2
+    if (Model.DocumentSuggestionsWaiting > 0)
+    {
+        attention.Add(($"{Model.DocumentSuggestionsWaiting} AI suggestion{(Model.DocumentSuggestionsWaiting == 1 ? "" : "s")} for the organisation's documents wait for a decision", Url.Action("Index", "Documents")!));
+    }
     // US-132
     foreach (var title in Model.WaitingForSignature)
     {

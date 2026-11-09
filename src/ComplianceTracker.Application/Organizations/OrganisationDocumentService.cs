@@ -44,7 +44,12 @@ namespace ComplianceTracker.Application.Organizations
         IReadOnlyDictionary<Guid, string> Members,
         IReadOnlyDictionary<Guid, IReadOnlyList<string>> ProjectsUsing,
         bool CanManage,
-        DateOnly Today);
+        DateOnly Today)
+    {
+        // US-136 R2: the AI's pending suggestions per document, best first
+        public IReadOnlyDictionary<Guid, IReadOnlyList<DocumentSuggestionView>> Suggestions { get; init; } =
+            new Dictionary<Guid, IReadOnlyList<DocumentSuggestionView>>();
+    }
 
     // US-136: the organisation's policies, procedures and risk tables, kept once and shared with the projects as evidence.
     // Changes need ManageFrameworks (the organisation's own compliance material, like its frameworks).
