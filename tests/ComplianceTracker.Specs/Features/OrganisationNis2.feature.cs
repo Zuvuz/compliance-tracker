@@ -120,7 +120,7 @@ namespace ComplianceTracker.Specs.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/OrganisationNis2.feature.ndjson", 11);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/OrganisationNis2.feature.ndjson", 14);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -611,6 +611,169 @@ namespace ComplianceTracker.Specs.Features
 #line hidden
 #line 85
     await testRunner.ThenAsync("the NIS2 result is \"none\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="NIS2 can be switched off and on again, and the coverage comes back")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "NIS2 at organisation level")]
+        [global::Xunit.TraitAttribute("Description", "NIS2 can be switched off and on again, and the coverage comes back")]
+        [global::Xunit.TraitAttribute("Category", "US-142")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task NIS2CanBeSwitchedOffAndOnAgainAndTheCoverageComesBack()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-142",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "9";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("NIS2 can be switched off and on again, and the coverage comes back", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 88
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 6
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 89
+    await testRunner.GivenAsync("I have done the NIS2 scope check as an important entity", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 90
+    await testRunner.AndAsync("I have uploaded the policy \"Incident response plan\" version \"v1\" with the content" +
+                        " \"How we handle incidents\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 91
+    await testRunner.AndAsync("I link the document \"Incident response plan\" to \"Art. 21(2)(b)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 92
+    await testRunner.WhenAsync("I switch NIS2 off on the organisation\'s Overview", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 93
+    await testRunner.ThenAsync("NIS2 is \"Off\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 94
+    await testRunner.AndAsync("the organisation follows no framework", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 95
+    await testRunner.AndAsync("the activity log has \"ProjectFrameworkRemoved\" saying \"NIS2 – Directive (EU) 2022" +
+                        "/2555\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 96
+    await testRunner.WhenAsync("I switch NIS2 on on the organisation\'s Overview", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 97
+    await testRunner.ThenAsync("NIS2 is \"On\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 98
+    await testRunner.AndAsync("the organisation follows \"NIS2 – Directive (EU) 2022/2555\" and \"NIS 2-loven – Lov" +
+                        " nr. 434 af 6. maj 2025 (Denmark)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 99
+    await testRunner.AndAsync("the organisation\'s Compliance tab for \"NIS2\" shows \"Art. 21(2)(b)\" as \"Covered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="NIS2 can be switched on by choice without being covered")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "NIS2 at organisation level")]
+        [global::Xunit.TraitAttribute("Description", "NIS2 can be switched on by choice without being covered")]
+        [global::Xunit.TraitAttribute("Category", "US-142")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task NIS2CanBeSwitchedOnByChoiceWithoutBeingCovered()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-142",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "10";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("NIS2 can be switched on by choice without being covered", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 102
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 6
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 103
+    await testRunner.WhenAsync("I do the NIS2 scope check with sector \"Manufacturing\", 20 employees and a turnove" +
+                        "r of 3 million euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 104
+    await testRunner.AndAsync("I switch NIS2 on on the organisation\'s Overview", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 105
+    await testRunner.ThenAsync("NIS2 is \"On\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 106
+    await testRunner.AndAsync("the organisation follows \"NIS2 – Directive (EU) 2022/2555\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 107
+    await testRunner.AndAsync("the page says \"NIS2 is followed by choice\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="Only members who decide on compliance can switch NIS2 on or off")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "NIS2 at organisation level")]
+        [global::Xunit.TraitAttribute("Description", "Only members who decide on compliance can switch NIS2 on or off")]
+        [global::Xunit.TraitAttribute("Category", "US-142")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task OnlyMembersWhoDecideOnComplianceCanSwitchNIS2OnOrOff()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-142",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "11";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Only members who decide on compliance can switch NIS2 on or off", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 110
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 6
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 111
+    await testRunner.GivenAsync("\"Bo\" is in \"Acme ApS\" with the role \"Developer\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 112
+    await testRunner.AndAsync("I am signed in as \"Bo\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 113
+    await testRunner.WhenAsync("I open \"Organisation\" from the top bar", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 114
+    await testRunner.ThenAsync("NIS2 is \"Off\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 115
+    await testRunner.AndAsync("there is no NIS2 switch", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
