@@ -69,12 +69,12 @@ Feature: Extract and activate requirements
 
   @US-007 @integration
   Scenario: No requirements found
-    When I add the framework "Security policy" with a PDF without text
+    When I add the framework "Security policy" with a PDF without requirements
     Then I see "No requirements found. Add them by hand below."
 
   @US-007 @integration
   Scenario: A version without requirements cannot be activated
-    When I add the framework "Security policy" with a PDF without text
+    When I add the framework "Security policy" with a PDF without requirements
     And I activate version 1 of "Security policy"
     Then I see the error "Add at least one requirement before activating"
 

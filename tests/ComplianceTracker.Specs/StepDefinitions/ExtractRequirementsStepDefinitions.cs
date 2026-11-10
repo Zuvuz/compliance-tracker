@@ -44,10 +44,11 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public Task WhenIAddTheFrameworkWithAPdfContaining(string frameworkName, DataTable lines)
             => AddFrameworkAsync(frameworkName, TestFiles.PdfWithText(lines.Rows.Select(r => r["line"]).ToArray()));
 
-        // R5: like a scanned document, there is no text to read
-        [When("I add the framework {string} with a PDF without text")]
-        public Task WhenIAddTheFrameworkWithAPdfWithoutText(string frameworkName)
-            => AddFrameworkAsync(frameworkName, TestFiles.PdfWithText());
+        // R5: text, but nothing that looks like a requirement. (A PDF with no text at all, like a scan, is refused since
+        // US-143 R2; StandardsInEveryForm.feature covers that.)
+        [When("I add the framework {string} with a PDF without requirements")]
+        public Task WhenIAddTheFrameworkWithAPdfWithoutRequirements(string frameworkName)
+            => AddFrameworkAsync(frameworkName, TestFiles.PdfWithText("Our policy is written in plain sentences without numbers."));
 
         [When("I change the title of {string} to {string}")]
         public Task WhenIChangeTheTitle(string code, string title)
