@@ -187,7 +187,7 @@ namespace ComplianceTracker.Application.Reports
                 new(["Not covered", Number(total - covered)], total - covered > 0 ? ReportStatus.Bad : ReportStatus.Good),
                 new(["Covered without evidence", Number(withoutEvidence)], withoutEvidence > 0 ? ReportStatus.Warning : ReportStatus.Normal),
                 new(["Open High and Critical risks", Number(facts.OpenHighRisks)], facts.OpenHighRisks > 0 ? ReportStatus.Bad : ReportStatus.Normal),
-                new(["Open high and critical scan findings", Number(facts.OpenSevereFindings)], facts.OpenSevereFindings > 0 ? ReportStatus.Bad : ReportStatus.Normal),
+                new(["Open severe scan findings", Number(facts.OpenSevereFindings)], facts.OpenSevereFindings > 0 ? ReportStatus.Bad : ReportStatus.Normal),
                 new(["Open security events", Number(facts.OpenSecurityEvents)], facts.OpenSecurityEvents > 0 ? ReportStatus.Bad : ReportStatus.Normal),
                 new(["Supported until", facts.SupportEndsOn?.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture) ?? "(not set)"],
                     facts.SupportEndsOn is null ? ReportStatus.Warning : ReportStatus.Normal)
