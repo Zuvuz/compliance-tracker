@@ -1080,6 +1080,41 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At genbruge `EvidenceLinkSuggestion`, som er bundet til ét projekt og ét krav-id.
   - En begrundelse skrevet af AI'en (som på projekterne) og deling af beslutningerne til træning: senere.
 
+### B79 – Standarder i alle former og strukturer (US-143)
+
+- **Beslutning:**
+  - Ingen ISO-standard bygges ind i trackeren. Organisationen uploader sin egen licenserede kopi, og filen og kravene tilhører kun den organisation.
+  - **Formater:** PDF med tekst, Word (.docx), Excel (.xlsx), CSV og HTML gemt fra ISO's Online Browsing Platform.
+    - Både filendelse og indhold tjekkes: PDF-signatur, en zip-pakke med `word/document.xml` eller `xl/workbook.xml`, og tekst uden NUL-bytes.
+    - En HTML-fil sendes altid tilbage som tekst, så den aldrig kan køre som en side i trackeren.
+    - Gamle .doc- og .xls-filer læses ikke.
+  - **Scannet PDF:** en PDF, der kan læses men ikke har bogstaver på nogen side, afvises med en besked om at uploade en PDF med tekst eller Word/Excel. En PDF, der slet ikke kan læses, giver som før en tom kladde.
+  - **Struktur:** hovedafsnit ("4 Context …"), underafsnit, punkter med bogstav ("6.1.2 a)"), annekser ("Annex A", "C.1") og kvalitetsmodeller. Hvert krav kender sin forælder (`Requirement.ParentId`).
+    - En overskrift uden egen tekst, men med krav under sig, udelades. Det, der lå under den, rykker et niveau op. Det er samme regel som for EU-retsakter (US-137 R2).
+  - **Udeladt:**
+    - forord, indledning og indholdsfortegnelse
+    - afsnit 1–3 (scope, normative referencer, termer)
+    - NOTEs og EXAMPLEs
+    - informative annekser og bibliografien
+    - licens-vandmærker og ©-linjer
+  - **Type** (`RequirementKind`):
+    - "shall" (også "shall not", og når "should" står samme sted) giver Requirement
+    - kun "should" giver Recommendation
+    - i en kvalitetsmodel bliver et punkt uden nogen af dem en Characteristic; ellers forbliver det Requirement
+    - typen kan ændres, mens versionen er en kladde
+    - EU-retsakter læses som før, uden træ og typer
+  - **Anbefalinger** tæller aldrig i dækningen. De har deres egen tæller ("3 of 9 recommendations followed"), et gråt "Recommended"-mærke og et filter. "Not covered" viser dem ikke.
+  - **Excel og CSV:** admin vælger kolonnerne for kode, titel og tekst (og eventuelt forælder og type) ud fra overskriftsrækken.
+    - Valget huskes på frameworket, så næste version læses med det samme.
+    - En række uden kode springes over. En kode, der står to gange, beholdes kun første gang og vises i tjekket.
+    - CSV kan bruge komma, semikolon eller tabulator, med anførselstegn.
+  - Test bruger kun opdigtede filer, der efterligner ISO's layout. Kun nummereringen (koder og antal) svarer til de rigtige standarder.
+- **Begrundelse:** Organisationer har deres standarder i mange former, og ISO-tekst må ikke følge med trackeren. Med ét fælles kladde-flow virker udtræks- og fuldstændighedstjekket for alle formater.
+- **Fravalgt:**
+  - OCR af scannede PDF'er (kræver ekstra software).
+  - Rettelsesblade (amendments) oven på en version: en senere story.
+  - At tilbyde informative annekser som anbefalinger: et åbent spørgsmål.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
