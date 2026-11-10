@@ -177,7 +177,7 @@ namespace ComplianceTracker.Application.Projects
 
         async Task<string?> IApprovalExecutor.WhyStaleAsync(ApprovalRequest request, CancellationToken cancellationToken)
         {
-            var project = await _projects.GetAsync(request.OrganizationId, request.ProjectId, cancellationToken);
+            var project = await _projects.GetAsync(request.OrganizationId, request.ProjectOf, cancellationToken);
             return project is null ? "the project is gone"
                 : project.IsClosed ? "the project is at end of support already"
                 : project.Version.ToString() != request.SubjectStamp ? "the project changed after the request was made"
@@ -187,7 +187,7 @@ namespace ComplianceTracker.Application.Projects
         async Task IApprovalExecutor.ExecuteAsync(ApprovalRequest request, Organization organization, User requester, User approver, CancellationToken cancellationToken)
         {
             var payload = ApprovalGate.Read<EndSupportPayload>(request);
-            var project = await _projects.GetAsync(organization.Id, request.ProjectId, cancellationToken)
+            var project = await _projects.GetAsync(organization.Id, request.ProjectOf, cancellationToken)
                 ?? throw new DomainException("Project not found");
             await EnsureNoOpenEventsAsync(project, cancellationToken);
             await ApplyPhaseAsync(project, LifecyclePhase.EndOfSupport, null, null, _clock.Today(),

@@ -111,6 +111,10 @@ namespace ComplianceTracker.Infrastructure
             }
             services.AddHttpClient<Security.KevExploitedList>(ListClient);
             services.AddHttpClient<Security.EuvdExploitedList>(ListClient);
+
+            // US-137: EU acts from EUR-Lex; off until the operator sets EurLex:Enabled (needs internet)
+            services.AddHttpClient<Frameworks.HttpEurLexSource>(ListClient);
+            services.AddTransient<Application.Frameworks.IEurLexSource>(provider => provider.GetRequiredService<Frameworks.HttpEurLexSource>());
             services.AddTransient<Application.Security.IExploitedVulnerabilityList>(provider => provider.GetRequiredService<Security.KevExploitedList>());
             services.AddTransient<Application.Security.IExploitedVulnerabilityList>(provider => provider.GetRequiredService<Security.EuvdExploitedList>());
             services.AddScoped<IInvitationRepository, InvitationRepository>();

@@ -1,3 +1,6 @@
+using ComplianceTracker.Application.Approvals;
+using ComplianceTracker.Domain.Approvals;
+using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
@@ -12,11 +15,15 @@ namespace ComplianceTracker.Application.Frameworks
     // and check, correct and activate the requirements of a new version (US-007).
     // Holds the rules that need the database (unique names, membership) and saves everything at once.
     // Always acts for the signed-in member (CurrentMember); reading is done by FrameworkQueries.
-    public class FrameworkService
+    // US-137 R5: activating a version with a completeness check waits for a second person (it is the IApprovalExecutor
+    // for ActivateFramework)
+    public class FrameworkService : IApprovalExecutor
     {
         private readonly IFrameworkRepository _frameworks;
         private readonly IProjectRepository _projects;
         private readonly IRequirementExtractor _extractor;
+        private readonly IEurLexSource _eurLex;
+        private readonly ApprovalGate _approvals;
         private readonly CurrentMember _member;
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
@@ -26,6 +33,8 @@ namespace ComplianceTracker.Application.Frameworks
             IFrameworkRepository frameworks,
             IProjectRepository projects,
             IRequirementExtractor extractor,
+            IEurLexSource eurLex,
+            ApprovalGate approvals,
             CurrentMember member,
             IActivityLogger log,
             IUnitOfWork unitOfWork,
@@ -34,6 +43,8 @@ namespace ComplianceTracker.Application.Frameworks
             _frameworks = frameworks;
             _projects = projects;
             _extractor = extractor;
+            _eurLex = eurLex;
+            _approvals = approvals;
             _member = member;
             _log = log;
             _unitOfWork = unitOfWork;
@@ -57,7 +68,7 @@ namespace ComplianceTracker.Application.Frameworks
 
             var framework = Framework.Create(organization.Id, name, file, user.Id, Now);
             framework.LatestVersion.SetAppliesFrom(appliesFrom);
-            var summary = AddFoundRequirements(framework.LatestVersion, file, null);
+            var summary = AddFoundRequirements(framework.LatestVersion, file, null, framework.Name);
             await _frameworks.AddAsync(framework, cancellationToken);
             await SaveVersionAsync(framework.LatestVersion, file, summary, cancellationToken);
             return framework;
@@ -81,7 +92,7 @@ namespace ComplianceTracker.Application.Frameworks
             version.SetAppliesFrom(appliesFrom);
 
             // US-143 R7: an Excel or CSV file is read with the columns chosen for the version before
-            var summary = AddFoundRequirements(version, file, TableColumns.Parse(framework.TableColumns));
+            var summary = AddFoundRequirements(version, file, TableColumns.Parse(framework.TableColumns), framework.Name);
             await SaveVersionAsync(version, file, summary, cancellationToken);
             return version;
         }
@@ -159,19 +170,136 @@ namespace ComplianceTracker.Application.Frameworks
             var framework = await _frameworks.GetByVersionWithRequirementsAsync(organization.Id, frameworkVersionId, cancellationToken)
                 ?? throw new DomainException("Framework version not found");
             version.ClearRequirements();
-            var summary = AddFoundRequirements(version, file, columns);
+            var summary = AddFoundRequirements(version, file, columns, framework.Name);
             framework.RememberColumns(columns.Serialize());
             await _log.LogAsync(ActivityAction.CatalogImported, version.Id, summary, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
-        // R3, R4, R6: locks the version; it becomes the framework's current version. Logged.
-        public async Task ActivateAsync(Guid frameworkVersionId, CancellationToken cancellationToken = default)
-        {
-            var (_, user) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
-            var version = await DraftAsync(frameworkVersionId, cancellationToken);
+        // ---------------------------------------------------------- EUR-Lex (US-137)
 
-            version.Activate(user.Id, Now, user.Role);
+        // R1–R3: a new framework from an EU act on EUR-Lex. The draft has one requirement per paragraph or point that holds an
+        // obligation, and its completeness check lists what was left out and why.
+        public async Task<Framework> ImportFromEurLexAsync(string name, string? celex, DateOnly? appliesFrom = null, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
+            var number = Celex.Check(celex);
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new DomainException("Framework name is required");
+            }
+
+            if (await _frameworks.NameExistsAsync(organization.Id, name.Trim(), cancellationToken))
+            {
+                throw new DomainException("Framework already exists. Upload a new version instead");
+            }
+
+            var act = await FetchAsync(number, cancellationToken);
+            var file = CatalogFile.FromEurLex(number, act.Package);
+            var framework = Framework.Create(organization.Id, name, file, user.Id, Now);
+            framework.LatestVersion.SetAppliesFrom(appliesFrom);
+            var summary = AddFromEurLex(framework.LatestVersion, act);
+            await _frameworks.AddAsync(framework, cancellationToken);
+            await _frameworks.AddDocumentAsync(framework.LatestVersion.Id, file.Content, cancellationToken);
+            await _log.LogAsync(ActivityAction.FrameworkImportedFromEurLex, framework.LatestVersion.Id, summary, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return framework;
+        }
+
+        // R6: a new version of a framework from EUR-Lex, e.g. a newer consolidated version ("02016R0679-20160504")
+        public async Task<FrameworkVersion> ImportVersionFromEurLexAsync(Guid frameworkId, string? celex, DateOnly? appliesFrom = null, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
+            var number = Celex.Check(celex);
+            var framework = await _frameworks.GetAsync(organization.Id, frameworkId, cancellationToken)
+                ?? throw new DomainException("Framework not found");
+            var act = await FetchAsync(number, cancellationToken);
+            var file = CatalogFile.FromEurLex(number, act.Package);
+            var version = framework.AddVersion(file, user.Id, Now);
+            version.SetAppliesFrom(appliesFrom);
+            var summary = AddFromEurLex(version, act);
+            await _frameworks.AddDocumentAsync(version.Id, file.Content, cancellationToken);
+            await _log.LogAsync(ActivityAction.FrameworkImportedFromEurLex, version.Id, summary, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return version;
+        }
+
+        private async Task<EurLexAct> FetchAsync(string celex, CancellationToken cancellationToken)
+        {
+            if (!_eurLex.IsEnabled)
+            {
+                throw new DomainException(Celex.Off);
+            }
+
+            return await _eurLex.FetchAsync(celex, cancellationToken);
+        }
+
+        private static string AddFromEurLex(FrameworkVersion version, EurLexAct act)
+        {
+            var (result, completeness) = FormexParser.Parse($"EUR-Lex {act.Celex}", act.FormexFiles);
+            if (result.Requirements.Count == 0)
+            {
+                throw new DomainException($"No requirements were found in {act.Celex}. Check the CELEX number.");
+            }
+
+            foreach (var found in result.Requirements)
+            {
+                version.AddRequirement(found.Code, found.Title, found.Description, found.Kind);
+            }
+
+            version.RecordExtraction(result.Check);
+            version.RecordCompleteness(completeness);
+            version.RecordSource(Celex.Address(act.Celex)); // R7
+            return completeness.Summary;
+        }
+
+        // ---------------------------------------------------------- Activation
+
+        // R3, R4, R6: locks the version; it becomes the framework's current version. Logged. US-137 R5: a version with a
+        // completeness check waits for a second person's approval; returns false then.
+        public async Task<bool> ActivateAsync(Guid frameworkVersionId, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
+            var version = await DraftAsync(frameworkVersionId, cancellationToken);
+            if (version.IsActive)
+            {
+                throw new DomainException("An active version cannot be changed");
+            }
+
+            if (version.NeedsApprovalToActivate)
+            {
+                if (version.Requirements.Count == 0)
+                {
+                    throw new DomainException("Add at least one requirement before activating");
+                }
+
+                var framework = await _frameworks.GetByVersionWithRequirementsAsync(organization.Id, frameworkVersionId, cancellationToken);
+
+                // R4: the profile is checked again against the requirements as they are now, e.g. after some were added by hand
+                if (version.Completeness!.Profile is not null && FrameworkProfiles.For(framework?.Name ?? "") is { } profile)
+                {
+                    version.RecordCompleteness(version.Completeness with
+                    {
+                        Requirements = version.Requirements.Count,
+                        Groups = profile.Check(version.Requirements.Select(r => r.Code))
+                    });
+                }
+
+                var check = version.Completeness!;
+                await _approvals.RequestAsync(organization, user, null, ApprovalAction.ActivateFramework, version.Id, version.RequirementsStamp,
+                    $"Activate {framework?.Name} version {version.Number} ({check.Summary})", new ActivateFrameworkPayload(version.Id), cancellationToken);
+                await _log.LogAsync(ActivityAction.FrameworkCompletenessChecked, version.Id, check.Summary, cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                return false;
+            }
+
+            await ActivateNowAsync(organization.Id, version, user, null, cancellationToken);
+            return true;
+        }
+
+        private async Task ActivateNowAsync(Guid organizationId, FrameworkVersion version, User asUser, User? approver, CancellationToken cancellationToken)
+        {
+            version.Activate(asUser.Id, Now, asUser.Role);
 
             // US-035 R8: the start date is logged with the activation
             // US-070 R5: the extraction check's numbers, also when a warning was shown (not for a PDF without text)
@@ -186,9 +314,58 @@ namespace ComplianceTracker.Application.Frameworks
                 parts.Add($"{version.FileName}: {check.Summary}");
             }
 
+            // US-137 R5: the completeness check and who approved it
+            if (version.Completeness is { } completeness)
+            {
+                parts.Add($"Completeness: {completeness.Summary}");
+            }
+
+            if (approver is not null)
+            {
+                parts.Add($"approved by {approver.Name}");
+            }
+
             var details = parts.Count > 0 ? string.Join("; ", parts) : null;
-            await _log.LogAsync(ActivityAction.CatalogActivated, version.Id, details, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            if (approver is null)
+            {
+                await _log.LogAsync(ActivityAction.CatalogActivated, version.Id, details, cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+            else
+            {
+                // Logged as the person who asked; ApprovalService saves
+                await _log.LogAsAsync(organizationId, asUser, ActivityAction.CatalogActivated, version.Id, details, cancellationToken);
+            }
+        }
+
+        // ---------------------------------------------------------- US-137 R5: the approved activation
+
+        private sealed record ActivateFrameworkPayload(Guid VersionId);
+
+        ApprovalAction IApprovalExecutor.Action => ApprovalAction.ActivateFramework;
+
+        Permission IApprovalExecutor.Permission => Permission.ManageFrameworks;
+
+        async Task<string?> IApprovalExecutor.WhyStaleAsync(ApprovalRequest request, CancellationToken cancellationToken)
+        {
+            var version = await VersionOfAsync(request.OrganizationId, request, cancellationToken);
+            return version is null ? "the version is gone"
+                : version.IsActive ? "the version is active already"
+                : version.RequirementsStamp != request.SubjectStamp ? "the requirements changed after the request was made"
+                : null;
+        }
+
+        async Task IApprovalExecutor.ExecuteAsync(ApprovalRequest request, Organization organization, User requester, User approver, CancellationToken cancellationToken)
+        {
+            var version = await VersionOfAsync(organization.Id, request, cancellationToken) ?? throw new DomainException("Framework version not found");
+            await ActivateNowAsync(organization.Id, version, requester, approver, cancellationToken);
+        }
+
+        private async Task<FrameworkVersion?> VersionOfAsync(Guid organizationId, ApprovalRequest request, CancellationToken cancellationToken)
+        {
+            var versionId = ApprovalGate.Read<ActivateFrameworkPayload>(request).VersionId;
+            var framework = await _frameworks.GetByVersionWithRequirementsAsync(organizationId, versionId, cancellationToken);
+            return framework?.Versions.FirstOrDefault(v => v.Id == versionId);
         }
 
         // US-035 R2: sets or clears the start date of a draft
@@ -220,7 +397,7 @@ namespace ComplianceTracker.Application.Frameworks
         // R1: the requirements found in the file become the draft's rows. US-143: with their kind and place in the tree; a
         // parent is placed after all rows are in, since a table may list it after its child. Returns the log's summary
         // (R8 of US-143: the format and the number of each kind).
-        private string AddFoundRequirements(FrameworkVersion version, CatalogFile file, TableColumns? columns)
+        private string AddFoundRequirements(FrameworkVersion version, CatalogFile file, TableColumns? columns, string frameworkName)
         {
             var result = _extractor.Extract(file, columns);
             foreach (var found in result.Requirements)
@@ -235,6 +412,14 @@ namespace ComplianceTracker.Application.Frameworks
 
             // US-070 R1
             version.RecordExtraction(result.Check);
+
+            // US-137 R4: a standard with a known profile is checked against it, when the file gave requirements
+            if (FrameworkProfiles.For(frameworkName) is { } profile && result.Requirements.Count > 0)
+            {
+                version.RecordCompleteness(new CompletenessCheck(
+                    file.FileName, 0, 0, 0, 0, version.Requirements.Count, [], profile.Name, profile.Check(version.Requirements.Select(r => r.Code))));
+            }
+
             return ImportSummary(file.Format, version.Requirements);
         }
 

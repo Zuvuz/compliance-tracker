@@ -1,3 +1,5 @@
+using ComplianceTracker.Application.Approvals;
+using ComplianceTracker.Domain.Approvals;
 using ComplianceTracker.Domain.Frameworks;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
@@ -86,7 +88,7 @@ namespace ComplianceTracker.Web.Controllers
 
         // GET /Frameworks/Version/{id}: one version and its requirements. A draft can be edited and activated.
         [HttpGet]
-        public async Task<IActionResult> Version(Guid id, CancellationToken cancellationToken)
+        public async Task<IActionResult> Version(Guid id, [FromServices] ApprovalService approvals, CancellationToken cancellationToken)
         {
             var found = await _frameworks.GetVersionAsync(id, cancellationToken);
             var organization = await _organizations.MineAsync(cancellationToken);
@@ -97,7 +99,11 @@ namespace ComplianceTracker.Web.Controllers
 
             // US-143 R7: a draft from an Excel or CSV file offers its columns
             var columns = found.Value.Version.IsActive ? [] : await _service.ColumnsAsync(id, cancellationToken);
-            return View(new FrameworkVersionPageViewModel(found.Value.Framework, found.Value.Version, organization, _clock.Today(), columns));
+
+            // US-137 R5: an activation that waits for another person's approval
+            var pending = found.Value.Version.IsActive ? null
+                : (await approvals.PendingAsync(null, cancellationToken)).FirstOrDefault(v => v.Request.Action == ApprovalAction.ActivateFramework && v.Request.SubjectId == id);
+            return View(new FrameworkVersionPageViewModel(found.Value.Framework, found.Value.Version, organization, _clock.Today(), columns, pending));
         }
 
         // POST /Frameworks/ChooseColumns: US-143 R7, reads the draft's Excel or CSV file with these columns
@@ -169,8 +175,61 @@ namespace ComplianceTracker.Web.Controllers
         [OnDomainError(nameof(Version), IdFrom = "versionId")]
         public async Task<IActionResult> Activate(Guid versionId, CancellationToken cancellationToken)
         {
-            await _service.ActivateAsync(versionId, cancellationToken);
+            // US-137 R5: a version with a completeness check waits for another person's approval
+            if (!await _service.ActivateAsync(versionId, cancellationToken))
+            {
+                TempData["FrameworkMessage"] = "The version waits for approval by another person who may manage frameworks.";
+            }
+
             return RedirectToAction(nameof(Version), new { id = versionId });
+        }
+
+        // POST /Frameworks/ApproveActivation, RejectActivation, WithdrawActivation: US-137 R5, through US-135's approvals
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Version), IdFrom = "versionId")]
+        public async Task<IActionResult> ApproveActivation(Guid requestId, Guid versionId, [FromServices] ApprovalService approvals, CancellationToken cancellationToken)
+        {
+            await approvals.ApproveAsync(requestId, cancellationToken);
+            return RedirectToAction(nameof(Version), new { id = versionId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Version), IdFrom = "versionId")]
+        public async Task<IActionResult> RejectActivation(Guid requestId, Guid versionId, string? reason, [FromServices] ApprovalService approvals, CancellationToken cancellationToken)
+        {
+            await approvals.RejectAsync(requestId, reason, cancellationToken);
+            return RedirectToAction(nameof(Version), new { id = versionId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Version), IdFrom = "versionId")]
+        public async Task<IActionResult> WithdrawActivation(Guid requestId, Guid versionId, [FromServices] ApprovalService approvals, CancellationToken cancellationToken)
+        {
+            await approvals.WithdrawAsync(requestId, cancellationToken);
+            return RedirectToAction(nameof(Version), new { id = versionId });
+        }
+
+        // POST /Frameworks/ImportFromEurLex: US-137 R1, a new framework from an EU act's CELEX number
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> ImportFromEurLex(string? name, string? celex, DateOnly? appliesFrom, CancellationToken cancellationToken)
+        {
+            var framework = await _service.ImportFromEurLexAsync(name ?? "", celex, appliesFrom, cancellationToken);
+            return RedirectToAction(nameof(Version), new { id = framework.LatestVersion.Id });
+        }
+
+        // POST /Frameworks/ImportVersionFromEurLex: US-137 R6, a new version, e.g. a newer consolidated text
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Versions), IdFrom = "frameworkId")]
+        public async Task<IActionResult> ImportVersionFromEurLex(Guid frameworkId, string? celex, DateOnly? appliesFrom, CancellationToken cancellationToken)
+        {
+            var version = await _service.ImportVersionFromEurLexAsync(frameworkId, celex, appliesFrom, cancellationToken);
+            return RedirectToAction(nameof(Version), new { id = version.Id });
         }
 
         // GET /Frameworks/Versions/{id}: all versions of one framework

@@ -59,7 +59,7 @@ namespace ComplianceTracker.Application.Approvals
             => JsonSerializer.Deserialize<T>(request.Payload, Json) ?? throw new DomainException("The request cannot be read");
 
         public async Task<ApprovalRequest> RequestAsync(
-            Organization organization, User requester, Guid projectId, ApprovalAction action, Guid? subjectId, string? subjectStamp,
+            Organization organization, User requester, Guid? projectId, ApprovalAction action, Guid? subjectId, string? subjectStamp,
             string summary, object payload, CancellationToken cancellationToken = default)
         {
             var now = _clock.GetUtcNow().UtcDateTime;
@@ -72,7 +72,7 @@ namespace ComplianceTracker.Application.Approvals
             var request = ApprovalRequest.Create(
                 organization.Id, projectId, action, subjectId, subjectStamp, summary, JsonSerializer.Serialize(payload, Json), requester.Id, now);
             await _requests.AddAsync(request, cancellationToken);
-            await _log.LogAsAsync(organization.Id, requester, ActivityAction.ApprovalRequested, projectId, request.Summary, cancellationToken);
+            await _log.LogAsAsync(organization.Id, requester, ActivityAction.ApprovalRequested, projectId ?? subjectId, request.Summary, cancellationToken);
             return request;
         }
     }
@@ -123,7 +123,7 @@ namespace ComplianceTracker.Application.Approvals
 
             var requester = organization.Users.First(u => u.Id == request.RequestedById);
             request.Approve(user.Id, Now);
-            await _log.LogAsync(ActivityAction.ApprovalGiven, request.ProjectId, $"{request.Summary} (asked by {requester.Name})", cancellationToken);
+            await _log.LogAsync(ActivityAction.ApprovalGiven, request.ProjectId ?? request.SubjectId, $"{request.Summary} (asked by {requester.Name})", cancellationToken);
             await executor.ExecuteAsync(request, organization, requester, user, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
@@ -138,7 +138,7 @@ namespace ComplianceTracker.Application.Approvals
 
             await EnsureOpenAsync(organization, request, executor, cancellationToken);
             request.Reject(user.Id, reason, Now);
-            await _log.LogAsync(ActivityAction.ApprovalRejected, request.ProjectId, $"{request.Summary}: {request.DecisionNote}", cancellationToken);
+            await _log.LogAsync(ActivityAction.ApprovalRejected, request.ProjectId ?? request.SubjectId, $"{request.Summary}: {request.DecisionNote}", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
@@ -146,7 +146,7 @@ namespace ComplianceTracker.Application.Approvals
         {
             var (_, user, request, _) = await OpenAsync(requestId, cancellationToken);
             request.Withdraw(user.Id, Now);
-            await _log.LogAsync(ActivityAction.ApprovalWithdrawn, request.ProjectId, request.Summary, cancellationToken);
+            await _log.LogAsync(ActivityAction.ApprovalWithdrawn, request.ProjectId ?? request.SubjectId, request.Summary, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
@@ -209,7 +209,7 @@ namespace ComplianceTracker.Application.Approvals
 
             if (request.ExpireIfDue(Now))
             {
-                await _log.LogSystemAsync(organization.Id, ActivityAction.ApprovalExpired, request.ProjectId, request.Summary, cancellationToken);
+                await _log.LogSystemAsync(organization.Id, ActivityAction.ApprovalExpired, request.ProjectId ?? request.SubjectId, request.Summary, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 throw new DomainException($"The request expired after {ApprovalRequest.ExpiresAfter.Days} days; ask again");
             }
@@ -217,7 +217,7 @@ namespace ComplianceTracker.Application.Approvals
             if (await executor.WhyStaleAsync(request, cancellationToken) is { } why)
             {
                 request.Cancel(why, Now);
-                await _log.LogSystemAsync(organization.Id, ActivityAction.ApprovalCancelled, request.ProjectId, $"{request.Summary}: {why}", cancellationToken);
+                await _log.LogSystemAsync(organization.Id, ActivityAction.ApprovalCancelled, request.ProjectId ?? request.SubjectId, $"{request.Summary}: {why}", cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 throw new DomainException($"The request was cancelled: {why}. Ask again if it is still needed.");
             }

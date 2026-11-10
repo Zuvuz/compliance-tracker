@@ -12,7 +12,10 @@ namespace ComplianceTracker.Domain.Frameworks
         Word,
         Excel,
         Csv,
-        Html
+        Html,
+
+        // US-137: an EU act's Formex package as fetched from EUR-Lex; never uploaded by a member
+        Formex
     }
 
     // An uploaded framework file that has passed every check: a PDF (US-005), or since US-143 a Word, Excel, CSV or HTML
@@ -71,9 +74,25 @@ namespace ComplianceTracker.Domain.Frameworks
             return new CatalogFile(SafeFileName(fileName), content, format.Value);
         }
 
+        // US-137: the package an act was imported in from EUR-Lex, kept as the version's file
+        public static CatalogFile FromEurLex(string celex, byte[] package)
+        {
+            if (package.Length == 0 || package.Length > MaxSizeInBytes * 2)
+            {
+                throw new DomainException("The act from EUR-Lex is empty or too large");
+            }
+
+            return new CatalogFile($"{celex}.formex.zip", package, CatalogFormat.Formex);
+        }
+
         // The format by the file's extension, or null for any other
         public static CatalogFormat? FormatOf(string fileName)
         {
+            if ((fileName ?? "").EndsWith(".formex.zip", StringComparison.OrdinalIgnoreCase))
+            {
+                return CatalogFormat.Formex;
+            }
+
             var extension = Path.GetExtension(fileName ?? "");
             return extension.ToLowerInvariant() switch
             {
@@ -92,6 +111,7 @@ namespace ComplianceTracker.Domain.Frameworks
             CatalogFormat.Excel => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             CatalogFormat.Csv => "text/csv",
             CatalogFormat.Html => "text/plain", // never served as a page, so a saved page cannot run in the tracker
+            CatalogFormat.Formex => "application/zip",
             _ => "application/pdf"
         };
 
@@ -102,7 +122,7 @@ namespace ComplianceTracker.Domain.Frameworks
             CatalogFormat.Excel => IsPackage(content, "xl/workbook.xml"),
             CatalogFormat.Csv => IsText(content) && content.Length > 0,
             CatalogFormat.Html => IsText(content) && LooksLikeHtml(content),
-            _ => false
+            _ => false // a Formex package only comes from EUR-Lex (FromEurLex)
         };
 
         // A zip package with the part a Word or Excel file always has. Only the list of entries is read, nothing is unpacked.

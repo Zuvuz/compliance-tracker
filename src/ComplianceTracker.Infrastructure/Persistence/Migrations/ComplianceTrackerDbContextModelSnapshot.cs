@@ -164,7 +164,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb");
 
-                    b.Property<Guid>("ProjectId")
+                    b.Property<Guid?>("ProjectId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("RequestedAt")
@@ -388,6 +388,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.Property<DateOnly?>("AppliesFrom")
                         .HasColumnType("date");
+
+                    b.Property<string>("Completeness")
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("Extraction")
                         .HasColumnType("jsonb");
@@ -5509,8 +5512,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
                         .WithMany()
                         .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ComplianceTracker.Domain.Users.User", null)
                         .WithMany()

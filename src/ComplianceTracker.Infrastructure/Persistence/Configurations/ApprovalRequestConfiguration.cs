@@ -25,7 +25,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Ignore(r => r.ExpiresAt);
 
             builder.HasOne<Organization>().WithMany().HasForeignKey(r => r.OrganizationId).OnDelete(DeleteBehavior.Restrict);
-            builder.HasOne<Project>().WithMany().HasForeignKey(r => r.ProjectId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<Project>().WithMany().HasForeignKey(r => r.ProjectId).IsRequired(false).OnDelete(DeleteBehavior.Restrict); // US-137: null for an organisation's action
             builder.HasOne<User>().WithMany().HasForeignKey(r => r.RequestedById).OnDelete(DeleteBehavior.Restrict);
             builder.HasOne<User>().WithMany().HasForeignKey(r => r.DecidedById).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
 

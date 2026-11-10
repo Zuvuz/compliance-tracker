@@ -49,6 +49,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<IProjectRepository, ProjectRepository>();
                 services.AddScoped<IUnitOfWork, UnitOfWork>();
                 services.AddSingleton<IRequirementExtractor, PdfRequirementExtractor>(); // US-007
+                services.AddSingleton<IEurLexSource, NoEurLex>(); // US-137: never reaches a network
 
                 // US-018: not used by these tests, but the use cases must be creatable. Never reaches a network.
                 services.AddScoped<IWorkItemRepository, WorkItemRepository>();
@@ -136,5 +137,14 @@ namespace ComplianceTracker.Specs.Support
         public UserIdentity Identity { get; set; }
 
         public bool IsSystemAdmin { get; set; }
+    }
+
+    // US-137: the use cases must be creatable; these tests never import from EUR-Lex
+    internal sealed class NoEurLex : IEurLexSource
+    {
+        public bool IsEnabled => false;
+
+        public Task<EurLexAct> FetchAsync(string celex, CancellationToken cancellationToken = default)
+            => throw new InvalidOperationException("No EUR-Lex in these tests");
     }
 }

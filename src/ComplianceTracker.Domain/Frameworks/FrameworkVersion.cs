@@ -72,6 +72,17 @@ namespace ComplianceTracker.Domain.Frameworks
         // US-070: what the extraction from the PDF did not use; null for versions from before US-070 and built-in ones
         public ExtractionCheck? Extraction { get; private set; }
 
+        // US-137: how complete the draft is (an EU act from EUR-Lex, or a standard with a known profile); null otherwise
+        public CompletenessCheck? Completeness { get; private set; }
+
+        // US-137 R5: a version with a completeness check needs a second person's approval to be activated
+        public bool NeedsApprovalToActivate => Completeness is not null;
+
+        // US-137 R5: what an approval was asked for; a change to the requirements after that makes the request stale
+        public string RequirementsStamp
+            => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(
+                string.Join("|", _requirements.OrderBy(r => r.Position).Select(r => r.Code + "/" + r.Kind + "/" + r.Title)))))[..16];
+
         // In the order of the document. Only loaded when asked for (IFrameworkRepository).
         public IReadOnlyList<Requirement> Requirements => _requirements.OrderBy(r => r.Position).ToList();
 
@@ -159,6 +170,20 @@ namespace ComplianceTracker.Domain.Frameworks
         {
             EnsureDraft();
             Extraction = check;
+        }
+
+        // US-137: kept with the draft, so it can be checked before activation
+        public void RecordCompleteness(CompletenessCheck check)
+        {
+            EnsureDraft();
+            Completeness = check;
+        }
+
+        // US-137 R7: where an imported version came from, e.g. its EUR-Lex address
+        public void RecordSource(string reference)
+        {
+            EnsureDraft();
+            SourceReference = string.IsNullOrWhiteSpace(reference) ? null : reference.Trim();
         }
 
         // R2: corrects a requirement in the draft
