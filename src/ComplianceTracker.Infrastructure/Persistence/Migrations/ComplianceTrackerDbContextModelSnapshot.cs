@@ -4465,6 +4465,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("Figures")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasMaxLength(255)

@@ -26,10 +26,29 @@ namespace ComplianceTracker.Application.Reports
 
     public record ReportRow(IReadOnlyList<string> Cells, ReportStatus Status);
 
-    // StatusColumn: the column that gets the status colour
-    public record ReportSheet(string Name, IReadOnlyList<string> Columns, int StatusColumn, IReadOnlyList<ReportRow> Rows);
+    // US-141: how a section is drawn in the PDF. Excel writes every kind as a table (one sheet per section, R8).
+    public enum ReportSheetKind
+    {
+        Table,
 
-    public record ReportDocument(string Title, IReadOnlyList<(string Label, string Value)> Summary, IReadOnlyList<ReportSheet> Sheets);
+        // Key figures: rows of label and value, drawn as tiles
+        Tiles,
+
+        // Short points: one cell per row, drawn as a list
+        Points
+    }
+
+    // StatusColumn: the column that gets the status colour (-1 for none)
+    public record ReportSheet(string Name, IReadOnlyList<string> Columns, int StatusColumn, IReadOnlyList<ReportRow> Rows)
+    {
+        public ReportSheetKind Kind { get; init; } = ReportSheetKind.Table;
+    }
+
+    public record ReportDocument(string Title, IReadOnlyList<(string Label, string Value)> Summary, IReadOnlyList<ReportSheet> Sheets)
+    {
+        // US-141 R3: the coverage per regulation the management report was made from, kept when it is locked
+        public IReadOnlyDictionary<string, int>? Figures { get; init; }
+    }
 
     // US-120: writes a report as a formatted Excel workbook (implemented in Infrastructure with OpenXml)
     public interface ISpreadsheetWriter
@@ -38,7 +57,14 @@ namespace ComplianceTracker.Application.Reports
     }
 
     // US-120 R6: what the management summary needs besides the coverage
-    public record ManagementFacts(int OpenHighRisks, int OpenSevereFindings, int OpenSecurityEvents, DateOnly? SupportEndsOn);
+    public record ManagementFacts(int OpenHighRisks, int OpenSevereFindings, int OpenSecurityEvents, DateOnly? SupportEndsOn)
+    {
+        // US-141 R6: the open High and Critical risks themselves
+        public IReadOnlyList<ManagementRisk> HighRisks { get; init; } = [];
+
+        // US-141 R3: the newest locked management report with the same regulations; null when there is none
+        public LastManagementReport? Last { get; init; }
+    }
 
     // US-120: the traceability matrix (US-052) for one reader, built from the same data as the Compliance tab, so the
     // numbers always agree. The CSV (TraceabilityMatrix) stays as it is for tools that read it.
@@ -65,26 +91,19 @@ namespace ComplianceTracker.Application.Reports
                 ("Downloaded by", $"{downloadedBy}, {at.ToLocalTime():dd-MM-yyyy HH:mm}")
             };
 
+            // US-141: the management report has its own sections, most important first (R1)
+            if (audience == ReportAudience.Management)
+            {
+                return new ReportDocument($"Traceability – {project.Name}", summary, ManagementPriorities.Sheets(frameworks, facts))
+                {
+                    Figures = ManagementPriorities.Figures(frameworks)
+                };
+            }
+
             foreach (var framework in frameworks)
             {
                 var name = FrameworkSlugs.Short(framework.Framework.Name);
                 summary.Add(($"Coverage – {name}", $"{framework.Percent} % ({framework.Covered} of {framework.Total})"));
-                if (audience == ReportAudience.Management)
-                {
-                    // R6
-                    summary.Add(($"Not covered – {name}", framework.NotCovered.ToString(CultureInfo.InvariantCulture)));
-                    summary.Add(($"Covered without evidence – {name}",
-                        framework.Requirements.Count(r => r.IsApplicable && r.IsCovered && !r.HasEvidence).ToString(CultureInfo.InvariantCulture)));
-                }
-            }
-
-            if (audience == ReportAudience.Management)
-            {
-                summary.Add(("Open High and Critical risks", facts.OpenHighRisks.ToString(CultureInfo.InvariantCulture)));
-                summary.Add(("Open high and critical scan findings", facts.OpenSevereFindings.ToString(CultureInfo.InvariantCulture)));
-                summary.Add(("Open security events", facts.OpenSecurityEvents.ToString(CultureInfo.InvariantCulture)));
-                summary.Add(("Supported until", facts.SupportEndsOn?.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture) ?? "(not set)"));
-                return new ReportDocument($"Traceability – {project.Name}", summary, []);
             }
 
             var sheets = frameworks

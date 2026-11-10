@@ -1080,6 +1080,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At genbruge `EvidenceLinkSuggestion`, som er bundet til ét projekt og ét krav-id.
   - En begrundelse skrevet af AI'en (som på projekterne) og deling af beslutningerne til træning: senere.
 
+### B77 – Ledelsesrapporten viser det vigtigste først (US-141)
+
+- **Beslutning:**
+  - Ledelsesrapporten har seks afsnit i fast rækkefølge: status pr. regulering, "What management must know now", nøgletal, de største mangler, åbne høje risici og til sidst detaljerne. PDF og Excel laves af samme kode og samme model, og hvert afsnit er et ark i Excel.
+  - **Trafiklys** ud fra den afrundede procent, der vises: rød under 50 %, gul 50–79 %, grøn fra 80 %. En regulering uden krav får ingen farve.
+  - **"Siden sidst"** sammenligner med den nyeste låste ledelsesrapport med præcis de samme reguleringer. Den låste rapport gemmer sine tal (dækning pr. regulering som JSON i `ReportSnapshot.Figures`), så den gamle PDF aldrig skal læses.
+  - **Højst 5 punkter**, mest alvorlige først: åbne sikkerhedshændelser, åbne alvorlige scanningsfund, høje risici uden ejer, manglende supportperiode (kun med CRA), røde reguleringer, åbne høje risici og gule reguleringer.
+  - **Højst 10 mangler pr. regulering:** først dem, der er koblet til en åben Critical- og derefter High-risiko, så krav med en frist, og til sidst resten i katalogets rækkefølge.
+  - **"Har en frist"** gælder CRA's indberetningspligter i Art. 14 (24 timer, 72 timer og 14 dage). Det afgøres ud fra koden, så der ikke kræves et nyt felt.
+- **Begrundelse:** Ledelsen skal kunne forstå status på et minut. Faste regler gør rapporten forudsigelig og let at teste.
+- **Fravalgt:**
+  - Grafer over tid; kun ændringen siden sidste låste rapport vises.
+  - Et frist-felt på hvert krav. Det kan komme, hvis andre regelsæt får frister.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
