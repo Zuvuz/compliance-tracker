@@ -45,7 +45,7 @@ else
     }
     else
     {
-        <text>· <a class="open-pdf" asp-action="Document" asp-route-id="@version.Id">Open PDF</a></text>
+        <text>· <a class="open-pdf" asp-action="Document" asp-route-id="@version.Id">@(version.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) ? "Open PDF" : "Download the file")</a></text>
     }
 </p>
 
@@ -55,9 +55,44 @@ else
 @if (!version.IsActive)
 {
     <div class="alert alert-warning">
-        This version is a draft. Check the requirements found in the PDF, correct them, and activate the version.
+        This version is a draft. Check the requirements found in the file, correct them, and activate the version.
         Projects can only use active versions, and an active version can no longer be changed.
     </div>
+}
+
+@if (!version.IsActive && Model.Columns is { Count: > 0 } headers)
+{
+    @* US-143 R7: which columns of the Excel or CSV file hold the code, the title and the text *@
+    var chosen = Model.Chosen;
+    <form asp-action="ChooseColumns" method="post" class="border rounded p-3 mb-3" id="choose-columns">
+        <input type="hidden" name="versionId" value="@version.Id" />
+        <p class="mb-2">Choose which columns hold each requirement's code, title and text. The choice is remembered for the next version.</p>
+        <div class="row g-2">
+            @foreach (var (name, label, current, optional) in new (string, string, string?, bool)[]
+            {
+                ("code", "Code", chosen?.Code, false), ("title", "Title", chosen?.Title, false), ("text", "Text", chosen?.Text, false),
+                ("parent", "Parent code (optional)", chosen?.Parent, true), ("kind", "Kind (optional)", chosen?.Kind, true)
+            })
+            {
+                <div class="col-md-2">
+                    <label class="form-label small" for="column-@name">@label</label>
+                    <select class="form-select form-select-sm" id="column-@name" name="@name">
+                        @if (optional)
+                        {
+                            <option value="">(none)</option>
+                        }
+                        @foreach (var header in headers)
+                        {
+                            <option value="@header" selected="@(string.Equals(header, current, StringComparison.OrdinalIgnoreCase))">@header</option>
+                        }
+                    </select>
+                </div>
+            }
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-sm btn-primary">Read the requirements</button>
+            </div>
+        </div>
+    </form>
 }
 
 @if (version.Requirements.Count == 0)
@@ -73,6 +108,7 @@ else
                 <th class="ct-w-10">Code</th>
                 <th>Title</th>
                 <th>Description</th>
+                <th>Kind</th>
                 @if (!version.IsActive)
                 {
                     <th></th>
@@ -86,17 +122,38 @@ else
                     @if (version.IsActive)
                     {
                         @* R3: locked, so only shown *@
-                        <td class="requirement-code">@requirement.Code</td>
+                        <td class="requirement-code tree-depth-@(Math.Min(Model.Depth(requirement), 6))">@requirement.Code</td>
                         <td class="requirement-title">@requirement.Title</td>
                         <td class="requirement-description small">@requirement.Description</td>
+                        <td class="requirement-kind small">@requirement.Kind</td>
                     }
                     else
                     {
                         @* R2: one small form per row. The inputs use the form attribute, so the table stays valid HTML. *@
                         var formId = $"change-{requirement.Id}";
-                        <td><input form="@formId" name="code" value="@requirement.Code" class="form-control form-control-sm requirement-code" aria-label="Code" /></td>
+                        <td class="tree-depth-@(Math.Min(Model.Depth(requirement), 6))">
+                            <input form="@formId" name="code" value="@requirement.Code" class="form-control form-control-sm requirement-code" aria-label="Code" />
+                            @if (Model.ParentCode(requirement) is { } parentCode)
+                            {
+                                <div class="small text-muted requirement-parent">Under @parentCode</div>
+                            }
+                        </td>
                         <td><input form="@formId" name="title" value="@requirement.Title" class="form-control form-control-sm requirement-title" aria-label="Title" /></td>
                         <td><textarea form="@formId" name="description" rows="1" class="form-control form-control-sm" aria-label="Description">@requirement.Description</textarea></td>
+                        <td>
+                            @* US-143 R5: the kind can be changed while the version is a draft *@
+                            <form asp-action="ChangeKind" method="post" class="d-flex gap-1 change-kind">
+                                <input type="hidden" name="versionId" value="@version.Id" />
+                                <input type="hidden" name="requirementId" value="@requirement.Id" />
+                                <select name="kind" class="form-select form-select-sm requirement-kind" aria-label="Kind">
+                                    @foreach (var kind in Enum.GetValues<ComplianceTracker.Domain.Frameworks.RequirementKind>())
+                                    {
+                                        <option value="@kind" selected="@(kind == requirement.Kind)">@kind</option>
+                                    }
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">Set</button>
+                            </form>
+                        </td>
                         <td class="text-nowrap">
                             <form id="@formId" asp-action="ChangeRequirement" method="post" class="d-inline">
                                 <input type="hidden" name="versionId" value="@version.Id" />

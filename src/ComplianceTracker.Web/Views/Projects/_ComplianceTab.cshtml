@@ -68,6 +68,20 @@
                 || r.Requirement.Description.Contains(term, StringComparison.OrdinalIgnoreCase));
         }
         var shown = rows.Where(r => ComplianceFilters.Matches(filter, r)).ToList();
+
+        // US-143 R4: the depth of each requirement in the standard's tree, and which have requirements under them
+        var parents = framework.Requirements.ToDictionary(r => r.Requirement.Id, r => r.Requirement.ParentId);
+        var withChildren = parents.Values.Where(p => p is not null).Select(p => p!.Value).ToHashSet();
+        int Depth(Guid id)
+        {
+            var depth = 0;
+            for (var up = parents.GetValueOrDefault(id); up is { } parent && depth < 10; up = parents.GetValueOrDefault(parent))
+            {
+                depth++;
+            }
+
+            return depth;
+        }
         var openStories = compliance.WorkItems
             .Where(w => w.State != ComplianceTracker.Domain.WorkItems.WorkItemState.Removed)
             .OrderBy(w => w.Title, StringComparer.OrdinalIgnoreCase)
@@ -232,10 +246,29 @@
                     @* #52: the row can be folded; it is never folded while something needs attention *@
                     var rowAttention = row.HasSuggestions || row.PendingEvidenceSuggestions.Any() || row.FailingTests > 0 || row.NeedsReview
                         || row.ApplicabilitySuggestion is not null || row.NotApplicableFromOldClassification;
-                    <tr class="requirement-row @(row.IsApplicable ? "" : "text-muted")" data-code="@requirement.Code" data-group="@requirement.Group" data-attention="@(rowAttention ? "true" : "false")">
-                        <td class="requirement-code text-nowrap align-top">@requirement.Code</td>
+                    var depth = Depth(requirement.Id);
+                    <tr class="requirement-row @(row.IsApplicable ? "" : "text-muted")" data-code="@requirement.Code" data-group="@requirement.Group" data-attention="@(rowAttention ? "true" : "false")"
+                        data-id="@requirement.Id" data-parent="@requirement.ParentId" data-kind="@requirement.Kind">
+                        <td class="requirement-code text-nowrap align-top tree-depth-@(Math.Min(depth, 6))">
+                            @if (withChildren.Contains(requirement.Id))
+                            {
+                                @* US-143 R4: folds what sits under this requirement (site.js) *@
+                                <button type="button" class="btn btn-link btn-sm p-0 me-1 text-decoration-none tree-toggle" data-tree-toggle="@requirement.Id"
+                                        aria-expanded="true" aria-label="Fold the requirements under @requirement.Code">▾</button>
+                            }
+                            @requirement.Code
+                        </td>
                         <td class="requirement-title align-top">
                             @text.Title
+                            @if (requirement.IsRecommendation)
+                            {
+                                @* US-143 R6: lower importance; never lowers the coverage *@
+                                <span class="badge text-bg-secondary recommended" title="A recommendation (&quot;should&quot;). It does not count in the coverage.">Recommended</span>
+                            }
+                            else if (requirement.Kind == ComplianceTracker.Domain.Frameworks.RequirementKind.Characteristic)
+                            {
+                                <span class="badge text-bg-light border characteristic" title="A characteristic of a quality model">Characteristic</span>
+                            }
                             @if (!text.Translated && hasTranslations)
                             {
                                 <span class="badge text-bg-light border not-translated" title="Shown in English">Not translated yet</span>

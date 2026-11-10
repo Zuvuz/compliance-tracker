@@ -24,7 +24,7 @@
         <div class="col-md-3">
             <label for="file" class="form-label">PDF file</label>
             @* accept only filters the file picker; the server still checks the file *@
-            <input id="file" name="file" type="file" accept=".pdf,application/pdf" class="form-control" />
+            <input id="file" name="file" type="file" accept=".pdf,.docx,.xlsx,.csv,.html,.htm,application/pdf" class="form-control" />
         </div>
         <div class="col-md-2">
             @* US-035: optional; without a date the version applies as soon as it is activated *@
@@ -105,7 +105,7 @@
                         <form asp-action="UploadVersion" method="post" enctype="multipart/form-data" class="mt-1">
                             <input type="hidden" name="frameworkId" value="@framework.Id" />
                             <div class="d-flex gap-1">
-                                <input name="file" type="file" accept=".pdf,application/pdf" class="form-control form-control-sm" />
+                                <input name="file" type="file" accept=".pdf,.docx,.xlsx,.csv,.html,.htm,application/pdf" class="form-control form-control-sm" />
                                 <input name="appliesFrom" type="date" class="form-control form-control-sm ct-max-w-10"
                                        title="Applies from (optional)" aria-label="Applies from" />
                                 <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Upload new version</button>

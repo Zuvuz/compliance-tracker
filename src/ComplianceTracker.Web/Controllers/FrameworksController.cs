@@ -95,7 +95,30 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound(); // US-005 R7: also when the version belongs to another organisation
             }
 
-            return View(new FrameworkVersionPageViewModel(found.Value.Framework, found.Value.Version, organization, _clock.Today()));
+            // US-143 R7: a draft from an Excel or CSV file offers its columns
+            var columns = found.Value.Version.IsActive ? [] : await _service.ColumnsAsync(id, cancellationToken);
+            return View(new FrameworkVersionPageViewModel(found.Value.Framework, found.Value.Version, organization, _clock.Today(), columns));
+        }
+
+        // POST /Frameworks/ChooseColumns: US-143 R7, reads the draft's Excel or CSV file with these columns
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Version), IdFrom = "versionId")]
+        public async Task<IActionResult> ChooseColumns(
+            Guid versionId, string? code, string? title, string? text, string? parent, string? kind, CancellationToken cancellationToken)
+        {
+            await _service.ChooseColumnsAsync(versionId, code, title, text, parent, kind, cancellationToken);
+            return RedirectToAction(nameof(Version), new { id = versionId });
+        }
+
+        // POST /Frameworks/ChangeKind: US-143 R5, while the version is a draft
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Version), IdFrom = "versionId")]
+        public async Task<IActionResult> ChangeKind(Guid versionId, Guid requirementId, RequirementKind kind, CancellationToken cancellationToken)
+        {
+            await _service.ChangeKindAsync(versionId, requirementId, kind, cancellationToken);
+            return RedirectToAction(nameof(Version), new { id = versionId });
         }
 
         // POST /Frameworks/AddRequirement: R2, R5

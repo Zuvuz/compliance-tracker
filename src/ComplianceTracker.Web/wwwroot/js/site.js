@@ -46,6 +46,29 @@ document.querySelectorAll("[data-percent]").forEach(bar => {
 })();
 
 
+// US-143 R4: a requirement with requirements under it can be folded; the rows under it (at any depth) are hidden.
+// Only in this view: nothing is remembered.
+(() => {
+    const rows = [...document.querySelectorAll("tr.requirement-row[data-id]")];
+    const children = id => rows.filter(r => r.dataset.parent === id);
+    const setHidden = (id, hidden) => children(id).forEach(row => {
+        row.hidden = hidden;
+        const toggle = row.querySelector("[data-tree-toggle]");
+        // A row that is shown again shows its own children only if it was open
+        setHidden(row.dataset.id, hidden || (toggle !== null && toggle.getAttribute("aria-expanded") === "false"));
+    });
+
+    document.querySelectorAll("[data-tree-toggle]").forEach(toggle => {
+        toggle.addEventListener("click", () => {
+            const open = toggle.getAttribute("aria-expanded") !== "true";
+            toggle.setAttribute("aria-expanded", String(open));
+            toggle.textContent = open ? "▾" : "▸";
+            setHidden(toggle.dataset.treeToggle, !open);
+        });
+    });
+})();
+
+
 // US-135 R1: a form with data-confirm asks first, in a dialog that says what will happen and whether it can be undone.
 // Nothing happens on one click. Without JavaScript the form is sent as before (the server still checks everything).
 (() => {
