@@ -45,7 +45,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public void ThenTheFirstRowSays(string sheet, string column, string value, string otherColumn, string otherValue)
         {
             var (header, rows) = Table(sheet);
-            Assert.NotEmpty(rows);
+            Assert.True(rows.Count > 0, $"The sheet '{sheet}' has no rows.");
             Assert.Equal(value, rows[0][header.IndexOf(column)]);
             Assert.Equal(otherValue, rows[0][header.IndexOf(otherColumn)]);
         }

@@ -73,6 +73,29 @@ namespace ComplianceTracker.Application.Reports
         public async Task<(ReportDocument Document, ReportFile Pdf)?> TraceabilityAsync(
             Guid projectId, ReportAudience audience, string? sub, CancellationToken cancellationToken = default)
         {
+            if (await BuildTraceabilityAsync(projectId, audience, sub, cancellationToken) is not { } built)
+            {
+                return null;
+            }
+
+            var (document, project, organization, frameworks, now) = built;
+            var reader = audience.ToString().ToLowerInvariant();
+            var name = $"traceability-{FrameworkSlugs.Slug(project.Name)}{(sub is null ? "" : "-" + sub)}-{reader}-{_clock.Today():yyyy-MM-dd}.pdf";
+            var title = $"{document.Title} ({TraceabilityReport.Title(audience)}{(sub is null ? "" : ", " + string.Join(", ", frameworks.Select(f => FrameworkSlugs.Short(f.Framework.Name))))})";
+            var header = new PdfHeader(organization.Name, project.Name, title, now, _currentUser.Identity.Name);
+            return (document, new ReportFile($"traceability:{reader}:{sub ?? "all"}", title, name, "application/pdf", _pdf.FromReport(document, header),
+                document.Figures is { } figures ? ManagementPriorities.FiguresJson(figures) : null));
+        }
+
+        // US-141: the report model only, for the Excel file, so Excel and PDF are made by the same code (R8)
+        public async Task<ReportDocument?> TraceabilityDocumentAsync(
+            Guid projectId, ReportAudience audience, string? sub, CancellationToken cancellationToken = default)
+            => (await BuildTraceabilityAsync(projectId, audience, sub, cancellationToken))?.Document;
+
+        private async Task<(ReportDocument Document, Domain.Projects.Project Project, Domain.Organizations.Organization Organization,
+            IReadOnlyList<FrameworkCompliance> Frameworks, DateTime Now)?> BuildTraceabilityAsync(
+            Guid projectId, ReportAudience audience, string? sub, CancellationToken cancellationToken)
+        {
             var project = await _projects.GetAsync(projectId, cancellationToken);
             var organization = await _organizations.MineAsync(cancellationToken);
             var compliance = await _compliance.ForProjectAsync(projectId, cancellationToken);
@@ -110,13 +133,7 @@ namespace ComplianceTracker.Application.Reports
                     : null
             };
             var document = TraceabilityReport.Build(audience, project, frameworks, NameOf, _currentUser.Identity.Name, now, facts);
-
-            var reader = audience.ToString().ToLowerInvariant();
-            var name = $"traceability-{FrameworkSlugs.Slug(project.Name)}{(sub is null ? "" : "-" + sub)}-{reader}-{_clock.Today():yyyy-MM-dd}.pdf";
-            var title = $"{document.Title} ({TraceabilityReport.Title(audience)}{(sub is null ? "" : ", " + string.Join(", ", frameworks.Select(f => FrameworkSlugs.Short(f.Framework.Name))))})";
-            var header = new PdfHeader(organization.Name, project.Name, title, now, _currentUser.Identity.Name);
-            return (document, new ReportFile($"traceability:{reader}:{sub ?? "all"}", title, name, "application/pdf", _pdf.FromReport(document, header),
-                document.Figures is { } figures ? ManagementPriorities.FiguresJson(figures) : null));
+            return (document, project, organization, frameworks, now);
         }
 
         // US-141 R3: the newest locked management report of the project with exactly these regulations
