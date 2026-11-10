@@ -27,6 +27,9 @@ namespace ComplianceTracker.Domain.Frameworks
     {
         public const int MaxListed = 500;
 
+        // R1: the check of an EU act read from EUR-Lex (it has articles or annexes), not of an uploaded standard
+        public bool IsOfEuAct => Articles > 0 || Annexes > 0;
+
         // R5: something is missing from a known profile
         public bool HasGaps => Groups.Any(g => g.Missing.Count > 0);
 

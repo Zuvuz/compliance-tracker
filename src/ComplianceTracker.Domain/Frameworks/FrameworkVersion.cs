@@ -75,8 +75,10 @@ namespace ComplianceTracker.Domain.Frameworks
         // US-137: how complete the draft is (an EU act from EUR-Lex, or a standard with a known profile); null otherwise
         public CompletenessCheck? Completeness { get; private set; }
 
-        // US-137 R5: a version with a completeness check needs a second person's approval to be activated
-        public bool NeedsApprovalToActivate => Completeness is not null;
+        // US-137 R5 (B80): a version imported from EUR-Lex needs a second person's approval to be activated. An uploaded
+        // standard checked against its profile shows the check, but one person activates it, since an organisation may
+        // follow only part of a standard.
+        public bool NeedsApprovalToActivate => Completeness is { IsOfEuAct: true };
 
         // US-137 R5: what an approval was asked for; a change to the requirements after that makes the request stale
         public string RequirementsStamp

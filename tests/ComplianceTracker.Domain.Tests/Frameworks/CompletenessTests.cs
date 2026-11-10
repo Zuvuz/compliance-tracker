@@ -19,7 +19,7 @@ public class CompletenessTests
         => Framework.Create(OrganizationId, "GDPR", CatalogFile.FromEurLex("32016R0679", [1, 2, 3]), AnnaId, Monday).LatestVersion;
 
     [Fact]
-    public void A_version_needs_approval_only_with_a_completeness_check()
+    public void A_version_from_eur_lex_needs_approval()
     {
         // Arrange
         var version = Draft();
@@ -31,6 +31,19 @@ public class CompletenessTests
         // Assert
         Assert.False(before);
         Assert.True(version.NeedsApprovalToActivate);
+    }
+
+    [Fact]
+    public void An_uploaded_standard_checked_against_its_profile_is_activated_by_one_person()
+    {
+        // Arrange
+        var version = Draft();
+
+        // Act
+        version.RecordCompleteness(new CompletenessCheck("iso.pdf", 0, 0, 0, 0, 92, [], "ISO/IEC 27001:2022", [new("controls", 93, 92, ["A.5.23"], [])]));
+
+        // Assert
+        Assert.False(version.NeedsApprovalToActivate);
     }
 
     [Fact]

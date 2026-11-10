@@ -1133,11 +1133,11 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
     - En profil indeholder kun koder og antal, aldrig standardens tekst.
     - Profilen findes ud fra frameworkets navn og bruges, når en uploadet fil har givet krav.
     - Siden viser fx "92 of 93 controls found" og "A.5.23 is missing" samt koder, der ligner kontroller, men ikke findes i standarden.
-  - **Fire øjne:** en version med et fuldstændighedstjek (fra EUR-Lex eller fra en profil) aktiveres først, når en anden med `ManageFrameworks` har godkendt det. Det bruger samme godkendelser som US-135.
+  - **Fire øjne:** en version importeret fra EUR-Lex aktiveres først, når en anden med `ManageFrameworks` har godkendt det. Det bruger samme godkendelser som US-135.
+    - En uploadet standard, der er tjekket mod en profil, viser tjekket (også det, der mangler), men aktiveres af én person. En organisation følger ofte kun en del af en standard, og ellers ville enhver upload med "27001" i navnet kræve to personer.
     - Godkendelsen kan være organisationens egen og knyttes så ikke til et projekt (`ApprovalRequest.ProjectId` kan være tom).
     - Ændres kravene efter anmodningen, bliver den forældet.
     - Aktiveringen logges med tjekket og navnet på den, der godkendte.
-  - Uploadede filer uden profil aktiveres som før, af én person.
 - **Begrundelse:** Alle forpligtelser i en retsakt skal med, ikke kun dem, en PDF-læser finder. En kendt liste over koder viser præcis, hvad der mangler, før nogen bygger på versionen.
 - **Fravalgt:**
   - At trackeren selv opdager en ny konsolideret version (R6). Den kan importeres som ny version via sit CELEX-nummer (fx `02016R0679-20160504`), men der søges ikke automatisk. Det kræver EUR-Lex' søge-API og bliver en senere story.
