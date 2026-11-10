@@ -315,7 +315,38 @@ classDiagram
     Excel
     Csv
     Html
+    Formex
   }
+  class CompletenessCheck {
+    <<value object>>
+    +Source: string
+    +Articles: int
+    +Annexes: int
+    +Paragraphs: int
+    +Points: int
+    +Requirements: int
+    +LeftOut: List~LeftOutPart~
+    +Profile: string?
+    +Groups: List~CompletenessGroup~
+    +HasGaps: bool
+    +Summary: string
+  }
+  class LeftOutPart {
+    <<value object>>
+    +Code: string
+    +Reason: string
+  }
+  class CompletenessGroup {
+    <<value object>>
+    +Name: string
+    +Expected: int
+    +Found: int
+    +Missing: List~string~
+    +Extra: List~string~
+  }
+  CompletenessCheck *-- LeftOutPart
+  CompletenessCheck *-- CompletenessGroup
+  FrameworkVersion --> CompletenessCheck : completeness
   class RequirementKind {
     <<enumeration>>
     Requirement

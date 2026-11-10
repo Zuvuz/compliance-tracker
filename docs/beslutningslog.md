@@ -1115,6 +1115,36 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Rettelsesblade (amendments) oven på en version: en senere story.
   - At tilbyde informative annekser som anbefalinger: et åbent spørgsmål.
 
+### B80 – Komplette krav fra hvert regelsæt (US-137)
+
+- **Beslutning:**
+  - **Import fra EUR-Lex:** en EU-retsakt importeres via sit CELEX-nummer (fx `32024R2847`) fra EU's Publikationskontor (CELLAR). Trackeren beder om Formex 4 på engelsk (`application/zip;mtype=fmx4`) og læser strukturen fra XML'en, ikke fra en PDF.
+    - Pakken gemmes som versionens fil, og versionen peger på EUR-Lex.
+    - Funktionen er slået fra, indtil driften sætter `EurLex:Enabled`, fordi den kræver internet. `EurLex:BaseAddress` kan pege på et spejl.
+    - Svaret begrænses i størrelse (zip-bomber), og XML'en læses uden DTD'er og eksterne entiteter.
+  - **Opdeling:** et krav deles ned til det fineste niveau med sin egen forpligtelse. Et stykke med litra bliver til sine litra ("Art. 13(2)(a)"), og underlitra deles også ("(a)(i)"). Bilagenes dele beholdes ("Annex I Part I (2)(a)"). Koderne er de samme som PDF-læserens.
+  - **Udeladt med begrundelse:** alle andre dele vises med en årsag:
+    - betragtninger: "Recital"
+    - definitioner: "Definition"
+    - myndigheders pligter: "An authority's duty". Det gælder, når stykket begynder med fx "Member States shall" eller "The Commission is empowered".
+    - ophævede bestemmelser: "Deleted"
+    - ikrafttræden og ændringer af andre retsakter: "Final provision"
+  - **Profiler:** de første er ISO/IEC 27001:2022 (30 krav-afsnit og 93 kontroller i Annex A) og ISO/IEC 27002:2022 (de samme 93 kontroller uden "A.").
+    - En profil indeholder kun koder og antal, aldrig standardens tekst.
+    - Profilen findes ud fra frameworkets navn og bruges, når en uploadet fil har givet krav.
+    - Siden viser fx "92 of 93 controls found" og "A.5.23 is missing" samt koder, der ligner kontroller, men ikke findes i standarden.
+  - **Fire øjne:** en version med et fuldstændighedstjek (fra EUR-Lex eller fra en profil) aktiveres først, når en anden med `ManageFrameworks` har godkendt det. Det bruger samme godkendelser som US-135.
+    - Godkendelsen kan være organisationens egen og knyttes så ikke til et projekt (`ApprovalRequest.ProjectId` kan være tom).
+    - Ændres kravene efter anmodningen, bliver den forældet.
+    - Aktiveringen logges med tjekket og navnet på den, der godkendte.
+  - Uploadede filer uden profil aktiveres som før, af én person.
+- **Begrundelse:** Alle forpligtelser i en retsakt skal med, ikke kun dem, en PDF-læser finder. En kendt liste over koder viser præcis, hvad der mangler, før nogen bygger på versionen.
+- **Fravalgt:**
+  - At trackeren selv opdager en ny konsolideret version (R6). Den kan importeres som ny version via sit CELEX-nummer (fx `02016R0679-20160504`), men der søges ikke automatisk. Det kræver EUR-Lex' søge-API og bliver en senere story.
+  - At erstatte de indbyggede CRA- og AI Act-kataloger (US-068) med importen: et åbent spørgsmål.
+  - Profiler for IEC 62443-4-1 og andre standarder: de kan tilføjes, når organisationerne har brug for dem.
+  - HTTP-adapteren er kun testet mod en efterlignet CELLAR. Den første rigtige import bør tjekkes af driften.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
