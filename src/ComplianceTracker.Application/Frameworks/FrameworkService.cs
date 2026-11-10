@@ -57,9 +57,9 @@ namespace ComplianceTracker.Application.Frameworks
 
             var framework = Framework.Create(organization.Id, name, file, user.Id, Now);
             framework.LatestVersion.SetAppliesFrom(appliesFrom);
-            AddFoundRequirements(framework.LatestVersion, file);
+            var summary = AddFoundRequirements(framework.LatestVersion, file, null);
             await _frameworks.AddAsync(framework, cancellationToken);
-            await SaveVersionAsync(framework.LatestVersion, file, cancellationToken);
+            await SaveVersionAsync(framework.LatestVersion, file, summary, cancellationToken);
             return framework;
         }
 
@@ -79,8 +79,10 @@ namespace ComplianceTracker.Application.Frameworks
 
             var version = framework.AddVersion(file, user.Id, Now);
             version.SetAppliesFrom(appliesFrom);
-            AddFoundRequirements(version, file);
-            await SaveVersionAsync(version, file, cancellationToken);
+
+            // US-143 R7: an Excel or CSV file is read with the columns chosen for the version before
+            var summary = AddFoundRequirements(version, file, TableColumns.Parse(framework.TableColumns));
+            await SaveVersionAsync(version, file, summary, cancellationToken);
             return version;
         }
 
@@ -114,6 +116,52 @@ namespace ComplianceTracker.Application.Frameworks
         {
             var version = await DraftAsync(frameworkVersionId, cancellationToken);
             version.RemoveRequirement(requirementId);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-143 R5: changes the kind of a requirement in a draft
+        public async Task ChangeKindAsync(Guid frameworkVersionId, Guid requirementId, RequirementKind kind, CancellationToken cancellationToken = default)
+        {
+            var version = await DraftAsync(frameworkVersionId, cancellationToken);
+            version.ChangeKind(requirementId, kind);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-143 R7: the header row of a draft's Excel or CSV file; empty for other files
+        public async Task<IReadOnlyList<string>> ColumnsAsync(Guid frameworkVersionId, CancellationToken cancellationToken = default)
+        {
+            var (organization, _) = await _member.RequireAsync(cancellationToken);
+            if (await _frameworks.GetDocumentAsync(organization.Id, frameworkVersionId, cancellationToken) is not { } document
+                || CatalogFile.FormatOf(document.Version.FileName) is not (CatalogFormat.Excel or CatalogFormat.Csv))
+            {
+                return [];
+            }
+
+            return _extractor.Headers(CatalogFile.Create(document.Version.FileName, document.Content));
+        }
+
+        // US-143 R7: reads a draft's Excel or CSV file with the chosen columns, replacing what an earlier choice found, and
+        // remembers the choice for the framework's next version. Logged like an import.
+        public async Task ChooseColumnsAsync(
+            Guid frameworkVersionId, string? code, string? title, string? text, string? parent, string? kind, CancellationToken cancellationToken = default)
+        {
+            var (organization, _) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
+            var version = await DraftAsync(frameworkVersionId, cancellationToken);
+            var document = await _frameworks.GetDocumentAsync(organization.Id, frameworkVersionId, cancellationToken)
+                ?? throw new DomainException("Framework version not found");
+            var file = CatalogFile.Create(document.Version.FileName, document.Content);
+            if (file.Format is not (CatalogFormat.Excel or CatalogFormat.Csv))
+            {
+                throw new DomainException("Columns can only be chosen for an Excel or CSV file");
+            }
+
+            var columns = TableColumns.Choose(_extractor.Headers(file), code, title, text, parent, kind);
+            var framework = await _frameworks.GetByVersionWithRequirementsAsync(organization.Id, frameworkVersionId, cancellationToken)
+                ?? throw new DomainException("Framework version not found");
+            version.ClearRequirements();
+            var summary = AddFoundRequirements(version, file, columns);
+            framework.RememberColumns(columns.Serialize());
+            await _log.LogAsync(ActivityAction.CatalogImported, version.Id, summary, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
@@ -169,17 +217,39 @@ namespace ComplianceTracker.Application.Frameworks
             return framework.Version(frameworkVersionId);
         }
 
-        // R1: the requirements found in the PDF become the draft's rows
-        private void AddFoundRequirements(FrameworkVersion version, CatalogFile file)
+        // R1: the requirements found in the file become the draft's rows. US-143: with their kind and place in the tree; a
+        // parent is placed after all rows are in, since a table may list it after its child. Returns the log's summary
+        // (R8 of US-143: the format and the number of each kind).
+        private string AddFoundRequirements(FrameworkVersion version, CatalogFile file, TableColumns? columns)
         {
-            var result = _extractor.Extract(file.Content);
+            var result = _extractor.Extract(file, columns);
             foreach (var found in result.Requirements)
             {
-                version.AddRequirement(found.Code, found.Title, found.Description);
+                version.AddRequirement(found.Code, found.Title, found.Description, found.Kind);
+            }
+
+            foreach (var found in result.Requirements.Where(f => f.ParentCode is not null))
+            {
+                version.PlaceUnder(found.Code, found.ParentCode);
             }
 
             // US-070 R1
             version.RecordExtraction(result.Check);
+            return ImportSummary(file.Format, version.Requirements);
+        }
+
+        // e.g. "Word: 40 requirements, 12 recommendations, 0 characteristics"
+        public static string ImportSummary(CatalogFormat format, IEnumerable<Requirement> requirements)
+        {
+            var list = requirements.ToList();
+            string Count(RequirementKind kind, string name)
+            {
+                var n = list.Count(r => r.Kind == kind);
+                return $"{n} {name}{(n == 1 ? "" : "s")}";
+            }
+
+            return $"{format}: {Count(RequirementKind.Requirement, "requirement")}, {Count(RequirementKind.Recommendation, "recommendation")}, "
+                   + Count(RequirementKind.Characteristic, "characteristic");
         }
 
         // US-006: switches a built-in framework on for the organisation (R2, R3).
@@ -245,10 +315,10 @@ namespace ComplianceTracker.Application.Frameworks
 
         // Saves the PDF and the log entry together with the version in one transaction (R8).
         // If anything fails, none of it is stored.
-        private async Task SaveVersionAsync(FrameworkVersion version, CatalogFile file, CancellationToken cancellationToken)
+        private async Task SaveVersionAsync(FrameworkVersion version, CatalogFile file, string summary, CancellationToken cancellationToken)
         {
             await _frameworks.AddDocumentAsync(version.Id, file.Content, cancellationToken);
-            await _log.LogAsync(ActivityAction.CatalogImported, version.Id, cancellationToken);
+            await _log.LogAsync(ActivityAction.CatalogImported, version.Id, summary, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 

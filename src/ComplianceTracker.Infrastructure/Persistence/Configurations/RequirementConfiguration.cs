@@ -36,6 +36,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
 
             // US-142 R6, R8: the directive requirement a national one implements, and the texts in other languages
             builder.Property(r => r.Implements).HasMaxLength(50);
+
+            // US-143 R4, R5: the kind and the place in the standard's structure. Every requirement before US-143 is a Requirement at the top.
+            builder.Property(r => r.Kind).HasConversion<string>().HasMaxLength(20).HasDefaultValue(RequirementKind.Requirement).HasSentinel((RequirementKind)(-1));
+            builder.HasIndex(r => r.ParentId);
+
             builder.HasMany(r => r.Texts)
                 .WithOne()
                 .HasForeignKey(t => t.RequirementId)

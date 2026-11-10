@@ -20,6 +20,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             // US-142: the level, and the directive a national law implements in a country
             builder.Property(f => f.Level).HasConversion<string>().HasMaxLength(20).HasDefaultValue(FrameworkLevel.Product);
             builder.Property(f => f.Country).HasMaxLength(2);
+            builder.Property(f => f.TableColumns).HasMaxLength(1000); // US-143 R7
             builder.HasOne<Framework>()
                 .WithMany()
                 .HasForeignKey(f => f.ImplementsFrameworkId)

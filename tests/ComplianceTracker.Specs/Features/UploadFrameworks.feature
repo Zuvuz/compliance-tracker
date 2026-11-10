@@ -30,13 +30,13 @@ Feature: Upload frameworks as PDF
     Then I see the error "Framework already exists. Upload a new version instead"
 
   @US-005 @asvs-v5.2.1 @asvs-v5.2.2 @integration
-  Scenario Outline: Only PDF files up to 20 MB are accepted
+  Scenario Outline: Only the allowed file types up to 20 MB are accepted
     When I add the framework "Security policy" with <file>
     Then I see the error "<error>"
 
     Examples:
       | file                                    | error                              |
-      | a text file named "policy.pdf"          | Only PDF files are allowed         |
+      | a text file named "policy.pdf"          | Only PDF, Word (.docx), Excel (.xlsx), CSV or HTML files are allowed |
       | a PDF of 21 MB named "policy.pdf"       | The file must be 20 MB or smaller  |
 
   @US-005 @asvs-v5.3.2 @asvs-v5.4.1 @integration

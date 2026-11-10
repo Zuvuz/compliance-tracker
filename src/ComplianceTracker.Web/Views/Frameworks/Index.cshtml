@@ -10,7 +10,7 @@
 <p>The standards and policies @Model.Organization.Name follows. Upload each as a PDF of at most 20 MB.</p>
 <p><a id="built-in-link" asp-action="BuiltIn">Built-in frameworks (CRA, AI Act)</a> can be switched on without uploading anything.</p>
 
-@* Shows the domain's error messages, e.g. "Only PDF files are allowed" *@
+@* Shows the domain's error messages, e.g. "Only PDF, Word (.docx), Excel (.xlsx), CSV or HTML files are allowed" *@
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
 
 @* enctype="multipart/form-data" is required to send a file. The form tag helper adds the antiforgery token. *@

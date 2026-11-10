@@ -1,3 +1,4 @@
+using ComplianceTracker.Domain.Frameworks;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
@@ -173,10 +174,11 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound(); // R7: also when the PDF belongs to another organisation
             }
 
-            // ASVS V5.4.1: always sent as a PDF, with our own cleaned file name in Content-Disposition.
-            // nosniff stops the browser from guessing another content type.
+            // ASVS V5.4.1: sent as its own type (US-143: an HTML file as text, so it never runs as a page), with our own
+            // cleaned file name in Content-Disposition. nosniff stops the browser from guessing another content type.
             Response.Headers["X-Content-Type-Options"] = "nosniff";
-            return File(document.Value.Content, "application/pdf", document.Value.Version.FileName);
+            var format = CatalogFile.FormatOf(document.Value.Version.FileName) ?? CatalogFormat.Pdf;
+            return File(document.Value.Content, CatalogFile.ContentTypeOf(format), document.Value.Version.FileName);
         }
 
         // ---------------------------------------------------------- Built-in frameworks (US-006)
