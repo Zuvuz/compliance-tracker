@@ -990,11 +990,8 @@ namespace ComplianceTracker.Web.Controllers
             Guid id, string? sub, string? format, string? audience,
             [FromServices] Application.Reports.ISpreadsheetWriter spreadsheet,
             [FromServices] Application.Reports.ReportFiles files,
-            [FromServices] Application.Security.SecurityEventQueries securityEvents,
-            [FromServices] Application.Scanning.ScanService scans,
             [FromServices] Application.ActivityLog.IActivityLogger log,
             [FromServices] Application.Common.IUnitOfWork unitOfWork,
-            [FromServices] Application.Common.ICurrentUser currentUser,
             CancellationToken cancellationToken)
         {
             var project = await _projects.GetAsync(id, cancellationToken);
@@ -1032,20 +1029,15 @@ namespace ComplianceTracker.Web.Controllers
                 return File(TraceabilityMatrix.ToCsv(TraceabilityMatrix.Rows(frameworks, NameOf)), "text/csv; charset=utf-8", name + ".csv");
             }
 
-            // R6: the management facts
-            var now = _clock.GetUtcNow().UtcDateTime;
-            var facts = new Application.Reports.ManagementFacts(
-                (await _risks.ForProjectAsync(id, cancellationToken) ?? [])
-                    .Count(r => r.Status != Domain.Risks.RiskStatus.Closed && r.Level >= Domain.Risks.RiskLevel.High),
-                (await scans.ForProjectAsync(id, cancellationToken))?.OpenAtLeastHigh ?? 0,
-                (await securityEvents.ForProjectAsync(id, cancellationToken) ?? []).Count(e => e.IsOpen),
-                project.SupportEndsOn);
-            var document = Application.Reports.TraceabilityReport.Build(reader, project, frameworks, NameOf,
-                currentUser.Identity.Name, now, facts);
+            // US-131, US-141: the PDF and the Excel file are made from the same report model by the same code as a locked report
             if (pdf && await files.TraceabilityAsync(id, reader, sub, cancellationToken) is { } made)
             {
-                // US-131 R2: the same report model as the Excel file; the same code as a locked report (US-050)
                 return File(made.Pdf.Content, made.Pdf.ContentType, made.Pdf.FileName);
+            }
+
+            if (await files.TraceabilityDocumentAsync(id, reader, sub, cancellationToken) is not { } document)
+            {
+                return NotFound();
             }
 
             return File(spreadsheet.ToXlsx(document), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", name + ".xlsx");

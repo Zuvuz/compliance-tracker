@@ -36,6 +36,20 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public void ThenTheWorkbookHasTheSheets(string first, string second)
             => Assert.Equal([first, second], Read(book => SheetNames(book)));
 
+        // US-141 R8
+        [Then("the workbook has these sheets in order:")]
+        public void ThenTheWorkbookHasTheseSheets(DataTable table)
+            => Assert.Equal(table.Rows.Select(r => r["Sheet"]).ToList(), Read(book => SheetNames(book)));
+
+        [Then("on {string} the first row says {string} {string} and {string} {string}")]
+        public void ThenTheFirstRowSays(string sheet, string column, string value, string otherColumn, string otherValue)
+        {
+            var (header, rows) = Table(sheet);
+            Assert.True(rows.Count > 0, $"The sheet '{sheet}' has no rows.");
+            Assert.Equal(value, rows[0][header.IndexOf(column)]);
+            Assert.Equal(otherValue, rows[0][header.IndexOf(otherColumn)]);
+        }
+
         [Then("the workbook has only the sheet {string}")]
         public void ThenTheWorkbookHasOnlyTheSheet(string name)
             => Assert.Equal([name], Read(book => SheetNames(book)));

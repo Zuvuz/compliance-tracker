@@ -28,6 +28,8 @@ namespace ComplianceTracker.Application.Reports
             ['→'] = "->",
             ['←'] = "<-",
             ['↔'] = "<->",
+            ['↑'] = "Up",
+            ['↓'] = "Down",
             ['✓'] = "v",
             ['✗'] = "x",
             ['≥'] = ">=",
