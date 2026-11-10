@@ -489,3 +489,7 @@ certs/
 
 # US-014: database backups from the backup service (never committed)
 backups/
+
+# US-140: local coverage runs
+coverage/
+coverage-report/
