@@ -68,6 +68,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<ProjectFramework> ProjectFrameworks => Set<ProjectFramework>();
         public DbSet<Domain.Frameworks.RequirementText> RequirementTexts => Set<Domain.Frameworks.RequirementText>(); // US-142
         public DbSet<Nis2Assessment> Nis2Assessments => Set<Nis2Assessment>(); // US-142
+        public DbSet<DocumentLinkSuggestion> DocumentLinkSuggestions => Set<DocumentLinkSuggestion>(); // US-136 R2
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

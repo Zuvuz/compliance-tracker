@@ -12,17 +12,21 @@ namespace ComplianceTracker.Web.Controllers
         private const long MaxRequestSize = 25 * 1024 * 1024;
 
         private readonly OrganisationDocumentService _service;
+        private readonly DocumentSuggestionService _suggestions;
 
-        public DocumentsController(OrganisationDocumentService service)
+        public DocumentsController(OrganisationDocumentService service, DocumentSuggestionService suggestions)
         {
             _service = service;
+            _suggestions = suggestions;
         }
 
         // GET /Documents
         public async Task<IActionResult> Index(CancellationToken cancellationToken)
         {
             var view = await _service.ViewAsync(cancellationToken);
-            return view is null ? RedirectToAction("Index", "Projects") : View(view);
+            return view is null
+                ? RedirectToAction("Index", "Projects")
+                : View(view with { Suggestions = await _suggestions.PendingAsync(cancellationToken) }); // US-136 R2
         }
 
         // POST /Documents/Upload: R1
@@ -36,7 +40,8 @@ namespace ComplianceTracker.Web.Controllers
             CancellationToken cancellationToken)
         {
             var (name, content) = await ReadAsync(file, cancellationToken);
-            await _service.UploadAsync(kind, title, ownerId, version, name, content, reviewDueOn, cancellationToken);
+            var document = await _service.UploadAsync(kind, title, ownerId, version, name, content, reviewDueOn, cancellationToken);
+            await SuggestAsync(document.Id, newVersion: false, cancellationToken); // US-136 R2
             return RedirectToAction(nameof(Index));
         }
 
@@ -50,6 +55,7 @@ namespace ComplianceTracker.Web.Controllers
         {
             var (name, content) = await ReadAsync(file, cancellationToken);
             await _service.UploadNewVersionAsync(documentId, version, name, content, cancellationToken);
+            await SuggestAsync(documentId, newVersion: true, cancellationToken); // US-136 R2: the text has changed
             return RedirectToAction(nameof(Index));
         }
 
@@ -99,11 +105,67 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // POST /Documents/ApproveSuggestion: US-136 R2, links the document to the suggested requirement
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> ApproveSuggestion(Guid suggestionId, CancellationToken cancellationToken)
+        {
+            await _suggestions.ApproveAsync(suggestionId, cancellationToken);
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST /Documents/RejectSuggestion: US-136 R2, with a reason; the pair is never suggested again
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> RejectSuggestion(
+            Guid suggestionId, Domain.Mappings.RejectionReason? reason, string? comment, CancellationToken cancellationToken)
+        {
+            await _suggestions.RejectAsync(suggestionId, reason, comment, cancellationToken);
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST /Documents/MoreSuggestions: US-136 R2, the next requirements for a document
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> MoreSuggestions(Guid documentId, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await _suggestions.ShowMoreAsync(documentId, cancellationToken);
+            }
+            catch (Application.Ai.AiUnavailableException e)
+            {
+                TempData["DocumentAi"] = e.Message;
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
         // GET /Documents/File/{id}: the current file, for any member of the organisation
         public async Task<IActionResult> File(Guid id, CancellationToken cancellationToken)
             => await _service.ContentAsync(id, cancellationToken) is { } file
                 ? File(file.Content, file.ContentType, file.FileName)
                 : NotFound();
+
+        // US-136 R2: the AI's suggestions after an upload. Without the AI the document is kept, and the page says why
+        // there are no suggestions.
+        private async Task SuggestAsync(Guid documentId, bool newVersion, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var made = await _suggestions.SuggestAsync(documentId, newVersion: newVersion, cancellationToken: cancellationToken);
+                TempData["DocumentAi"] = made == 0
+                    ? "The AI found no requirement that the document clearly proves. Link it by hand."
+                    : $"The AI suggests {made} requirement{(made == 1 ? "" : "s")} for the document. Approve or reject them below.";
+            }
+            catch (Application.Ai.AiUnavailableException e)
+            {
+                TempData["DocumentAi"] = $"The document is saved, but there are no AI suggestions: {e.Message}";
+            }
+        }
 
         private static async Task<(string Name, byte[] Content)> ReadAsync(IFormFile? file, CancellationToken cancellationToken)
         {

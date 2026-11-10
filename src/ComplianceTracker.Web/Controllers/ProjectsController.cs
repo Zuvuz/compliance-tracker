@@ -161,6 +161,8 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] Application.Reports.ReportService reportService,
             [FromServices] Application.Reports.ReportSigningService signingService,
             [FromServices] Application.Organizations.OrganisationAreaService areaService,
+            [FromServices] Application.Organizations.DocumentSuggestionService documentSuggestions,
+            [FromServices] Application.Common.CurrentMember member,
             CancellationToken cancellationToken)
         {
             // US-104 R1: shared links to the old "User stories" tab still work
@@ -276,6 +278,10 @@ namespace ComplianceTracker.Web.Controllers
                 EventSuggestions = eventSuggestions,
                 Approvals = approvals,
                 DocumentsDue = documentsDue,
+                // US-136 R2: only those who can decide are reminded
+                DocumentSuggestionsWaiting = activeTab is ProjectTabs.Overview && await member.CanAsync(Domain.Users.Permission.ManageFrameworks, cancellationToken)
+                    ? await documentSuggestions.PendingCountAsync(cancellationToken)
+                    : 0,
                 LockedReports = lockedReports,
                 Signings = signings,
                 WaitingForSignature = waitingForSignature,

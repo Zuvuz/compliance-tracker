@@ -80,7 +80,9 @@ namespace ComplianceTracker.Specs.Support
         {
             var vector = new float[Dimensions];
             var firstLine = text.Split('\n')[0];
-            var code = firstLine.Split(' ')[0];
+            // The code is the first word, or a longer rated code with spaces in it, e.g. "Art. 21(2)(b)" (US-136 R2)
+            var code = _axes.Keys.Where(k => k.Contains(' ') && firstLine.StartsWith(k + " ", StringComparison.Ordinal))
+                .OrderByDescending(k => k.Length).FirstOrDefault() ?? firstLine.Split(' ')[0];
 
             var storyScores = _scores.Where(s => s.Key.Story == firstLine).ToList();
             if (storyScores.Count > 0)

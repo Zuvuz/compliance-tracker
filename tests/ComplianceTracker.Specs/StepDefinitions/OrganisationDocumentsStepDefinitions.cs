@@ -20,6 +20,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         // ---------------------------------------------------------- Given / When
 
+        [Given("I upload the policy {string} version {string} for the organisation")]
         [When("I upload the policy {string} version {string} for the organisation")]
         public Task WhenIUploadThePolicy(string title, string version) => UploadAsync(title, version, $"{title} text", null);
 

@@ -1,7 +1,9 @@
 @* US-136: the organisation's policies, procedures and risk tables. Each is evidence for every project that follows a
    requirement it is linked to. UI contract: #upload-document, li.organisation-document[data-title] with .document-links,
    form.link-document, form.unlink-document, form.new-version, form.review-document, form.remove-document, .review-due,
-   .used-by, #documents-due *@
+   .used-by, #documents-due. US-136 R2: #document-ai (the AI's message after an upload), .document-suggestion[data-code]
+   with form.approve-document-suggestion and form.reject-document-suggestion, form.more-document-suggestions,
+   #document-suggestions-due *@
 @using ComplianceTracker.Application.Organizations
 @using ComplianceTracker.Domain.Organizations
 @model OrganisationDocumentsView
@@ -19,6 +21,19 @@
 <p class="text-muted">Policies, procedures and risk tables kept once for the organisation. A document linked to a requirement is evidence for it in every project that follows the requirement.</p>
 
 <div asp-validation-summary="All" class="text-danger"></div>
+
+@if (TempData["DocumentAi"] is string ai)
+{
+    <div class="alert alert-info" id="document-ai" role="status">@ai</div>
+}
+
+@{ var waiting = Model.Suggestions.Values.Sum(s => s.Count); }
+@if (waiting > 0)
+{
+    <div class="alert alert-info" id="document-suggestions-due" role="status">
+        <strong>Needs attention:</strong> @waiting AI suggestion@(waiting == 1 ? "" : "s") for the documents wait for a decision.
+    </div>
+}
 
 @if (due.Count > 0)
 {
@@ -88,6 +103,52 @@
             <div class="small text-muted mt-1 used-by">
                 @(projects.Count == 0 ? "Used by no project yet" : $"Used by {string.Join(", ", projects)}")
             </div>
+
+            @if (Model.Suggestions.TryGetValue(document.Id, out var suggestions))
+            {
+                @* US-136 R2: decided once for the document; approving makes it evidence wherever the requirement is followed *@
+                <div class="mt-2 document-suggestions">
+                    <div class="small fw-semibold">AI suggestions</div>
+                    <ul class="list-unstyled mb-0">
+                        @foreach (var entry in suggestions)
+                        {
+                            var suggestion = entry.Suggestion;
+                            <li class="document-suggestion border-start border-3 border-info ps-2 my-1" data-code="@suggestion.RequirementCode" data-framework="@entry.Framework">
+                                <span class="small"><strong>@entry.Framework @suggestion.RequirementCode</strong> @entry.Title
+                                    <span class="text-muted">· score @suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span></span>
+                                @if (Model.CanManage)
+                                {
+                                    <div class="d-flex flex-wrap gap-2 mt-1">
+                                        <form asp-action="ApproveSuggestion" method="post" class="approve-document-suggestion">
+                                            <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
+                                        </form>
+                                        <form asp-action="RejectSuggestion" method="post" class="d-flex flex-wrap gap-1 reject-document-suggestion">
+                                            <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                            <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason">
+                                                <option value="">Reason…</option>
+                                                @foreach (var reason in Enum.GetValues<ComplianceTracker.Domain.Mappings.RejectionReason>())
+                                                {
+                                                    <option value="@reason">@reason</option>
+                                                }
+                                            </select>
+                                            <input name="comment" class="form-control form-control-sm w-auto" placeholder="Comment (optional)" aria-label="Comment" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                        </form>
+                                    </div>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+            @if (Model.CanManage)
+            {
+                <form asp-action="MoreSuggestions" method="post" class="mt-1 more-document-suggestions">
+                    <input type="hidden" name="documentId" value="@document.Id" />
+                    <button type="submit" class="btn btn-link btn-sm p-0">Ask the AI for (more) requirements</button>
+                </form>
+            }
 
             @if (document.Versions.Count > 0)
             {

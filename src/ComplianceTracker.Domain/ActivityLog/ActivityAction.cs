@@ -218,6 +218,12 @@ namespace ComplianceTracker.Domain.ActivityLog
         // US-142: the NIS2 scope check was done (Details holds the result and the reason), and the organisation's
         // country was changed. SubjectId points at the organisation.
         Nis2ScopeChecked,
-        OrganisationCountryChanged
+        OrganisationCountryChanged,
+
+        // US-136 R2: the AI suggested requirements for one of the organisation's documents, and a person approved or
+        // rejected a suggestion. SubjectId points at the organisation.
+        DocumentLinkSuggested,
+        DocumentLinkApproved,
+        DocumentLinkRejected
     }
 }
