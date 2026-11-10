@@ -187,6 +187,19 @@ dotnet test
 
 Docker Desktop must be running: the integration tests start their own PostgreSQL and Keycloak containers with Testcontainers, so they do not use your local environment. The Keycloak scenario takes about a minute the first time, because the image is downloaded.
 
+### Test coverage (US-140)
+
+Every build measures how much of the code the tests run, and fails if a project falls under its minimum in `build/minimum-coverage.json`. The coverage of each PR is in its job summary, and the HTML report is saved as the artifact `coverage-report-<commit>`. To see it locally:
+
+```bash
+dotnet test --settings coverlet.runsettings --collect "XPlat Code Coverage" --results-directory coverage
+python build/coverage_gate.py coverage
+dotnet tool restore
+dotnet reportgenerator "-reports:coverage/**/coverage.cobertura.xml" -targetdir:coverage-report -reporttypes:Html
+```
+
+Then open `coverage-report/index.html`. Migrations, generated files (also the Razor views and the `.feature.cs` files) and `Program.cs` are not counted.
+
 ## Backups
 
 With the whole system (`--profile full`), the `backup` service backs up the database (`postgres-full`) every night at 02:00 to `./backups` and keeps 30 days. To restore one:
