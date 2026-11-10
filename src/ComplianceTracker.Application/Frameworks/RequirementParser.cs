@@ -36,6 +36,10 @@ namespace ComplianceTracker.Application.Frameworks
         [GeneratedRegex(@"^Annex\s+(?<letter>[A-Z])\b\s*(?<rest>.{0,200})$")]
         private static partial Regex StandardAnnex();
 
+        // US-143 R4: a clause of a standard's annex with one number, "C.1 Rule" (longer codes such as "A.5.1" are StandardLine)
+        [GeneratedRegex(@"^(?<code>[A-Z]\.\d{1,3})\.?\s+(?<title>\p{L}.*)$")]
+        private static partial Regex AnnexClause();
+
         // "(normative)" or "(informative)" at the start of an annex's title
         [GeneratedRegex(@"^\((?:normative|informative)\)\s*", RegexOptions.IgnoreCase)]
         private static partial Regex AnnexType();
@@ -128,7 +132,7 @@ namespace ComplianceTracker.Application.Frameworks
 
             // US-143: in a standard, the clause lettered points sit under, and a part that is left out (its code prefix,
             // e.g. "3" or "B", or "" for all the rest, such as a bibliography)
-            string? clause = null, leftOut = null;
+            string? clause = null, leftOut = null, annexLetter = null;
             var inNote = false;
 
             foreach (var (page, text) in lines.SelectMany(p => p))
@@ -216,12 +220,21 @@ namespace ComplianceTracker.Application.Frameworks
                 else if (!euAct && StandardAnnex().Match(text) is { Success: true } annexOfStandard)
                 {
                     clause = null;
+                    annexLetter = annexOfStandard.Groups["letter"].Value;
                     var rest = AnnexType().Replace(annexOfStandard.Groups["rest"].Value, "").Trim();
-                    started = new Found { Code = $"Annex {annexOfStandard.Groups["letter"].Value}", Title = rest, TitleFromNextLine = rest.Length == 0 };
+                    started = new Found { Code = $"Annex {annexLetter}", Title = rest, TitleFromNextLine = rest.Length == 0 };
+                }
+                else if (!euAct && annexLetter is not null && AnnexClause().Match(text) is { Success: true } annexClause
+                         && annexClause.Groups["code"].Value.StartsWith(annexLetter + ".", StringComparison.Ordinal))
+                {
+                    // "C.1 Rule" inside Annex C
+                    clause = annexClause.Groups["code"].Value;
+                    started = new Found { Code = clause, Title = annexClause.Groups["title"].Value.Trim() };
                 }
                 else if (!euAct && TopClause().Match(text) is { Success: true } top)
                 {
                     clause = top.Groups["code"].Value;
+                    annexLetter = null;
                     started = new Found { Code = clause, Title = top.Groups["title"].Value.Trim() };
                 }
                 else if (!euAct && clause is not null && LetteredPoint().Match(text) is { Success: true } lettered)
