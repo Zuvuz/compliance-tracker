@@ -22,6 +22,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(s => s.ContentType).IsRequired().HasMaxLength(100);
             builder.Property(s => s.Sha256).IsRequired().HasMaxLength(64);
             builder.Property(s => s.LockedRole).HasConversion<string>().HasMaxLength(50);
+            builder.Property(s => s.Figures).HasMaxLength(4000);
 
             builder.HasOne<Organization>().WithMany().HasForeignKey(s => s.OrganizationId).OnDelete(DeleteBehavior.Restrict);
             builder.HasOne<Project>().WithMany().HasForeignKey(s => s.ProjectId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);

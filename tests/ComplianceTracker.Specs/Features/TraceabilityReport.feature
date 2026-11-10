@@ -36,9 +36,8 @@ Feature: The traceability matrix for each reader
   @US-120 @iso27001-9.3 @integration
   Scenario: The management gets the overview only
     When I download the traceability matrix of "Acme Portal" as Excel for the management
-    Then the workbook has only the sheet "Summary"
-    And the summary says "Coverage – CRA" is "0 % (0 of 72)"
-    And the summary says "Open High and Critical risks" is "0"
+    Then on "Status" the first row says "Regulation" "CRA" and "Coverage" "0 % (0 of 72)"
+    And on "Key figures" the first row says "Figure" "Requirements covered" and "Value" "0 of 72"
 
   @US-120 @integration
   Scenario: The download is logged
