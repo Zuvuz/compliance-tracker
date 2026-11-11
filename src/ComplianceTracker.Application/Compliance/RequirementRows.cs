@@ -20,7 +20,12 @@ namespace ComplianceTracker.Application.Compliance
         public static string StorySource(LinkedWorkItem link, Func<Guid, string> nameOf)
         {
             var where = link.WorkItem.Source == WorkItemSource.Document ? "Specification" : "GitHub";
-            var how = link.Link.Source == LinkSource.AiApproved ? "AI suggestion approved by" : "linked by";
+            var how = link.Link.Source switch
+            {
+                LinkSource.AiApproved => "AI suggestion approved by",
+                LinkSource.AiDrafted => "AI-drafted, accepted by", // US-106 R5
+                _ => "linked by"
+            };
             return $"{where} · {how} {nameOf(link.Link.LinkedById)}, {Date(link.Link.LinkedAt)}";
         }
 

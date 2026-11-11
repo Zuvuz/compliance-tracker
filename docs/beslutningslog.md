@@ -1228,6 +1228,28 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Direkte koblinger fra evidens til risici, scanninger eller almindelige rapporter.
   - En graf over hele kæden: en senere story.
 
+### B83 – Spørg AI'en om ét krav, én evidens, én story eller én risiko (US-106)
+
+- **Beslutning:**
+  - **"Ask the AI" på et krav** kigger kun på det ene krav:
+    - Først foreslås projektets stories og evidens, der passer, højst 3 af hver, med samme embedding og minimumsscore som ellers (US-105).
+    - En score på 0 tæller aldrig som et match.
+    - Et par, der er koblet, godkendt eller afvist, foreslås ikke igen.
+    - Spørger man igen, erstattes de ventende forslag, men aldrig de afgjorte.
+    - Er der intet, der passer, skriver chatmodellen (opgaven `GapDrafts`, US-117) et udkast til en user story. Udkastet indeholder titel, rolle, story, regler og eksempler, ud fra kravets tekst og projektets formål. Promptens version gemmes med udkastet.
+  - **Udkastet** er mærket "AI-generated" og bliver først til en story, når en person har læst det, eventuelt rettet det og trykket "Create story".
+    - Trackeren skriver ikke til GitHub (B12). I stedet åbner den GitHubs "new issue"-side udfyldt med udkastet.
+    - Når issuet kommer ind ved næste synkronisering (samme titel), kobles det til kravet med kilden "AI-drafted", som den person, der accepterede.
+    - Et udkast kan kasseres med en begrundelse og gemmes som historik.
+  - **Evidens og stories** havde allerede "Suggest requirements" (US-059, US-020). Med US-146 foreslår evidens også stories.
+  - **"Suggest measures" på en risiko** foreslår krav og stories, der kan mindske den. Først når en person godkender, bliver forslaget et tiltag (US-124).
+  - Alle forslag lander i "Waiting for your decision"-boksen (US-144) og viser, at de kommer fra AI'en.
+  - Auditoren ser forslag og udkast, men kan ikke spørge eller beslutte.
+- **Begrundelse:** Det er hurtigt og billigt at spørge om én ting ad gangen, og et udkast giver en konkret vej videre for et krav, som intet dækker.
+- **Fravalgt:**
+  - At trackeren selv opretter issues i GitHub. Det kræver skriveadgang og en undtagelse fra B12 som B42.
+  - At et udkast bliver et krav i trackerens egen liste for projekter uden GitHub. Teksten kan kopieres; det kan blive en senere story.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

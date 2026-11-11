@@ -433,6 +433,37 @@ classDiagram
   OrganisationAreaService ..> Project : organisation area
   OrganisationAreaService ..> Nis2Assessment : opretter
   RequirementApplicability --> Risk : justified by
+  class StoryDraft {
+    -id: Guid
+    -projectId: Guid
+    -requirementId: Guid
+    -title: string
+    -role: string
+    -story: string
+    -rules: string
+    -examples: string
+    -model: string
+    -promptVersion: string
+    -status: StoryDraftStatus
+    -editedByPerson: bool
+    -workItemId: Guid?
+    +Accept(title, role, story, rules, examples, userId, at, role)
+    +Discard(reason, userId, at, role)
+    +LinkedTo(workItemId)
+    +IssueBody(requirementCode) string
+  }
+  StoryDraft --> Requirement : drafted for
+  class RiskMeasureSuggestion {
+    -id: Guid
+    -riskId: Guid
+    -requirementId: Guid?
+    -workItemId: Guid?
+    -score: double
+    -status: SuggestionStatus
+    +Approve(userId, at, role)
+    +Reject(reason, comment, userId, at, role)
+  }
+  RiskMeasureSuggestion --> Risk
   class EvidenceStoryLink {
     -id: Guid
     -projectId: Guid

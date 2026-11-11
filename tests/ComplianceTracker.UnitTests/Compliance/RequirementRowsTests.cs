@@ -55,6 +55,7 @@ public class RequirementRowsTests
     [Theory]
     [InlineData(LinkSource.Manual, "GitHub · linked by Bo, 02-11-2026")]
     [InlineData(LinkSource.AiApproved, "GitHub · AI suggestion approved by Bo, 02-11-2026")]
+    [InlineData(LinkSource.AiDrafted, "GitHub · AI-drafted, accepted by Bo, 02-11-2026")]
     public void A_story_says_where_it_came_from_and_who_linked_it(LinkSource source, string expected)
     {
         // Act / Assert

@@ -197,7 +197,7 @@ namespace ComplianceTracker.Application.Ai
             var allSuggestions = await _storySuggestions.ListAsync(project.Id, cancellationToken);
             var made = candidates
                 .Select((story, i) => (Story: story, Score: Similarity.Cosine(vectors[0], vectors[i + 1])))
-                .Where(c => c.Score >= _limits.MinimumScoreForStories)
+                .Where(c => c.Score > 0 && c.Score >= _limits.MinimumScoreForStories)
                 .OrderByDescending(c => c.Score)
                 .Take(PerKind)
                 .Select(c => MappingSuggestion.Create(project.Id, c.Story.Id, requirement.Id, c.Score,
@@ -237,7 +237,7 @@ namespace ComplianceTracker.Application.Ai
             var all = await _evidenceSuggestions.ListAsync(project.Id, cancellationToken);
             var made = candidates
                 .Select((item, i) => (Evidence: item, Score: Similarity.Cosine(vectors[0], vectors[i + 1])))
-                .Where(c => c.Score >= _limits.MinimumScoreForEvidence)
+                .Where(c => c.Score > 0 && c.Score >= _limits.MinimumScoreForEvidence)
                 .OrderByDescending(c => c.Score)
                 .Take(PerKind)
                 .Select(c => EvidenceLinkSuggestion.Create(project.Id, c.Evidence.Id, requirement.Id, c.Score,
@@ -338,7 +338,7 @@ namespace ComplianceTracker.Application.Ai
 
             var made = candidates
                 .Select((c, i) => (Candidate: c, Score: Similarity.Cosine(vectors[0], vectors[i + 1])))
-                .Where(c => c.Score >= _limits.MinimumScoreForStories)
+                .Where(c => c.Score > 0 && c.Score >= _limits.MinimumScoreForStories)
                 .OrderByDescending(c => c.Score)
                 .Take(MeasuresPerRisk)
                 .Select(c => RiskMeasureSuggestion.Create(project.Id, risk.Id, c.Candidate.RequirementId, c.Candidate.WorkItemId, c.Score, _embeddings.Name, Now))
