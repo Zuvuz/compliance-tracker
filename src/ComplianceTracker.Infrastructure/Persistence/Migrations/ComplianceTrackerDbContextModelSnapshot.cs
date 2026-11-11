@@ -3693,6 +3693,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("RevokedById")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("RiskId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DecidedById");

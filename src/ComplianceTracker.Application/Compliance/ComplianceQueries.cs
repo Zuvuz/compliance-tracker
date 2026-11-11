@@ -102,7 +102,14 @@ namespace ComplianceTracker.Application.Compliance
                 .ToLookup(l => l.RequirementId);
 
             // US-058: suggestions from tests and pull requests that wait for a person, and the newest run's failing tests
-            var evidenceSuggestions = (await _evidenceSuggestions.ListAsync(project.Id, cancellationToken))
+            var allEvidenceSuggestions = await _evidenceSuggestions.ListAsync(project.Id, cancellationToken);
+
+            // US-144 R2: evidence that was accepted from a test run or a pull request remembers where it came from
+            var acceptedFrom = allEvidenceSuggestions
+                .Where(s => s.EvidenceId is not null && s.Status == Domain.Mappings.EvidenceSuggestionStatus.Accepted)
+                .GroupBy(s => s.EvidenceId!.Value)
+                .ToDictionary(g => g.Key, g => g.OrderBy(s => s.CreatedAt).First().Source);
+            var evidenceSuggestions = allEvidenceSuggestions
                 .Where(s => s.Status is Domain.Mappings.EvidenceSuggestionStatus.Pending or Domain.Mappings.EvidenceSuggestionStatus.Blocked)
                 .OrderByDescending(s => s.CreatedAt)
                 .ToLookup(s => s.RequirementId);
@@ -157,6 +164,11 @@ namespace ComplianceTracker.Application.Compliance
                         decisions.GetValueOrDefault(requirement.Id)?.Reason)
                     {
                         NotApplicableNeedsReview = decisions.GetValueOrDefault(requirement.Id)?.NeedsReview ?? false,
+                        // US-144 R14: the risk that justifies "not applicable"
+                        NotApplicableRisk = decisions.GetValueOrDefault(requirement.Id)?.RiskId is { } riskId
+                            && projectRisks.FirstOrDefault(r => r.Id == riskId) is { } justifying
+                                ? new Risks.RiskReference(justifying.Id, justifying.Title, justifying.Level)
+                                : null,
                         PreviousRequirement = PreviousOf(requirement.Id, links, evidenceLinks, decisions, allRequirements),
                         // US-044 R4: best first
                         Suggestions = pendingSuggestions.Where(s => s.RequirementId == requirement.Id)
@@ -166,7 +178,8 @@ namespace ComplianceTracker.Application.Compliance
                         Evidence = evidence.Where(e => evidenceLinks[requirement.Id].Any(l => l.EvidenceId == e.Id))
                             .Select(e => new EvidenceItem(e, e.IsExpiredOn(today))
                             {
-                                NeedsReview = evidenceLinks[requirement.Id].Any(l => l.EvidenceId == e.Id && l.NeedsReview)
+                                NeedsReview = evidenceLinks[requirement.Id].Any(l => l.EvidenceId == e.Id && l.NeedsReview),
+                                AcceptedFrom = acceptedFrom.TryGetValue(e.Id, out var kind) ? kind : null
                             })
                             .ToList(),
                         EvidenceSuggestions = evidenceSuggestions[requirement.Id].ToList(),
@@ -231,10 +244,11 @@ namespace ComplianceTracker.Application.Compliance
             => Frameworks.FirstOrDefault(f => f.Version.Id == requirement.FrameworkVersionId);
 
         // US-021 R3: per user story, the codes of the requirements it is linked to
+        // US-144 R16: with more than one framework, each code is named with its framework, e.g. "CRA I.2(d)", "AI Act Art. 4"
         public IReadOnlyList<string> RequirementCodesOf(Guid workItemId)
-            => Frameworks.SelectMany(f => f.Requirements)
-                .Where(r => r.Links.Any(l => l.WorkItem.Id == workItemId))
-                .Select(r => r.Requirement.Code)
+            => Frameworks.SelectMany(f => f.Requirements
+                    .Where(r => r.Links.Any(l => l.WorkItem.Id == workItemId))
+                    .Select(r => Frameworks.Count > 1 ? $"{ComplianceTracker.Application.Frameworks.FrameworkSlugs.Short(f.Framework.Name)} {r.Requirement.Code}" : r.Requirement.Code))
                 .Distinct()
                 .ToList();
     }
@@ -304,6 +318,9 @@ namespace ComplianceTracker.Application.Compliance
         // US-110 R4: the requirement in the earlier version, for the old text
         public Requirement? PreviousRequirement { get; init; }
 
+        // US-144 R14: the project's risk that justifies "not applicable"; null when none was named
+        public Risks.RiskReference? NotApplicableRisk { get; init; }
+
         // US-110: something on this requirement was carried over and waits for a person
         public bool NeedsReview => Links.Any(l => l.Link.NeedsReview) || Evidence.Any(e => e.NeedsReview) || NotApplicableNeedsReview;
 
@@ -344,6 +361,9 @@ namespace ComplianceTracker.Application.Compliance
     {
         // US-110: the link to this requirement waits for review after a version change
         public bool NeedsReview { get; init; }
+
+        // US-144 R2: the evidence was accepted from a suggestion of a test run or a pull request (US-058); null otherwise
+        public Domain.Mappings.EvidenceSourceKind? AcceptedFrom { get; init; }
     }
 
     public record SuggestedWorkItem(Domain.Mappings.MappingSuggestion Suggestion, WorkItem WorkItem);
