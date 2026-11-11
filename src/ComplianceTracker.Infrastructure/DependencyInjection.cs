@@ -76,6 +76,8 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<Application.Feedback.IFeedbackRepository, FeedbackRepository>(); // US-063
             services.AddScoped<IEvidenceLinkSuggestionRepository, EvidenceLinkSuggestionRepository>(); // US-059
             services.AddScoped<IEvidenceStoryRepository, EvidenceStoryRepository>(); // US-146
+            services.AddScoped<Application.Ai.IStoryDraftRepository, StoryDraftRepository>(); // US-106
+            services.AddScoped<Application.Ai.IRiskMeasureSuggestionRepository, RiskMeasureSuggestionRepository>(); // US-106
             services.AddScoped<IEvidenceSuggestionRepository, EvidenceSuggestionRepository>(); // US-058
             services.AddSingleton<ITestResultsReader, Compliance.TestResultsReader>();
             services.AddSingleton<IEvidenceTextReader, Compliance.EvidenceTextReader>();

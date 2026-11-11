@@ -45,7 +45,7 @@ namespace ComplianceTracker.Application.Compliance
 
         // The items that wait for a person: AI story suggestions, suggested evidence and a "not applicable" suggestion
         public static int Waiting(RequirementCoverage row)
-            => (row.IsApplicable ? row.Suggestions.Count : 0)
+            => (row.IsApplicable ? row.Suggestions.Count + row.SuggestedEvidence.Count + (row.Draft is null ? 0 : 1) : 0)
                + row.PendingEvidenceSuggestions.Count()
                + (row.IsApplicable && row.ApplicabilitySuggestion is not null ? 1 : 0);
 

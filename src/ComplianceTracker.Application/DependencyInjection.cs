@@ -40,6 +40,8 @@ namespace ComplianceTracker.Application
             services.AddScoped<EvidenceSuggestionService>(); // US-058
             services.AddScoped<VersionCarryOver>(); // US-069 R6
             services.AddScoped<MappingSuggestionService>();
+            services.AddScoped<AskTheAiService>(); // US-106
+            services.AddScoped<StoryDraftLinker>(); // US-106 R5
             services.AddScoped<RationaleService>();
             services.AddScoped<AiContextBuilder>(); // US-060, US-061
             services.AddScoped<ApplicabilitySuggestionService>(); // US-060

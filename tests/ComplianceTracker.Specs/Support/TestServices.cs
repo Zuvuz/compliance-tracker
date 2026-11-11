@@ -60,6 +60,8 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<IEvidenceRepository, EvidenceRepository>(); // US-057
                 services.AddScoped<IEvidenceLinkSuggestionRepository, EvidenceLinkSuggestionRepository>(); // US-059
                 services.AddScoped<IEvidenceStoryRepository, EvidenceStoryRepository>(); // US-146
+                services.AddScoped<ComplianceTracker.Application.Ai.IStoryDraftRepository, StoryDraftRepository>(); // US-106
+                services.AddScoped<ComplianceTracker.Application.Ai.IRiskMeasureSuggestionRepository, RiskMeasureSuggestionRepository>(); // US-106
                 services.AddScoped<IEvidenceSuggestionRepository, EvidenceSuggestionRepository>(); // US-058
                 services.AddSingleton<ITestResultsReader, ComplianceTracker.Infrastructure.Compliance.TestResultsReader>();
                 services.AddSingleton<IPullRequestReader>(provider => (GitHubWorkItemSource)provider.GetRequiredService<IWorkItemSource>());

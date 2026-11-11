@@ -105,6 +105,52 @@
             </select>
             <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Link measure</button>
         </form>
+
+        @* US-106 R12: the AI suggests measures; a person approves each one *@
+        <form asp-action="SuggestMeasures" method="post" class="mt-2" id="suggest-measures">
+            <input type="hidden" name="id" value="@risk.Id" />
+            <button type="submit" class="btn btn-sm btn-outline-info">Suggest measures</button>
+        </form>
+    }
+    @if (TempData["MeasureMessage"] is string measureMessage)
+    {
+        <p class="small text-muted mt-1" id="measure-message" role="status">@measureMessage</p>
+    }
+    @if (Model.MeasureSuggestions.Count > 0)
+    {
+        <div class="waiting-box mt-2" id="measure-suggestions">
+            <div class="small fw-semibold">Waiting for your decision (@Model.MeasureSuggestions.Count)</div>
+            @foreach (var suggestion in Model.MeasureSuggestions)
+            {
+                var name = Model.MeasureName(suggestion);
+                <div class="row-item measure-suggestion" data-measure="@name">
+                    <span>@name</span>
+                    <div class="small text-muted item-source"><span class="badge text-bg-info">AI-generated</span> Suggested measure · score @suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</div>
+                    @if (editable)
+                    {
+                        <div class="d-flex flex-wrap gap-1 mt-1">
+                            <form asp-action="ApproveMeasure" method="post" class="approve-measure">
+                                <input type="hidden" name="id" value="@risk.Id" />
+                                <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
+                            </form>
+                            <form asp-action="RejectMeasure" method="post" class="d-flex gap-1 reject-measure">
+                                <input type="hidden" name="id" value="@risk.Id" />
+                                <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason">
+                                    <option value="">Reason…</option>
+                                    @foreach (var reason in Enum.GetValues<ComplianceTracker.Domain.Mappings.RejectionReason>())
+                                    {
+                                        <option value="@reason">@reason</option>
+                                    }
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
     }
 </section>
 

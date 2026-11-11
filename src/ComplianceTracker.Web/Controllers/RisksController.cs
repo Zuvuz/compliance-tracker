@@ -85,7 +85,7 @@ namespace ComplianceTracker.Web.Controllers
 
         // GET /Risks/Details/{id}: the risk, its measures, and accept / close / review (R11: only the organisation's)
         [HttpGet]
-        public async Task<IActionResult> Details(Guid id, [FromServices] EvidenceQueries evidence, CancellationToken cancellationToken)
+        public async Task<IActionResult> Details(Guid id, [FromServices] EvidenceQueries evidence, [FromServices] Application.Ai.IRiskMeasureSuggestionRepository measures, CancellationToken cancellationToken)
         {
             var risk = await _risks.GetAsync(id, cancellationToken);
             var project = risk is null ? null : await _projects.GetAsync(risk.ProjectId, cancellationToken);
@@ -99,8 +99,41 @@ namespace ComplianceTracker.Web.Controllers
                 await _compliance.ForProjectAsync(project.Id, cancellationToken), _clock.GetUtcNow().UtcDateTime)
             {
                 // US-111 R2: the project's evidence, to link to an action
-                ProjectEvidence = (await evidence.ForProjectAsync(project.Id, cancellationToken))?.Evidence.Select(e => e.Evidence).ToList() ?? []
+                ProjectEvidence = (await evidence.ForProjectAsync(project.Id, cancellationToken))?.Evidence.Select(e => e.Evidence).ToList() ?? [],
+                // US-106 R12
+                MeasureSuggestions = (await measures.ListAsync(project.Id, cancellationToken)).Where(s => s.RiskId == risk.Id && s.IsPending)
+                    .OrderByDescending(s => s.Score).ToList()
             });
+        }
+
+        // POST /Risks/SuggestMeasures: US-106 R12, the AI suggests requirements and stories that could reduce the risk
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "id")]
+        public async Task<IActionResult> SuggestMeasures(Guid id, [FromServices] Application.Ai.AskTheAiService ai, CancellationToken cancellationToken)
+        {
+            var made = await ai.SuggestMeasuresAsync(await ProjectOfAsync(id, cancellationToken), id, cancellationToken);
+            TempData["MeasureMessage"] = made == 0 ? "Nothing in the project matched well enough" : $"The AI suggests {made} {(made == 1 ? "measure" : "measures")}";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "id")]
+        public async Task<IActionResult> ApproveMeasure(Guid id, Guid suggestionId, [FromServices] Application.Ai.AskTheAiService ai, CancellationToken cancellationToken)
+        {
+            await ai.ApproveMeasureAsync(await ProjectOfAsync(id, cancellationToken), suggestionId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "id")]
+        public async Task<IActionResult> RejectMeasure(
+            Guid id, Guid suggestionId, Domain.Mappings.RejectionReason? reason, string? comment, [FromServices] Application.Ai.AskTheAiService ai, CancellationToken cancellationToken)
+        {
+            await ai.RejectMeasureAsync(await ProjectOfAsync(id, cancellationToken), suggestionId, reason, comment, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id });
         }
 
         // POST /Risks/Accept: R4

@@ -82,6 +82,7 @@ namespace ComplianceTracker.Specs.Support
                 DELETE FROM "SecurityEventSuggestions";
                 DELETE FROM "ExploitedLists";
                 DELETE FROM "SecurityEvents";
+                DELETE FROM "RiskMeasureSuggestions";
                 DELETE FROM "RiskActionLinks";
                 DELETE FROM "RiskActions";
                 DELETE FROM "RiskMeasures";
@@ -94,6 +95,7 @@ namespace ComplianceTracker.Specs.Support
                 DELETE FROM "Scans";
                 DELETE FROM "ScanUploadTokens";
                 DELETE FROM "EvidenceSuggestions";
+                DELETE FROM "StoryDrafts";
                 DELETE FROM "EvidenceStorySuggestions";
                 DELETE FROM "EvidenceStoryLinks";
                 DELETE FROM "EvidenceLinkSuggestions";
