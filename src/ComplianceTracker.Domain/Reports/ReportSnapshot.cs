@@ -28,12 +28,15 @@ namespace ComplianceTracker.Domain.Reports
         public UserRole? LockedRole { get; private set; }
         public DateTime LockedAt { get; private set; }
 
+        // US-141 R3: the coverage per regulation a locked management report was made from, as JSON; null for other reports
+        public string? Figures { get; private set; }
+
         // For EF Core only
         private ReportSnapshot() { }
 
         public static ReportSnapshot Lock(
             Guid organizationId, Guid? projectId, string kind, string title, string fileName, string contentType, byte[] content,
-            Guid lockedById, UserRole? role, DateTime at)
+            Guid lockedById, UserRole? role, DateTime at, string? figures = null)
         {
             if (content.Length == 0)
             {
@@ -58,7 +61,8 @@ namespace ComplianceTracker.Domain.Reports
                 Sha256 = Fingerprint(content),
                 LockedById = lockedById,
                 LockedRole = role,
-                LockedAt = at
+                LockedAt = at,
+                Figures = string.IsNullOrWhiteSpace(figures) ? null : figures.Trim()
             };
         }
 

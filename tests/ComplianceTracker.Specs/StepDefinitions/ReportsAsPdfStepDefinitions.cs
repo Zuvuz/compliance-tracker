@@ -74,6 +74,20 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.Equal("Page x of y", pageOf);
         }
 
+        // US-141 R1: each section's heading comes after the one before it
+        [Then("the PDF has the sections in this order:")]
+        public void ThenThePdfHasTheSectionsInOrder(DataTable table)
+        {
+            var text = string.Join(" ", Pages());
+            var from = 0;
+            foreach (var section in table.Rows.Select(r => r["Section"]))
+            {
+                var at = text.IndexOf(section, from, StringComparison.Ordinal);
+                Assert.True(at >= 0, $"'{section}' is missing or comes too early in the PDF.");
+                from = at + section.Length;
+            }
+        }
+
         [Then("the PDF has more than {int} page")]
         public void ThenThePdfHasMoreThanPages(int pages) => Assert.True(Pages().Count > pages, $"The PDF has {Pages().Count} page(s).");
 

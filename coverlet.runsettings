@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- US-140: what the test coverage counts. Used by CI with the XPlat Code Coverage collector (see the README). -->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat Code Coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <!-- Only the four projects of the tracker; never the test projects themselves (R5) -->
+          <Include>[ComplianceTracker.Domain]*,[ComplianceTracker.Application]*,[ComplianceTracker.Infrastructure]*,[ComplianceTracker.Web]*</Include>
+          <!-- R5: migrations, generated files and Program.cs are not counted -->
+          <ExcludeByFile>**/Migrations/*.cs,**/*.Designer.cs,**/*.g.cs,**/*.feature.cs,**/Program.cs</ExcludeByFile>
+          <ExcludeByAttribute>GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
+          <SkipAutoProps>true</SkipAutoProps>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

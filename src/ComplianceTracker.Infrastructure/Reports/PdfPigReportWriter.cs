@@ -21,7 +21,7 @@ namespace ComplianceTracker.Infrastructure.Reports
 
         public byte[] FromReport(ReportDocument document, PdfHeader header)
         {
-            var landscape = document.Sheets.Any(s => s.Columns.Count > 5);
+            var landscape = document.Sheets.Any(s => s.Kind == ReportSheetKind.Table && s.Columns.Count > 6);
             var layout = new Layout(landscape);
 
             layout.Heading(document.Title, 16);
@@ -34,7 +34,24 @@ namespace ComplianceTracker.Infrastructure.Reports
             {
                 layout.Space(10);
                 layout.Heading(sheet.Name, 12);
-                layout.Table(sheet);
+                switch (sheet.Kind)
+                {
+                    // US-141: short points as a list, key figures as tiles
+                    case ReportSheetKind.Points:
+                        layout.Space(2);
+                        foreach (var row in sheet.Rows)
+                        {
+                            layout.Paragraph("• " + (row.Cells.Count > 0 ? row.Cells[0] : ""), 10, bold: false, indent: 6);
+                        }
+
+                        break;
+                    case ReportSheetKind.Tiles:
+                        layout.Tiles(sheet);
+                        break;
+                    default:
+                        layout.Table(sheet);
+                        break;
+                }
             }
 
             return layout.Render(header);
@@ -203,6 +220,47 @@ namespace ComplianceTracker.Infrastructure.Reports
                 }
             }
 
+            // US-141: key figures as tiles, four to a row: the value large (in its status colour) and the label under it
+            public void Tiles(ReportSheet sheet)
+            {
+                const int perRow = 4;
+                const double gap = 8;
+                const double height = 42;
+                var width = (ContentWidth - (perRow - 1) * gap) / perRow;
+                for (var start = 0; start < sheet.Rows.Count; start += perRow)
+                {
+                    Space(4);
+                    Ensure(height);
+                    var top = _y;
+                    foreach (var (row, i) in sheet.Rows.Skip(start).Take(perRow).Select((r, i) => (r, i)))
+                    {
+                        var left = Margin + i * (width + gap);
+                        var label = Fit(PdfText.Clean(row.Cells.Count > 0 ? row.Cells[0] : ""), 8, false, width - 2 * CellPadding - 4);
+                        var value = Fit(PdfText.Clean(row.Cells.Count > 1 ? row.Cells[1] : ""), 15, true, width - 2 * CellPadding - 4);
+                        var colour = Colour(row.Status);
+                        Current.Add(new Op((page, fonts) =>
+                        {
+                            page.SetTextAndFillColor(245, 247, 250);
+                            page.SetStrokeColor(200, 205, 212);
+                            page.DrawRectangle(new PdfPoint(left, top - height), width, height, 0.5, fill: true);
+                            page.ResetColor();
+                            if (colour is { } c)
+                            {
+                                page.SetTextAndFillColor(c.R, c.G, c.B);
+                            }
+
+                            page.AddText(value, 15, new PdfPoint(left + 6, top - 20), fonts.Bold);
+                            page.ResetColor();
+                            page.SetTextAndFillColor(90, 90, 90);
+                            page.AddText(label, 8, new PdfPoint(left + 6, top - 34), fonts.Regular);
+                            page.ResetColor();
+                        }));
+                    }
+
+                    _y = top - height;
+                }
+            }
+
             private double[] ColumnWidths(ReportSheet sheet)
             {
                 // The longest text in each column (capped), shared out over the page width
@@ -313,9 +371,10 @@ namespace ComplianceTracker.Infrastructure.Reports
                 return builder.Build();
             }
 
-            private string Fit(string text, double size, bool bold)
+            private string Fit(string text, double size, bool bold) => Fit(text, size, bold, ContentWidth);
+
+            private static string Fit(string text, double size, bool bold, double max)
             {
-                var max = ContentWidth;
                 if (Metrics.Width(text, size, bold) <= max)
                 {
                     return text;
