@@ -69,6 +69,13 @@ namespace ComplianceTracker.Specs.Support
                     return Task.FromResult(NotApplicable.TryGetValue(code, out var reason) ? $"NOT APPLICABLE: {reason}" : "APPLIES");
                 }
 
+                // US-106: a draft user story in the labelled shape the prompt asks for
+                if (prompt.Contains(StoryDraftPrompt.Marker, StringComparison.Ordinal))
+                {
+                    return Task.FromResult(
+                        $"TITLE: Meet {code}\nROLE: User\nSTORY: As a user, I want {code} met, so that the product is compliant.\nRULES: R1: {code} is met\nEXAMPLES: A test shows {code}");
+                }
+
                 RationalesWritten++;
             }
 

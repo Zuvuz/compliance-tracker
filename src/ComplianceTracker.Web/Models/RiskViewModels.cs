@@ -69,6 +69,16 @@ namespace ComplianceTracker.Web.Models
         public string NameOf(Guid? userId)
             => Organization.Users.FirstOrDefault(u => u.Id == userId)?.Name ?? "Unknown";
 
+        // US-106 R12: the AI's pending measure suggestions for this risk, best first
+        public IReadOnlyList<Domain.Risks.RiskMeasureSuggestion> MeasureSuggestions { get; init; } = [];
+
+        // The name of a suggested measure: the requirement's code and title, or the story's title
+        public string MeasureName(Domain.Risks.RiskMeasureSuggestion suggestion)
+            => suggestion.RequirementId is { } id
+                ? Compliance?.Frameworks.SelectMany(f => f.Requirements).FirstOrDefault(r => r.Requirement.Id == id) is { } row
+                    ? $"{row.Requirement.Code} {row.Requirement.Title}" : "?"
+                : Compliance?.WorkItems.FirstOrDefault(w => w.Id == suggestion.WorkItemId)?.Title ?? "?";
+
         // US-090 R5: a removed owner is shown as such until a new owner is chosen
         public string OwnerOf(Guid userId)
             => OwnerName(Organization, userId);

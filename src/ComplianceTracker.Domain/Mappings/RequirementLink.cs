@@ -103,6 +103,9 @@ namespace ComplianceTracker.Domain.Mappings
         Manual,
 
         // A person approved an AI suggestion (US-020)
-        AiApproved
+        AiApproved,
+
+        // US-106 R5: the story was drafted by the AI for this requirement and accepted by a person
+        AiDrafted
     }
 }

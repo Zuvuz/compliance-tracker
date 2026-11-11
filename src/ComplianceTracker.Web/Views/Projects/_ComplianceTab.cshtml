@@ -225,6 +225,11 @@
         {
             <span class="small text-muted w-100" id="applicability-message" role="status">@applicabilityMessage</span>
         }
+        @if (TempData["NewIssueAddress"] is string newIssue)
+        {
+            @* US-106 R4: GitHub's "new issue" page, filled in from the accepted draft *@
+            <a class="small w-100" id="new-issue-address" href="@newIssue" target="_blank" rel="noopener noreferrer">Create the issue in GitHub</a>
+        }
     </div>
 
     @if (!hasTranslations)

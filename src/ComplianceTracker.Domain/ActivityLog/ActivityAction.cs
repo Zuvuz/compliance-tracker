@@ -236,6 +236,18 @@ namespace ComplianceTracker.Domain.ActivityLog
         EvidenceLinkedToStory,
         EvidenceUnlinkedFromStory,
         EvidenceStorySuggested,
-        EvidenceStorySuggestionRejected
+        EvidenceStorySuggestionRejected,
+
+        // US-106: a person asked the AI about one requirement; the AI drafted a story; a person accepted or discarded the
+        // draft; the accepted draft's issue came in and was linked; the AI suggested measures for a risk and one was
+        // approved or rejected. SubjectId points at the project.
+        RequirementSuggestionsAsked,
+        StoryDraftWritten,
+        StoryDraftAccepted,
+        StoryDraftDiscarded,
+        StoryDraftLinked,
+        RiskMeasuresSuggested,
+        RiskMeasureSuggestionApproved,
+        RiskMeasureSuggestionRejected
     }
 }

@@ -22,6 +22,8 @@ namespace ComplianceTracker.Application.Compliance
         private readonly IEvidenceRepository _evidence;
         private readonly IEvidenceSuggestionRepository _evidenceSuggestions;
         private readonly IEvidenceStoryRepository _evidenceStories; // US-146
+        private readonly IEvidenceLinkSuggestionRepository _evidenceLinkSuggestions; // US-106
+        private readonly Ai.IStoryDraftRepository _drafts; // US-106
         private readonly CurrentMember _member;
         private readonly TimeProvider _clock;
         private readonly IApplicabilitySuggestionRepository _applicabilitySuggestions;
@@ -38,6 +40,8 @@ namespace ComplianceTracker.Application.Compliance
             IEvidenceRepository evidence,
             IEvidenceSuggestionRepository evidenceSuggestions,
             IEvidenceStoryRepository evidenceStories,
+            IEvidenceLinkSuggestionRepository evidenceLinkSuggestions,
+            Ai.IStoryDraftRepository drafts,
             CurrentMember member,
             TimeProvider clock,
             IApplicabilitySuggestionRepository applicabilitySuggestions,
@@ -49,6 +53,8 @@ namespace ComplianceTracker.Application.Compliance
             _classifications = classifications;
             _evidenceSuggestions = evidenceSuggestions;
             _evidenceStories = evidenceStories;
+            _evidenceLinkSuggestions = evidenceLinkSuggestions;
+            _drafts = drafts;
             _projects = projects;
             _frameworks = frameworks;
             _workItems = workItems;
@@ -116,6 +122,13 @@ namespace ComplianceTracker.Application.Compliance
                 .Where(s => s.Status is Domain.Mappings.EvidenceSuggestionStatus.Pending or Domain.Mappings.EvidenceSuggestionStatus.Blocked)
                 .OrderByDescending(s => s.CreatedAt)
                 .ToLookup(s => s.RequirementId);
+
+            // US-106: the AI's pending evidence suggestions per requirement, and its open story drafts
+            var evidenceTitles = evidence.ToDictionary(e => e.Id);
+            var pendingEvidenceLinks = (await _evidenceLinkSuggestions.ListAsync(project.Id, cancellationToken))
+                .Where(s => s.IsPending && evidenceTitles.ContainsKey(s.EvidenceId))
+                .ToLookup(s => s.RequirementId);
+            var openDrafts = (await _drafts.ListAsync(project.Id, cancellationToken)).Where(d => d.IsOpen).ToLookup(d => d.RequirementId);
 
             // US-060 R4: requirements named by the measures of an open High or Critical risk
             var projectRisks = await _risks.ListAsync(project.Id, cancellationToken);
@@ -186,6 +199,9 @@ namespace ComplianceTracker.Application.Compliance
                             })
                             .ToList(),
                         EvidenceSuggestions = evidenceSuggestions[requirement.Id].ToList(),
+                        SuggestedEvidence = pendingEvidenceLinks[requirement.Id].OrderByDescending(s => s.Score)
+                            .Select(s => new SuggestedEvidence(s, evidenceTitles[s.EvidenceId])).ToList(),
+                        Draft = openDrafts[requirement.Id].FirstOrDefault(),
                         HighRisk = highRisk.Contains(requirement.Id),
                         // US-142: the organisation area has no user stories; its policies and other evidence cover
                         EvidenceCovers = project.IsOrganisationArea,
@@ -347,6 +363,12 @@ namespace ComplianceTracker.Application.Compliance
         // US-110 R4: the requirement in the earlier version, for the old text
         public Requirement? PreviousRequirement { get; init; }
 
+        // US-106: the AI's pending suggestions of the project's evidence for this requirement, best first
+        public IReadOnlyList<SuggestedEvidence> SuggestedEvidence { get; init; } = [];
+
+        // US-106 R3: the AI's open story draft for this requirement
+        public Domain.Mappings.StoryDraft? Draft { get; init; }
+
         // US-144 R14: the project's risk that justifies "not applicable"; null when none was named
         public Risks.RiskReference? NotApplicableRisk { get; init; }
 
@@ -398,6 +420,9 @@ namespace ComplianceTracker.Application.Compliance
     public record SuggestedWorkItem(Domain.Mappings.MappingSuggestion Suggestion, WorkItem WorkItem);
 
     // The link itself is kept for the traceability matrix (US-052): source, when and by whom
+    // US-106: a piece of the project's evidence the AI suggests for a requirement
+    public record SuggestedEvidence(Domain.Mappings.EvidenceLinkSuggestion Suggestion, Domain.Mappings.Evidence Evidence);
+
     // US-146: one piece of evidence linked straight to a story
     public record StoryEvidence(Guid WorkItemId, Domain.Mappings.Evidence Evidence);
 

@@ -27,6 +27,8 @@ namespace ComplianceTracker.Application.WorkItems
         private readonly IGitHubProjects _githubProjects;
         private readonly Compliance.EvidenceSuggestionService _evidenceSuggestions;
 
+        private readonly Ai.StoryDraftLinker _drafts; // US-106 R5
+
         public WorkItemSyncService(
             IProjectRepository projects,
             IWorkItemRepository workItems,
@@ -38,8 +40,10 @@ namespace ComplianceTracker.Application.WorkItems
             IUnitOfWork unitOfWork,
             TimeProvider clock,
             Compliance.EvidenceSuggestionService evidenceSuggestions,
-            IGitHubProjects githubProjects)
+            IGitHubProjects githubProjects,
+            Ai.StoryDraftLinker drafts)
         {
+            _drafts = drafts;
             _githubProjects = githubProjects;
             _evidenceSuggestions = evidenceSuggestions;
             _projects = projects;
@@ -345,6 +349,12 @@ namespace ComplianceTracker.Application.WorkItems
             }
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            // US-106 R5: an issue made from an accepted AI draft is linked to its requirement, once it is saved
+            if (await _drafts.LinkAcceptedAsync(project, cancellationToken) > 0)
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
 
             // US-058 R3: the pull requests that closed linked stories become evidence suggestions
             if (await _evidenceSuggestions.SuggestFromPullRequestsAsync(project, Token(link), cancellationToken) > 0)

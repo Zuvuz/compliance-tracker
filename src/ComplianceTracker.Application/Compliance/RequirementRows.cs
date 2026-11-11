@@ -20,7 +20,12 @@ namespace ComplianceTracker.Application.Compliance
         public static string StorySource(LinkedWorkItem link, Func<Guid, string> nameOf)
         {
             var where = link.WorkItem.Source == WorkItemSource.Document ? "Specification" : "GitHub";
-            var how = link.Link.Source == LinkSource.AiApproved ? "AI suggestion approved by" : "linked by";
+            var how = link.Link.Source switch
+            {
+                LinkSource.AiApproved => "AI suggestion approved by",
+                LinkSource.AiDrafted => "AI-drafted, accepted by", // US-106 R5
+                _ => "linked by"
+            };
             return $"{where} · {how} {nameOf(link.Link.LinkedById)}, {Date(link.Link.LinkedAt)}";
         }
 
@@ -45,7 +50,7 @@ namespace ComplianceTracker.Application.Compliance
 
         // The items that wait for a person: AI story suggestions, suggested evidence and a "not applicable" suggestion
         public static int Waiting(RequirementCoverage row)
-            => (row.IsApplicable ? row.Suggestions.Count : 0)
+            => (row.IsApplicable ? row.Suggestions.Count + row.SuggestedEvidence.Count + (row.Draft is null ? 0 : 1) : 0)
                + row.PendingEvidenceSuggestions.Count()
                + (row.IsApplicable && row.ApplicabilitySuggestion is not null ? 1 : 0);
 

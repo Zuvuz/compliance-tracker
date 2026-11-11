@@ -283,6 +283,72 @@
 
                     @if (row.IsApplicable)
                     {
+                        @foreach (var entry in row.SuggestedEvidence)
+                        {
+                            @* US-106 R2: the project's evidence the AI suggests for this requirement *@
+                            <div class="ai-evidence-suggestion row-item" data-evidence="@entry.Evidence.Title">
+                                <span class="suggested-evidence-for-requirement">@entry.Evidence.Title</span>
+                                <div class="small text-muted item-source"><span class="badge text-bg-info">AI-generated</span> Suggested evidence · score @entry.Suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</div>
+                                @if (!project.IsClosed && Model.CanLink)
+                                {
+                                    <div class="d-flex flex-wrap gap-1 mt-1">
+                                        <form asp-action="ApproveEvidenceSuggestion" method="post" class="approve-row-evidence-suggestion">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="suggestionId" value="@entry.Suggestion.Id" />
+                                            <input type="hidden" name="sub" value="@sub" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
+                                        </form>
+                                        <form asp-action="RejectEvidenceSuggestion" method="post" class="d-flex flex-wrap gap-1 reject-row-evidence-suggestion">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="suggestionId" value="@entry.Suggestion.Id" />
+                                            <input type="hidden" name="sub" value="@sub" />
+                                            <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason">
+                                                <option value="">Reason…</option>
+                                                @foreach (var reason in Enum.GetValues<ComplianceTracker.Domain.Mappings.RejectionReason>())
+                                                {
+                                                    <option value="@reason">@reason</option>
+                                                }
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                        </form>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        @if (row.Draft is { } draft)
+                        {
+                            @* US-106 R3–R6: the AI's draft, editable; it becomes a story only when a person accepts it *@
+                            <div class="story-draft row-item" data-title="@draft.Title">
+                                <div class="small item-source"><span class="badge text-bg-info ai-generated">AI-generated</span> Draft user story · nothing in the project matched</div>
+                                @if (!project.IsClosed && Model.CanLink)
+                                {
+                                    <form asp-action="AcceptStoryDraft" method="post" class="d-flex flex-column gap-1 mt-1 accept-story-draft">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="draftId" value="@draft.Id" />
+                                        <input type="hidden" name="sub" value="@sub" />
+                                        <input name="title" class="form-control form-control-sm" value="@draft.Title" maxlength="200" aria-label="Title" />
+                                        <input name="role" class="form-control form-control-sm" value="@draft.Role" placeholder="Role" aria-label="Role" />
+                                        <textarea name="story" class="form-control form-control-sm" rows="2" aria-label="User story">@draft.Story</textarea>
+                                        <textarea name="rules" class="form-control form-control-sm" rows="2" placeholder="Rules" aria-label="Rules">@draft.Rules</textarea>
+                                        <textarea name="examples" class="form-control form-control-sm" rows="2" placeholder="Examples" aria-label="Examples">@draft.Examples</textarea>
+                                        <button type="submit" class="btn btn-sm btn-outline-success align-self-start">Create story</button>
+                                    </form>
+                                    <form asp-action="DiscardStoryDraft" method="post" class="d-flex gap-1 mt-1 discard-story-draft">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="draftId" value="@draft.Id" />
+                                        <input type="hidden" name="sub" value="@sub" />
+                                        <input name="reason" class="form-control form-control-sm" placeholder="Why it is discarded" aria-label="Reason" required />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Discard</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <div class="small"><strong>@draft.Title</strong>: @draft.Story</div>
+                                }
+                            </div>
+                        }
+
                         @foreach (var entry in row.Suggestions)
                         {
                             @* US-044 R4: best first *@
@@ -332,6 +398,16 @@
             {
                 @* R4: the actions as small buttons; their fields open only when clicked (US-044 R7) *@
                 <div class="small d-flex flex-wrap gap-2 row-actions">
+                    @if (canAddEvidence)
+                    {
+                        @* US-106 R1: ask the AI about this requirement only *@
+                        <form asp-action="AskTheAi" method="post" class="ask-the-ai">
+                            <input type="hidden" name="projectId" value="@project.Id" />
+                            <input type="hidden" name="requirementId" value="@requirement.Id" />
+                            <input type="hidden" name="sub" value="@sub" />
+                            <button type="submit" class="btn btn-sm btn-outline-info py-0" title="The local AI looks for stories and evidence that meet this requirement, and drafts a story when nothing does.">Ask the AI</button>
+                        </form>
+                    }
                     @if (canAddEvidence)
                     {
                         @* US-057 R1, R2 *@

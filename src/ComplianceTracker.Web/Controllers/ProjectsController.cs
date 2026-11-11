@@ -673,10 +673,53 @@ namespace ComplianceTracker.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
-        public async Task<IActionResult> ApproveEvidenceSuggestion(Guid projectId, Guid suggestionId, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
+        public async Task<IActionResult> ApproveEvidenceSuggestion(Guid projectId, Guid suggestionId, string? sub, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
         {
             await evidence.ApproveAsync(projectId, suggestionId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+            return BackFromSuggestion(projectId, sub); // US-106: from the Compliance tab, back there
+        }
+
+        // US-106: a decision made in a requirement row goes back to the Compliance tab (sub is set), else to the Evidence tab
+        private RedirectToActionResult BackFromSuggestion(Guid projectId, string? sub)
+            => sub is null
+                ? RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence })
+                : RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+
+        // POST /Projects/AskTheAi: US-106 R1–R3, about one requirement
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> AskTheAi(Guid projectId, Guid requirementId, string? sub, [FromServices] Application.Ai.AskTheAiService ai, CancellationToken cancellationToken)
+        {
+            var result = await ai.AskAboutRequirementAsync(projectId, requirementId, cancellationToken);
+            TempData["ApplicabilityMessage"] = result.Summary;
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // POST /Projects/AcceptStoryDraft: US-106 R4, with the person's changes
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> AcceptStoryDraft(
+            Guid projectId, Guid draftId, string? title, string? role, string? story, string? rules, string? examples, string? sub,
+            [FromServices] Application.Ai.AskTheAiService ai, CancellationToken cancellationToken)
+        {
+            var (draft, address) = await ai.AcceptDraftAsync(projectId, draftId, title, role, story, rules, examples, cancellationToken);
+            TempData["ApplicabilityMessage"] = address is null
+                ? $"\"{draft.Title}\" is accepted. Add it to the project's requirements; it is linked when it comes in."
+                : $"\"{draft.Title}\" is accepted. Create the issue in GitHub; it is linked to the requirement at the next sync.";
+            TempData["NewIssueAddress"] = address;
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        // POST /Projects/DiscardStoryDraft: US-106 R6
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> DiscardStoryDraft(Guid projectId, Guid draftId, string? reason, string? sub, [FromServices] Application.Ai.AskTheAiService ai, CancellationToken cancellationToken)
+        {
+            await ai.DiscardDraftAsync(projectId, draftId, reason, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
         }
 
         // POST /Projects/RejectEvidenceSuggestion: R4, with a reason
@@ -685,10 +728,10 @@ namespace ComplianceTracker.Web.Controllers
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
         public async Task<IActionResult> RejectEvidenceSuggestion(
             Guid projectId, Guid suggestionId, Domain.Mappings.RejectionReason? reason, string? comment,
-            [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
+            [FromServices] EvidenceService evidence, CancellationToken cancellationToken, string? sub = null)
         {
             await evidence.RejectAsync(projectId, suggestionId, reason, comment, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+            return BackFromSuggestion(projectId, sub);
         }
 
         // GET /Projects/EvidenceFile/{id}?evidenceId=...: R6, for anyone in the organisation
