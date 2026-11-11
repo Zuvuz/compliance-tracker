@@ -1080,6 +1080,45 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At genbruge `EvidenceLinkSuggestion`, som er bundet til ét projekt og ét krav-id.
   - En begrundelse skrevet af AI'en (som på projekterne) og deling af beslutningerne til træning: senere.
 
+### B77 – Ledelsesrapporten viser det vigtigste først (US-141)
+
+- **Beslutning:**
+  - Ledelsesrapporten har seks afsnit i fast rækkefølge: status pr. regulering, "What management must know now", nøgletal, de største mangler, åbne høje risici og til sidst detaljerne. PDF og Excel laves af samme kode og samme model, og hvert afsnit er et ark i Excel.
+  - **Trafiklys** ud fra den afrundede procent, der vises: rød under 50 %, gul 50–79 %, grøn fra 80 %. En regulering uden krav får ingen farve.
+  - **"Siden sidst"** sammenligner med den nyeste låste ledelsesrapport med præcis de samme reguleringer. Den låste rapport gemmer sine tal (dækning pr. regulering som JSON i `ReportSnapshot.Figures`), så den gamle PDF aldrig skal læses.
+  - **Højst 5 punkter**, mest alvorlige først: åbne sikkerhedshændelser, åbne alvorlige scanningsfund, høje risici uden ejer, manglende supportperiode (kun med CRA), røde reguleringer, åbne høje risici og gule reguleringer.
+  - **Højst 10 mangler pr. regulering:** først dem, der er koblet til en åben Critical- og derefter High-risiko, så krav med en frist, og til sidst resten i katalogets rækkefølge.
+  - **"Har en frist"** gælder CRA's indberetningspligter i Art. 14 (24 timer, 72 timer og 14 dage). Det afgøres ud fra koden, så der ikke kræves et nyt felt.
+- **Begrundelse:** Ledelsen skal kunne forstå status på et minut. Faste regler gør rapporten forudsigelig og let at teste.
+- **Fravalgt:**
+  - Grafer over tid; kun ændringen siden sidste låste rapport vises.
+  - Et frist-felt på hvert krav. Det kan komme, hvis andre regelsæt får frister.
+
+### B78 – Testdækning i hvert build, med minimumskrav (US-140)
+
+- **Beslutning:**
+  - **Værktøjer:** coverlet (MIT) måler dækningen i alle tre testprojekter i samme kørsel. Kun gratis værktøjer, ingen betalte tjenester.
+  - **Samlet tal:** et lille Python-script (`build/coverage_gate.py`, kun standardbiblioteket) lægger kørslerne sammen. En linje tæller som dækket, hvis bare én af testene kører den, så kode, som kun UI-scenarierne når, også tæller.
+  - **Filnavne:** en fil identificeres ved sin fulde sti. Hver kørsel skriver filnavne i forhold til sin egen `<sources>`-mappe, så uden fuld sti ville den samme fil tælle to gange.
+  - **HTML-rapport:** ReportGenerator (Apache-2.0) laver den som lokalt dotnet-værktøj, og den gemmes som artifact i 30 dage. Dækningen pr. projekt står i PR'ens job summary.
+  - **Udeladt:** migrationer, genererede filer (Razor-views, `.feature.cs`, `*.g.cs`), `Program.cs` og testprojekterne selv.
+  - **Minimumskrav** gælder kun linjedækning og er dagens tal rundet ned til nærmeste 5 %:
+
+    | Projekt | I dag | Minimum |
+    |---|---:|---:|
+    | Application | 93,2 % | 90 % |
+    | Domain | 94,9 % | 90 % |
+    | Infrastructure | 93,3 % | 90 % |
+    | Web | 94,2 % | 90 % |
+
+    Grenedækningen vises, men har intet minimum endnu.
+  - Minimumskravene hæves over tid og sænkes kun med en begrundelse her i loggen.
+- **Begrundelse:** Det skal kunne vises over for en auditor, at testene er grundige, og en PR må ikke stille og roligt sænke dækningen (ISO 27001 8.25 og 8.29, CRA bilag I del II (3)).
+- **Fravalgt:**
+  - Codecov, Coveralls og SonarCloud (betalte planer).
+  - Mutationstest (Stryker.NET): en senere story.
+  - At en PR fejler, når den sænker dækningen af den kode, den ændrer. Det kræver en sammenligning med main.
+
 ### B79 – Standarder i alle former og strukturer (US-143)
 
 - **Beslutning:**
@@ -1114,43 +1153,6 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - OCR af scannede PDF'er (kræver ekstra software).
   - Rettelsesblade (amendments) oven på en version: en senere story.
   - At tilbyde informative annekser som anbefalinger: et åbent spørgsmål.
-### B78 – Testdækning i hvert build, med minimumskrav (US-140)
-
-- **Beslutning:**
-  - **Værktøjer:** coverlet (MIT) måler dækningen i alle tre testprojekter i samme kørsel. Kun gratis værktøjer, ingen betalte tjenester.
-  - **Samlet tal:** et lille Python-script (`build/coverage_gate.py`, kun standardbiblioteket) lægger kørslerne sammen. En linje tæller som dækket, hvis bare én af testene kører den, så kode, som kun UI-scenarierne når, også tæller.
-  - **Filnavne:** en fil identificeres ved sin fulde sti. Hver kørsel skriver filnavne i forhold til sin egen `<sources>`-mappe, så uden fuld sti ville den samme fil tælle to gange.
-  - **HTML-rapport:** ReportGenerator (Apache-2.0) laver den som lokalt dotnet-værktøj, og den gemmes som artifact i 30 dage. Dækningen pr. projekt står i PR'ens job summary.
-  - **Udeladt:** migrationer, genererede filer (Razor-views, `.feature.cs`, `*.g.cs`), `Program.cs` og testprojekterne selv.
-  - **Minimumskrav** gælder kun linjedækning og er dagens tal rundet ned til nærmeste 5 %:
-
-    | Projekt | I dag | Minimum |
-    |---|---:|---:|
-    | Application | 93,2 % | 90 % |
-    | Domain | 94,9 % | 90 % |
-    | Infrastructure | 93,3 % | 90 % |
-    | Web | 94,2 % | 90 % |
-
-    Grenedækningen vises, men har intet minimum endnu.
-  - Minimumskravene hæves over tid og sænkes kun med en begrundelse her i loggen.
-- **Begrundelse:** Det skal kunne vises over for en auditor, at testene er grundige, og en PR må ikke stille og roligt sænke dækningen (ISO 27001 8.25 og 8.29, CRA bilag I del II (3)).
-- **Fravalgt:**
-  - Codecov, Coveralls og SonarCloud (betalte planer).
-  - Mutationstest (Stryker.NET): en senere story.
-  - At en PR fejler, når den sænker dækningen af den kode, den ændrer. Det kræver en sammenligning med main.
-### B77 – Ledelsesrapporten viser det vigtigste først (US-141)
-
-- **Beslutning:**
-  - Ledelsesrapporten har seks afsnit i fast rækkefølge: status pr. regulering, "What management must know now", nøgletal, de største mangler, åbne høje risici og til sidst detaljerne. PDF og Excel laves af samme kode og samme model, og hvert afsnit er et ark i Excel.
-  - **Trafiklys** ud fra den afrundede procent, der vises: rød under 50 %, gul 50–79 %, grøn fra 80 %. En regulering uden krav får ingen farve.
-  - **"Siden sidst"** sammenligner med den nyeste låste ledelsesrapport med præcis de samme reguleringer. Den låste rapport gemmer sine tal (dækning pr. regulering som JSON i `ReportSnapshot.Figures`), så den gamle PDF aldrig skal læses.
-  - **Højst 5 punkter**, mest alvorlige først: åbne sikkerhedshændelser, åbne alvorlige scanningsfund, høje risici uden ejer, manglende supportperiode (kun med CRA), røde reguleringer, åbne høje risici og gule reguleringer.
-  - **Højst 10 mangler pr. regulering:** først dem, der er koblet til en åben Critical- og derefter High-risiko, så krav med en frist, og til sidst resten i katalogets rækkefølge.
-  - **"Har en frist"** gælder CRA's indberetningspligter i Art. 14 (24 timer, 72 timer og 14 dage). Det afgøres ud fra koden, så der ikke kræves et nyt felt.
-- **Begrundelse:** Ledelsen skal kunne forstå status på et minut. Faste regler gør rapporten forudsigelig og let at teste.
-- **Fravalgt:**
-  - Grafer over tid; kun ændringen siden sidste låste rapport vises.
-  - Et frist-felt på hvert krav. Det kan komme, hvis andre regelsæt får frister.
 
 ### B80 – Komplette krav fra hvert regelsæt (US-137)
 
