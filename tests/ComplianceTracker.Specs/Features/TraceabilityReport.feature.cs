@@ -342,13 +342,11 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I download the traceability matrix of \"Acme Portal\" as Excel for the management", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 39
-    await testRunner.ThenAsync("the workbook has only the sheet \"Summary\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("on \"Status\" the first row says \"Regulation\" \"CRA\" and \"Coverage\" \"0 % (0 of 72)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 40
-    await testRunner.AndAsync("the summary says \"Coverage – CRA\" is \"0 % (0 of 72)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-#line 41
-    await testRunner.AndAsync("the summary says \"Open High and Critical risks\" is \"0\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("on \"Key figures\" the first row says \"Figure\" \"Requirements covered\" and \"Value\" \"" +
+                        "0 of 72\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -369,7 +367,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The download is logged", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 44
+#line 43
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -382,10 +380,10 @@ namespace ComplianceTracker.Specs.Features
 #line 5
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 45
+#line 44
     await testRunner.WhenAsync("I download the traceability matrix of \"Acme Portal\" as Excel for an auditor", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 46
+#line 45
     await testRunner.ThenAsync("the download is logged as \"Excel for Auditor: CRA\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }

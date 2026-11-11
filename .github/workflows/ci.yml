@@ -56,8 +56,33 @@ jobs:
       - name: Byg
         run: dotnet build --no-restore --configuration Release
 
-      - name: Kør tests
-        run: dotnet test --no-build --configuration Release --verbosity normal
+      - name: Kør tests med testdækning (US-140)
+        # coverlet (MIT) måler i alle tre testprojekter; hvad der tælles, står i coverlet.runsettings
+        run: >
+          dotnet test --no-build --configuration Release --verbosity normal
+          --settings coverlet.runsettings --collect "XPlat Code Coverage" --results-directory coverage
+
+      - name: Test af dækningstjekket (US-140)
+        run: python -m unittest discover -s build -p "test_*.py"
+
+      - name: HTML-rapport over testdækningen (US-140)
+        # ReportGenerator (Apache-2.0) som lokalt dotnet-værktøj; ingen betalt tjeneste (R1)
+        if: always()
+        run: |
+          dotnet tool restore
+          dotnet reportgenerator "-reports:coverage/**/coverage.cobertura.xml" -targetdir:coverage-report "-reporttypes:Html;TextSummary"
+
+      - name: Gem dækningsrapporten (US-140)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ github.sha }}
+          path: coverage-report
+          retention-days: 30
+
+      - name: Tjek minimumsgrænserne for testdækning (US-140 R3)
+        # Skriver dækningen pr. projekt i job-summary og fejler under et minimum (build/minimum-coverage.json)
+        run: python build/coverage_gate.py coverage
 
   # US-017: builds the images, starts the whole system over HTTPS, checks it and scans it. Publishes on merge to main.
   docker:

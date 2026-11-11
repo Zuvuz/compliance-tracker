@@ -7,6 +7,7 @@ using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Web.Filters;
 using ComplianceTracker.Web.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ComplianceTracker.Web.Controllers
@@ -120,6 +121,7 @@ namespace ComplianceTracker.Web.Controllers
         // POST /Frameworks/ChangeKind: US-143 R5, while the version is a draft
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize]
         [OnDomainError(nameof(Version), IdFrom = "versionId")]
         public async Task<IActionResult> ChangeKind(Guid versionId, Guid requirementId, RequirementKind kind, CancellationToken cancellationToken)
         {

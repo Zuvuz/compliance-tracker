@@ -1084,7 +1084,8 @@ classDiagram
     -lockedById: Guid
     -lockedRole: UserRole?
     -lockedAt: DateTime
-    +Lock(organizationId, projectId, kind, title, fileName, contentType, content, lockedById, role, at)$ ReportSnapshot
+    -figures: string?
+    +Lock(organizationId, projectId, kind, title, fileName, contentType, content, lockedById, role, at, figures)$ ReportSnapshot
     +Fingerprint(content: byte[])$ string
     +Matches(content: byte[]) bool
   }

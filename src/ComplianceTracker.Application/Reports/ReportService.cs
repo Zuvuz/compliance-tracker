@@ -32,7 +32,8 @@ namespace ComplianceTracker.Application.Reports
     }
 
     // A report file as it is made right now
-    public record ReportFile(string Kind, string Title, string FileName, string ContentType, byte[] Content);
+    // Figures: US-141 R3, the management report's coverage per regulation as JSON, kept when it is locked
+    public record ReportFile(string Kind, string Title, string FileName, string ContentType, byte[] Content, string? Figures = null);
 
     // US-131: makes the reports' PDFs. The download and the lock (US-050) use the same code, so a locked PDF is exactly the
     // report a member downloads. Null when the member's organisation does not own the project, or the report cannot be made.
@@ -46,13 +47,16 @@ namespace ComplianceTracker.Application.Reports
         private readonly SecurityEventQueries _events;
         private readonly TechnicalDocumentationQueries _drafts;
         private readonly IPdfWriter _pdf;
+        private readonly IReportSnapshotRepository _snapshots;
         private readonly ICurrentUser _currentUser;
         private readonly TimeProvider _clock;
 
         public ReportFiles(
             ProjectQueries projects, OrganizationQueries organizations, ComplianceQueries compliance, RiskQueries risks, ScanService scans,
-            SecurityEventQueries events, TechnicalDocumentationQueries drafts, IPdfWriter pdf, ICurrentUser currentUser, TimeProvider clock)
+            SecurityEventQueries events, TechnicalDocumentationQueries drafts, IPdfWriter pdf, IReportSnapshotRepository snapshots,
+            ICurrentUser currentUser, TimeProvider clock)
         {
+            _snapshots = snapshots;
             _projects = projects;
             _organizations = organizations;
             _compliance = compliance;
@@ -68,6 +72,29 @@ namespace ComplianceTracker.Application.Reports
         // US-120: for one reader, for all regulations or one (sub is its slug)
         public async Task<(ReportDocument Document, ReportFile Pdf)?> TraceabilityAsync(
             Guid projectId, ReportAudience audience, string? sub, CancellationToken cancellationToken = default)
+        {
+            if (await BuildTraceabilityAsync(projectId, audience, sub, cancellationToken) is not { } built)
+            {
+                return null;
+            }
+
+            var (document, project, organization, frameworks, now) = built;
+            var reader = audience.ToString().ToLowerInvariant();
+            var name = $"traceability-{FrameworkSlugs.Slug(project.Name)}{(sub is null ? "" : "-" + sub)}-{reader}-{_clock.Today():yyyy-MM-dd}.pdf";
+            var title = $"{document.Title} ({TraceabilityReport.Title(audience)}{(sub is null ? "" : ", " + string.Join(", ", frameworks.Select(f => FrameworkSlugs.Short(f.Framework.Name))))})";
+            var header = new PdfHeader(organization.Name, project.Name, title, now, _currentUser.Identity.Name);
+            return (document, new ReportFile($"traceability:{reader}:{sub ?? "all"}", title, name, "application/pdf", _pdf.FromReport(document, header),
+                document.Figures is { } figures ? ManagementPriorities.FiguresJson(figures) : null));
+        }
+
+        // US-141: the report model only, for the Excel file, so Excel and PDF are made by the same code (R8)
+        public async Task<ReportDocument?> TraceabilityDocumentAsync(
+            Guid projectId, ReportAudience audience, string? sub, CancellationToken cancellationToken = default)
+            => (await BuildTraceabilityAsync(projectId, audience, sub, cancellationToken))?.Document;
+
+        private async Task<(ReportDocument Document, Domain.Projects.Project Project, Domain.Organizations.Organization Organization,
+            IReadOnlyList<FrameworkCompliance> Frameworks, DateTime Now)?> BuildTraceabilityAsync(
+            Guid projectId, ReportAudience audience, string? sub, CancellationToken cancellationToken)
         {
             var project = await _projects.GetAsync(projectId, cancellationToken);
             var organization = await _organizations.MineAsync(cancellationToken);
@@ -85,18 +112,45 @@ namespace ComplianceTracker.Application.Reports
 
             string NameOf(Guid userId) => organization.Users.FirstOrDefault(u => u.Id == userId)?.Name ?? "Unknown";
             var now = _clock.GetUtcNow().UtcDateTime;
+            var highRisks = (await _risks.ForProjectAsync(projectId, cancellationToken) ?? [])
+                .Where(r => r.Status != RiskStatus.Closed && r.Level >= RiskLevel.High)
+                .Select(r =>
+                {
+                    var owner = organization.Users.FirstOrDefault(u => u.Id == r.OwnerId);
+                    var due = r.Actions.Where(a => a.Status != RiskActionStatus.Done && a.DueOn is not null).Select(a => a.DueOn).Min();
+                    return new ManagementRisk(r.Title, r.Level, r.Score, owner?.Name ?? "", owner is not null, due);
+                })
+                .ToList();
             var facts = new ManagementFacts(
-                (await _risks.ForProjectAsync(projectId, cancellationToken) ?? []).Count(r => r.Status != RiskStatus.Closed && r.Level >= RiskLevel.High),
+                highRisks.Count,
                 (await _scans.ForProjectAsync(projectId, cancellationToken))?.OpenAtLeastHigh ?? 0,
                 (await _events.ForProjectAsync(projectId, cancellationToken) ?? []).Count(e => e.IsOpen),
-                project.SupportEndsOn);
+                project.SupportEndsOn)
+            {
+                HighRisks = highRisks,
+                Last = audience == ReportAudience.Management
+                    ? await LastManagementReportAsync(organization.Id, projectId, frameworks.Select(f => f.Framework.Name).Distinct().ToList(), cancellationToken)
+                    : null
+            };
             var document = TraceabilityReport.Build(audience, project, frameworks, NameOf, _currentUser.Identity.Name, now, facts);
+            return (document, project, organization, frameworks, now);
+        }
 
-            var reader = audience.ToString().ToLowerInvariant();
-            var name = $"traceability-{FrameworkSlugs.Slug(project.Name)}{(sub is null ? "" : "-" + sub)}-{reader}-{_clock.Today():yyyy-MM-dd}.pdf";
-            var title = $"{document.Title} ({TraceabilityReport.Title(audience)}{(sub is null ? "" : ", " + string.Join(", ", frameworks.Select(f => FrameworkSlugs.Short(f.Framework.Name))))})";
-            var header = new PdfHeader(organization.Name, project.Name, title, now, _currentUser.Identity.Name);
-            return (document, new ReportFile($"traceability:{reader}:{sub ?? "all"}", title, name, "application/pdf", _pdf.FromReport(document, header)));
+        // US-141 R3: the newest locked management report of the project with exactly these regulations
+        private async Task<LastManagementReport?> LastManagementReportAsync(
+            Guid organizationId, Guid projectId, IReadOnlyList<string> regulations, CancellationToken cancellationToken)
+        {
+            foreach (var snapshot in (await _snapshots.ListAsync(organizationId, projectId, cancellationToken)).OrderByDescending(s => s.LockedAt))
+            {
+                if (snapshot.Kind.StartsWith("traceability:management:", StringComparison.Ordinal)
+                    && ManagementPriorities.ParseFigures(snapshot.Figures) is { } figures
+                    && ManagementPriorities.SameRegulations(figures, regulations))
+                {
+                    return new LastManagementReport(snapshot.LockedAt, figures);
+                }
+            }
+
+            return null;
         }
 
         // US-056
@@ -203,7 +257,7 @@ namespace ComplianceTracker.Application.Reports
         private async Task<ReportSnapshot> LockAsync(Guid organizationId, Guid projectId, User user, ReportFile file, CancellationToken cancellationToken)
         {
             var snapshot = ReportSnapshot.Lock(organizationId, projectId, file.Kind, file.Title, file.FileName, file.ContentType, file.Content,
-                user.Id, user.Role, _clock.GetUtcNow().UtcDateTime);
+                user.Id, user.Role, _clock.GetUtcNow().UtcDateTime, file.Figures);
             await _snapshots.AddAsync(snapshot, file.Content, cancellationToken);
             await _log.LogAsync(ActivityAction.ReportLocked, projectId, $"{snapshot.Title}: SHA-256 {snapshot.Sha256}", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
