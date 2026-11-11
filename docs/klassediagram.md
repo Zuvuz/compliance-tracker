@@ -433,6 +433,17 @@ classDiagram
   OrganisationAreaService ..> Project : organisation area
   OrganisationAreaService ..> Nis2Assessment : opretter
   RequirementApplicability --> Risk : justified by
+  class GapDismissal {
+    -id: Guid
+    -projectId: Guid
+    -key: string
+    -stamp: string
+    -reason: string
+    -dismissedById: Guid
+    -dismissedAt: DateTime
+    +Hides(key, stamp) bool
+  }
+  GapDismissal --> Project
   class StoryDraft {
     -id: Guid
     -projectId: Guid

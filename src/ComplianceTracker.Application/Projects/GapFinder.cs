@@ -199,8 +199,15 @@ namespace ComplianceTracker.Application.Projects
             => findings.Where(f => f.State == FindingState.Open && f.Severity >= FindingSeverity.High)
                 .OrderByDescending(f => f.Severity)
                 .Select(f => new Gap(GapCategory.Scanning, $"finding:{f.Id}", $"{f.State}:{f.LastScanId}",
-                    f.Message.Length <= 200 ? f.Message : f.Message[..200], $"{f.Severity} finding from {f.Tool}{(f.Location is null ? "" : " in " + f.Location)} with no fix yet",
-                    "Add a risk for it, or fix it and scan again", GapAction.AddRisk, $"{f.Tool} {f.RuleId}", Tab: "scans"));
+                    Title(f), $"{f.Severity} finding from {f.Tool}{(f.Location is null ? "" : " in " + f.Location)} with no fix yet",
+                    "Add a risk for it, or fix it and scan again", GapAction.AddRisk, f.Tool, Tab: "scans"));
+
+        // "SQL injection in /search – A vulnerable package": the scanner's rule, then its message
+        private static string Title(Finding finding)
+        {
+            var title = string.IsNullOrWhiteSpace(finding.Message) ? finding.RuleId : $"{finding.RuleId} – {finding.Message}";
+            return title.Length <= 200 ? title : title[..200];
+        }
 
         // Security: open security events whose report is due or past due (US-073)
         public static IEnumerable<Gap> SecurityGaps(IEnumerable<SecurityEvent> events, DateTime now)
