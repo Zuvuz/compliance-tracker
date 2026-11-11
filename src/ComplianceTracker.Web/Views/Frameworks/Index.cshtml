@@ -22,7 +22,7 @@
             <input id="name" name="name" class="form-control" placeholder="e.g. ISO/IEC 27001 or Security policy" />
         </div>
         <div class="col-md-3">
-            <label for="file" class="form-label">PDF file</label>
+            <label for="file" class="form-label">File (PDF, Word, Excel, CSV or HTML)</label>
             @* accept only filters the file picker; the server still checks the file *@
             <input id="file" name="file" type="file" accept=".pdf,.docx,.xlsx,.csv,.html,.htm,application/pdf" class="form-control" />
         </div>
@@ -35,6 +35,28 @@
             <button type="submit" class="btn btn-primary w-100">Add</button>
         </div>
     </form>
+
+    @* US-137 R1: an EU act from its official structured text on EUR-Lex, by its CELEX number *@
+    <details class="mb-4" id="import-eur-lex">
+        <summary>Import an EU act from EUR-Lex</summary>
+        <form asp-action="ImportFromEurLex" method="post" class="row g-2 mt-1">
+            <div class="col-md-5">
+                <label for="eurlex-name" class="form-label">Framework</label>
+                <input id="eurlex-name" name="name" class="form-control" placeholder="e.g. GDPR" />
+            </div>
+            <div class="col-md-3">
+                <label for="celex" class="form-label">CELEX number</label>
+                <input id="celex" name="celex" class="form-control" placeholder="e.g. 32024R2847 for the CRA" />
+            </div>
+            <div class="col-md-2">
+                <label for="eurlex-applies-from" class="form-label">Applies from</label>
+                <input id="eurlex-applies-from" name="appliesFrom" type="date" class="form-control" />
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary w-100">Import</button>
+            </div>
+        </form>
+    </details>
 }
 
 <table class="table" id="frameworks">

@@ -14,8 +14,17 @@ namespace ComplianceTracker.Web.Models
     // Data for one version's page with its requirements (Views/Frameworks/Version.cshtml, US-007)
     // Columns: US-143 R7, the header row of a draft's Excel or CSV file, so the admin can choose the columns
     public record FrameworkVersionPageViewModel(
-        Framework Framework, FrameworkVersion Version, Organization Organization, DateOnly Today, IReadOnlyList<string>? Columns = null)
+        Framework Framework, FrameworkVersion Version, Organization Organization, DateOnly Today, IReadOnlyList<string>? Columns = null,
+        Application.Approvals.ApprovalView? PendingActivation = null)
     {
+        // US-137 R4: the profile of the standard, checked against the draft's codes as they are now
+        public Application.Frameworks.FrameworkProfile? Profile => Application.Frameworks.FrameworkProfiles.For(Framework.Name);
+
+        public IReadOnlyList<CompletenessGroup> ProfileCheck
+            => Profile is { } profile && Version.Completeness?.Profile is not null
+                ? profile.Check(Version.Requirements.Select(r => r.Code))
+                : Version.Completeness?.Groups ?? [];
+
         // US-143 R7: the columns chosen before for this framework
         public Application.Frameworks.TableColumns? Chosen => Application.Frameworks.TableColumns.Parse(Framework.TableColumns);
 

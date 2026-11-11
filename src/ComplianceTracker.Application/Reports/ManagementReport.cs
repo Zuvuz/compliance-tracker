@@ -127,14 +127,14 @@ namespace ComplianceTracker.Application.Reports
             return points.Count == 0 ? [NothingToDecide] : points.Take(MaxPoints).ToList();
         }
 
-        // R5: at most ten not covered requirements, (a) linked to an open High or Critical risk, highest first, (b) with a
+        // R5: at most ten not covered requirements (US-143: never a recommendation), (a) linked to an open High or Critical risk, highest first, (b) with a
         // deadline, (c) the rest; each group in the catalogue's order
         public static IReadOnlyList<(RequirementCoverage Requirement, string Why)> Gaps(FrameworkCompliance framework)
         {
             var cra = IsCra(framework.Framework.Name);
             return framework.Requirements
                 .Select((requirement, index) => (requirement, index))
-                .Where(x => x.requirement.IsApplicable && !x.requirement.IsCovered)
+                .Where(x => x.requirement.IsApplicable && !x.requirement.IsCovered && !x.requirement.Requirement.IsRecommendation) // US-143 R6
                 .Select(x =>
                 {
                     var risk = x.requirement.Risks.Where(r => r.Level >= RiskLevel.High).Select(r => (RiskLevel?)r.Level).Max();
@@ -219,6 +219,6 @@ namespace ComplianceTracker.Application.Reports
         }
 
         private static int WithoutEvidence(FrameworkCompliance framework)
-            => framework.Requirements.Count(r => r.IsApplicable && r.IsCovered && !r.HasEvidence);
+            => framework.Requirements.Count(r => r.IsApplicable && r.IsCovered && !r.HasEvidence && !r.Requirement.IsRecommendation);
     }
 }

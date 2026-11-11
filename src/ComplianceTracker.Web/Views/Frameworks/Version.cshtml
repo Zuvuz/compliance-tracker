@@ -20,7 +20,7 @@ else
 }
 <h1 class="mb-0">@framework.Name <small class="text-muted">version @version.Number</small></h1>
 <p class="small mb-3">
-    Status: <span id="version-status">@version.Status</span>
+    Status: <span id="version-status">@(Model.PendingActivation is not null ? "Waiting for approval" : version.Status.ToString())</span>
     @if (version.AppliesFrom is { } appliesFrom)
     {
         @* US-035 *@
@@ -58,6 +58,56 @@ else
         This version is a draft. Check the requirements found in the file, correct them, and activate the version.
         Projects can only use active versions, and an active version can no longer be changed.
     </div>
+}
+
+@if (version.Completeness is { } completeness)
+{
+    @* US-137 R1–R5: how complete the version is, shown before it is activated *@
+    var groups = Model.ProfileCheck;
+    <section class="mb-4 border rounded p-3" id="completeness">
+        <h2 class="h5">Completeness</h2>
+        @if (completeness.Articles > 0 || completeness.Annexes > 0)
+        {
+            <p class="mb-2" id="completeness-parts">
+                @completeness.Source: @completeness.Articles articles and @completeness.Annexes annexes; @completeness.Paragraphs paragraphs and
+                @completeness.Points points; <strong>@completeness.Requirements requirements</strong>, @completeness.LeftOut.Count parts left out.
+                @if (version.SourceReference is not null)
+                {
+                    <a href="@version.SourceReference" target="_blank" rel="noopener noreferrer">Official text</a>
+                }
+            </p>
+            @if (completeness.LeftOut.Count > 0)
+            {
+                <details class="small" id="left-out-parts">
+                    <summary>Left out: @string.Join(", ", completeness.LeftOutByReason.Select(r => $"{r.Reason}: {r.Count}"))</summary>
+                    <ul class="mb-0">
+                        @foreach (var part in completeness.LeftOut)
+                        {
+                            <li class="left-out-part" data-reason="@part.Reason">@part.Code – @part.Reason</li>
+                        }
+                    </ul>
+                </details>
+            }
+        }
+        @if (completeness.Profile is not null)
+        {
+            <p class="mb-1">Checked against the known list of @completeness.Profile (codes only):</p>
+            <ul class="mb-0" id="profile-check">
+                @foreach (var group in groups)
+                {
+                    <li class="profile-group @(group.Missing.Count > 0 ? "text-danger" : "")">@group.Text</li>
+                    @foreach (var missing in group.Missing)
+                    {
+                        <li class="profile-missing text-danger">@missing is missing</li>
+                    }
+                    @foreach (var extra in group.Extra)
+                    {
+                        <li class="profile-extra text-warning">@extra is not in @completeness.Profile</li>
+                    }
+                }
+            </ul>
+        }
+    </section>
 }
 
 @if (!version.IsActive && Model.Columns is { Count: > 0 } headers)
@@ -254,10 +304,54 @@ else
         <button type="submit" class="btn btn-sm btn-outline-secondary">Save date</button>
     </form>
 
-    @* R3, R4: locks the version; it then becomes the current version (US-035: from its start date) *@
-    <form asp-action="Activate" method="post" id="activate-version">
-        <input type="hidden" name="versionId" value="@version.Id" />
-        <button type="submit" class="btn btn-success">Activate version @version.Number</button>
-        <span class="text-muted small ms-2">The requirements can no longer be changed afterwards.</span>
-    </form>
+    @if (TempData["FrameworkMessage"] is string frameworkMessage)
+    {
+        <p class="alert alert-info" id="framework-message" role="status">@frameworkMessage</p>
+    }
+
+    @if (Model.PendingActivation is { } pending)
+    {
+        @* US-137 R5: the activation waits for another person (US-135) *@
+        <section class="border rounded p-3 mb-3" id="pending-activation">
+            <p class="mb-2">Activation asked by @pending.RequestedBy on @pending.Request.RequestedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm"). It waits for approval.</p>
+            @if (pending.NoOneElseMayApprove)
+            {
+                <p class="small text-warning mb-2">No other member may manage frameworks, so no one can approve it yet.</p>
+            }
+            <div class="d-flex flex-wrap gap-2">
+                @if (pending.CanApprove)
+                {
+                    <form asp-action="ApproveActivation" method="post" class="approve-request">
+                        <input type="hidden" name="requestId" value="@pending.Request.Id" />
+                        <input type="hidden" name="versionId" value="@version.Id" />
+                        <button type="submit" class="btn btn-success btn-sm">Approve and activate</button>
+                    </form>
+                    <form asp-action="RejectActivation" method="post" class="d-flex gap-1 reject-request">
+                        <input type="hidden" name="requestId" value="@pending.Request.Id" />
+                        <input type="hidden" name="versionId" value="@version.Id" />
+                        <input name="reason" class="form-control form-control-sm" placeholder="Why it is rejected" aria-label="Reason" />
+                        <button type="submit" class="btn btn-outline-danger btn-sm">Reject</button>
+                    </form>
+                }
+                @if (pending.CanWithdraw)
+                {
+                    <form asp-action="WithdrawActivation" method="post" class="withdraw-request">
+                        <input type="hidden" name="requestId" value="@pending.Request.Id" />
+                        <input type="hidden" name="versionId" value="@version.Id" />
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">Withdraw</button>
+                    </form>
+                }
+            </div>
+        </section>
+    }
+    else
+    {
+        @* R3, R4: locks the version; it then becomes the current version (US-035: from its start date). US-137 R5: with a
+           completeness check, another person approves first. *@
+        <form asp-action="Activate" method="post" id="activate-version">
+            <input type="hidden" name="versionId" value="@version.Id" />
+            <button type="submit" class="btn btn-success">@(version.NeedsApprovalToActivate ? "Ask for approval to activate" : "Activate") version @version.Number</button>
+            <span class="text-muted small ms-2">The requirements can no longer be changed afterwards.@(version.NeedsApprovalToActivate ? " Another person who may manage frameworks approves it after checking the completeness." : "")</span>
+        </form>
+    }
 }

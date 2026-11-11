@@ -48,7 +48,9 @@ namespace ComplianceTracker.Specs.Support
                 // The tests run the scheduled GitHub check themselves ("the scheduled check runs"), never on a timer
                 ["WorkItemSync:Enabled"] = "false",
                 // US-063: the feedback writer's token, which the pretend GitHub accepts
-                ["Feedback:GitHubToken"] = FakeGitHub.FeedbackToken
+                ["Feedback:GitHubToken"] = FakeGitHub.FeedbackToken,
+                // US-137: EUR-Lex imports go to the pretend Publications Office (FakeEurLex)
+                ["EurLex:Enabled"] = "true"
             };
             foreach (var (key, value) in overrides ?? new Dictionary<string, string?>())
             {
@@ -65,6 +67,9 @@ namespace ComplianceTracker.Specs.Support
                 // US-063: issues made from feedback go to the pretend GitHub too
                 services.AddHttpClient<ComplianceTracker.Infrastructure.Feedback.GitHubFeedbackIssueWriter>()
                     .ConfigurePrimaryHttpMessageHandler(github.CreateHandler);
+
+                // US-137: the EUR-Lex adapter reads the pretend Publications Office
+                services.AddHttpClient<ComplianceTracker.Infrastructure.Frameworks.HttpEurLexSource>().ConfigurePrimaryHttpMessageHandler(FakeEurLex.CreateHandler);
 
                 // US-020: the pretend AI replaces the Ollama adapters (the last registration wins)
                 services.AddSingleton<IEmbeddingModel>(ai);

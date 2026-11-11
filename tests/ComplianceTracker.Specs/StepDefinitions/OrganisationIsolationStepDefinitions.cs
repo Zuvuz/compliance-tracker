@@ -35,7 +35,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // Ids the fixture has no data for; a random id is used, which can only prove "not found"
         private static readonly Dictionary<string, string> NoDataFor = new()
         {
-            ["suggestionId"] = "The fixture has no AI suggestion (that needs the pretend AI's ranking)"
+            ["suggestionId"] = "The fixture has no AI suggestion (that needs the pretend AI's ranking)",
+            ["requestId"] = "The fixture has no framework activation waiting for approval (that needs an import from EUR-Lex); CompleteRequirements.feature tests it (US-137)"
         };
 
         // Pages the own member gets "not found" for, because the fixture has nothing there yet, and why. They are still

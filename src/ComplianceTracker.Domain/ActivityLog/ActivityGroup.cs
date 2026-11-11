@@ -32,7 +32,8 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.SealUploaded or ActivityAction.SealRemoved
                 or ActivityAction.Nis2ScopeChecked or ActivityAction.OrganisationCountryChanged => ActivityGroup.Organisation,
             ActivityAction.CatalogImported or ActivityAction.CatalogActivated or ActivityAction.FrameworkEnabled
-                or ActivityAction.FrameworkDisabled => ActivityGroup.Frameworks,
+                or ActivityAction.FrameworkDisabled
+                or ActivityAction.FrameworkImportedFromEurLex or ActivityAction.FrameworkCompletenessChecked => ActivityGroup.Frameworks,
             ActivityAction.ProjectCreated or ActivityAction.ProjectUpdated or ActivityAction.ProjectPhaseChanged
                 or ActivityAction.SupportPeriodSet
                 or ActivityAction.ProjectClassified

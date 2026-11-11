@@ -136,7 +136,7 @@ namespace ComplianceTracker.Application.Risks
         async Task<string?> IApprovalExecutor.WhyStaleAsync(ApprovalRequest request, CancellationToken cancellationToken)
         {
             var payload = ApprovalGate.Read<AcceptRiskPayload>(request);
-            var risk = await _risks.GetAsync(request.ProjectId, payload.RiskId, cancellationToken);
+            var risk = await _risks.GetAsync(request.ProjectOf, payload.RiskId, cancellationToken);
             return risk is null ? "the risk is gone"
                 : risk.Status != RiskStatus.Open ? $"the risk is {risk.Status.ToString().ToLowerInvariant()} already"
                 : risk.Version.ToString() != request.SubjectStamp ? "the risk changed after the request was made"
@@ -146,7 +146,7 @@ namespace ComplianceTracker.Application.Risks
         async Task IApprovalExecutor.ExecuteAsync(ApprovalRequest request, Organization organization, User requester, User approver, CancellationToken cancellationToken)
         {
             var payload = ApprovalGate.Read<AcceptRiskPayload>(request);
-            var project = await _projects.GetAsync(organization.Id, request.ProjectId, cancellationToken)
+            var project = await _projects.GetAsync(organization.Id, request.ProjectOf, cancellationToken)
                 ?? throw new DomainException("Project not found");
             if (project.IsClosed)
             {

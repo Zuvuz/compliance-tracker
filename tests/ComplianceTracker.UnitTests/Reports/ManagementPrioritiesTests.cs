@@ -256,6 +256,20 @@ public class ManagementPrioritiesTests
         Assert.Equal(["B"], gaps.Select(g => g.Requirement.Requirement.Code));
     }
 
+    [Fact]
+    public void A_recommendation_is_never_a_gap()
+    {
+        // Arrange (US-143 R6)
+        var framework = Framework(Cra, ["A", "B"]);
+        typeof(Requirement).GetProperty(nameof(Requirement.Kind))!.SetValue(framework.Requirements[0].Requirement, RequirementKind.Recommendation);
+
+        // Act
+        var gaps = ManagementPriorities.Gaps(framework);
+
+        // Assert
+        Assert.Equal(["B"], gaps.Select(g => g.Requirement.Requirement.Code));
+    }
+
     // ---------------------------------------------------------- R6: the open high risks
 
     [Fact]

@@ -224,6 +224,11 @@ namespace ComplianceTracker.Domain.ActivityLog
         // rejected a suggestion. SubjectId points at the organisation.
         DocumentLinkSuggested,
         DocumentLinkApproved,
-        DocumentLinkRejected
+        DocumentLinkRejected,
+
+        // US-137: an EU act was imported from EUR-Lex (Details: the CELEX number and what was found), and a draft's
+        // completeness check was shown for approval (Details: its summary). SubjectId points at the framework version.
+        FrameworkImportedFromEurLex,
+        FrameworkCompletenessChecked
     }
 }

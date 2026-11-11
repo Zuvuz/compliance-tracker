@@ -121,7 +121,7 @@ namespace ComplianceTracker.Application.Security
         {
             var payload = ApprovalGate.Read<NotReportableEventPayload>(request);
             return payload.SuggestionId is { } id
-                   && (await _suggestions.GetAsync(request.ProjectId, id, cancellationToken))?.IsPending != true
+                   && (await _suggestions.GetAsync(request.ProjectOf, id, cancellationToken))?.IsPending != true
                 ? "the suggestion was decided already"
                 : null;
         }
@@ -129,7 +129,7 @@ namespace ComplianceTracker.Application.Security
         async Task IApprovalExecutor.ExecuteAsync(ApprovalRequest request, Organization organization, User requester, User approver, CancellationToken cancellationToken)
         {
             var payload = ApprovalGate.Read<NotReportableEventPayload>(request);
-            var project = await _projects.GetAsync(organization.Id, request.ProjectId, cancellationToken)
+            var project = await _projects.GetAsync(organization.Id, request.ProjectOf, cancellationToken)
                 ?? throw new DomainException("Project not found");
             if (project.IsClosed)
             {

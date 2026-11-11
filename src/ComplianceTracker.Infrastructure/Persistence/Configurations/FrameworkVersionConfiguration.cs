@@ -46,6 +46,19 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
                         c => c == null ? 0 : JsonSerializer.Serialize(c, Json).GetHashCode(),
                         c => c));
 
+            // US-137: the completeness check as JSON; null for versions without one
+            builder.Property(v => v.Completeness)
+                .HasColumnType("jsonb")
+                .HasConversion(
+                    check => check == null ? null : JsonSerializer.Serialize(check, Json),
+                    json => json == null ? null : JsonSerializer.Deserialize<CompletenessCheck>(json, Json),
+                    new ValueComparer<CompletenessCheck?>(
+                        (a, b) => JsonSerializer.Serialize(a, Json) == JsonSerializer.Serialize(b, Json),
+                        c => c == null ? 0 : JsonSerializer.Serialize(c, Json).GetHashCode(),
+                        c => c));
+            builder.Ignore(v => v.NeedsApprovalToActivate);
+            builder.Ignore(v => v.RequirementsStamp);
+
             // Who activated it; null for drafts and built-in versions
             builder.HasOne<User>()
                 .WithMany()

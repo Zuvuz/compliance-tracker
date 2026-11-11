@@ -7,7 +7,10 @@ namespace ComplianceTracker.Domain.Approvals
     {
         AcceptRisk,
         RecordNotReportableEvent,
-        EndSupport
+        EndSupport,
+
+        // US-137 R5: activating a framework version whose completeness check was shown
+        ActivateFramework
     }
 
     public enum ApprovalStatus
@@ -29,8 +32,12 @@ namespace ComplianceTracker.Domain.Approvals
 
         public Guid Id { get; } = Guid.NewGuid();
         public Guid OrganizationId { get; private set; }
-        public Guid ProjectId { get; private set; }
+        // The project the action is about; null for an organisation's action such as activating a framework (US-137)
+        public Guid? ProjectId { get; private set; }
         public ApprovalAction Action { get; private set; }
+
+        // The project of a project's action (accepting a risk, ending support …)
+        public Guid ProjectOf => ProjectId ?? throw new DomainException("The request is not about a project");
 
         // The risk or project the action changes; null when the action creates something new
         public Guid? SubjectId { get; private set; }
@@ -60,7 +67,7 @@ namespace ComplianceTracker.Domain.Approvals
         private ApprovalRequest() { }
 
         public static ApprovalRequest Create(
-            Guid organizationId, Guid projectId, ApprovalAction action, Guid? subjectId, string? subjectStamp,
+            Guid organizationId, Guid? projectId, ApprovalAction action, Guid? subjectId, string? subjectStamp,
             string? summary, string? payload, Guid requestedById, DateTime now)
         {
             var text = (summary ?? "").Trim();
