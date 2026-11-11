@@ -183,7 +183,10 @@ namespace ComplianceTracker.Application.Ai
                 pending.Replace(); // R14
             }
 
-            var excluded = existing.Where(s => s.Status is SuggestionStatus.Approved or SuggestionStatus.Rejected).Select(s => s.WorkItemId)
+            // US-145 R2: a rejection blocks only while the story and the requirement are unchanged
+            var excluded = existing.Where(s => s.Status == SuggestionStatus.Approved
+                    || s.StillRejects(stories.FirstOrDefault(w => w.Id == s.WorkItemId) is { } w ? Domain.Common.Fingerprint.Pair(RejectionMemory.Of(w), RejectionMemory.Of(requirement)) : ""))
+                .Select(s => s.WorkItemId)
                 .Concat((await _links.ListActiveAsync(project.Id, cancellationToken)).Where(l => l.RequirementId == requirement.Id).Select(l => l.WorkItemId))
                 .ToHashSet();
             var candidates = stories.Where(s => !excluded.Contains(s.Id)).ToList();
@@ -217,10 +220,13 @@ namespace ComplianceTracker.Application.Ai
                 pending.Replace(); // R14
             }
 
-            var excluded = existing.Where(s => s.Status is SuggestionStatus.Approved or SuggestionStatus.Rejected).Select(s => s.EvidenceId)
+            var active = await _evidence.ListActiveAsync(project.Id, cancellationToken);
+            var excluded = existing.Where(s => s.Status == SuggestionStatus.Approved
+                    || s.StillRejects(active.FirstOrDefault(e => e.Id == s.EvidenceId) is { } e ? Domain.Common.Fingerprint.Pair(RejectionMemory.Of(e), RejectionMemory.Of(requirement)) : ""))
+                .Select(s => s.EvidenceId)
                 .Concat((await _evidence.ListActiveLinksAsync(project.Id, cancellationToken)).Where(l => l.RequirementId == requirement.Id).Select(l => l.EvidenceId))
                 .ToHashSet();
-            var candidates = (await _evidence.ListActiveAsync(project.Id, cancellationToken)).Where(e => !excluded.Contains(e.Id)).ToList();
+            var candidates = active.Where(e => !excluded.Contains(e.Id)).ToList();
             if (candidates.Count == 0)
             {
                 return 0;
@@ -314,9 +320,14 @@ namespace ComplianceTracker.Application.Ai
                 pending.Replace(); // R14
             }
 
+            // US-145 R2: a rejection blocks only while the risk and the requirement or story are unchanged
+            string Pair(Guid? requirementId, Guid? workItemId)
+                => Domain.Common.Fingerprint.Pair(RejectionMemory.Of(risk), requirementId is { } r && requirements.FirstOrDefault(x => x.Id == r) is { } req
+                    ? RejectionMemory.Of(req)
+                    : stories.FirstOrDefault(x => x.Id == workItemId) is { } st ? RejectionMemory.Of(st) : "");
             bool Excluded(Guid? requirementId, Guid? workItemId)
                 => risk.Measures.Any(m => m.RequirementId == requirementId && m.WorkItemId == workItemId)
-                   || existing.Any(s => s.Status is SuggestionStatus.Approved or SuggestionStatus.Rejected && s.IsFor(requirementId, workItemId));
+                   || existing.Any(s => s.IsFor(requirementId, workItemId) && (s.Status == SuggestionStatus.Approved || s.StillRejects(Pair(requirementId, workItemId))));
 
             var candidates = requirements.Where(r => !Excluded(r.Id, null)).Select(r => (RequirementId: (Guid?)r.Id, WorkItemId: (Guid?)null, Text: MappingSuggestionService.RequirementText(r)))
                 .Concat(stories.Where(s => !Excluded(null, s.Id)).Select(s => (RequirementId: (Guid?)null, WorkItemId: (Guid?)s.Id, Text: MappingSuggestionService.StoryText(s))))
@@ -370,6 +381,15 @@ namespace ComplianceTracker.Application.Ai
             var (_, user, project) = await OpenAsync(projectId, Permission.ManageRisks, cancellationToken);
             var suggestion = await MeasureOfAsync(project, suggestionId, cancellationToken);
             suggestion.Reject(reason, comment, user.Id, Now, user.Role);
+
+            // US-145 R1: what was judged
+            if (await _risks.GetAsync(project.Id, suggestion.RiskId, cancellationToken) is { } judgedRisk)
+            {
+                var measure = suggestion.RequirementId is { } requirementId
+                    ? await _frameworks.GetRequirementAsync(requirementId, cancellationToken) is { } r ? RejectionMemory.Of(r) : ""
+                    : (await _workItems.ListAsync(project.Id, cancellationToken)).FirstOrDefault(w => w.Id == suggestion.WorkItemId) is { } w ? RejectionMemory.Of(w) : "";
+                suggestion.JudgedOn(Domain.Common.Fingerprint.Pair(RejectionMemory.Of(judgedRisk), measure));
+            }
             await _log.LogAsync(ActivityAction.RiskMeasureSuggestionRejected, project.Id, $"{await MeasureNameAsync(project, suggestion, cancellationToken)} ({reason})", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }

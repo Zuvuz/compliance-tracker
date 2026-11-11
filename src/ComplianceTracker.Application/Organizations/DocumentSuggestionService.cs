@@ -92,10 +92,21 @@ namespace ComplianceTracker.Application.Organizations
                 existing.ForEach(s => s.Replace());
             }
 
+            // US-145 R2: a rejection blocks the pair only while neither the document nor the requirement's text changed; a
+            // rejection that was taken back blocks nothing
+            string Pair(Requirement requirement) => Domain.Common.Fingerprint.Pair(RejectionMemory.Of(document), RejectionMemory.Of(requirement));
+            bool Blocks(DocumentLinkSuggestion s, Requirement requirement)
+                => s.Status switch
+                {
+                    SuggestionStatus.Rejected => s.StillRejects(Pair(requirement)),
+                    SuggestionStatus.RejectionUndone => false,
+                    SuggestionStatus.Replaced => more,
+                    _ => true
+                };
             var candidates = (await RequirementsAsync(organization.Id, cancellationToken))
                 .Where(c => !document.ActiveLinks.Any(l => l.FrameworkId == c.FrameworkId
                     && string.Equals(l.RequirementCode, c.Requirement.Code, StringComparison.OrdinalIgnoreCase)))
-                .Where(c => !existing.Any(s => s.IsFor(c.FrameworkId, c.Requirement.Code) && (more || s.Status != SuggestionStatus.Replaced)))
+                .Where(c => !existing.Any(s => s.IsFor(c.FrameworkId, c.Requirement.Code) && Blocks(s, c.Requirement)))
                 .ToList();
             if (candidates.Count == 0)
             {
@@ -114,8 +125,21 @@ namespace ComplianceTracker.Application.Organizations
                 .Where(c => c.Score >= _limits.MinimumScoreForEvidence) // US-105 R1: the same limit as for evidence
                 .OrderByDescending(c => c.Score)
                 .Take(EvidenceService.BatchSize)
-                .Select(c => DocumentLinkSuggestion.Create(organization.Id, document.Id, c.Candidate.FrameworkId, c.Candidate.Requirement.Code,
-                    c.Score, rank++, _embeddings.Name, PromptVersion, Now, _limits.MinimumScoreForEvidence))
+                .Select(c =>
+                {
+                    var suggestion = DocumentLinkSuggestion.Create(organization.Id, document.Id, c.Candidate.FrameworkId, c.Candidate.Requirement.Code,
+                        c.Score, rank++, _embeddings.Name, PromptVersion, Now, _limits.MinimumScoreForEvidence);
+
+                    // US-145 R4: a pair that was rejected before (and has changed since) says so
+                    if (existing.Where(s => s.IsFor(c.Candidate.FrameworkId, c.Candidate.Requirement.Code) && s.Status == SuggestionStatus.Rejected)
+                            .OrderByDescending(s => s.DecidedAt).FirstOrDefault() is { } earlier)
+                    {
+                        suggestion.NoteEarlierRejection(RejectionMemory.Note(earlier.RejectedFingerprint, Pair(c.Candidate.Requirement),
+                            organization.Users.FirstOrDefault(u => u.Id == earlier.DecidedById)?.Name ?? "Unknown", earlier.DecidedAt, earlier.RejectionReason, "document"));
+                    }
+
+                    return suggestion;
+                })
                 .ToList();
 
             if (made.Count > 0)
@@ -159,8 +183,37 @@ namespace ComplianceTracker.Application.Organizations
         {
             var (organization, user, suggestion, document) = await OpenAsync(suggestionId, cancellationToken);
             suggestion.Reject(reason, comment, user.Id, Now, user.Role);
+
+            // US-145 R1: what was judged
+            if ((await RequirementsAsync(organization.Id, cancellationToken)).FirstOrDefault(r => suggestion.IsFor(r.FrameworkId, r.Requirement.Code)) is { Requirement: not null } judged)
+            {
+                suggestion.JudgedOn(Domain.Common.Fingerprint.Pair(RejectionMemory.Of(document), RejectionMemory.Of(judged.Requirement)));
+            }
             await _log.LogAsync(ActivityAction.DocumentLinkRejected, organization.Id, $"{document.Title} ↔ {suggestion.RequirementCode} ({reason})", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-145 R6: a person takes a rejection back; the pair can be suggested again at once
+        public async Task UndoRejectionAsync(Guid suggestionId, CancellationToken cancellationToken = default)
+        {
+            var (organization, _, suggestion, document) = await OpenAsync(suggestionId, cancellationToken);
+            suggestion.UndoRejection();
+            await _log.LogAsync(ActivityAction.SuggestionRejectionUndone, organization.Id, $"Document {document.Title} ↔ {suggestion.RequirementCode}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-145 R6: the rejected suggestions per document, newest first, so a person can take one back
+        public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<DocumentLinkSuggestion>>> RejectedAsync(CancellationToken cancellationToken = default)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is not { } organization)
+            {
+                return new Dictionary<Guid, IReadOnlyList<DocumentLinkSuggestion>>();
+            }
+
+            return (await _suggestions.ListAsync(organization.Id, cancellationToken))
+                .Where(s => s.Status == SuggestionStatus.Rejected)
+                .GroupBy(s => s.DocumentId)
+                .ToDictionary(g => g.Key, g => (IReadOnlyList<DocumentLinkSuggestion>)g.OrderByDescending(s => s.DecidedAt).ToList());
         }
 
         // The pending suggestions per document, best first. One that a person has linked by hand, or whose document or

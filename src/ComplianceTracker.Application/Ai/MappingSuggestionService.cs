@@ -104,10 +104,7 @@ namespace ComplianceTracker.Application.Ai
                 pending.Replace();
             }
 
-            var excluded = context.Existing.Where(s => s.Status is SuggestionStatus.Approved or SuggestionStatus.Rejected)
-                .Select(s => (s.WorkItemId, s.RequirementId))
-                .Concat(context.Linked)
-                .ToHashSet();
+            var excluded = Decided(context).Concat(context.Linked).ToHashSet();
 
             var made = await SuggestForAsync(context, context.Stories, excluded, startRank: _ => 1, cancellationToken);
             await _log.LogAsync(ActivityAction.MappingsSuggested, context.Project.Id,
@@ -123,7 +120,9 @@ namespace ComplianceTracker.Application.Ai
             var story = context.Stories.FirstOrDefault(s => s.Id == workItemId)
                 ?? throw new DomainException("User story not found");
 
-            var excluded = context.Existing.Select(s => (s.WorkItemId, s.RequirementId)).Concat(context.Linked).ToHashSet();
+            // US-145 R2: a rejection whose story or requirement changed since, or that was taken back, no longer blocks
+            var excluded = context.Existing.Where(s => s.Status is not (SuggestionStatus.Rejected or SuggestionStatus.RejectionUndone) || StillRejects(context, s))
+                .Select(s => (s.WorkItemId, s.RequirementId)).Concat(context.Linked).ToHashSet();
             var nextRank = context.Existing.Where(s => s.WorkItemId == workItemId).Select(s => s.Rank).DefaultIfEmpty(0).Max() + 1;
 
             var made = await SuggestForAsync(context, [story], excluded, startRank: _ => nextRank, cancellationToken);
@@ -164,10 +163,7 @@ namespace ComplianceTracker.Application.Ai
                 pending.Replace();
             }
 
-            var excluded = context.Existing.Where(s => s.Status is SuggestionStatus.Approved or SuggestionStatus.Rejected)
-                .Select(s => (s.WorkItemId, s.RequirementId))
-                .Concat(context.Linked)
-                .ToHashSet();
+            var excluded = Decided(context).Concat(context.Linked).ToHashSet();
             var nextRank = context.Stories.ToDictionary(
                 s => s.Id,
                 s => context.Existing.Where(e => e.WorkItemId == s.Id).Select(e => e.Rank).DefaultIfEmpty(0).Max() + 1);
@@ -191,6 +187,7 @@ namespace ComplianceTracker.Application.Ai
                 }
             }
 
+            await NoteEarlierRejectionsAsync(context, made, cancellationToken);
             await _suggestions.AddRangeAsync(made, cancellationToken);
             await _log.LogAsync(ActivityAction.MappingsSuggested, context.Project.Id,
                 $"{made.Count} suggestions for {targets.Count} not-covered requirements ({_embeddings.Name}, {RationalePrompt.Version})", cancellationToken);
@@ -222,12 +219,63 @@ namespace ComplianceTracker.Application.Ai
             var (project, userId, suggestion) = await SuggestionAsync(projectId, suggestionId, cancellationToken);
             suggestion.Reject(reason, comment, userId, Now, (await _member.RequireAsync(cancellationToken)).User.Role);
 
+            // US-145 R1: what was judged, so a change on either side lets the pair come back
+            var story = (await _workItems.ListAsync(project.Id, cancellationToken)).FirstOrDefault(w => w.Id == suggestion.WorkItemId);
+            var requirement = await _frameworks.GetRequirementAsync(suggestion.RequirementId, cancellationToken);
+            if (story is not null && requirement is not null)
+            {
+                suggestion.JudgedOn(Domain.Common.Fingerprint.Pair(RejectionMemory.Of(story), RejectionMemory.Of(requirement)));
+            }
+
             await _log.LogAsync(ActivityAction.MappingRejected, project.Id,
                 $"{await PairAsync(project, suggestion, cancellationToken)}: {reason}", cancellationToken);
             await SaveAndNotifyAsync(project.Id, cancellationToken);
         }
 
+        // US-145 R6: a person takes a rejection back; the pair can be suggested again at once
+        public async Task UndoRejectionAsync(Guid projectId, Guid suggestionId, CancellationToken cancellationToken = default)
+        {
+            var (project, _, suggestion) = await SuggestionAsync(projectId, suggestionId, cancellationToken);
+            suggestion.UndoRejection();
+            await _log.LogAsync(ActivityAction.SuggestionRejectionUndone, project.Id, $"Story {await PairAsync(project, suggestion, cancellationToken)}", cancellationToken);
+            await SaveAndNotifyAsync(project.Id, cancellationToken);
+        }
+
         // ---------------------------------------------------------- Helpers
+
+        // US-145 R2: the pairs that stay away: approved, or rejected while neither side changed
+        private static IEnumerable<(Guid WorkItemId, Guid RequirementId)> Decided(Context context)
+            => context.Existing.Where(s => s.Status == SuggestionStatus.Approved || StillRejects(context, s)).Select(s => (s.WorkItemId, s.RequirementId));
+
+        private static bool StillRejects(Context context, MappingSuggestion suggestion)
+        {
+            var story = context.Stories.FirstOrDefault(s => s.Id == suggestion.WorkItemId);
+            var requirement = context.Requirements.FirstOrDefault(r => r.Id == suggestion.RequirementId);
+            return story is null || requirement is null
+                ? suggestion.Status == SuggestionStatus.Rejected
+                : suggestion.StillRejects(Domain.Common.Fingerprint.Pair(RejectionMemory.Of(story), RejectionMemory.Of(requirement)));
+        }
+
+        // US-145 R4: a suggestion for a pair that was rejected before (and has changed since) says so
+        private async Task NoteEarlierRejectionsAsync(Context context, IEnumerable<MappingSuggestion> made, CancellationToken cancellationToken)
+        {
+            var organization = await _member.FindOrganizationAsync(cancellationToken);
+            foreach (var suggestion in made)
+            {
+                var earlier = context.Existing.Where(s => s.WorkItemId == suggestion.WorkItemId && s.RequirementId == suggestion.RequirementId && s.Status == SuggestionStatus.Rejected)
+                    .OrderByDescending(s => s.DecidedAt).FirstOrDefault();
+                var story = context.Stories.FirstOrDefault(s => s.Id == suggestion.WorkItemId);
+                var requirement = context.Requirements.FirstOrDefault(r => r.Id == suggestion.RequirementId);
+                if (earlier is null || story is null || requirement is null)
+                {
+                    continue;
+                }
+
+                suggestion.NoteEarlierRejection(RejectionMemory.Note(earlier.RejectedFingerprint,
+                    Domain.Common.Fingerprint.Pair(RejectionMemory.Of(story), RejectionMemory.Of(requirement)),
+                    organization?.Users.FirstOrDefault(u => u.Id == earlier.DecidedById)?.Name ?? "Unknown", earlier.DecidedAt, earlier.RejectionReason, "story"));
+            }
+        }
 
         private sealed record Context(
             Project Project,
@@ -303,6 +351,7 @@ namespace ComplianceTracker.Application.Ai
                 }
             }
 
+            await NoteEarlierRejectionsAsync(context, made, cancellationToken);
             await _suggestions.AddRangeAsync(made, cancellationToken);
             return made.Count;
         }

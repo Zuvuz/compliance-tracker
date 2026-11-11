@@ -289,6 +289,10 @@
                             <div class="ai-evidence-suggestion row-item" data-evidence="@entry.Evidence.Title">
                                 <span class="suggested-evidence-for-requirement">@entry.Evidence.Title</span>
                                 <div class="small text-muted item-source"><span class="badge text-bg-info">AI-generated</span> Suggested evidence · score @entry.Suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</div>
+                                @if (entry.Suggestion.EarlierRejection is { } earlierEvidence)
+                                {
+                                    <div class="small text-muted earlier-rejection">@earlierEvidence</div>
+                                }
                                 @if (!project.IsClosed && Model.CanLink)
                                 {
                                     <div class="d-flex flex-wrap gap-1 mt-1">
@@ -357,6 +361,11 @@
                                 <a class="suggestion-story" href="@entry.WorkItem.Url" target="_blank" rel="noopener noreferrer">@entry.WorkItem.Title</a>
                                 <div class="small text-muted item-source"><span class="badge text-bg-info">AI-generated</span> Suggested story · score <span class="suggestion-score">@suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span></div>
                                 <div class="small suggestion-rationale">@(suggestion.Rationale ?? "Writing rationale…")</div>
+                                @if (suggestion.EarlierRejection is { } earlier)
+                                {
+                                    @* US-145 R4 *@
+                                    <div class="small text-muted earlier-rejection">@earlier</div>
+                                }
                                 @if (suggestion.ContextUsed is { } contextUsed)
                                 {
                                     <div class="small text-muted suggestion-context">Context used: @contextUsed</div>
@@ -392,6 +401,31 @@
                         }
                     }
                 </div>
+            }
+
+            @if (row.RejectedSuggestions.Count > 0)
+            {
+                @* US-145 R6: a rejection can be taken back *@
+                <details class="small mb-1 rejected-story-suggestions">
+                    <summary class="text-muted">Rejected suggestions (@row.RejectedSuggestions.Count)</summary>
+                    <ul class="list-unstyled mb-0">
+                        @foreach (var no in row.RejectedSuggestions)
+                        {
+                            <li class="rejected-suggestion d-flex flex-wrap align-items-center gap-1" data-story="@no.WorkItem.Title">
+                                <span>@no.WorkItem.Title · @no.Suggestion.RejectionReason</span>
+                                @if (!project.IsClosed && Model.CanDecide)
+                                {
+                                    <form asp-action="UndoStoryRejection" method="post" class="undo-rejection">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="suggestionId" value="@no.Suggestion.Id" />
+                                        <input type="hidden" name="sub" value="@sub" />
+                                        <button type="submit" class="btn btn-sm btn-link p-0">Undo rejection</button>
+                                    </form>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </details>
             }
 
             @if (canLinkHere || canMarkHere || canAddEvidence)

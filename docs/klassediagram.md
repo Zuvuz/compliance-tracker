@@ -947,7 +947,26 @@ classDiagram
     +Reject(reason: RejectionReason?, comment: string?, userId: Guid, at: DateTime)
     +Replace()
     +SetRationale(rationale: string, model: string, contextUsed: string?)
+    -rejectedFingerprint: string?
+    -earlierRejection: string?
+    +JudgedOn(fingerprint: string)
+    +StillRejects(currentFingerprint: string) bool
+    +UndoRejection()
+    +NoteEarlierRejection(note: string?)
   }
+  class Fingerprint {
+    <<static>>
+    +Of(parts: string[]) string
+    +Pair(item: string, requirement: string) string
+    +WhatChanged(stored: string?, current: string) string?
+  }
+  class RejectionMemory {
+    <<static>>
+    +Of(requirement: Requirement) string
+    +Note(rejected: string?, current: string, decidedBy: string, decidedAt: DateTime?, reason: RejectionReason?, item: string) string?
+  }
+  MappingSuggestion ..> Fingerprint : US-145
+  RejectionMemory ..> Fingerprint
   class IAiLimits {
     <<interface>>
     +MinimumScoreForStories: double
@@ -1729,6 +1748,7 @@ classDiagram
     Approved
     Rejected
     Superseded
+    RejectionUndone
   }
   class RejectionReason {
     <<enumeration>>

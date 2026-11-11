@@ -47,6 +47,10 @@ namespace ComplianceTracker.Application.Organizations
         DateOnly Today)
     {
         // US-136 R2: the AI's pending suggestions per document, best first
+        // US-145 R6: the rejected suggestions per document, so a person can take one back
+        public IReadOnlyDictionary<Guid, IReadOnlyList<Domain.Organizations.DocumentLinkSuggestion>> Rejected { get; init; } =
+            new Dictionary<Guid, IReadOnlyList<Domain.Organizations.DocumentLinkSuggestion>>();
+
         public IReadOnlyDictionary<Guid, IReadOnlyList<DocumentSuggestionView>> Suggestions { get; init; } =
             new Dictionary<Guid, IReadOnlyList<DocumentSuggestionView>>();
     }

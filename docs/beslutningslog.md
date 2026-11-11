@@ -1273,6 +1273,25 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At AI'en grupperer og formulerer manglerne: en senere udvidelse.
   - Mangler i SBOM (US-079) og manglende sårbarhedskontakt (US-103): de kommer, når de stories er bygget.
 
+### B85 – En afvisning gælder, indtil det vurderede ændrer sig (US-145)
+
+- **Beslutning:**
+  - **Fingeraftryk:** når en person afviser et AI-forslag, gemmes et kort fingeraftryk af begge sider ("emne|krav"). Det er en SHA-256 af teksten, hvor store/små bogstaver og mellemrum ikke tæller.
+    - Krav: kode, titel og beskrivelse.
+    - Story eller produktkrav: titel og tekst.
+    - Evidens: filens SHA-256, ellers titel og link.
+    - Organisationsdokument: den aktuelle fils SHA-256.
+    - Risiko: titel og beskrivelse.
+  - **Afvisningen holder,** så længe ingen af siderne har ændret sig. Ændrer en side sig, må AI'en foreslå parret igen.
+  - **Noten:** et forslag, der kommer igen, siger "Rejected before by Anna on 03-11-2026 (NotRelevant). The document has changed since." Den gamle afvisning bliver stående som historik.
+  - **Fortryd:** en person, der må beslutte, kan fortryde en afvisning ("Undo rejection"). Status bliver `RejectionUndone`, og handlingen logges som `SuggestionRejectionUndone`.
+  - **Gamle afvisninger** fra før US-145 har intet fingeraftryk og holder, indtil en person fortryder dem.
+  - Det gælder for alle slags forslag: story ↔ krav, evidens ↔ krav, evidens ↔ story, dokument ↔ krav og tiltag for en risiko.
+- **Begrundelse:** En afvisning var et svar på det, personen så. Når teksten eller filen ændrer sig, kan svaret være et andet. Noten viser, at nogen har sagt nej før, så personen ikke skal starte forfra.
+- **Fravalgt:**
+  - At afvisninger udløber efter en fast tid: det siger intet om, hvorvidt noget har ændret sig.
+  - At gemme hele teksten for at vise forskellen: fingeraftrykket er nok til at se, at noget har ændret sig, og gemmer ingen fortrolig tekst to gange.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

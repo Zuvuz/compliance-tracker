@@ -97,9 +97,12 @@ namespace ComplianceTracker.Application.Compliance
                 .ToDictionary(a => a.RequirementId);
 
             // US-020, US-044 R4: the pending AI suggestions, for stories that still exist
-            var pendingSuggestions = (await _suggestions.ListAsync(project.Id, cancellationToken))
-                .Where(s => s.IsPending && workItems.ContainsKey(s.WorkItemId))
-                .ToList();
+            var allSuggestions = await _suggestions.ListAsync(project.Id, cancellationToken);
+            var pendingSuggestions = allSuggestions.Where(s => s.IsPending && workItems.ContainsKey(s.WorkItemId)).ToList();
+
+            // US-145 R6: the rejected ones, so a person can take one back
+            var rejectedSuggestions = allSuggestions.Where(s => s.Status == Domain.Mappings.SuggestionStatus.Rejected && workItems.ContainsKey(s.WorkItemId))
+                .ToLookup(s => s.RequirementId);
 
             // US-057: the evidence that is not removed, newest first; expired evidence is shown but does not count
             var today = DateOnly.FromDateTime(_clock.GetUtcNow().UtcDateTime);
@@ -199,6 +202,8 @@ namespace ComplianceTracker.Application.Compliance
                             })
                             .ToList(),
                         EvidenceSuggestions = evidenceSuggestions[requirement.Id].ToList(),
+                        RejectedSuggestions = rejectedSuggestions[requirement.Id].OrderByDescending(s => s.DecidedAt)
+                            .Select(s => new SuggestedWorkItem(s, workItems[s.WorkItemId])).ToList(),
                         SuggestedEvidence = pendingEvidenceLinks[requirement.Id].OrderByDescending(s => s.Score)
                             .Select(s => new SuggestedEvidence(s, evidenceTitles[s.EvidenceId])).ToList(),
                         Draft = openDrafts[requirement.Id].FirstOrDefault(),
@@ -362,6 +367,9 @@ namespace ComplianceTracker.Application.Compliance
 
         // US-110 R4: the requirement in the earlier version, for the old text
         public Requirement? PreviousRequirement { get; init; }
+
+        // US-145 R6: rejected story suggestions for this requirement, so a person can take one back
+        public IReadOnlyList<SuggestedWorkItem> RejectedSuggestions { get; init; } = [];
 
         // US-106: the AI's pending suggestions of the project's evidence for this requirement, best first
         public IReadOnlyList<SuggestedEvidence> SuggestedEvidence { get; init; } = [];
