@@ -1184,6 +1184,28 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Profiler for IEC 62443-4-1 og andre standarder: de kan tilføjes, når organisationerne har brug for dem.
   - HTTP-adapteren er kun testet mod en efterlignet CELLAR. Den første rigtige import bør tjekkes af driften.
 
+### B81 – En overskuelig kravrække (US-144)
+
+- **Beslutning:**
+  - **Grupper:** "Covered by" har tre grupper med overskrift og antal: user stories, evidens og "Waiting for your decision". En tom gruppe vises ikke.
+  - **Kilde på hver linje:**
+    - stories: "GitHub" eller "Specification", "linked by" eller "AI suggestion approved by", plus dato
+    - evidens: "Uploaded by", "Link added by", "From a test run", "From a merged pull request" eller "From the Documents tab"
+    - Evidens fra en test eller en PR genkendes på det accepterede forslag (`EvidenceSuggestion.EvidenceId`), så der kræves intet nyt felt på evidensen.
+  - **Ventende forslag** (AI-forslag til stories, foreslået evidens og "not applicable") står samlet i én farvet boks, med Accept og Reject ved siden af hinanden.
+  - **Handlinger og fjern:** handlingerne er små knapper nederst. Fjern ligger i en lille "⋯"-menu og spørger først.
+  - **Stories:** en lukket story hedder "Done" og er grøn.
+  - **Foldet række:** én kort linje med kode, titel, antal, et "waiting"-mærke, status og "Open". Foldning huskes stadig kun i browseren (#52). "Fold all" folder ikke rækker, der venter på en beslutning.
+  - **Egen adresse:** hvert krav har sin egen adresse (`…/compliance/{framework}/{kode}`). Den viser rækken udfoldet og markeret og ruller hen til den. Det erstatter det sidepanel, US-046 beskrev.
+  - **"All"-fane:** findes, når projektet følger mere end ét regelsæt. Kravene grupperes pr. regelsæt, og tallene lægges sammen.
+  - **Not applicable:** kan nævne en af projektets risici som begrundelse (`RequirementApplicability.RiskId`, CRA Art. 13(3)). Risikoen følger med til næste frameworkversion.
+  - **Ubrugte regelsæt:** regelsæt, der er slået til i organisationen, men ikke bruges af projektet, vises under tabellen med "Add to project".
+  - **Story i flere regelsæt:** når en story dækker krav i flere regelsæt, vises regelsættets navn foran koden, fx "CRA I.2(d)".
+- **Begrundelse:** Rækken var en lang, ens liste, hvor man ikke kunne se, hvad der var hvad, eller hvor det kom fra. Grupper, kilder og en kompakt foldning giver overblik uden at skjule noget.
+- **Fravalgt:**
+  - Et separat sidepanel pr. krav: den udfoldede række med egen adresse giver det samme med mindre kode.
+  - Kildeteksterne på dansk: et åbent spørgsmål (US-142 R8).
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

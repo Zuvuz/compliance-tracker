@@ -56,4 +56,32 @@ public class RequirementApplicabilityTests
         Assert.Equal("Reason", decision.Reason);
         Assert.Throws<DomainException>(() => decision.Revoke(bo, Monday.AddDays(2)));
     }
+
+    // ---------------------------------------------------------- US-144 R14: a risk as the justification
+
+    [Fact]
+    public void A_risk_can_justify_not_applicable_and_is_carried_to_the_next_version()
+    {
+        // Arrange
+        var risk = Guid.NewGuid();
+        var decision = RequirementApplicability.NotApplicable(Guid.NewGuid(), Guid.NewGuid(), "No remote access", Guid.NewGuid(), Monday, riskId: risk);
+
+        // Act
+        var carried = decision.CarryTo(Guid.NewGuid(), textChanged: true);
+
+        // Assert
+        Assert.Equal(risk, decision.RiskId);
+        Assert.Equal(risk, carried.RiskId);
+        Assert.True(carried.NeedsReview);
+    }
+
+    [Fact]
+    public void Without_a_risk_the_reason_alone_is_enough()
+    {
+        // Act
+        var decision = RequirementApplicability.NotApplicable(Guid.NewGuid(), Guid.NewGuid(), "No remote access", Guid.NewGuid(), Monday);
+
+        // Assert
+        Assert.Null(decision.RiskId);
+    }
 }

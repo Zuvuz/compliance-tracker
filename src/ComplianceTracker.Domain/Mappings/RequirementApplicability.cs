@@ -15,6 +15,9 @@ namespace ComplianceTracker.Domain.Mappings
         // Why the requirement does not apply, e.g. "No network-facing interface (risk assessment v2)"
         public string Reason { get; private set; } = "";
 
+        // US-144 R14: a risk of the project that justifies the decision, besides the reason (CRA Art. 13(3)); optional
+        public Guid? RiskId { get; private set; }
+
         public Guid DecidedById { get; private set; }
 
         // US-010: the role of the person when they decided
@@ -51,7 +54,8 @@ namespace ComplianceTracker.Domain.Mappings
         // For EF Core only
         private RequirementApplicability() { }
 
-        public static RequirementApplicability NotApplicable(Guid projectId, Guid requirementId, string reason, Guid userId, DateTime at, UserRole? role = null)
+        public static RequirementApplicability NotApplicable(
+            Guid projectId, Guid requirementId, string reason, Guid userId, DateTime at, UserRole? role = null, Guid? riskId = null)
         {
             if (string.IsNullOrWhiteSpace(reason))
             {
@@ -63,6 +67,7 @@ namespace ComplianceTracker.Domain.Mappings
                 ProjectId = projectId,
                 RequirementId = requirementId,
                 Reason = reason.Trim(),
+                RiskId = riskId,
                 DecidedById = userId,
                 DecidedRole = role,
                 DecidedAt = at
@@ -77,6 +82,7 @@ namespace ComplianceTracker.Domain.Mappings
                 ProjectId = ProjectId,
                 RequirementId = requirementId,
                 Reason = Reason,
+                RiskId = RiskId,
                 DecidedById = DecidedById,
                 DecidedRole = DecidedRole,
                 DecidedAt = DecidedAt,

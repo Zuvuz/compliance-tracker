@@ -68,6 +68,8 @@ namespace ComplianceTracker.Application.Compliance
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
 
+        private readonly Risks.IRiskRepository _risks; // US-144 R14
+
         public ComplianceService(
             IProjectRepository projects,
             IFrameworkRepository frameworks,
@@ -75,6 +77,7 @@ namespace ComplianceTracker.Application.Compliance
             IRequirementLinkRepository links,
             IRequirementApplicabilityRepository applicability,
             IEvidenceRepository evidence,
+            Risks.IRiskRepository risks,
             CurrentMember member,
             IActivityLogger log,
             IUnitOfWork unitOfWork,
@@ -86,6 +89,7 @@ namespace ComplianceTracker.Application.Compliance
             _links = links;
             _applicability = applicability;
             _evidence = evidence;
+            _risks = risks;
             _member = member;
             _log = log;
             _unitOfWork = unitOfWork;
@@ -133,7 +137,8 @@ namespace ComplianceTracker.Application.Compliance
         }
 
         // US-043 R5: the requirement does not apply to the project; the reason is required
-        public async Task MarkNotApplicableAsync(Guid projectId, Guid requirementId, string reason, CancellationToken cancellationToken = default)
+        // US-144 R14: riskId names one of the project's risks as the justification
+        public async Task MarkNotApplicableAsync(Guid projectId, Guid requirementId, string reason, CancellationToken cancellationToken = default, Guid? riskId = null)
         {
             var (organizationId, userId, project) = await OpenProjectAsync(projectId, cancellationToken, Permission.DecideCompliance);
             var requirement = await RequirementOfProjectAsync(organizationId, project, requirementId, cancellationToken)
@@ -144,10 +149,18 @@ namespace ComplianceTracker.Application.Compliance
                 throw new DomainException($"{requirement.Code} is already marked as not applicable");
             }
 
+            string? riskTitle = null;
+            if (riskId is { } id)
+            {
+                riskTitle = (await _risks.ListAsync(project.Id, cancellationToken)).FirstOrDefault(r => r.Id == id)?.Title
+                    ?? throw new DomainException("Choose one of the project's risks");
+            }
+
             var decision = RequirementApplicability.NotApplicable(project.Id, requirementId, reason, userId, Now,
-                (await _member.RequireAsync(cancellationToken)).User.Role);
+                (await _member.RequireAsync(cancellationToken)).User.Role, riskId);
             await _applicability.AddAsync(decision, cancellationToken);
-            await _log.LogAsync(ActivityAction.RequirementMarkedNotApplicable, project.Id, $"{requirement.Code}: {decision.Reason}", cancellationToken);
+            await _log.LogAsync(ActivityAction.RequirementMarkedNotApplicable, project.Id,
+                $"{requirement.Code}: {decision.Reason}{(riskTitle is null ? "" : $" (risk: {riskTitle})")}", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 

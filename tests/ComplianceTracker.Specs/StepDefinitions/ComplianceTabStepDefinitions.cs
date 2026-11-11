@@ -114,7 +114,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task WhenIOpenTheSubTab(string subTab, string projectName)
         {
             await _web.OpenAsync($"/Projects/Details/{await ProjectIdAsync(projectName)}/compliance");
-            var link = SubTabs().FirstOrDefault(a => a.TextContent.Trim() == subTab)
+            var link = _web.Page!.QuerySelectorAll("#compliance-tabs a[data-sub]").FirstOrDefault(a => a.TextContent.Trim() == subTab) // US-144: also "All"
                 ?? throw new Xunit.Sdk.XunitException($"The Compliance tab has no sub-tab '{subTab}'.");
             await _web.OpenAsync(link.GetAttribute("href")!);
         }
@@ -245,7 +245,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await _web.OpenAsync(action + $"?q={Uri.EscapeDataString(text)}");
         }
 
-        private IEnumerable<IElement> SubTabs() => _web.Page!.QuerySelectorAll("#compliance-tabs a[data-sub]");
+        // The regulations' sub-tabs; US-144's "All" is not one of them
+        private IEnumerable<IElement> SubTabs() => _web.Page!.QuerySelectorAll("#compliance-tabs a[data-sub]:not([data-sub='all'])");
 
         private IReadOnlyList<string> Codes()
             => _web.Page!.QuerySelectorAll("#requirements-table tr.requirement-row").Select(r => r.GetAttribute("data-code")!).ToList();

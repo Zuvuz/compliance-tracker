@@ -78,7 +78,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             var id = await db.Projects.Where(p => p.Name == projectName).Select(p => p.Id).SingleAsync();
 
             var page = await WebScenario.ParseAsync(await client.GetAsync($"/Projects/Details/{id}/compliance"));
-            var link = page.QuerySelectorAll("#compliance-tabs a[data-sub]").FirstOrDefault(a => a.TextContent.Trim() == subTab)
+            var link = page.QuerySelectorAll("#compliance-tabs a[data-sub]:not([data-sub='all'])").FirstOrDefault(a => a.TextContent.Trim() == subTab)
                 ?? throw new Xunit.Sdk.XunitException($"'{userName}' sees no sub-tab '{subTab}'.");
             _web.Response = await client.GetAsync(link.GetAttribute("href")!);
             _web.Page = await WebScenario.ParseAsync(_web.Response);
