@@ -433,6 +433,31 @@ classDiagram
   OrganisationAreaService ..> Project : organisation area
   OrganisationAreaService ..> Nis2Assessment : opretter
   RequirementApplicability --> Risk : justified by
+  class EvidenceStoryLink {
+    -id: Guid
+    -projectId: Guid
+    -evidenceId: Guid
+    -workItemId: Guid
+    -source: LinkSource
+    -linkedById: Guid
+    -linkedAt: DateTime
+    -removedAt: DateTime?
+    +Remove(userId, at)
+  }
+  class EvidenceStorySuggestion {
+    -id: Guid
+    -evidenceId: Guid
+    -workItemId: Guid
+    -score: double
+    -rank: int
+    -status: SuggestionStatus
+    +Approve(userId, at, role)
+    +Reject(reason, comment, userId, at, role)
+  }
+  EvidenceStoryLink --> Evidence : shows done
+  EvidenceStoryLink --> WorkItem : story
+  EvidenceStorySuggestion --> Evidence
+  EvidenceStorySuggestion --> WorkItem
   class RequirementApplicability {
     -id: Guid
     -projectId: Guid
