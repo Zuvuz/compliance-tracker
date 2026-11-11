@@ -241,6 +241,11 @@
             <li class="trace-node" data-kind="@kind" data-name="@story.Story.Title">
                 Story: <a href="@story.Story.Url" target="_blank" rel="noopener noreferrer">@story.Story.Title</a>
                 <span class="badge text-bg-light">@story.Story.State</span>
+                @if (story.Evidence.Count > 0)
+                {
+                    @* US-146 R2: evidence that shows the story is done *@
+                    <span class="small story-evidence">· Evidence: @string.Join(", ", story.Evidence.Select(e => e.Title))</span>
+                }
                 @if (story.Requirements.Count > 0)
                 {
                     <ul class="list-unstyled ms-3 mb-0">

@@ -64,6 +64,9 @@ namespace ComplianceTracker.Application.Compliance
         private readonly IRequirementApplicabilityRepository _applicability;
         private readonly IEvidenceRepository _evidence;
         private readonly IEvidenceLinkSuggestionRepository _suggestions;
+        private readonly IEvidenceStoryRepository _stories; // US-146
+        private readonly WorkItems.IWorkItemRepository _workItems; // US-146
+        private readonly IReportSnapshotSource _reports; // US-146 R8
         private readonly IEvidenceTextReader _text;
         private readonly IEmbeddingModel _embeddings;
         private readonly IRationaleQueue _rationales;
@@ -79,6 +82,9 @@ namespace ComplianceTracker.Application.Compliance
             IRequirementApplicabilityRepository applicability,
             IEvidenceRepository evidence,
             IEvidenceLinkSuggestionRepository suggestions,
+            IEvidenceStoryRepository stories,
+            WorkItems.IWorkItemRepository workItems,
+            IReportSnapshotSource reports,
             IEvidenceTextReader text,
             IAiModels models,
             IRationaleQueue rationales,
@@ -94,6 +100,9 @@ namespace ComplianceTracker.Application.Compliance
             _applicability = applicability;
             _evidence = evidence;
             _suggestions = suggestions;
+            _stories = stories;
+            _workItems = workItems;
+            _reports = reports;
             _text = text;
             _embeddings = models.Embedding(AiTask.Embedding); // US-117
             _rationales = rationales;
@@ -229,7 +238,7 @@ namespace ComplianceTracker.Application.Compliance
             var made = await SuggestAsync(project, evidence, content, more: true, cancellationToken);
             if (made == 0)
             {
-                throw new DomainException("There are no more requirements to suggest");
+                throw new DomainException("There are no more requirements or stories to suggest");
             }
 
             return made;
@@ -268,6 +277,141 @@ namespace ComplianceTracker.Application.Compliance
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        // ---------------------------------------------------------- US-146: evidence and user stories
+
+        // R5: evidence shows that a user story or product requirement is done
+        public async Task LinkStoryAsync(Guid projectId, Guid evidenceId, Guid workItemId, CancellationToken cancellationToken = default)
+        {
+            var (_, user, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var evidence = await RequireEvidenceAsync(project, evidenceId, cancellationToken);
+            var story = await RequireStoryAsync(project, workItemId, cancellationToken);
+            await AddStoryLinkAsync(project, evidence, story, user, LinkSource.Manual, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task UnlinkStoryAsync(Guid projectId, Guid linkId, CancellationToken cancellationToken = default)
+        {
+            var (_, user, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var link = (await _stories.ListActiveLinksAsync(project.Id, cancellationToken)).FirstOrDefault(l => l.Id == linkId)
+                ?? throw new DomainException("The link was not found");
+            var evidence = await RequireEvidenceAsync(project, link.EvidenceId, cancellationToken);
+            var story = (await _workItems.ListAsync(project.Id, cancellationToken)).FirstOrDefault(w => w.Id == link.WorkItemId);
+            link.Remove(user.Id, Now);
+            await _log.LogAsync(ActivityAction.EvidenceUnlinkedFromStory, project.Id, $"{story?.Title ?? "?"}: {evidence.Title}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // R6: approving links them (source AiApproved)
+        public async Task ApproveStoryAsync(Guid projectId, Guid suggestionId, CancellationToken cancellationToken = default)
+        {
+            var (_, user, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var suggestion = await RequireStorySuggestionAsync(project, suggestionId, cancellationToken);
+            var evidence = await RequireEvidenceAsync(project, suggestion.EvidenceId, cancellationToken);
+            var story = await RequireStoryAsync(project, suggestion.WorkItemId, cancellationToken);
+            suggestion.Approve(user.Id, Now, user.Role);
+            await AddStoryLinkAsync(project, evidence, story, user, LinkSource.AiApproved, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task RejectStoryAsync(Guid projectId, Guid suggestionId, RejectionReason? reason, string? comment, CancellationToken cancellationToken = default)
+        {
+            var (_, user, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var suggestion = await RequireStorySuggestionAsync(project, suggestionId, cancellationToken);
+            var evidence = await RequireEvidenceAsync(project, suggestion.EvidenceId, cancellationToken);
+            var story = (await _workItems.ListAsync(project.Id, cancellationToken)).FirstOrDefault(w => w.Id == suggestion.WorkItemId);
+            suggestion.Reject(reason, comment, user.Id, Now, user.Role);
+            await _log.LogAsync(ActivityAction.EvidenceStorySuggestionRejected, project.Id, $"{story?.Title ?? "?"}: {evidence.Title} ({reason})", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // R8: a locked management report (US-050) used as evidence for one requirement, e.g. ISO/IEC 27001 9.3
+        public async Task<Evidence> AddFromReportAsync(Guid projectId, Guid snapshotId, Guid requirementId, CancellationToken cancellationToken = default)
+        {
+            var (organizationId, user, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var (snapshot, content) = await _reports.LockedAsync(organizationId, snapshotId, cancellationToken)
+                ?? throw new DomainException("The locked report was not found");
+            if (snapshot.ProjectId != project.Id || !snapshot.Kind.StartsWith("traceability:management:", StringComparison.Ordinal))
+            {
+                throw new DomainException("Only a locked management report of this project can be used as evidence");
+            }
+
+            var requirement = (await RequirementsOfProjectAsync(organizationId, project, cancellationToken)).GetValueOrDefault(requirementId)
+                ?? throw new DomainException("The requirement is not in a framework version the project follows");
+            if ((await _applicability.ListActiveAsync(project.Id, cancellationToken)).Any(a => a.RequirementId == requirement.Id))
+            {
+                throw new DomainException($"{requirement.Code} does not apply to the project");
+            }
+
+            var file = EvidenceFile.Create(snapshot.FileName, content);
+            var evidence = Evidence.ForFile(project.Id, snapshot.Title, file, null, user.Id, user.Role, Now);
+            await _evidence.AddAsync(evidence, file.Content, cancellationToken);
+            await _evidence.AddLinkAsync(EvidenceLink.Create(project.Id, evidence.Id, requirement.Id, user.Id, user.Role, Now), cancellationToken);
+            await _log.LogAsync(ActivityAction.EvidenceAdded, project.Id, $"{evidence.Title} (locked report, SHA-256 {snapshot.Sha256})", cancellationToken);
+            await _log.LogAsync(ActivityAction.EvidenceLinked, project.Id, $"{requirement.Code}: {evidence.Title}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return evidence;
+        }
+
+        private async Task AddStoryLinkAsync(Project project, Evidence evidence, Domain.WorkItems.WorkItem story, User user, LinkSource source, CancellationToken cancellationToken)
+        {
+            if ((await _stories.ListActiveLinksAsync(project.Id, cancellationToken)).Any(l => l.EvidenceId == evidence.Id && l.WorkItemId == story.Id))
+            {
+                return;
+            }
+
+            await _stories.AddLinkAsync(EvidenceStoryLink.Create(project.Id, evidence.Id, story.Id, user.Id, Now, source, user.Role), cancellationToken);
+            foreach (var pending in (await _stories.ListSuggestionsAsync(project.Id, cancellationToken))
+                         .Where(s => s.IsPending && s.EvidenceId == evidence.Id && s.WorkItemId == story.Id))
+            {
+                pending.Replace();
+            }
+
+            await _log.LogAsync(ActivityAction.EvidenceLinkedToStory, project.Id,
+                $"{story.Title}: {evidence.Title}{(source == LinkSource.AiApproved ? " (AI suggestion approved)" : "")}", cancellationToken);
+        }
+
+        private async Task<Domain.WorkItems.WorkItem> RequireStoryAsync(Project project, Guid workItemId, CancellationToken cancellationToken)
+            => (await _workItems.ListAsync(project.Id, cancellationToken)).FirstOrDefault(w => w.Id == workItemId && w.State != Domain.WorkItems.WorkItemState.Removed)
+               ?? throw new DomainException("The user story was not found");
+
+        private async Task<EvidenceStorySuggestion> RequireStorySuggestionAsync(Project project, Guid suggestionId, CancellationToken cancellationToken)
+            => (await _stories.ListSuggestionsAsync(project.Id, cancellationToken)).FirstOrDefault(s => s.Id == suggestionId)
+               ?? throw new DomainException("The suggestion was not found");
+
+        // R6: the stories of the project the evidence may show are done; none linked, rejected or (for "Show more") ever suggested
+        private async Task<int> SuggestStoriesAsync(Project project, Evidence evidence, float[] evidenceVector, bool more, CancellationToken cancellationToken)
+        {
+            var linked = (await _stories.ListActiveLinksAsync(project.Id, cancellationToken)).Where(l => l.EvidenceId == evidence.Id).Select(l => l.WorkItemId);
+            var existing = (await _stories.ListSuggestionsAsync(project.Id, cancellationToken)).Where(s => s.EvidenceId == evidence.Id).ToList();
+            var excluded = existing.Where(s => more || s.Status is SuggestionStatus.Approved or SuggestionStatus.Rejected)
+                .Select(s => s.WorkItemId).Concat(linked).ToHashSet();
+            var candidates = (await _workItems.ListAsync(project.Id, cancellationToken))
+                .Where(w => w.State != Domain.WorkItems.WorkItemState.Removed && !excluded.Contains(w.Id))
+                .ToList();
+            if (candidates.Count == 0)
+            {
+                return 0;
+            }
+
+            var vectors = await _embeddings.EmbedAsync(candidates.Select(Ai.MappingSuggestionService.StoryText).ToList(), cancellationToken);
+            var rank = existing.Select(s => s.Rank).DefaultIfEmpty(0).Max() + 1;
+            var made = candidates
+                .Select((story, i) => (Story: story, Score: Similarity.Cosine(evidenceVector, vectors[i])))
+                .Where(c => c.Score >= _limits.MinimumScoreForEvidence)
+                .OrderByDescending(c => c.Score)
+                .Take(BatchSize)
+                .Select(c => EvidenceStorySuggestion.Create(project.Id, evidence.Id, c.Story.Id, c.Score, rank++, _embeddings.Name, Now, _limits.MinimumScoreForEvidence))
+                .ToList();
+            if (made.Count == 0)
+            {
+                return 0;
+            }
+
+            await _stories.AddSuggestionsAsync(made, cancellationToken);
+            await _log.LogAsync(ActivityAction.EvidenceStorySuggested, project.Id, $"{made.Count} stories for {evidence.Title} ({_embeddings.Name})", cancellationToken);
+            return made.Count;
+        }
+
         // The evidence's title and text, as the AI reads it. The title is the first line.
         public static string EvidenceText(Evidence evidence, string? text)
         {
@@ -291,14 +435,12 @@ namespace ComplianceTracker.Application.Compliance
                 .ToHashSet();
 
             var candidates = requirements.Where(r => !excluded.Contains(r.Id)).ToList();
-            if (candidates.Count == 0)
-            {
-                return 0;
-            }
-
             var text = content is not null && evidence.ContentType is not null ? _text.Read(evidence.ContentType, content) : null;
             var vectors = await _embeddings.EmbedAsync(
                 [EvidenceText(evidence, text), .. candidates.Select(Ai.MappingSuggestionService.RequirementText)], cancellationToken);
+
+            // US-146 R6: the stories it may show are done, with the same evidence vector
+            var stories = await SuggestStoriesAsync(project, evidence, vectors[0], more, cancellationToken);
 
             var rank = existing.Select(s => s.Rank).DefaultIfEmpty(0).Max() + 1;
             var made = candidates
@@ -310,17 +452,21 @@ namespace ComplianceTracker.Application.Compliance
                     _embeddings.Name, EvidenceRationalePrompt.Version, Now, _limits.MinimumScoreForEvidence))
                 .ToList();
 
-            if (made.Count == 0)
+            if (made.Count > 0)
+            {
+                await _suggestions.AddRangeAsync(made, cancellationToken);
+                await _log.LogAsync(ActivityAction.EvidenceLinkSuggested, project.Id,
+                    $"{made.Count} suggestions for {evidence.Title} ({_embeddings.Name}, {EvidenceRationalePrompt.Version})", cancellationToken);
+            }
+
+            if (made.Count + stories == 0)
             {
                 return 0; // R3: nothing good enough; the page says so
             }
 
-            await _suggestions.AddRangeAsync(made, cancellationToken);
-            await _log.LogAsync(ActivityAction.EvidenceLinkSuggested, project.Id,
-                $"{made.Count} suggestions for {evidence.Title} ({_embeddings.Name}, {EvidenceRationalePrompt.Version})", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             _rationales.Wake();
-            return made.Count;
+            return made.Count + stories;
         }
 
         private async Task<(Guid OrganizationId, User User, Project Project)> OpenProjectAsync(Guid projectId, CancellationToken cancellationToken)

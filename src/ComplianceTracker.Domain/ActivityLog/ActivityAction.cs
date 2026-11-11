@@ -229,6 +229,13 @@ namespace ComplianceTracker.Domain.ActivityLog
         // US-137: an EU act was imported from EUR-Lex (Details: the CELEX number and what was found), and a draft's
         // completeness check was shown for approval (Details: its summary). SubjectId points at the framework version.
         FrameworkImportedFromEurLex,
-        FrameworkCompletenessChecked
+        FrameworkCompletenessChecked,
+
+        // US-146: evidence was linked to or unlinked from a user story (by hand or by approving an AI suggestion), the AI
+        // suggested stories for a piece of evidence, and a suggestion was rejected. SubjectId points at the project.
+        EvidenceLinkedToStory,
+        EvidenceUnlinkedFromStory,
+        EvidenceStorySuggested,
+        EvidenceStorySuggestionRejected
     }
 }

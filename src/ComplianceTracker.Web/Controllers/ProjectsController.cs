@@ -1047,6 +1047,57 @@ namespace ComplianceTracker.Web.Controllers
             return File(spreadsheet.ToXlsx(document), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", name + ".xlsx");
         }
 
+        // ---------------------------------------------------------- US-146: evidence and user stories
+
+        // POST /Projects/LinkEvidenceStory: R5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
+        public async Task<IActionResult> LinkEvidenceStory(Guid projectId, Guid evidenceId, Guid workItemId, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
+        {
+            await evidence.LinkStoryAsync(projectId, evidenceId, workItemId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
+        public async Task<IActionResult> UnlinkEvidenceStory(Guid projectId, Guid linkId, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
+        {
+            await evidence.UnlinkStoryAsync(projectId, linkId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+        }
+
+        // R6
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
+        public async Task<IActionResult> ApproveEvidenceStorySuggestion(Guid projectId, Guid suggestionId, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
+        {
+            await evidence.ApproveStoryAsync(projectId, suggestionId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
+        public async Task<IActionResult> RejectEvidenceStorySuggestion(
+            Guid projectId, Guid suggestionId, Domain.Mappings.RejectionReason? reason, string? comment, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
+        {
+            await evidence.RejectStoryAsync(projectId, suggestionId, reason, comment, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+        }
+
+        // POST /Projects/UseReportAsEvidence: R8, a locked management report as evidence for one requirement
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Reports)]
+        public async Task<IActionResult> UseReportAsEvidence(Guid projectId, Guid snapshotId, Guid requirementId, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
+        {
+            await evidence.AddFromReportAsync(projectId, snapshotId, requirementId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+        }
+
         // ---------------------------------------------------------- Locked reports (US-050)
 
         // POST /Projects/LockReport: R1, R5, R6. report is "traceability" (with audience and sub) or "technical-documentation".

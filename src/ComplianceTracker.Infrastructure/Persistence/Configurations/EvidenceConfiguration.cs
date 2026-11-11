@@ -94,6 +94,51 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
         }
     }
 
+    // US-146 R5: evidence that shows a user story is done, in "EvidenceStoryLinks"
+    public class EvidenceStoryLinkConfiguration : IEntityTypeConfiguration<EvidenceStoryLink>
+    {
+        public void Configure(EntityTypeBuilder<EvidenceStoryLink> builder)
+        {
+            builder.ToTable("EvidenceStoryLinks");
+            builder.HasKey(l => l.Id);
+            builder.Property(l => l.Id).ValueGeneratedNever();
+            builder.Property(l => l.Source).HasConversion<string>().HasMaxLength(50);
+            builder.Property(l => l.LinkedRole).HasConversion<string>().HasMaxLength(50);
+            builder.Ignore(l => l.IsActive);
+
+            builder.HasOne<Project>().WithMany().HasForeignKey(l => l.ProjectId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<Evidence>().WithMany().HasForeignKey(l => l.EvidenceId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<Domain.WorkItems.WorkItem>().WithMany().HasForeignKey(l => l.WorkItemId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<User>().WithMany().HasForeignKey(l => l.LinkedById).OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasIndex(l => new { l.ProjectId, l.EvidenceId });
+        }
+    }
+
+    // US-146 R6: the AI's suggestions of stories for evidence, in "EvidenceStorySuggestions"
+    public class EvidenceStorySuggestionConfiguration : IEntityTypeConfiguration<EvidenceStorySuggestion>
+    {
+        public void Configure(EntityTypeBuilder<EvidenceStorySuggestion> builder)
+        {
+            builder.ToTable("EvidenceStorySuggestions");
+            builder.HasKey(s => s.Id);
+            builder.Property(s => s.Id).ValueGeneratedNever();
+            builder.Property(s => s.EmbeddingModel).IsRequired().HasMaxLength(200);
+            builder.Property(s => s.Status).HasConversion<string>().HasMaxLength(50);
+            builder.Property(s => s.DecidedRole).HasConversion<string>().HasMaxLength(50);
+            builder.Property(s => s.RejectionReason).HasConversion<string>().HasMaxLength(50);
+            builder.Property(s => s.Comment).HasMaxLength(1000);
+            builder.Ignore(s => s.IsPending);
+
+            builder.HasOne<Project>().WithMany().HasForeignKey(s => s.ProjectId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<Evidence>().WithMany().HasForeignKey(s => s.EvidenceId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<Domain.WorkItems.WorkItem>().WithMany().HasForeignKey(s => s.WorkItemId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<User>().WithMany().HasForeignKey(s => s.DecidedById).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasIndex(s => new { s.ProjectId, s.EvidenceId });
+        }
+    }
+
     // US-058: suggestions from tests and pull requests, in "EvidenceSuggestions"
     public class EvidenceSuggestionConfiguration : IEntityTypeConfiguration<EvidenceSuggestion>
     {

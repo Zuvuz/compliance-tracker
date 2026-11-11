@@ -34,6 +34,8 @@ namespace ComplianceTracker.Domain.ActivityLog
             ActivityAction.CatalogImported or ActivityAction.CatalogActivated or ActivityAction.FrameworkEnabled
                 or ActivityAction.FrameworkDisabled
                 or ActivityAction.FrameworkImportedFromEurLex or ActivityAction.FrameworkCompletenessChecked => ActivityGroup.Frameworks,
+            ActivityAction.EvidenceLinkedToStory or ActivityAction.EvidenceUnlinkedFromStory or ActivityAction.EvidenceStorySuggested
+                or ActivityAction.EvidenceStorySuggestionRejected => ActivityGroup.Evidence,
             ActivityAction.ProjectCreated or ActivityAction.ProjectUpdated or ActivityAction.ProjectPhaseChanged
                 or ActivityAction.SupportPeriodSet
                 or ActivityAction.ProjectClassified

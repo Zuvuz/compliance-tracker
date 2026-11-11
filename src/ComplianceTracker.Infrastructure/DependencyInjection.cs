@@ -75,6 +75,7 @@ namespace ComplianceTracker.Infrastructure
             services.AddSingleton<Application.Reports.IPdfWriter, Reports.PdfPigReportWriter>(); // US-131
             services.AddScoped<Application.Feedback.IFeedbackRepository, FeedbackRepository>(); // US-063
             services.AddScoped<IEvidenceLinkSuggestionRepository, EvidenceLinkSuggestionRepository>(); // US-059
+            services.AddScoped<IEvidenceStoryRepository, EvidenceStoryRepository>(); // US-146
             services.AddScoped<IEvidenceSuggestionRepository, EvidenceSuggestionRepository>(); // US-058
             services.AddSingleton<ITestResultsReader, Compliance.TestResultsReader>();
             services.AddSingleton<IEvidenceTextReader, Compliance.EvidenceTextReader>();

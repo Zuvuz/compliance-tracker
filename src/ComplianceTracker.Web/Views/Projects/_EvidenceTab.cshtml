@@ -88,7 +88,24 @@
                                 <div class="small text-muted evidence-sha256">SHA-256 @evidence.Sha256</div>
                             }
 
-                            <h3 class="h6 mt-3 mb-1">Proves</h3>
+                            @* US-146 R2: the thread in a fixed order: risks → requirements → stories *@
+                            <h3 class="h6 mt-3 mb-1">Risks it helps reduce</h3>
+                            <ul class="list-unstyled small mb-2 trace-risks">
+                                @foreach (var risk in row.Trace.Risks)
+                                {
+                                    <li class="trace-risk" data-title="@risk.Title">
+                                        <a asp-controller="Risks" asp-action="Details" asp-route-id="@risk.Id">@risk.Title</a>
+                                        <span class="badge text-bg-light border">@risk.Detail</span>
+                                        <span class="text-muted trace-via">@risk.Via</span>
+                                    </li>
+                                }
+                                @if (row.Trace.Risks.Count == 0)
+                                {
+                                    <li class="text-muted">None of the project's open risks</li>
+                                }
+                            </ul>
+
+                            <h3 class="h6 mt-3 mb-1">Requirements it proves</h3>
                             @if (row.Links.Count == 0)
                             {
                                 <p class="small text-muted mb-1">No requirements yet.</p>
@@ -141,7 +158,96 @@
                                 </details>
                             }
 
-                            @* R3, R4: the AI only suggests; a person decides *@
+                            <h3 class="h6 mt-3 mb-1">Stories it shows are done</h3>
+                            <ul class="list-unstyled small mb-2 trace-stories">
+                                @foreach (var story in row.Trace.Stories)
+                                {
+                                    var direct = row.Stories.FirstOrDefault(s => s.Story.Id == story.Id);
+                                    <li class="trace-story d-flex flex-wrap align-items-center gap-1" data-title="@story.Title">
+                                        <span>@story.Title</span>
+                                        <span class="badge text-bg-light border">@story.Detail</span>
+                                        <span class="text-muted trace-via">@story.Via</span>
+                                        @if (canChange && direct is not null)
+                                        {
+                                            <form asp-action="UnlinkEvidenceStory" method="post" class="d-inline unlink-evidence-story" data-confirm="The evidence no longer shows that this story is done.">
+                                                <input type="hidden" name="projectId" value="@project.Id" />
+                                                <input type="hidden" name="linkId" value="@direct.Link.Id" />
+                                                <button type="submit" class="btn btn-sm btn-link text-danger p-0" aria-label="Unlink @story.Title">Remove</button>
+                                            </form>
+                                        }
+                                    </li>
+                                }
+                                @if (row.Trace.Stories.Count == 0)
+                                {
+                                    <li class="text-muted">No stories yet</li>
+                                }
+                            </ul>
+                            @{
+                                var linkableStories = Model.WorkItems
+                                    .Where(w => w.State != ComplianceTracker.Domain.WorkItems.WorkItemState.Removed && row.Stories.All(s => s.Story.Id != w.Id))
+                                    .OrderBy(w => w.Title, StringComparer.OrdinalIgnoreCase)
+                                    .ToList();
+                            }
+                            @if (canChange && linkableStories.Count > 0)
+                            {
+                                @* US-146 R5 *@
+                                <details>
+                                    <summary class="small link-primary">+ Link story</summary>
+                                    <form asp-action="LinkEvidenceStory" method="post" class="d-flex gap-1 mt-1 link-evidence-story">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="evidenceId" value="@evidence.Id" />
+                                        <select name="workItemId" class="form-select form-select-sm" aria-label="User story @evidence.Title shows is done">
+                                            @foreach (var story in linkableStories)
+                                            {
+                                                <option value="@story.Id">@story.Title</option>
+                                            }
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">Link</button>
+                                    </form>
+                                </details>
+                            }
+
+                            @* R3, R4: the AI only suggests; a person decides. US-146 R6: also user stories. *@
+                            @if (row.StorySuggestions.Count > 0)
+                            {
+                                <h3 class="h6 mt-3 mb-1">Stories suggested by the AI</h3>
+                                <ul class="list-unstyled small mb-1">
+                                    @foreach (var suggested in row.StorySuggestions)
+                                    {
+                                        var suggestion = suggested.Suggestion;
+                                        <li class="evidence-story-suggestion border rounded p-2 mb-1" data-story="@suggested.Story.Title">
+                                            <div class="d-flex flex-wrap align-items-center gap-1">
+                                                <span class="fw-semibold">@suggested.Story.Title</span>
+                                                <span class="badge text-bg-light suggestion-score">@suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span>
+                                                <span class="badge text-bg-info ai-generated">AI-generated</span>
+                                            </div>
+                                            @if (canChange)
+                                            {
+                                                <div class="d-flex flex-wrap gap-2 mt-1">
+                                                    <form asp-action="ApproveEvidenceStorySuggestion" method="post" class="approve-evidence-story-suggestion">
+                                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                                        <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
+                                                    </form>
+                                                    <form asp-action="RejectEvidenceStorySuggestion" method="post" class="d-flex flex-wrap gap-1 reject-evidence-story-suggestion">
+                                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                                        <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                                        <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason">
+                                                            <option value="">Reason…</option>
+                                                            @foreach (var reason in Enum.GetValues<ComplianceTracker.Domain.Mappings.RejectionReason>())
+                                                            {
+                                                                <option value="@reason">@reason</option>
+                                                            }
+                                                        </select>
+                                                        <input name="comment" class="form-control form-control-sm w-auto" placeholder="Comment (optional)" aria-label="Comment" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                                    </form>
+                                                </div>
+                                            }
+                                        </li>
+                                    }
+                                </ul>
+                            }
                             @if (row.Suggestions.Count > 0)
                             {
                                 <h3 class="h6 mt-3 mb-1">Suggested by the AI</h3>

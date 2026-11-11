@@ -13,8 +13,11 @@ namespace ComplianceTracker.Application.Risks
     // A requirement with the regulation's short name and the evidence on it
     public record TraceRequirement(Requirement Requirement, string Framework, IReadOnlyList<EvidenceItem> Evidence);
 
-    // A user story with the requirements it covers
-    public record TraceStory(WorkItem Story, IReadOnlyList<TraceRequirement> Requirements);
+    // A user story with the requirements it covers. US-146: and the evidence linked straight to it.
+    public record TraceStory(WorkItem Story, IReadOnlyList<TraceRequirement> Requirements)
+    {
+        public IReadOnlyList<Domain.Mappings.Evidence> Evidence { get; init; } = [];
+    }
 
     // An action with its stories (and their requirements) and the evidence linked to the action itself
     public record TraceAction(RiskAction Action, IReadOnlyList<TraceStory> Stories, IReadOnlyList<Guid> EvidenceIds);
@@ -43,7 +46,10 @@ namespace ComplianceTracker.Application.Risks
                 => new(item.Row.Requirement, item.Framework, item.Row.Evidence);
 
             TraceStory Story(WorkItem story)
-                => new(story, rows.Where(r => r.Row.Links.Any(l => l.WorkItem.Id == story.Id)).Select(Requirement).ToList());
+                => new(story, rows.Where(r => r.Row.Links.Any(l => l.WorkItem.Id == story.Id)).Select(Requirement).ToList())
+                {
+                    Evidence = compliance.StoryEvidence.Where(e => e.WorkItemId == story.Id).Select(e => e.Evidence).ToList()
+                };
 
             return new RiskTrace(
                 risk.Measures.Where(m => m.RequirementId is { } id && requirements.ContainsKey(id))
