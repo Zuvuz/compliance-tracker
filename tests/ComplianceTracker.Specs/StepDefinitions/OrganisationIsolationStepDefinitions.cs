@@ -36,6 +36,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         private static readonly Dictionary<string, string> NoDataFor = new()
         {
             ["suggestionId"] = "The fixture has no AI suggestion (that needs the pretend AI's ranking)",
+            ["draftId"] = "The fixture has no story draft (that needs the pretend AI's writing); AskTheAi.feature tests it (US-106)",
             ["requestId"] = "The fixture has no framework activation waiting for approval (that needs an import from EUR-Lex); CompleteRequirements.feature tests it (US-137)"
         };
 
