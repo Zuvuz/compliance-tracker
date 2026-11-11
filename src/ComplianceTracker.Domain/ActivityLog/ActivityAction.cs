@@ -248,6 +248,9 @@ namespace ComplianceTracker.Domain.ActivityLog
         StoryDraftLinked,
         RiskMeasuresSuggested,
         RiskMeasureSuggestionApproved,
-        RiskMeasureSuggestionRejected
+        RiskMeasureSuggestionRejected,
+
+        // US-119 R5: a gap on the Suggestions tab was dismissed with a reason. SubjectId points at the project.
+        GapDismissed
     }
 }

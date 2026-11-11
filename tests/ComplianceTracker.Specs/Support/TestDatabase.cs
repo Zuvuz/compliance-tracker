@@ -96,6 +96,7 @@ namespace ComplianceTracker.Specs.Support
                 DELETE FROM "ScanUploadTokens";
                 DELETE FROM "EvidenceSuggestions";
                 DELETE FROM "StoryDrafts";
+                DELETE FROM "GapDismissals";
                 DELETE FROM "EvidenceStorySuggestions";
                 DELETE FROM "EvidenceStoryLinks";
                 DELETE FROM "EvidenceLinkSuggestions";

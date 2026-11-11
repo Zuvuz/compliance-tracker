@@ -1250,6 +1250,29 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At trackeren selv opretter issues i GitHub. Det kræver skriveadgang og en undtagelse fra B12 som B42.
   - At et udkast bliver et krav i trackerens egen liste for projekter uden GitHub. Teksten kan kopieres; det kan blive en senere story.
 
+### B84 – Suggestions-fanen med mangler pr. kategori (US-119)
+
+- **Beslutning:**
+  - **Fire kategorier:** Requirements, Security, Risk og Scanning. Manglerne findes med enkle tjek uden AI. De beregnes, når fanen åbnes, og gemmes ikke. Kun afvisningerne gemmes (`GapDismissal`).
+  - **Requirements:** et krav, der gælder, men ikke er dækket, eller er dækket uden evidens. Anbefalinger tæller ikke.
+  - **Risk:** en risiko, der skal mindskes, men ikke har handlinger; handlinger over fristen; alle handlinger udført, men intet restniveau sat.
+  - **Scanning:** åbne fund på High eller Critical. SBOM (US-079) findes ikke endnu, og fanen siger det.
+  - **Security:** en åben hændelse, hvor en rapport ikke er sendt, og fristen er overskredet (CRA Art. 14).
+  - **Handlinger på en mangel:**
+    - "Ask the AI" for et krav (US-106; det er det udkast til arbejde, som US-108 beskrev)
+    - "Add a risk" med titel og beskrivelse udfyldt
+    - "Open the risk"
+    - "Open" kilden
+    - "Dismiss" med en begrundelse
+  - Intet oprettes uden en person.
+  - **Afvisning med "stempel":** en afvist mangel bærer et stempel af kildens tilstand, fx antallet af handlinger eller den seneste scanning. Den vises igen, når kilden ændrer sig.
+  - **AI-forslag andre steder:** AI'ens forslag til stories og evidens bliver, hvor de er. Fanen tæller dem og linker til dem.
+  - Auditoren ser manglerne, men kan ikke handle på dem.
+- **Begrundelse:** Ét sted at se, hvad projektet mangler. Tjekkene kræver ingen AI og er derfor hurtige og forudsigelige.
+- **Fravalgt:**
+  - At AI'en grupperer og formulerer manglerne: en senere udvidelse.
+  - Mangler i SBOM (US-079) og manglende sårbarhedskontakt (US-103): de kommer, når de stories er bygget.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
