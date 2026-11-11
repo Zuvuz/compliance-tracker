@@ -86,6 +86,7 @@ namespace ComplianceTracker.Web.Models
         public const string OldProductRequirements = "user-stories";
         public const string Activity = "activity";
         public const string Reports = "reports"; // US-129
+        public const string Suggestions = "suggestions"; // US-119
         public const string Nis2Scope = "nis2-scope"; // US-142
 
         // In the order they are shown, with the text on the tab
@@ -99,6 +100,7 @@ namespace ComplianceTracker.Web.Models
             (SecurityEvents, "Security events"),
             (Scans, "Scans"),
             (ProductRequirements, "Product requirements"),
+            (Suggestions, "Suggestions"),
             (Activity, "Activity"),
             (Reports, "Reports")
         ];
@@ -266,6 +268,9 @@ namespace ComplianceTracker.Web.Models
 
         // US-144 R12: the requirement code in the address, e.g. ".../compliance/cra/I.2(d)"; that row is shown open
         public string? OpenRequirement { get; init; }
+
+        // US-119: the gaps on the Suggestions tab
+        public Application.Projects.GapsView? Gaps { get; init; }
         public string? Search { get; init; }
         public string ComplianceFilter { get; init; } = ComplianceFilters.All;
 

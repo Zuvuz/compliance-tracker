@@ -1,0 +1,94 @@
+@* US-119: one tab with the gaps the tracker finds, grouped by category (Requirements, Security, Risk, Scanning). The checks
+   need no AI (R3); a gap only becomes work when a person acts on it (R4), and a dismissed gap stays away until its source
+   changes (R5). Ids and classes used by the tests: .gap-category[data-category] with .gap-count and .gap-empty, .gap
+   (data-key, data-title) with .gap-missing, .gap-source and the forms .ask-the-ai and .dismiss-gap, a.add-risk-from-gap,
+   #spread-suggestions. *@
+@model ProjectDetailsViewModel
+@using ComplianceTracker.Application.Projects
+@{
+    var project = Model.Project;
+    var gaps = Model.Gaps;
+    var canAct = !project.IsClosed && await Permissions.CanAsync(Permission.LinkWork); // R7
+}
+
+<section id="project-suggestions">
+    @if (gaps is null)
+    {
+        <p class="text-muted">The suggestions cannot be shown.</p>
+        return;
+    }
+
+    @if (gaps.StorySuggestions + gaps.EvidenceSuggestions > 0)
+    {
+        @* The AI's own suggestions stay where they are; here they are counted with a link *@
+        <p class="small" id="spread-suggestions">
+            The AI also waits for you with
+            <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Compliance" asp-route-show="has-suggestions">@gaps.StorySuggestions story @(gaps.StorySuggestions == 1 ? "suggestion" : "suggestions")</a>
+            and @gaps.EvidenceSuggestions evidence @(gaps.EvidenceSuggestions == 1 ? "suggestion" : "suggestions") on the Compliance tab.
+        </p>
+    }
+    @if (gaps.Dismissed > 0)
+    {
+        <p class="small text-muted" id="dismissed-gaps">@gaps.Dismissed dismissed @(gaps.Dismissed == 1 ? "gap is" : "gaps are") not shown.</p>
+    }
+
+    @foreach (var category in Enum.GetValues<GapCategory>())
+    {
+        var list = gaps.Of(category);
+        <div class="card mb-3 gap-category" data-category="@category">
+            <div class="card-body">
+                <h2 class="h6 card-title">@category <span class="badge text-bg-light border gap-count">@list.Count</span></h2>
+                @if (list.Count == 0)
+                {
+                    <p class="small text-muted mb-0 gap-empty">@(gaps.Empty.GetValueOrDefault(category) ?? "No gaps found")</p>
+                }
+                <ul class="list-unstyled mb-0">
+                    @foreach (var gap in list)
+                    {
+                        <li class="gap border-top py-2" data-key="@gap.Key" data-title="@gap.Title">
+                            <div class="fw-semibold">@gap.Title</div>
+                            <div class="small gap-missing">@gap.Missing</div>
+                            <div class="small text-muted gap-source">@gap.Source · Suggested: @gap.Suggestion</div>
+                            @if (canAct)
+                            {
+                                <div class="d-flex flex-wrap gap-2 mt-1 small">
+                                    @switch (gap.Action)
+                                    {
+                                        case GapAction.AskTheAi when gap.RequirementId is { } requirementId:
+                                            <form asp-action="AskTheAi" method="post" class="ask-the-ai">
+                                                <input type="hidden" name="projectId" value="@project.Id" />
+                                                <input type="hidden" name="requirementId" value="@requirementId" />
+                                                <input type="hidden" name="sub" value="@gap.Sub" />
+                                                <button type="submit" class="btn btn-sm btn-outline-info py-0">Ask the AI</button>
+                                            </form>
+                                            break;
+                                        case GapAction.AddRisk:
+                                            <a class="btn btn-sm btn-outline-primary py-0 add-risk-from-gap" asp-controller="Risks" asp-action="Add"
+                                               asp-route-projectId="@project.Id" asp-route-title="@gap.Title" asp-route-description="@($"{gap.Missing} ({gap.Source})")">Add a risk</a>
+                                            break;
+                                        case GapAction.AddAction or GapAction.Open when gap.RiskId is { } riskId:
+                                            <a class="btn btn-sm btn-outline-primary py-0" asp-controller="Risks" asp-action="Details" asp-route-id="@riskId">Open the risk</a>
+                                            break;
+                                    }
+                                    @if (gap.Tab is { } tab)
+                                    {
+                                        <a class="btn btn-sm btn-link py-0" asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@tab" asp-route-sub="@gap.Sub">Open</a>
+                                    }
+                                    <details>
+                                        <summary class="btn btn-sm btn-outline-secondary py-0">Dismiss</summary>
+                                        <form asp-action="DismissGap" method="post" class="d-flex gap-1 mt-1 dismiss-gap">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="key" value="@gap.Key" />
+                                            <input name="reason" class="form-control form-control-sm" placeholder="Why it is not a gap" aria-label="Reason" required />
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary">Dismiss</button>
+                                        </form>
+                                    </details>
+                                </div>
+                            }
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    }
+</section>

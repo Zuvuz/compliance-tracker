@@ -38,7 +38,8 @@ namespace ComplianceTracker.Web.Controllers
 
         // GET /Risks/Add?projectId=...: the empty form; the signed-in member is the default owner
         [HttpGet]
-        public async Task<IActionResult> Add(Guid projectId, CancellationToken cancellationToken)
+        // US-119 R4: title and description fill in the form, e.g. from a gap on the Suggestions tab
+        public async Task<IActionResult> Add(Guid projectId, CancellationToken cancellationToken, string? title = null, string? description = null)
         {
             var project = await _projects.GetAsync(projectId, cancellationToken);
             var organization = await _organizations.MineAsync(cancellationToken);
@@ -48,7 +49,7 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             var me = organization.Users.FirstOrDefault(u => u.ExternalId == User.FindFirst("sub")?.Value);
-            return View(new RiskFormModel { ProjectId = project.Id, ProjectName = project.Name, OwnerId = me?.Id ?? Guid.Empty });
+            return View(new RiskFormModel { ProjectId = project.Id, ProjectName = project.Name, OwnerId = me?.Id ?? Guid.Empty, Title = title, Description = description });
         }
 
         // POST /Risks/Add: R1–R3

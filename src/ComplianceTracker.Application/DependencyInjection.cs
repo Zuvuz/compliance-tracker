@@ -42,6 +42,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<MappingSuggestionService>();
             services.AddScoped<AskTheAiService>(); // US-106
             services.AddScoped<StoryDraftLinker>(); // US-106 R5
+            services.AddScoped<Projects.GapFinder>(); // US-119
             services.AddScoped<RationaleService>();
             services.AddScoped<AiContextBuilder>(); // US-060, US-061
             services.AddScoped<ApplicabilitySuggestionService>(); // US-060

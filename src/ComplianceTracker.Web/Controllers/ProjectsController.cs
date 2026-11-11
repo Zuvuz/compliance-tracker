@@ -153,6 +153,7 @@ namespace ComplianceTracker.Web.Controllers
             // US-101: the Activity tab's filters (q is the search there too)
             string? from, string? to, string? group, string? user, string? sort, string? page,
             [FromServices] ClassificationService classifications,
+            [FromServices] Application.Projects.GapFinder gapFinder,
             [FromServices] Application.Security.SecurityEventQueries securityEventQueries,
             [FromServices] EvidenceQueries evidenceQueries,
             [FromServices] Application.Scanning.ScanService scans,
@@ -272,6 +273,7 @@ namespace ComplianceTracker.Web.Controllers
                 EvidenceTab = evidenceTab,
                 Sub = sub,
                 OpenRequirement = activeTab == ProjectTabs.Compliance ? req : null,
+                Gaps = activeTab == ProjectTabs.Suggestions ? await gapFinder.ForProjectAsync(id, cancellationToken) : null,
                 Search = q,
                 ComplianceFilter = ComplianceFilters.Find(show),
                 Risks = risks,
@@ -1088,6 +1090,16 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             return File(spreadsheet.ToXlsx(document), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", name + ".xlsx");
+        }
+
+        // POST /Projects/DismissGap: US-119 R5, with a reason; it stays away until its source changes
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Suggestions)]
+        public async Task<IActionResult> DismissGap(Guid projectId, string? key, string? reason, [FromServices] Application.Projects.GapFinder gaps, CancellationToken cancellationToken)
+        {
+            await gaps.DismissAsync(projectId, key ?? "", reason, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Suggestions });
         }
 
         // ---------------------------------------------------------- US-146: evidence and user stories

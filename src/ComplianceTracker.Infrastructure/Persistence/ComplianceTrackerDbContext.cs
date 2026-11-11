@@ -42,6 +42,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<EvidenceStoryLink> EvidenceStoryLinks => Set<EvidenceStoryLink>(); // US-146
         public DbSet<EvidenceStorySuggestion> EvidenceStorySuggestions => Set<EvidenceStorySuggestion>(); // US-146
         public DbSet<StoryDraft> StoryDrafts => Set<StoryDraft>(); // US-106
+        public DbSet<Domain.Projects.GapDismissal> GapDismissals => Set<Domain.Projects.GapDismissal>(); // US-119
         public DbSet<Domain.Risks.RiskMeasureSuggestion> RiskMeasureSuggestions => Set<Domain.Risks.RiskMeasureSuggestion>(); // US-106
         public DbSet<EvidenceSuggestion> EvidenceSuggestions => Set<EvidenceSuggestion>(); // US-058
         public DbSet<MappingSuggestion> MappingSuggestions => Set<MappingSuggestion>();
