@@ -247,7 +247,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             }
 
             var found = new List<IElement>();
-            foreach (var href in _web.Page!.QuerySelectorAll("#compliance-tabs a[data-sub]").Select(a => a.GetAttribute("href")!).ToList())
+            foreach (var href in _web.Page!.QuerySelectorAll("#compliance-tabs a[data-sub]:not([data-sub='all'])").Select(a => a.GetAttribute("href")!).ToList())
             {
                 await _web.OpenAsync(href);
                 found.AddRange(_web.Page!.QuerySelectorAll(".ai-suggestion").Where(s => s.GetAttribute("data-story") == story));

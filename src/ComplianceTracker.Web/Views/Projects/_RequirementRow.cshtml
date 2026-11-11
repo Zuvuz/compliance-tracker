@@ -71,7 +71,7 @@
                 <div class="small requirement-risks d-flex flex-wrap gap-1 mb-1">
                     @foreach (var risk in row.Risks)
                     {
-                        <a class="requirement-risk badge rounded-pill text-bg-light border text-decoration-none" asp-controller="Risks" asp-action="Details" asp-route-id="@risk.Id">Risk: @risk.Title · @risk.Level</a>
+                        <span class="badge rounded-pill text-bg-light border fw-normal">Risk: <a class="requirement-risk text-decoration-none" asp-controller="Risks" asp-action="Details" asp-route-id="@risk.Id">@risk.Title</a> · @risk.Level</span>
                     }
                 </div>
             }

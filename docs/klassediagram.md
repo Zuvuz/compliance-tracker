@@ -432,11 +432,13 @@ classDiagram
   DocumentSuggestionService ..> DocumentLinkSuggestion : opretter
   OrganisationAreaService ..> Project : organisation area
   OrganisationAreaService ..> Nis2Assessment : opretter
+  RequirementApplicability --> Risk : justified by
   class RequirementApplicability {
     -id: Guid
     -projectId: Guid
     -requirementId: Guid
     -reason: string
+    -riskId: Guid?
     -decidedById: Guid
     -decidedAt: DateTime
     -revokedById: Guid?
