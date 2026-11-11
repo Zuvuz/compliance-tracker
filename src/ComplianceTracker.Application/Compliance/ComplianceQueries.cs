@@ -21,6 +21,7 @@ namespace ComplianceTracker.Application.Compliance
         private readonly IMappingSuggestionRepository _suggestions;
         private readonly IEvidenceRepository _evidence;
         private readonly IEvidenceSuggestionRepository _evidenceSuggestions;
+        private readonly IEvidenceStoryRepository _evidenceStories; // US-146
         private readonly CurrentMember _member;
         private readonly TimeProvider _clock;
         private readonly IApplicabilitySuggestionRepository _applicabilitySuggestions;
@@ -36,6 +37,7 @@ namespace ComplianceTracker.Application.Compliance
             IMappingSuggestionRepository suggestions,
             IEvidenceRepository evidence,
             IEvidenceSuggestionRepository evidenceSuggestions,
+            IEvidenceStoryRepository evidenceStories,
             CurrentMember member,
             TimeProvider clock,
             IApplicabilitySuggestionRepository applicabilitySuggestions,
@@ -46,6 +48,7 @@ namespace ComplianceTracker.Application.Compliance
             _risks = risks;
             _classifications = classifications;
             _evidenceSuggestions = evidenceSuggestions;
+            _evidenceStories = evidenceStories;
             _projects = projects;
             _frameworks = frameworks;
             _workItems = workItems;
@@ -207,11 +210,19 @@ namespace ComplianceTracker.Application.Compliance
                 .Select(s => new PendingSuggestion(s, requirements[s.RequirementId]))
                 .ToList();
 
+            // US-146 R2: the evidence linked straight to each story
+            var evidenceById = evidence.ToDictionary(e => e.Id);
+            var storyEvidence = (await _evidenceStories.ListActiveLinksAsync(project.Id, cancellationToken))
+                .Where(l => evidenceById.ContainsKey(l.EvidenceId))
+                .Select(l => new StoryEvidence(l.WorkItemId, evidenceById[l.EvidenceId]))
+                .ToList();
+
             return new ProjectCompliance(
                 result.OrderBy(f => f.Framework.Name, StringComparer.OrdinalIgnoreCase).ToList(),
                 workItems.Values.ToList())
             {
-                Suggestions = pending
+                Suggestions = pending,
+                StoryEvidence = storyEvidence
             };
         }
 
@@ -238,6 +249,24 @@ namespace ComplianceTracker.Application.Compliance
         public IReadOnlyList<PendingSuggestion> Suggestions { get; init; } = [];
 
         public IEnumerable<PendingSuggestion> SuggestionsFor(Guid workItemId) => Suggestions.Where(s => s.Suggestion.WorkItemId == workItemId);
+
+        // US-146 R2: the evidence linked straight to the stories
+        public IReadOnlyList<StoryEvidence> StoryEvidence { get; init; } = [];
+
+        // US-146 R2: a story's evidence: linked to it, or proving a requirement it covers ("via …"); each once
+        public IReadOnlyList<(Domain.Mappings.Evidence Evidence, string Via)> EvidenceOf(Guid workItemId)
+        {
+            var result = StoryEvidence.Where(s => s.WorkItemId == workItemId).Select(s => (s.Evidence, Via: "linked to the story")).ToList();
+            foreach (var row in Frameworks.SelectMany(f => f.Requirements).Where(r => r.Links.Any(l => l.WorkItem.Id == workItemId && !l.Link.NeedsReview)))
+            {
+                foreach (var item in row.Evidence.Where(e => result.All(x => x.Evidence.Id != e.Evidence.Id)))
+                {
+                    result.Add((item.Evidence, $"via {row.Requirement.Code}"));
+                }
+            }
+
+            return result;
+        }
 
         // US-044 R9: the framework (sub-tab) a requirement belongs to
         public FrameworkCompliance? FrameworkOf(Requirement requirement)
@@ -369,6 +398,9 @@ namespace ComplianceTracker.Application.Compliance
     public record SuggestedWorkItem(Domain.Mappings.MappingSuggestion Suggestion, WorkItem WorkItem);
 
     // The link itself is kept for the traceability matrix (US-052): source, when and by whom
+    // US-146: one piece of evidence linked straight to a story
+    public record StoryEvidence(Guid WorkItemId, Domain.Mappings.Evidence Evidence);
+
     public record LinkedWorkItem(Domain.Mappings.RequirementLink Link, WorkItem WorkItem)
     {
         public Guid LinkId => Link.Id;

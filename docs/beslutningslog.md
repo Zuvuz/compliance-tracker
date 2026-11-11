@@ -1206,6 +1206,28 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Et separat sidepanel pr. krav: den udfoldede række med egen adresse giver det samme med mindre kode.
   - Kildeteksterne på dansk: et åbent spørgsmål (US-142 R8).
 
+### B82 – Én tråd fra risiko til bevis (US-146)
+
+- **Beslutning:**
+  - **Kravet forbliver midtpunktet.** Der gemmes kun to nye ting:
+    - en kobling fra evidens til en user story eller product requirement (`EvidenceStoryLink`)
+    - AI'ens forslag til sådanne koblinger (`EvidenceStorySuggestion`)
+  - **Ingen direkte kobling til risici, scanninger eller rapporter.** Risici findes via deres tiltag (krav eller stories), via deres handlinger og via handlinger, der nævner evidensen (US-124).
+  - **"Trace" på evidens-kortet** står altid i rækkefølgen: risici → krav → stories. Hver linje siger, hvordan den hænger sammen:
+    - "via I.2(b)"
+    - "linked to the evidence"
+    - "AI suggestion approved"
+    - "via the action …"
+  - En risiko, der nås ad flere veje, vises én gang med alle veje. Den højeste risiko står først.
+  - **Begge veje:** en story viser sin evidens (direkte eller "via" kravene), og en risikos side viser evidens, der er koblet direkte til dens stories.
+  - **AI-forslag:** AI'en foreslår stories til evidens med samme embedding og minimumsscore som for krav (US-059, US-105). Det sker ved upload og ved "Show more", højst 4 ad gangen. Et afvist par foreslås ikke igen.
+  - **Låst ledelsesrapport som evidens:** kun en låst ledelsesrapport (US-050) kan bruges som evidens. Det sker for ét krav, som en person vælger. Filen kopieres som evidens med rapportens SHA-256 i loggen.
+  - **Organisationens dokumenter:** deres kopier i projekterne er evidens, så tråden ses på hvert projekts Evidence-fane.
+- **Begrundelse:** Det gav ikke et sammenhængende billede, når evidens kun pegede på kravkoder. Når det, der allerede er gemt, bruges til at vise tråden, er der intet ekstra at vedligeholde.
+- **Fravalgt:**
+  - Direkte koblinger fra evidens til risici, scanninger eller almindelige rapporter.
+  - En graf over hele kæden: en senere story.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

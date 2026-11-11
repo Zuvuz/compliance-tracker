@@ -122,6 +122,12 @@ else
                         Requirements:
                         <span class="work-item-requirements">@(codes.Count == 0 ? "none yet" : string.Join(", ", codes))</span>
                     </p>
+                    @* US-146 R2: the evidence that shows the story is done, linked to it or proving one of its requirements *@
+                    var storyEvidence = compliance.EvidenceOf(item.Id);
+                    <p class="small mb-2">
+                        Evidence:
+                        <span class="work-item-evidence">@(storyEvidence.Count == 0 ? "none yet" : string.Join("; ", storyEvidence.Select(e => $"{e.Evidence.Title} ({e.Via})")))</span>
+                    </p>
                 }
                 @if (!string.IsNullOrEmpty(item.Description))
                 {

@@ -39,6 +39,8 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<Configurations.FeedbackScreenshot> FeedbackScreenshots => Set<Configurations.FeedbackScreenshot>();
         public DbSet<EvidenceLink> EvidenceLinks => Set<EvidenceLink>(); // US-059
         public DbSet<EvidenceLinkSuggestion> EvidenceLinkSuggestions => Set<EvidenceLinkSuggestion>();
+        public DbSet<EvidenceStoryLink> EvidenceStoryLinks => Set<EvidenceStoryLink>(); // US-146
+        public DbSet<EvidenceStorySuggestion> EvidenceStorySuggestions => Set<EvidenceStorySuggestion>(); // US-146
         public DbSet<EvidenceSuggestion> EvidenceSuggestions => Set<EvidenceSuggestion>(); // US-058
         public DbSet<MappingSuggestion> MappingSuggestions => Set<MappingSuggestion>();
         public DbSet<ApplicabilitySuggestion> ApplicabilitySuggestions => Set<ApplicabilitySuggestion>(); // US-060

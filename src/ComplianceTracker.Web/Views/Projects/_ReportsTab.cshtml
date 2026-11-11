@@ -122,6 +122,30 @@
                         Locked @snapshot.LockedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm") by <span class="locked-by">@item.LockedBy@(snapshot.LockedRole is { } role ? $" ({ComplianceTracker.Domain.Users.RolePermissions.Title(role)})" : "")</span>
                         · <span class="locked-report-sha256 font-monospace" title="SHA-256 @snapshot.Sha256">SHA-256 @snapshot.Sha256</span>
                     </div>
+                    @if (snapshot.Kind.StartsWith("traceability:management:", StringComparison.Ordinal) && !project.IsClosed
+                         && await Permissions.CanAsync(ComplianceTracker.Domain.Users.Permission.LinkWork) && Model.Compliance is { } reportCompliance)
+                    {
+                        @* US-146 R8: a locked management report is evidence of the management review, e.g. ISO/IEC 27001 9.3 *@
+                        <details class="small mt-1">
+                            <summary class="link-primary">Use as evidence</summary>
+                            <form asp-action="UseReportAsEvidence" method="post" class="d-flex gap-1 mt-1 use-report-as-evidence">
+                                <input type="hidden" name="projectId" value="@project.Id" />
+                                <input type="hidden" name="snapshotId" value="@snapshot.Id" />
+                                <select name="requirementId" class="form-select form-select-sm" aria-label="Requirement the report proves">
+                                    @foreach (var f in reportCompliance.Frameworks)
+                                    {
+                                        <optgroup label="@FrameworkNames.Short(f.Framework.Name)">
+                                            @foreach (var r in f.Requirements.Where(r => r.IsApplicable))
+                                            {
+                                                <option value="@r.Requirement.Id">@r.Requirement.Code @r.Requirement.Title</option>
+                                            }
+                                        </optgroup>
+                                    }
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Use as evidence</button>
+                            </form>
+                        </details>
+                    }
                     @* US-132: the signatures, signing and the sealed PDF *@
                     @if (Model.Signings.GetValueOrDefault(snapshot.Id) is { } signing)
                     {
