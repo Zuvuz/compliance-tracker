@@ -28,6 +28,19 @@ namespace ComplianceTracker.Domain.Frameworks
         public Guid? ImplementsFrameworkId { get; private set; }
         public string? Country { get; private set; }
 
+        // US-143 R7: the columns chosen for an Excel or CSV file, remembered for the next version (Application's format)
+        public string? TableColumns { get; private set; }
+
+        public void RememberColumns(string? columns)
+        {
+            if (IsBuiltIn)
+            {
+                throw new DomainException("Built-in frameworks cannot be changed");
+            }
+
+            TableColumns = string.IsNullOrWhiteSpace(columns) ? null : columns.Trim();
+        }
+
         // The short name before " – ", e.g. "NIS2" for "NIS2 – Directive (EU) 2022/2555"
         public string ShortName => Name.Split(" – ")[0].Trim();
 

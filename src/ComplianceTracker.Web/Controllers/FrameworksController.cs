@@ -1,9 +1,11 @@
+using ComplianceTracker.Domain.Frameworks;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Web.Filters;
 using ComplianceTracker.Web.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ComplianceTracker.Web.Controllers
@@ -94,7 +96,31 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound(); // US-005 R7: also when the version belongs to another organisation
             }
 
-            return View(new FrameworkVersionPageViewModel(found.Value.Framework, found.Value.Version, organization, _clock.Today()));
+            // US-143 R7: a draft from an Excel or CSV file offers its columns
+            var columns = found.Value.Version.IsActive ? [] : await _service.ColumnsAsync(id, cancellationToken);
+            return View(new FrameworkVersionPageViewModel(found.Value.Framework, found.Value.Version, organization, _clock.Today(), columns));
+        }
+
+        // POST /Frameworks/ChooseColumns: US-143 R7, reads the draft's Excel or CSV file with these columns
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Version), IdFrom = "versionId")]
+        public async Task<IActionResult> ChooseColumns(
+            Guid versionId, string? code, string? title, string? text, string? parent, string? kind, CancellationToken cancellationToken)
+        {
+            await _service.ChooseColumnsAsync(versionId, code, title, text, parent, kind, cancellationToken);
+            return RedirectToAction(nameof(Version), new { id = versionId });
+        }
+
+        // POST /Frameworks/ChangeKind: US-143 R5, while the version is a draft
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize]
+        [OnDomainError(nameof(Version), IdFrom = "versionId")]
+        public async Task<IActionResult> ChangeKind(Guid versionId, Guid requirementId, RequirementKind kind, CancellationToken cancellationToken)
+        {
+            await _service.ChangeKindAsync(versionId, requirementId, kind, cancellationToken);
+            return RedirectToAction(nameof(Version), new { id = versionId });
         }
 
         // POST /Frameworks/AddRequirement: R2, R5
@@ -173,10 +199,11 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound(); // R7: also when the PDF belongs to another organisation
             }
 
-            // ASVS V5.4.1: always sent as a PDF, with our own cleaned file name in Content-Disposition.
-            // nosniff stops the browser from guessing another content type.
+            // ASVS V5.4.1: sent as its own type (US-143: an HTML file as text, so it never runs as a page), with our own
+            // cleaned file name in Content-Disposition. nosniff stops the browser from guessing another content type.
             Response.Headers["X-Content-Type-Options"] = "nosniff";
-            return File(document.Value.Content, "application/pdf", document.Value.Version.FileName);
+            var format = CatalogFile.FormatOf(document.Value.Version.FileName) ?? CatalogFormat.Pdf;
+            return File(document.Value.Content, CatalogFile.ContentTypeOf(format), document.Value.Version.FileName);
         }
 
         // ---------------------------------------------------------- Built-in frameworks (US-006)

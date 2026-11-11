@@ -93,16 +93,66 @@ namespace ComplianceTracker.Domain.Frameworks
         // ---------------------------------------------------------- Requirements (US-007)
 
         // R1, R2, R5: found in the PDF or added by hand. The code is unique within the version.
-        public Requirement AddRequirement(string code, string title, string? description)
+        // US-143 R4, R5: its kind, and the code of the requirement it sits under (which must already be in the version;
+        // an unknown parent code puts it at the top)
+        public Requirement AddRequirement(
+            string code, string title, string? description, RequirementKind kind = RequirementKind.Requirement, string? parentCode = null)
         {
             EnsureDraft();
             EnsureUniqueCode(code, except: null);
 
             var requirement = new Requirement(Id, _requirements.Count == 0 ? 1 : _requirements.Max(r => r.Position) + 1,
                 code, title, description);
+            requirement.SetKind(kind);
+            if (!string.IsNullOrWhiteSpace(parentCode)
+                && _requirements.FirstOrDefault(r => string.Equals(r.Code, parentCode.Trim(), StringComparison.OrdinalIgnoreCase)) is { } parent)
+            {
+                requirement.SetParent(parent.Id);
+            }
+
             _requirements.Add(requirement);
             return requirement;
         }
+
+        // US-143 R4: puts a requirement under another by code, e.g. from a table where a parent comes after its child. An
+        // unknown parent, the requirement itself or one of its own descendants leaves it where it is.
+        public void PlaceUnder(string code, string? parentCode)
+        {
+            EnsureDraft();
+            var child = _requirements.FirstOrDefault(r => string.Equals(r.Code, code?.Trim(), StringComparison.OrdinalIgnoreCase));
+            var parent = _requirements.FirstOrDefault(r => string.Equals(r.Code, parentCode?.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (child is null || parent is null || parent == child)
+            {
+                return;
+            }
+
+            for (var up = parent; up is not null; up = _requirements.FirstOrDefault(r => r.Id == up.ParentId))
+            {
+                if (up.Id == child.Id)
+                {
+                    return;
+                }
+            }
+
+            child.SetParent(parent.Id);
+        }
+
+        // US-143 R7: a new choice of columns reads the table again, so the draft starts over
+        public void ClearRequirements()
+        {
+            EnsureDraft();
+            _requirements.Clear();
+        }
+
+        // US-143 R5: the admin can change the kind while the version is a draft
+        public void ChangeKind(Guid requirementId, RequirementKind kind)
+        {
+            EnsureDraft();
+            Find(requirementId).SetKind(kind);
+        }
+
+        // US-143 R4: the requirements directly under one (or at the top for null), in the document's order
+        public IReadOnlyList<Requirement> ChildrenOf(Guid? parentId) => Requirements.Where(r => r.ParentId == parentId).ToList();
 
         // US-070 R1: kept with the draft, so it can be checked before activation
         public void RecordExtraction(ExtractionCheck check)
@@ -124,7 +174,15 @@ namespace ComplianceTracker.Domain.Frameworks
         public void RemoveRequirement(Guid requirementId)
         {
             EnsureDraft();
-            _requirements.Remove(Find(requirementId));
+            var requirement = Find(requirementId);
+
+            // US-143 R4: what sat under it moves up to its parent
+            foreach (var child in _requirements.Where(r => r.ParentId == requirement.Id))
+            {
+                child.SetParent(requirement.ParentId);
+            }
+
+            _requirements.Remove(requirement);
         }
 
         // US-035 R1, R2: sets or clears the start date. Only while the version is a draft.

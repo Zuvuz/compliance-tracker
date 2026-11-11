@@ -110,7 +110,7 @@ public class CatalogFileTests
 
         // Assert
         var domainError = Assert.IsType<DomainException>(error);
-        Assert.Equal("Only PDF files are allowed", domainError.Message);
+        Assert.Equal(CatalogFile.WrongType, domainError.Message);
     }
 
     [Theory]
@@ -129,7 +129,7 @@ public class CatalogFileTests
 
         // Assert
         var domainError = Assert.IsType<DomainException>(error);
-        Assert.Equal("Only PDF files are allowed", domainError.Message);
+        Assert.Equal(CatalogFile.WrongType, domainError.Message);
     }
 
     // ---------------------------------------------------------- File name (R6, ASVS V5.3.2)
@@ -165,7 +165,7 @@ public class CatalogFileTests
 
         // Assert
         var domainError = Assert.IsType<DomainException>(error);
-        Assert.Equal("Only PDF files are allowed", domainError.Message);
+        Assert.Equal(CatalogFile.WrongType, domainError.Message);
     }
 
     // ---------------------------------------------------------- Fingerprint (SHA-256)

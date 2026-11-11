@@ -134,6 +134,7 @@ namespace ComplianceTracker.Web.Models
         public const string HasSuggestions = "has-suggestions";
         public const string NotApplicable = "not-applicable";
         public const string NeedsReview = "needs-review";
+        public const string Recommendations = "recommendations"; // US-143 R6
 
         // In the order they are shown, with the text on the button
         public static readonly IReadOnlyList<(string Slug, string Title)> Each =
@@ -142,7 +143,8 @@ namespace ComplianceTracker.Web.Models
             (NotCovered, "Not covered"),
             (HasSuggestions, "Has suggestions"),
             (NotApplicable, "Not applicable"),
-            (NeedsReview, "Needs review")
+            (NeedsReview, "Needs review"),
+            (Recommendations, "Recommendations")
         ];
 
         // An unknown or missing filter shows everything
@@ -151,7 +153,9 @@ namespace ComplianceTracker.Web.Models
 
         public static bool Matches(string filter, RequirementCoverage row) => filter switch
         {
-            NotCovered => row.IsApplicable && !row.IsCovered, // not applicable is not "not covered" (US-043 R6)
+            // Not applicable is not "not covered" (US-043 R6), nor is a recommendation (US-143 R6)
+            NotCovered => row.IsApplicable && !row.IsCovered && !row.Requirement.IsRecommendation,
+            Recommendations => row.Requirement.IsRecommendation,
             HasSuggestions => row.HasSuggestions,
             NotApplicable => !row.IsApplicable,
             NeedsReview => row.NeedsReview,

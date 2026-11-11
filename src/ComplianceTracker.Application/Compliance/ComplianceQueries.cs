@@ -242,9 +242,14 @@ namespace ComplianceTracker.Application.Compliance
     // One framework version the project follows, with its requirements in the document's order
     public record FrameworkCompliance(Framework Framework, FrameworkVersion Version, IReadOnlyList<RequirementCoverage> Requirements)
     {
-        // US-043 R6: requirements that are not applicable do not count
-        public int Total => Requirements.Count(r => r.IsApplicable);
-        public int Covered => Requirements.Count(r => r.IsApplicable && r.IsCovered);
+        // US-043 R6: requirements that are not applicable do not count. US-143 R6: nor do recommendations, which have
+        // their own count.
+        public int Total => Requirements.Count(r => r.IsApplicable && !r.Requirement.IsRecommendation);
+        public int Covered => Requirements.Count(r => r.IsApplicable && !r.Requirement.IsRecommendation && r.IsCovered);
+
+        // US-143 R6: "3 of 9 recommendations followed"
+        public int Recommendations => Requirements.Count(r => r.IsApplicable && r.Requirement.IsRecommendation);
+        public int RecommendationsFollowed => Requirements.Count(r => r.IsApplicable && r.Requirement.IsRecommendation && r.IsCovered);
         public int NotApplicable => Requirements.Count(r => !r.IsApplicable);
 
         // US-110: requirements with something carried over that waits for review
@@ -266,7 +271,8 @@ namespace ComplianceTracker.Application.Compliance
 
         // e.g. "12 of 20 requirements covered (60 %), 2 not applicable"
         public string CoverageText
-            => $"{Covered} of {Total} requirements covered ({Percent} %)" + (NotApplicable > 0 ? $", {NotApplicable} not applicable" : "");
+            => $"{Covered} of {Total} requirements covered ({Percent} %)" + (NotApplicable > 0 ? $", {NotApplicable} not applicable" : "")
+               + (Recommendations > 0 ? $" · {RecommendationsFollowed} of {Recommendations} recommendations followed" : "");
 
         // US-021 R4: rounded to whole per cent; 0 when there are no requirements
         public int Percent => Total == 0 ? 0 : (int)Math.Round(100.0 * Covered / Total, MidpointRounding.AwayFromZero);

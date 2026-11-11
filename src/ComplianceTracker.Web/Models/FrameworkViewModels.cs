@@ -12,8 +12,28 @@ namespace ComplianceTracker.Web.Models
     }
 
     // Data for one version's page with its requirements (Views/Frameworks/Version.cshtml, US-007)
-    public record FrameworkVersionPageViewModel(Framework Framework, FrameworkVersion Version, Organization Organization, DateOnly Today)
+    // Columns: US-143 R7, the header row of a draft's Excel or CSV file, so the admin can choose the columns
+    public record FrameworkVersionPageViewModel(
+        Framework Framework, FrameworkVersion Version, Organization Organization, DateOnly Today, IReadOnlyList<string>? Columns = null)
     {
+        // US-143 R7: the columns chosen before for this framework
+        public Application.Frameworks.TableColumns? Chosen => Application.Frameworks.TableColumns.Parse(Framework.TableColumns);
+
+        // US-143 R4: how deep a requirement sits in the standard's tree
+        public int Depth(Requirement requirement)
+        {
+            var depth = 0;
+            for (var up = requirement.ParentId; up is { } id && depth < 10; up = Version.Requirements.FirstOrDefault(r => r.Id == id)?.ParentId)
+            {
+                depth++;
+            }
+
+            return depth;
+        }
+
+        public string? ParentCode(Requirement requirement)
+            => requirement.ParentId is { } id ? Version.Requirements.FirstOrDefault(r => r.Id == id)?.Code : null;
+
         public bool IsCurrent => Framework.CurrentVersion(Today)?.Id == Version.Id;
 
         public string NameOf(Guid? userId)

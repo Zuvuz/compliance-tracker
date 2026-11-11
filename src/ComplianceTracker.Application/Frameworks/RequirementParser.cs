@@ -9,6 +9,10 @@ namespace ComplianceTracker.Application.Frameworks
     // - EU acts (R11): "Article 14" with its paragraphs "1." and points "(a)", and "ANNEX I", "Part II" with "(1)" and "(a)",
     //   giving codes such as "Art. 14(2)(a)" and "Annex I Part II (1)"
     // The lines up to the next code are the requirement's description.
+    // US-143: a standard's structure is kept: top clauses ("4 Context of the organization"), lettered points ("a) ..."),
+    // annexes ("Annex A (normative)") and quality models. Each requirement gets a kind ("shall", "should" or a
+    // characteristic) and its parent. Forewords, terms, NOTEs, EXAMPLEs, informative annexes, the bibliography and licence
+    // watermarks are left out (R3).
     public static partial class RequirementParser
     {
         // Limits, so a huge or odd document cannot fill the database
@@ -19,6 +23,52 @@ namespace ComplianceTracker.Application.Frameworks
         // "A.5.15 Access control", "5.15 Access control", "8.1.2 Title". The title must start with a letter.
         [GeneratedRegex(@"^(?<code>(?:[A-Z]{1,3}\.)?\d{1,3}(?:\.\d{1,3})+)\.?\s+(?<title>\p{L}.*)$")]
         private static partial Regex StandardLine();
+
+        // US-143 R4: a top clause of a standard: "4 Context of the organization" (one number, a short title, no full stop)
+        [GeneratedRegex(@"^(?<code>\d{1,2})\s+(?<title>\p{Lu}[^.:;]{2,80})$")]
+        private static partial Regex TopClause();
+
+        // US-143 R4: a lettered point of a standard's clause: "a) determine ..."
+        [GeneratedRegex(@"^(?<letter>[a-z])\)\s+(?<text>\S.*)$")]
+        private static partial Regex LetteredPoint();
+
+        // US-143 R4: "Annex A (normative) Information security controls reference" in a standard
+        [GeneratedRegex(@"^Annex\s+(?<letter>[A-Z])\b\s*(?<rest>.{0,200})$")]
+        private static partial Regex StandardAnnex();
+
+        // US-143 R4: a clause of a standard's annex with one number, "C.1 Rule" (longer codes such as "A.5.1" are StandardLine)
+        [GeneratedRegex(@"^(?<code>[A-Z]\.\d{1,3})\.?\s+(?<title>\p{L}.*)$")]
+        private static partial Regex AnnexClause();
+
+        // "(normative)" or "(informative)" at the start of an annex's title
+        [GeneratedRegex(@"^\((?:normative|informative)\)\s*", RegexOptions.IgnoreCase)]
+        private static partial Regex AnnexType();
+
+        // US-143 R3: a licence watermark or copyright line, e.g. "Licensed to Acme ApS – single user licence only"
+        [GeneratedRegex(@"©|\(c\)\s*ISO\b|all rights reserved|licensed to\b|single[- ]user licen[cs]e", RegexOptions.IgnoreCase)]
+        private static partial Regex Watermark();
+
+        // US-143 R3: a NOTE or an EXAMPLE, left out until the next requirement
+        [GeneratedRegex(@"^(?:NOTE|EXAMPLE)(?:\s+\d{1,2})?(?:\s|:|$)")]
+        private static partial Regex NoteOrExample();
+
+        // US-143 R3: a part of a standard that is never a requirement
+        [GeneratedRegex(@"^(?:Foreword|Introduction|Contents|Bibliography|(?:National|European) foreword)$", RegexOptions.IgnoreCase)]
+        private static partial Regex LeftOutHeading();
+
+        // US-143 R3: clauses 1–3 of a standard (scope, normative references, terms and definitions)
+        [GeneratedRegex(@"^(?:Scope|Normative references|Terms,? (?:and|&) definitions|Terms, definitions and abbreviated terms|Definitions)\b", RegexOptions.IgnoreCase)]
+        private static partial Regex LeftOutClause();
+
+        // US-143 R5
+        [GeneratedRegex(@"\bshall\b", RegexOptions.IgnoreCase)]
+        private static partial Regex Shall();
+
+        [GeneratedRegex(@"\bshould\b", RegexOptions.IgnoreCase)]
+        private static partial Regex Should();
+
+        [GeneratedRegex(@"\bquality (?:in use )?model\b", RegexOptions.IgnoreCase)]
+        private static partial Regex QualityModel();
 
         // A table of contents line ends with dot leaders and a page number: "Access control ........ 12"
         [GeneratedRegex(@"\s*(?:\.\s*){3,}\d*\s*$")]
@@ -61,6 +111,9 @@ namespace ComplianceTracker.Application.Frameworks
             public required string Title { get; set; }
             public List<string> Text { get; } = [];
             public bool TitleFromNextLine { get; set; }
+
+            // US-143: the code of the requirement it sits under, set for standards
+            public string? Parent { get; set; }
         }
 
         public static ExtractionResult Parse(IReadOnlyList<IReadOnlyList<string>> pages)
@@ -77,9 +130,14 @@ namespace ComplianceTracker.Application.Frameworks
             string? article = null, annex = null, part = null, paragraph = null;
             var seenArticle = false;
 
+            // US-143: in a standard, the clause lettered points sit under, and a part that is left out (its code prefix,
+            // e.g. "3" or "B", or "" for all the rest, such as a bibliography)
+            string? clause = null, leftOut = null, annexLetter = null;
+            var inNote = false;
+
             foreach (var (page, text) in lines.SelectMany(p => p))
             {
-                if (PageNumber().IsMatch(text) || furniture.Contains(text))
+                if (PageNumber().IsMatch(text) || furniture.Contains(text) || (!euAct && Watermark().IsMatch(text)))
                 {
                     classified.Add((page, text, Kind.Furniture));
                     continue;
@@ -99,6 +157,19 @@ namespace ComplianceTracker.Application.Frameworks
                     }
 
                     classified.Add((page, text, Kind.Contents));
+                    continue;
+                }
+
+                // US-143 R3: parts of a standard that are never requirements
+                if (!euAct && StandardLeftOut(text, ref leftOut, ref inNote, current))
+                {
+                    classified.Add((page, text, Kind.Preamble));
+                    if (!inNote)
+                    {
+                        current = null;
+                        clause = null;
+                    }
+
                     continue;
                 }
 
@@ -143,11 +214,43 @@ namespace ComplianceTracker.Application.Frameworks
                 }
                 else if (StandardLine().Match(text) is { Success: true } standard)
                 {
-                    started = new Found { Code = standard.Groups["code"].Value, Title = standard.Groups["title"].Value.Trim() };
+                    clause = standard.Groups["code"].Value;
+                    started = new Found { Code = clause, Title = standard.Groups["title"].Value.Trim() };
+                }
+                else if (!euAct && StandardAnnex().Match(text) is { Success: true } annexOfStandard)
+                {
+                    clause = null;
+                    annexLetter = annexOfStandard.Groups["letter"].Value;
+                    var rest = AnnexType().Replace(annexOfStandard.Groups["rest"].Value, "").Trim();
+                    started = new Found { Code = $"Annex {annexLetter}", Title = rest, TitleFromNextLine = rest.Length == 0 };
+                }
+                else if (!euAct && annexLetter is not null && AnnexClause().Match(text) is { Success: true } annexClause
+                         && annexClause.Groups["code"].Value.StartsWith(annexLetter + ".", StringComparison.Ordinal))
+                {
+                    // "C.1 Rule" inside Annex C
+                    clause = annexClause.Groups["code"].Value;
+                    started = new Found { Code = clause, Title = annexClause.Groups["title"].Value.Trim() };
+                }
+                else if (!euAct && TopClause().Match(text) is { Success: true } top)
+                {
+                    clause = top.Groups["code"].Value;
+                    annexLetter = null;
+                    started = new Found { Code = clause, Title = top.Groups["title"].Value.Trim() };
+                }
+                else if (!euAct && clause is not null && LetteredPoint().Match(text) is { Success: true } lettered)
+                {
+                    started = new Found
+                    {
+                        Code = $"{clause} {lettered.Groups["letter"].Value})",
+                        Title = Short(lettered.Groups["text"].Value),
+                        Parent = clause
+                    };
+                    started.Text.Add(lettered.Groups["text"].Value);
                 }
 
                 if (started is not null)
                 {
+                    inNote = false;
                     current = started;
                     found.Add(started);
                     classified.Add((page, text, Kind.Start));
@@ -191,14 +294,42 @@ namespace ComplianceTracker.Application.Frameworks
 
             // The same code twice usually means a table of contents and then the real text: keep the one with the most text
             var duplicates = kept.GroupBy(r => r.Code, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
-            var requirements = kept
+            var unique = kept
                 .GroupBy(r => r.Code, StringComparer.OrdinalIgnoreCase)
                 .Select(group => group.OrderByDescending(r => r.Text.Sum(t => t.Length)).First())
+                .ToList();
+
+            // US-143 R4: a standard's tree. A heading with no text of its own but parts under it is left out, like an EU
+            // act's (US-137 R2), and what sat under it moves up to the next level.
+            if (!euAct)
+            {
+                var all = unique.Select(r => r.Code).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                foreach (var r in unique)
+                {
+                    r.Parent ??= ParentCode(r.Code, all);
+                }
+
+                var headings = unique
+                    .Where(r => r.Text.Count == 0 && unique.Any(c => string.Equals(c.Parent, r.Code, StringComparison.OrdinalIgnoreCase)))
+                    .Select(r => r.Code)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                unique = unique.Where(r => !headings.Contains(r.Code)).ToList();
+                var left = unique.Select(r => r.Code).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                foreach (var r in unique.Where(r => r.Parent is not null && !left.Contains(r.Parent)))
+                {
+                    r.Parent = ParentCode(r.Parent!, left);
+                }
+            }
+
+            var qualityModel = !euAct && lines.SelectMany(p => p).Any(l => QualityModel().IsMatch(l.Text));
+            var requirements = unique
                 .Take(MaxRequirements)
                 .Select(r => new ExtractedRequirement(
                     r.Code,
                     Cut(r.Title.Length > 0 ? r.Title : r.Code, MaxTitleLength),
-                    Cut(string.Join(" ", r.Text), MaxDescriptionLength)))
+                    Cut(string.Join(" ", r.Text), MaxDescriptionLength),
+                    euAct ? RequirementKind.Requirement : Classify(r.Title + " " + string.Join(" ", r.Text), qualityModel),
+                    r.Parent))
                 .ToList();
 
             return new ExtractionResult(requirements, Check(requirements, classified, contentsCodes, duplicates));
@@ -293,6 +424,133 @@ namespace ComplianceTracker.Application.Frameworks
                 .Where(g => !StandardLine().IsMatch(g.Key) && !ArticleHeading().IsMatch(g.Key))
                 .Select(g => g.Key)
                 .ToHashSet();
+        }
+
+        // US-143 R5: "shall" (also next to "should", and "shall not") is a requirement, "should" a recommendation; in a
+        // quality model an item with neither is a characteristic; anything else stays a requirement
+        public static RequirementKind Classify(string text, bool qualityModel)
+        {
+            if (Shall().IsMatch(text))
+            {
+                return RequirementKind.Requirement;
+            }
+
+            if (Should().IsMatch(text))
+            {
+                return RequirementKind.Recommendation;
+            }
+
+            return qualityModel ? RequirementKind.Characteristic : RequirementKind.Requirement;
+        }
+
+        // US-143 R4: the nearest code above this one that is in the document: "6.1.2 a)" → "6.1.2", "6.1.2" → "6.1" → "6",
+        // "A.5.1" → "A.5" → "A" → "Annex A"; null at the top
+        public static string? ParentCode(string code, IReadOnlySet<string> codes)
+        {
+            var candidate = code.Trim();
+            while (true)
+            {
+                string up;
+                var space = candidate.LastIndexOf(' ');
+                var dot = candidate.LastIndexOf('.');
+                if (candidate.EndsWith(')') && space > 0)
+                {
+                    up = candidate[..space];
+                }
+                else if (dot > 0 && !candidate.StartsWith("Annex ", StringComparison.Ordinal))
+                {
+                    up = candidate[..dot];
+                }
+                else if (candidate.Length is >= 1 and <= 3 && candidate.All(char.IsUpper))
+                {
+                    up = $"Annex {candidate}";
+                }
+                else
+                {
+                    return null;
+                }
+
+                if (codes.Contains(up))
+                {
+                    return up;
+                }
+
+                if (up.StartsWith("Annex ", StringComparison.Ordinal))
+                {
+                    return null;
+                }
+
+                candidate = up;
+            }
+        }
+
+        // US-143 R3: true when the line belongs to a part of a standard that is never a requirement. Also keeps track of
+        // where those parts, and NOTEs and EXAMPLEs, start and end.
+        private static bool StandardLeftOut(string text, ref string? leftOut, ref bool inNote, Found? current)
+        {
+            if (LeftOutHeading().IsMatch(text))
+            {
+                leftOut = "";
+                inNote = false;
+                return true;
+            }
+
+            if (StandardAnnex().Match(text) is { Success: true } annex)
+            {
+                // An informative annex is left out; a normative one ends what was left out
+                leftOut = annex.Groups["rest"].Value.Contains("(informative)", StringComparison.OrdinalIgnoreCase) ? annex.Groups["letter"].Value : null;
+                inNote = false;
+                return leftOut is not null;
+            }
+
+            if (TopClause().Match(text) is { Success: true } top)
+            {
+                // Clauses 1–3 are left out. Another top clause ends what was left out, unless it was the rest of the
+                // document (a bibliography) or an informative annex.
+                if (LeftOutClause().IsMatch(top.Groups["title"].Value))
+                {
+                    leftOut = top.Groups["code"].Value;
+                    inNote = false;
+                    return true;
+                }
+
+                if (leftOut is not null && (leftOut.Length == 0 || char.IsLetter(leftOut[0])))
+                {
+                    return true;
+                }
+
+                leftOut = null;
+                return false;
+            }
+
+            if (StandardLine().Match(text) is { Success: true } line)
+            {
+                var code = line.Groups["code"].Value;
+
+                // "0.1 General" is the introduction's
+                if (code.StartsWith("0.", StringComparison.Ordinal)
+                    || (leftOut is not null && (leftOut.Length == 0 || code.StartsWith(leftOut + ".", StringComparison.Ordinal))))
+                {
+                    return true;
+                }
+
+                leftOut = null;
+                return false;
+            }
+
+            if (leftOut is not null)
+            {
+                return true;
+            }
+
+            if (current is not null && NoteOrExample().IsMatch(text))
+            {
+                inNote = true;
+                return true;
+            }
+
+            // A NOTE or EXAMPLE runs until the next requirement or lettered point
+            return inNote && !LetteredPoint().IsMatch(text);
         }
 
         private static string AnnexCode(string annex, string? part) => part is null ? $"Annex {annex}" : $"Annex {annex} Part {part}";

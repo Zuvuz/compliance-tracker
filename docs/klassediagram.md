@@ -261,6 +261,7 @@ classDiagram
     -level: FrameworkLevel
     -implementsFrameworkId: Guid?
     -country: string?
+    -tableColumns: string?
     -versions: List~FrameworkVersion~
     +LatestVersion: FrameworkVersion
     +CurrentVersion(today: DateOnly) FrameworkVersion?
@@ -270,6 +271,7 @@ classDiagram
     +Version(versionId: Guid) FrameworkVersion
     +Create(organizationId: Guid, name: string, file: CatalogFile, uploadedById: Guid, uploadedAt: DateTime)$ Framework
     +AddVersion(file: CatalogFile, uploadedById: Guid, uploadedAt: DateTime) FrameworkVersion
+    +RememberColumns(columns: string?)
   }
   class FrameworkVersion {
     -id: Guid
@@ -302,7 +304,23 @@ classDiagram
     +FileName: string
     +Content: byte[]
     +Sha256: string
+    +Format: CatalogFormat
     +Create(fileName: string, content: byte[])$ CatalogFile
+    +FormatOf(fileName: string)$ CatalogFormat?
+  }
+  class CatalogFormat {
+    <<enumeration>>
+    Pdf
+    Word
+    Excel
+    Csv
+    Html
+  }
+  class RequirementKind {
+    <<enumeration>>
+    Requirement
+    Recommendation
+    Characteristic
   }
   class Requirement {
     -id: Guid
@@ -315,10 +333,16 @@ classDiagram
     -group: string?
     -reference: string?
     -implements: string?
+    -parentId: Guid?
+    -kind: RequirementKind
     -texts: List~RequirementText~
+    +IsRecommendation: bool
     +HasSameTextAs(other: Requirement) bool
     +Show(language: string?) (string, string, bool)
   }
+  Requirement --> Requirement : sits under
+  Requirement --> RequirementKind
+  CatalogFile --> CatalogFormat
   class RequirementText {
     -id: Guid
     -requirementId: Guid

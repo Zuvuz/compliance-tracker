@@ -323,6 +323,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("OwnerOrganizationId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("TableColumns")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ImplementsFrameworkId");
@@ -582,6 +586,16 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Requirement");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Position")
                         .HasColumnType("integer");
 
@@ -601,6 +615,8 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasColumnName("xmin");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ParentId");
 
                     b.HasIndex("FrameworkVersionId", "Code")
                         .IsUnique();

@@ -316,16 +316,16 @@ namespace ComplianceTracker.Specs.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableTheoryAttribute(DisplayName="Only PDF files up to 20 MB are accepted")]
+        [global::Xunit.SkippableTheoryAttribute(DisplayName="Only the allowed file types up to 20 MB are accepted")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Upload frameworks as PDF")]
-        [global::Xunit.TraitAttribute("Description", "Only PDF files up to 20 MB are accepted")]
+        [global::Xunit.TraitAttribute("Description", "Only the allowed file types up to 20 MB are accepted")]
         [global::Xunit.TraitAttribute("Category", "US-005")]
         [global::Xunit.TraitAttribute("Category", "asvs-v5.2.1")]
         [global::Xunit.TraitAttribute("Category", "asvs-v5.2.2")]
         [global::Xunit.TraitAttribute("Category", "integration")]
-        [global::Xunit.InlineDataAttribute("a text file named \"policy.pdf\"", "Only PDF files are allowed", "4", new string[0])]
+        [global::Xunit.InlineDataAttribute("a text file named \"policy.pdf\"", "Only PDF, Word (.docx), Excel (.xlsx), CSV or HTML files are allowed", "4", new string[0])]
         [global::Xunit.InlineDataAttribute("a PDF of 21 MB named \"policy.pdf\"", "The file must be 20 MB or smaller", "5", new string[0])]
-        public async global::System.Threading.Tasks.Task OnlyPDFFilesUpTo20MBAreAccepted(string file, string error, string @__pickleIndex, string[] exampleTags)
+        public async global::System.Threading.Tasks.Task OnlyTheAllowedFileTypesUpTo20MBAreAccepted(string file, string error, string @__pickleIndex, string[] exampleTags)
         {
             string[] @__tags = new string[] {
                     "US-005",
@@ -341,7 +341,7 @@ namespace ComplianceTracker.Specs.Features
             argumentsOfScenario.Add("file", file);
             argumentsOfScenario.Add("error", error);
             string pickleIndex = @__pickleIndex;
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Only PDF files up to 20 MB are accepted", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Only the allowed file types up to 20 MB are accepted", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 33

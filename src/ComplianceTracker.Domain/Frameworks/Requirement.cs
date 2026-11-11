@@ -32,6 +32,15 @@ namespace ComplianceTracker.Domain.Frameworks
         // US-043: a link to the official text, e.g. the annex on EUR-Lex. Only for built-in requirements.
         public string? Reference { get; private set; }
 
+        // US-143 R4: the requirement it sits under in the standard's structure, e.g. "6.1.2" for "6.1.2 a)"; null at the top
+        public Guid? ParentId { get; private set; }
+
+        // US-143 R5: Requirement ("shall"), Recommendation ("should") or Characteristic (a quality model)
+        public RequirementKind Kind { get; private set; } = RequirementKind.Requirement;
+
+        // R6: a recommendation never counts in the coverage
+        public bool IsRecommendation => Kind == RequirementKind.Recommendation;
+
         // US-142 R6: in a national law, the code of the directive's requirement it implements, e.g. "Art. 21(2)(a)"
         public string? Implements { get; private set; }
 
@@ -72,6 +81,18 @@ namespace ComplianceTracker.Domain.Frameworks
             FrameworkVersionId = frameworkVersionId;
             Position = position;
             Set(code, title, description);
+        }
+
+        internal void SetParent(Guid? parentId) => ParentId = parentId;
+
+        internal void SetKind(RequirementKind kind)
+        {
+            if (!Enum.IsDefined(kind))
+            {
+                throw new DomainException("Choose Requirement, Recommendation or Characteristic");
+            }
+
+            Kind = kind;
         }
 
         internal void Set(string code, string title, string? description)

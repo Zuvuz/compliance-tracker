@@ -10,7 +10,7 @@
 <p>The standards and policies @Model.Organization.Name follows. Upload each as a PDF of at most 20 MB.</p>
 <p><a id="built-in-link" asp-action="BuiltIn">Built-in frameworks (CRA, AI Act)</a> can be switched on without uploading anything.</p>
 
-@* Shows the domain's error messages, e.g. "Only PDF files are allowed" *@
+@* Shows the domain's error messages, e.g. "Only PDF, Word (.docx), Excel (.xlsx), CSV or HTML files are allowed" *@
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
 
 @* enctype="multipart/form-data" is required to send a file. The form tag helper adds the antiforgery token. *@
@@ -24,7 +24,7 @@
         <div class="col-md-3">
             <label for="file" class="form-label">PDF file</label>
             @* accept only filters the file picker; the server still checks the file *@
-            <input id="file" name="file" type="file" accept=".pdf,application/pdf" class="form-control" />
+            <input id="file" name="file" type="file" accept=".pdf,.docx,.xlsx,.csv,.html,.htm,application/pdf" class="form-control" />
         </div>
         <div class="col-md-2">
             @* US-035: optional; without a date the version applies as soon as it is activated *@
@@ -105,7 +105,7 @@
                         <form asp-action="UploadVersion" method="post" enctype="multipart/form-data" class="mt-1">
                             <input type="hidden" name="frameworkId" value="@framework.Id" />
                             <div class="d-flex gap-1">
-                                <input name="file" type="file" accept=".pdf,application/pdf" class="form-control form-control-sm" />
+                                <input name="file" type="file" accept=".pdf,.docx,.xlsx,.csv,.html,.htm,application/pdf" class="form-control form-control-sm" />
                                 <input name="appliesFrom" type="date" class="form-control form-control-sm ct-max-w-10"
                                        title="Applies from (optional)" aria-label="Applies from" />
                                 <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Upload new version</button>
