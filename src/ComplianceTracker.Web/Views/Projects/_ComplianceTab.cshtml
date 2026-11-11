@@ -17,18 +17,23 @@
    .applicability-context and the forms .accept-applicability (reason) and .reject-applicability; .suggestion-context
    under a rationale; .old-classification with the form .keep-not-applicable.
    US-110: per row .needs-review with .previous-text and the form .confirm-review; links and evidence that wait for
-   review have .review-pending. *@
+   review have .review-pending.
+   US-144: the rows are Views/Projects/_RequirementRow.cshtml; the "All" sub-tab (data-sub="all") groups every framework
+   (.framework-group rows); #fold-all and #open-all; #unused-frameworks with forms .add-unused-framework. *@
 @model ProjectDetailsViewModel
+@using ComplianceTracker.Application.Compliance
 @{
     var project = Model.Project;
     var compliance = Model.Compliance;
-    var active = Model.ActiveCompliance;
-    var activeSlug = active is null ? null : FrameworkNames.Slug(active.Framework.Name);
+    // US-144 R13: "all" shows every framework the project uses
+    var all = Model.Sub == ComplianceFilters.AllSub && Model.Compliance is { Frameworks.Count: > 1 };
+    var active = all ? null : Model.ActiveCompliance;
+    var activeSlug = all ? ComplianceFilters.AllSub : active is null ? null : FrameworkNames.Slug(active.Framework.Name);
     var canLink = await Permissions.CanAsync(Permission.LinkWork);
     var canDecide = await Permissions.CanAsync(Permission.DecideCompliance);
     var filter = Model.ComplianceFilter;
     var showFilter = filter == ComplianceFilters.All ? null : filter;
-    const int ShortDescription = 180;
+    string NameOf(Guid userId) => Model.Organization?.Users.FirstOrDefault(u => u.Id == userId)?.Name ?? "Unknown";
 }
 
 <section id="project-compliance">
@@ -41,7 +46,7 @@
         return;
     }
 
-    @* US-041 R2: one sub-tab per framework, alphabetical *@
+    @* US-041 R2: one sub-tab per framework, alphabetical; US-144 R13: "All" when there is more than one *@
     <ul class="nav nav-pills mb-3" id="compliance-tabs">
         @foreach (var tab in compliance.Frameworks)
         {
@@ -51,89 +56,102 @@
                    asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Compliance" asp-route-sub="@slug">@FrameworkNames.Short(tab.Framework.Name)</a>
             </li>
         }
+        @if (compliance.Frameworks.Count > 1)
+        {
+            <li class="nav-item">
+                <a class="nav-link @(all ? "active" : "")" data-sub="@ComplianceFilters.AllSub"
+                   asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Compliance" asp-route-sub="@ComplianceFilters.AllSub">All</a>
+            </li>
+        }
     </ul>
 
     @{
-        var framework = active!;
-        // US-142 R8: whether this framework has any text in the page language
-        var hasTranslations = Model.Language == ComplianceTracker.Domain.Frameworks.Requirement.DefaultLanguage
-            || framework.Requirements.Any(r => r.Requirement.TextIn(Model.Language) is not null);
-        var current = framework.Framework.CurrentVersion(Model.Today);
-        var rows = framework.Requirements.AsEnumerable();
-        if (!string.IsNullOrWhiteSpace(Model.Search))
-        {
-            var term = Model.Search.Trim();
-            rows = rows.Where(r => r.Requirement.Code.Contains(term, StringComparison.OrdinalIgnoreCase)
-                || r.Requirement.Title.Contains(term, StringComparison.OrdinalIgnoreCase)
-                || r.Requirement.Description.Contains(term, StringComparison.OrdinalIgnoreCase));
-        }
-        var shown = rows.Where(r => ComplianceFilters.Matches(filter, r)).ToList();
-
-        // US-143 R4: the depth of each requirement in the standard's tree, and which have requirements under them
-        var parents = framework.Requirements.ToDictionary(r => r.Requirement.Id, r => r.Requirement.ParentId);
-        var withChildren = parents.Values.Where(p => p is not null).Select(p => p!.Value).ToHashSet();
-        int Depth(Guid id)
-        {
-            var depth = 0;
-            for (var up = parents.GetValueOrDefault(id); up is { } parent && depth < 10; up = parents.GetValueOrDefault(parent))
-            {
-                depth++;
-            }
-
-            return depth;
-        }
+        var shownFrameworks = all ? compliance.Frameworks.ToList() : [active!];
         var openStories = compliance.WorkItems
             .Where(w => w.State != ComplianceTracker.Domain.WorkItems.WorkItemState.Removed)
             .OrderBy(w => w.Title, StringComparer.OrdinalIgnoreCase)
             .ToList();
+        var projectRisks = Model.AllRisks.Where(r => r.Status != ComplianceTracker.Domain.Risks.RiskStatus.Closed).ToList();
+        IEnumerable<RequirementCoverage> Shown(FrameworkCompliance f)
+        {
+            var rows = f.Requirements.AsEnumerable();
+            if (!string.IsNullOrWhiteSpace(Model.Search))
+            {
+                var term = Model.Search.Trim();
+                rows = rows.Where(r => r.Requirement.Code.Contains(term, StringComparison.OrdinalIgnoreCase)
+                    || r.Requirement.Title.Contains(term, StringComparison.OrdinalIgnoreCase)
+                    || r.Requirement.Description.Contains(term, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return rows.Where(r => ComplianceFilters.Matches(filter, r));
+        }
+
+        // R13: the counts add up across the frameworks shown
+        var covered = shownFrameworks.Sum(f => f.Covered);
+        var total = shownFrameworks.Sum(f => f.Total);
+        var percent = total == 0 ? 0 : (int)Math.Round(100.0 * covered / total, MidpointRounding.AwayFromZero);
+        var anyRequirements = shownFrameworks.Any(f => f.Requirements.Count > 0);
+        var hasTranslations = Model.Language == ComplianceTracker.Domain.Frameworks.Requirement.DefaultLanguage
+            || shownFrameworks.SelectMany(f => f.Requirements).Any(r => r.Requirement.TextIn(Model.Language) is not null);
+        var shownCount = shownFrameworks.Sum(f => Shown(f).Count());
     }
 
     @* US-041 R4, R7 / US-021 R4 *@
     <p class="mb-2">
-        <span class="fw-semibold">@framework.Framework.Name</span>, version @framework.Version.Number:
-        <span id="coverage">@framework.CoverageText</span>
-        @if (current is not null && current.Id != framework.Version.Id && current.Number > framework.Version.Number)
+        @if (all)
         {
-            <span class="badge text-bg-warning ms-2" id="compliance-newer">Newer version available</span>
+            <span class="fw-semibold">All regulations</span><text>: </text>
+            <span id="coverage">@covered of @total requirements covered (@percent %)</span>
+        }
+        else
+        {
+            var framework = active!;
+            var current = framework.Framework.CurrentVersion(Model.Today);
+            <span class="fw-semibold">@framework.Framework.Name</span><text>, version @framework.Version.Number: </text>
+            <span id="coverage">@framework.CoverageText</span>
+            @if (current is not null && current.Id != framework.Version.Id && current.Number > framework.Version.Number)
+            {
+                <span class="badge text-bg-warning ms-2" id="compliance-newer">Newer version available</span>
+            }
         }
     </p>
 
-    @if (framework.Requirements.Count == 0)
+    @if (!anyRequirements)
     {
         @* US-041 R9 *@
         <p class="text-muted" id="no-requirements">This framework has no requirements in the tracker yet</p>
         return;
     }
 
-    @* US-044 R1: the four numbers and the covered share of the applicable requirements (same numbers as US-043 R6) *@
+    @* US-044 R1: the numbers and the covered share of the applicable requirements (same numbers as US-043 R6) *@
     <div class="card mb-3" id="compliance-summary">
         <div class="card-body py-3">
             <div class="row text-center g-2 mb-2">
                 <div class="col-6 col-md">
-                    <div class="fs-4 fw-semibold text-success"><span id="summary-covered">@framework.Covered</span> / <span id="summary-total">@framework.Total</span></div>
+                    <div class="fs-4 fw-semibold text-success"><span id="summary-covered">@covered</span> / <span id="summary-total">@total</span></div>
                     <div class="small text-muted">Covered</div>
                 </div>
                 <div class="col-6 col-md">
                     @* US-057 R4 *@
-                    <div class="fs-4 fw-semibold text-primary" id="summary-evidence">@framework.WithEvidence</div>
+                    <div class="fs-4 fw-semibold text-primary" id="summary-evidence">@shownFrameworks.Sum(f => f.WithEvidence)</div>
                     <div class="small text-muted">With evidence</div>
                 </div>
                 <div class="col-6 col-md">
-                    <div class="fs-4 fw-semibold text-danger" id="summary-not-covered">@framework.NotCovered</div>
+                    <div class="fs-4 fw-semibold text-danger" id="summary-not-covered">@shownFrameworks.Sum(f => f.NotCovered)</div>
                     <div class="small text-muted">Not covered</div>
                 </div>
                 <div class="col-6 col-md">
-                    <div class="fs-4 fw-semibold text-info" id="summary-suggestions">@framework.SuggestionCount</div>
+                    <div class="fs-4 fw-semibold text-info" id="summary-suggestions">@shownFrameworks.Sum(f => f.SuggestionCount)</div>
                     <div class="small text-muted">AI suggestions</div>
                 </div>
                 <div class="col-6 col-md">
-                    <div class="fs-4 fw-semibold text-secondary" id="summary-not-applicable">@framework.NotApplicable</div>
+                    <div class="fs-4 fw-semibold text-secondary" id="summary-not-applicable">@shownFrameworks.Sum(f => f.NotApplicable)</div>
                     <div class="small text-muted">Not applicable</div>
                 </div>
             </div>
             <div class="progress ct-progress-sm" role="progressbar" id="coverage-bar" aria-label="Covered share"
-                 aria-valuenow="@framework.Percent" aria-valuemin="0" aria-valuemax="100">
-                <div class="progress-bar bg-success" data-percent="@framework.Percent"></div>
+                 aria-valuenow="@percent" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar bg-success" data-percent="@percent"></div>
             </div>
         </div>
     </div>
@@ -174,28 +192,31 @@
                 <option value="csv">CSV</option>
             </select>
             <select name="sub" class="form-select form-select-sm w-auto" aria-label="Regulations">
-                <option value="@activeSlug">@(active is null ? "" : FrameworkNames.Short(active.Framework.Name))</option>
+                @if (!all)
+                {
+                    <option value="@activeSlug">@FrameworkNames.Short(active!.Framework.Name)</option>
+                }
                 <option value="">All regulations</option>
             </select>
             <button type="submit" class="btn btn-sm btn-outline-secondary" id="download-traceability">Download</button>
         </form>
 
-        @if (!project.IsClosed && canLink && openStories.Count > 0 && framework.NotCovered > 0)
+        @if (!all && !project.IsClosed && canLink && openStories.Count > 0 && active!.NotCovered > 0)
         {
             @* US-044 R3: only this framework's not-covered, applicable requirements *@
             <form asp-action="SuggestForNotCovered" method="post" id="suggest-not-covered">
                 <input type="hidden" name="projectId" value="@project.Id" />
-                <input type="hidden" name="frameworkId" value="@framework.Framework.Id" />
+                <input type="hidden" name="frameworkId" value="@active.Framework.Id" />
                 <input type="hidden" name="sub" value="@activeSlug" />
                 <button type="submit" class="btn btn-sm btn-outline-primary" title="The local AI suggests user stories for each requirement that is not covered. You approve or reject each suggestion.">Suggest for not covered</button>
             </form>
         }
-        @if (!project.IsClosed && canDecide && framework.NotCovered > 0)
+        @if (!all && !project.IsClosed && canDecide && active!.NotCovered > 0)
         {
             @* US-060 R6: the AI only suggests; a person accepts or rejects each one *@
             <form asp-action="SuggestNotApplicable" method="post" id="suggest-not-applicable">
                 <input type="hidden" name="projectId" value="@project.Id" />
-                <input type="hidden" name="frameworkId" value="@framework.Framework.Id" />
+                <input type="hidden" name="frameworkId" value="@active.Framework.Id" />
                 <input type="hidden" name="sub" value="@activeSlug" />
                 <button type="submit" class="btn btn-sm btn-outline-secondary" title="The local AI checks the requirements that are not covered against the product's purpose, scope and classification, and suggests the ones that clearly do not apply.">Suggest not applicable</button>
             </form>
@@ -211,12 +232,17 @@
         @* US-142 R8: one note instead of one on every row *@
         <p class="small text-muted" id="not-translated">Not translated yet: the requirements are shown in English.</p>
     }
-    @if (shown.Count == 0)
+    @if (shownCount == 0)
     {
         <p class="text-muted" id="no-matching-requirements">No requirements match</p>
     }
     else
     {
+        @* US-144 R10: fold or open every row; a row that waits for a decision stays open (site.js) *@
+        <div class="d-flex justify-content-end gap-2 mb-1 small">
+            <button type="button" class="btn btn-sm btn-link p-0" id="fold-all" hidden>Fold all</button>
+            <button type="button" class="btn btn-sm btn-link p-0" id="open-all" hidden>Open all</button>
+        </div>
         <table class="table align-middle" id="requirements-table">
             <thead>
                 <tr>
@@ -227,447 +253,78 @@
                 </tr>
             </thead>
             <tbody>
-                @{ string? group = null; }
-                @foreach (var row in shown)
+                @foreach (var framework in shownFrameworks)
                 {
-                    var requirement = row.Requirement;
-                    var text = requirement.Show(Model.Language); // US-142 R8
-                    var linkable = openStories.Where(w => row.Links.All(l => l.WorkItem.Id != w.Id)).ToList();
-                    var canLinkHere = !project.IsClosed && canLink && linkable.Count > 0 && row.IsApplicable;
-                    var canAddEvidence = !project.IsClosed && canLink && row.IsApplicable;
-                    var canMarkHere = !project.IsClosed && canDecide && row.IsApplicable;
-                    @* US-043 R7: e.g. "Part I – Essential cybersecurity requirements" *@
-                    if (requirement.Group is not null && requirement.Group != group)
+                    var rowsOfFramework = Shown(framework).ToList();
+                    if (rowsOfFramework.Count == 0)
                     {
-                        group = requirement.Group;
-                        <tr class="requirement-group table-light"><th colspan="4">@group</th></tr>
+                        continue;
                     }
-                    var rowFoldKey = $"requirement:{project.Id}:{requirement.Id}";
-                    @* #52: the row can be folded; it is never folded while something needs attention *@
-                    var rowAttention = row.HasSuggestions || row.PendingEvidenceSuggestions.Any() || row.FailingTests > 0 || row.NeedsReview
-                        || row.ApplicabilitySuggestion is not null || row.NotApplicableFromOldClassification;
-                    var depth = Depth(requirement.Id);
-                    <tr class="requirement-row @(row.IsApplicable ? "" : "text-muted")" data-code="@requirement.Code" data-group="@requirement.Group" data-attention="@(rowAttention ? "true" : "false")"
-                        data-id="@requirement.Id" data-parent="@requirement.ParentId" data-kind="@requirement.Kind">
-                        <td class="requirement-code text-nowrap align-top tree-depth-@(Math.Min(depth, 6))">
-                            @if (withChildren.Contains(requirement.Id))
-                            {
-                                @* US-143 R4: folds what sits under this requirement (site.js) *@
-                                <button type="button" class="btn btn-link btn-sm p-0 me-1 text-decoration-none tree-toggle" data-tree-toggle="@requirement.Id"
-                                        aria-expanded="true" aria-label="Fold the requirements under @requirement.Code">▾</button>
-                            }
-                            @requirement.Code
-                        </td>
-                        <td class="requirement-title align-top">
-                            @text.Title
-                            @if (requirement.IsRecommendation)
-                            {
-                                @* US-143 R6: lower importance; never lowers the coverage *@
-                                <span class="badge text-bg-secondary recommended" title="A recommendation (&quot;should&quot;). It does not count in the coverage.">Recommended</span>
-                            }
-                            else if (requirement.Kind == ComplianceTracker.Domain.Frameworks.RequirementKind.Characteristic)
-                            {
-                                <span class="badge text-bg-light border characteristic" title="A characteristic of a quality model">Characteristic</span>
-                            }
-                            @if (!text.Translated && hasTranslations)
-                            {
-                                <span class="badge text-bg-light border not-translated" title="Shown in English">Not translated yet</span>
-                            }
-                            @if (requirement.Implements is not null && framework.Framework.ImplementsFrameworkId is not null)
-                            {
-                                @* US-142 R6 *@
-                                <div class="small text-muted requirement-implements">Implements @(Model.Compliance!.Frameworks.FirstOrDefault(f => f.Framework.Id == framework.Framework.ImplementsFrameworkId)?.Framework.ShortName ?? "the directive") @requirement.Implements</div>
-                            }
-                            @if (row.HighRisk)
-                            {
-                                @* US-060 R4 *@
-                                <span class="badge text-bg-danger high-risk" title="Named by a measure of an open High or Critical risk">High risk</span>
-                            }
-                            @if (row.Risks.Count > 0)
-                            {
-                                @* US-124 R2: the open risks that reach this requirement *@
-                                <div class="small requirement-risks">Risks:
-                                    @for (var i = 0; i < row.Risks.Count; i++)
-                                    {
-                                        var risk = row.Risks[i];
-                                        <a class="requirement-risk" asp-controller="Risks" asp-action="Details" asp-route-id="@risk.Id">@risk.Title</a><span class="text-muted"> (@risk.Level)</span>@(i < row.Risks.Count - 1 ? ", " : "")
-                                    }
-                                </div>
-                            }
-                            @if (!string.IsNullOrEmpty(text.Description))
-                            {
-                                @* US-044: long descriptions can be expanded *@
-                                if (text.Description.Length <= ShortDescription)
-                                {
-                                    <div class="small text-muted">@text.Description</div>
-                                }
-                                else
-                                {
-                                    <details class="small text-muted requirement-description">
-                                        <summary>@text.Description[..ShortDescription].TrimEnd()…</summary>
-                                        @text.Description
-                                    </details>
-                                }
-                            }
-                            @if (requirement.Reference is not null)
-                            {
-                                @* US-043 R7: the official text *@
-                                <a class="official-text small" href="@requirement.Reference" target="_blank" rel="noopener noreferrer">Official text</a>
-                            }
-                        </td>
-                        <td class="align-top">
-                            <span class="small text-muted fold-summary" data-fold-summary="@rowFoldKey" hidden>
-                                @row.Links.Count @(row.Links.Count == 1 ? "story" : "stories") · @row.Evidence.Count evidence
-                            </span>
-                            <div class="fold-part" data-fold-key="@rowFoldKey">
-                            @foreach (var link in row.Links)
-                            {
-                                @* US-021 R7: each story links to its issue *@
-                                <div class="d-flex align-items-center gap-1 mb-1">
-                                    <a class="linked-story" href="@link.WorkItem.Url" target="_blank" rel="noopener noreferrer">@link.WorkItem.Title</a>
-                                    <span class="badge text-bg-light">@link.WorkItem.State</span>
-                                    @if (link.Link.NeedsReview)
-                                    {
-                                        <span class="badge text-bg-warning review-pending">Review</span>
-                                    }
-                                    @if (!project.IsClosed && canLink)
-                                    {
-                                        <form asp-action="UnlinkRequirement" method="post" class="d-inline unlink-requirement">
-                                            <input type="hidden" name="projectId" value="@project.Id" />
-                                            <input type="hidden" name="linkId" value="@link.LinkId" />
-                                            <input type="hidden" name="sub" value="@activeSlug" />
-                                            <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Remove link" aria-label="Remove link to @link.WorkItem.Title">×</button>
-                                        </form>
-                                    }
-                                </div>
-                            }
 
-                            @foreach (var item in row.Evidence)
-                            {
-                                @* US-057: the proof, a link or a file; R3: expired is shown but does not count *@
-                                var evidence = item.Evidence;
-                                <div class="evidence d-flex flex-wrap align-items-center gap-1 mb-1 small" data-title="@evidence.Title">
-                                    <span class="badge text-bg-primary">Evidence</span>
-                                    @if (evidence.IsFile)
-                                    {
-                                        <a class="evidence-title" asp-action="EvidenceFile" asp-route-id="@project.Id" asp-route-evidenceId="@evidence.Id">@evidence.Title</a>
-                                        <span class="text-muted evidence-sha256" title="SHA-256 @evidence.Sha256">SHA-256 @(evidence.Sha256![..8])…</span>
-                                    }
-                                    else
-                                    {
-                                        <a class="evidence-title" href="@evidence.Url" target="_blank" rel="noopener noreferrer">@evidence.Title</a>
-                                    }
-                                    @if (item.NeedsReview)
-                                    {
-                                        <span class="badge text-bg-warning review-pending">Review</span>
-                                    }
-                                    @if (item.IsExpired)
-                                    {
-                                        <span class="badge text-bg-warning evidence-expired">Expired</span>
-                                    }
-                                    else if (evidence.ValidUntil is { } until)
-                                    {
-                                        <span class="text-muted">valid until @until.ToString("dd-MM-yyyy")</span>
-                                    }
-                                    @if (evidence.IsFromOrganisation)
-                                    {
-                                        @* US-136 *@
-                                        <span class="badge text-bg-light border from-organisation">From the organisation</span>
-                                    }
-                                    else if (!project.IsClosed && canLink)
-                                    {
-                                        <form asp-action="RemoveEvidence" method="post" data-confirm="The evidence is no longer linked to this requirement." class="d-inline remove-evidence">
-                                            <input type="hidden" name="projectId" value="@project.Id" />
-                                            <input type="hidden" name="evidenceId" value="@evidence.Id" />
-                                            <input type="hidden" name="requirementId" value="@requirement.Id" />
-                                            <input type="hidden" name="sub" value="@activeSlug" />
-                                            <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Remove evidence" aria-label="Remove evidence @evidence.Title">×</button>
-                                        </form>
-                                    }
-                                </div>
-                            }
+                    if (all)
+                    {
+                        @* R13: one group per framework *@
+                        <tr class="framework-group table-secondary"><th colspan="4">@FrameworkNames.Short(framework.Framework.Name) <span class="fw-normal small">@framework.CoverageText</span></th></tr>
+                    }
 
-                            @* US-058: evidence suggested from tests and pull requests; a person with LinkWork accepts or rejects *@
-                            @if (row.FailingTests > 0)
-                            {
-                                <div><span class="badge text-bg-danger failing-tests">@(row.FailingTests == 1 ? "1 failing test" : $"{row.FailingTests} failing tests")</span></div>
-                            }
-                            @foreach (var suggested in row.PendingEvidenceSuggestions)
-                            {
-                                <div class="suggested-evidence d-flex flex-wrap align-items-center gap-1 mb-1 small" data-title="@suggested.Title">
-                                    <span class="badge text-bg-light">Suggested evidence</span>
-                                    @if (suggested.Url is not null)
-                                    {
-                                        <a class="suggested-evidence-title" href="@suggested.Url" target="_blank" rel="noopener noreferrer">@suggested.Title</a>
-                                    }
-                                    else
-                                    {
-                                        <span class="suggested-evidence-title" title="@suggested.PassingScenarios">@suggested.Title</span>
-                                    }
-                                    @if (!project.IsClosed && canLink)
-                                    {
-                                        <form asp-action="AcceptSuggestedEvidence" method="post" class="d-inline accept-evidence-suggestion">
-                                            <input type="hidden" name="projectId" value="@project.Id" />
-                                            <input type="hidden" name="suggestionId" value="@suggested.Id" />
-                                            <input type="hidden" name="sub" value="@activeSlug" />
-                                            <button type="submit" class="btn btn-sm btn-outline-success py-0">Accept</button>
-                                        </form>
-                                        <details class="d-inline">
-                                            <summary class="link-danger d-inline">Reject</summary>
-                                            <form asp-action="RejectSuggestedEvidence" method="post" class="d-flex gap-1 mt-1 reject-evidence-suggestion-row">
-                                                <input type="hidden" name="projectId" value="@project.Id" />
-                                                <input type="hidden" name="suggestionId" value="@suggested.Id" />
-                                                <input type="hidden" name="sub" value="@activeSlug" />
-                                                <input name="reason" class="form-control form-control-sm" placeholder="Reason, e.g. Only a refactoring" aria-label="Reason" required />
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
-                                            </form>
-                                        </details>
-                                    }
-                                </div>
-                            }
+                    // US-143 R4: the depth of each requirement in the standard's tree, and which have requirements under them
+                    var parents = framework.Requirements.ToDictionary(r => r.Requirement.Id, r => r.Requirement.ParentId);
+                    var withChildren = parents.Values.Where(p => p is not null).Select(p => p!.Value).ToHashSet();
+                    int Depth(Guid id)
+                    {
+                        var depth = 0;
+                        for (var up = parents.GetValueOrDefault(id); up is { } parent && depth < 10; up = parents.GetValueOrDefault(parent))
+                        {
+                            depth++;
+                        }
 
-                            @if (row.IsApplicable && row.ApplicabilitySuggestion is { } applicability)
-                            {
-                                @* US-060 R6: the AI suggests the requirement does not apply; the reason can be edited before accepting *@
-                                <div class="applicability-suggestion border-start border-3 border-secondary ps-2 mb-2" data-code="@requirement.Code">
-                                    <div class="d-flex flex-wrap align-items-center gap-1">
-                                        <span class="badge text-bg-info">AI-generated</span>
-                                        <span class="small fw-semibold">Not applicable?</span>
-                                    </div>
-                                    <div class="small applicability-reason">@applicability.Reason</div>
-                                    <div class="small text-muted applicability-context">Context used: @(string.IsNullOrEmpty(applicability.ContextUsed) ? "none" : applicability.ContextUsed)</div>
-                                    @if (!project.IsClosed && canDecide)
-                                    {
-                                        <div class="d-flex flex-wrap align-items-start gap-2 mt-1">
-                                            <form asp-action="AcceptApplicability" method="post" class="d-flex gap-1 accept-applicability">
-                                                <input type="hidden" name="projectId" value="@project.Id" />
-                                                <input type="hidden" name="suggestionId" value="@applicability.Id" />
-                                                <input type="hidden" name="sub" value="@activeSlug" />
-                                                <input name="reason" class="form-control form-control-sm" value="@applicability.Reason" maxlength="1000" aria-label="Reason for not applicable" />
-                                                <button type="submit" class="btn btn-sm btn-outline-success text-nowrap">Accept</button>
-                                            </form>
-                                            <form asp-action="RejectApplicability" method="post" class="reject-applicability">
-                                                <input type="hidden" name="projectId" value="@project.Id" />
-                                                <input type="hidden" name="suggestionId" value="@applicability.Id" />
-                                                <input type="hidden" name="sub" value="@activeSlug" />
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
-                                            </form>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                            @if (row.IsApplicable)
-                            {
-                                @foreach (var entry in row.Suggestions)
-                                {
-                                    @* US-044 R4: the pending AI suggestions, best first. R6: only roles that may decide get the buttons. *@
-                                    var suggestion = entry.Suggestion;
-                                    <div class="ai-suggestion border-start border-3 border-info ps-2 mb-2" data-story="@entry.WorkItem.Title" data-code="@requirement.Code">
-                                        <div class="d-flex flex-wrap align-items-center gap-1">
-                                            <span class="badge text-bg-info">AI-generated</span>
-                                            <a class="suggestion-story" href="@entry.WorkItem.Url" target="_blank" rel="noopener noreferrer">@entry.WorkItem.Title</a>
-                                            <span class="small text-muted">score <span class="suggestion-score">@suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span></span>
-                                        </div>
-                                        <div class="small suggestion-rationale">@(suggestion.Rationale ?? "Writing rationale…")</div>
-                                        @if (suggestion.ContextUsed is { } contextUsed)
-                                        {
-                                            @* US-060 *@
-                                            <div class="small text-muted suggestion-context">Context used: @contextUsed</div>
-                                        }
-                                        @if (!project.IsClosed && canDecide)
-                                        {
-                                            <div class="d-flex flex-wrap align-items-start gap-2 mt-1">
-                                                <form asp-action="ApproveSuggestion" method="post" class="approve-suggestion">
-                                                    <input type="hidden" name="projectId" value="@project.Id" />
-                                                    <input type="hidden" name="suggestionId" value="@suggestion.Id" />
-                                                    <input type="hidden" name="sub" value="@activeSlug" />
-                                                    <input type="hidden" name="show" value="@showFilter" />
-                                                    <button type="submit" class="btn btn-sm btn-success">Approve</button>
-                                                </form>
-                                                <details>
-                                                    <summary class="btn btn-sm btn-outline-danger">Reject…</summary>
-                                                    <form asp-action="RejectSuggestion" method="post" class="d-flex flex-wrap gap-1 mt-1 reject-suggestion">
-                                                        <input type="hidden" name="projectId" value="@project.Id" />
-                                                        <input type="hidden" name="suggestionId" value="@suggestion.Id" />
-                                                        <input type="hidden" name="sub" value="@activeSlug" />
-                                                        <input type="hidden" name="show" value="@showFilter" />
-                                                        <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason">
-                                                            <option value="">Reason…</option>
-                                                            @foreach (var reason in Enum.GetValues<ComplianceTracker.Domain.Mappings.RejectionReason>())
-                                                            {
-                                                                <option value="@reason">@reason</option>
-                                                            }
-                                                        </select>
-                                                        <input name="comment" class="form-control form-control-sm w-auto" placeholder="Comment (optional)" aria-label="Comment" />
-                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
-                                                    </form>
-                                                </details>
-                                            </div>
-                                        }
-                                    </div>
-                                }
-                            }
+                        return depth;
+                    }
 
-                            @if (canLinkHere || canMarkHere || canAddEvidence)
-                            {
-                                @* US-044 R7: the fields open only when clicked *@
-                                <div class="small d-flex flex-wrap gap-2 row-actions">
-                                    @if (canAddEvidence)
-                                    {
-                                        @* US-057 R1, R2: a link, or a file of at most 10 MB *@
-                                        <details>
-                                            <summary class="link-primary">+ Evidence</summary>
-                                            <form asp-action="AddEvidence" method="post" enctype="multipart/form-data" class="d-flex flex-column gap-1 mt-1 add-evidence">
-                                                <input type="hidden" name="projectId" value="@project.Id" />
-                                                <input type="hidden" name="requirementId" value="@requirement.Id" />
-                                                <input type="hidden" name="sub" value="@activeSlug" />
-                                                <input name="title" class="form-control form-control-sm" maxlength="200" placeholder="Title, e.g. PR 42 merged" aria-label="Evidence title for @requirement.Code" />
-                                                <input name="url" type="url" class="form-control form-control-sm" placeholder="Link (https://…)" aria-label="Evidence link for @requirement.Code" />
-                                                <input name="file" type="file" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg,.txt,.csv,.md" aria-label="Or a file (max 10 MB)" />
-                                                <div class="d-flex gap-1 align-items-center">
-                                                    <label class="text-muted text-nowrap" for="valid-until-@requirement.Id">Valid until</label>
-                                                    <input name="validUntil" id="valid-until-@requirement.Id" type="date" class="form-control form-control-sm" />
-                                                    <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Add</button>
-                                                </div>
-                                            </form>
-                                            @{
-                                                var pickable = (Model.EvidenceTab?.Evidence ?? [])
-                                                    .Where(e => !row.Evidence.Any(x => x.Evidence.Id == e.Evidence.Id))
-                                                    .ToList();
-                                            }
-                                            @if (pickable.Count > 0)
-                                            {
-                                                @* US-059: evidence already on the Evidence tab *@
-                                                <form asp-action="LinkExistingEvidence" method="post" class="d-flex gap-1 mt-1 pick-evidence">
-                                                    <input type="hidden" name="projectId" value="@project.Id" />
-                                                    <input type="hidden" name="requirementId" value="@requirement.Id" />
-                                                    <input type="hidden" name="sub" value="@activeSlug" />
-                                                    <select name="evidenceId" class="form-select form-select-sm" aria-label="Pick existing evidence for @requirement.Code">
-                                                        @foreach (var existing in pickable)
-                                                        {
-                                                            <option value="@existing.Evidence.Id">@existing.Evidence.Title</option>
-                                                        }
-                                                    </select>
-                                                    <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Pick existing</button>
-                                                </form>
-                                            }
-                                        </details>
-                                    }
-                                    @if (canLinkHere)
-                                    {
-                                        <details>
-                                            <summary class="link-primary">+ Link story</summary>
-                                            <form asp-action="LinkRequirement" method="post" class="d-flex gap-1 mt-1 link-requirement">
-                                                <input type="hidden" name="projectId" value="@project.Id" />
-                                                <input type="hidden" name="requirementId" value="@requirement.Id" />
-                                                <input type="hidden" name="sub" value="@activeSlug" />
-                                                <select name="workItemId" class="form-select form-select-sm" aria-label="User story for @requirement.Code">
-                                                    @foreach (var story in linkable)
-                                                    {
-                                                        <option value="@story.Id">@story.Title</option>
-                                                    }
-                                                </select>
-                                                <button type="submit" class="btn btn-sm btn-outline-primary">Link</button>
-                                            </form>
-                                        </details>
-                                    }
-                                    @if (canMarkHere)
-                                    {
-                                        <details>
-                                            <summary class="link-secondary">Not applicable…</summary>
-                                            <form asp-action="MarkNotApplicable" method="post" class="d-flex gap-1 mt-1 mark-not-applicable">
-                                                <input type="hidden" name="projectId" value="@project.Id" />
-                                                <input type="hidden" name="requirementId" value="@requirement.Id" />
-                                                <input type="hidden" name="sub" value="@activeSlug" />
-                                                <input name="reason" class="form-control form-control-sm" placeholder="Reason, e.g. from the risk assessment" aria-label="Why @requirement.Code does not apply" />
-                                                <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">Mark</button>
-                                            </form>
-                                        </details>
-                                    }
-                                </div>
-                            }
-                            </div>
-                        </td>
-                        <td class="align-top">
-                            <button type="button" class="btn btn-sm btn-link p-0 fold-toggle d-block mb-1" data-fold-target="@rowFoldKey" aria-expanded="true" hidden>Fold</button>
-                            @if (!row.IsApplicable)
-                            {
-                                @* US-043 R5, R6 *@
-                                <span class="requirement-status badge text-bg-secondary">Not applicable</span>
-                                <div class="small not-applicable-reason">@row.NotApplicableReason</div>
-                                @if (row.NotApplicableFromOldClassification)
-                                {
-                                    @* US-061 R3 *@
-                                    <div class="small text-warning-emphasis old-classification">Based on an earlier classification</div>
-                                    @if (!project.IsClosed && canDecide)
-                                    {
-                                        <form asp-action="KeepNotApplicable" method="post" class="keep-not-applicable">
-                                            <input type="hidden" name="projectId" value="@project.Id" />
-                                            <input type="hidden" name="requirementId" value="@requirement.Id" />
-                                            <input type="hidden" name="sub" value="@activeSlug" />
-                                            <button type="submit" class="btn btn-sm btn-link p-0">Still not applicable</button>
-                                        </form>
-                                    }
-                                }
-                                @if (!project.IsClosed && canDecide)
-                                {
-                                    <form asp-action="MarkApplicable" method="post" class="mark-applicable">
-                                        <input type="hidden" name="projectId" value="@project.Id" />
-                                        <input type="hidden" name="requirementId" value="@requirement.Id" />
-                                        <input type="hidden" name="sub" value="@activeSlug" />
-                                        <button type="submit" class="btn btn-sm btn-link p-0">Make applicable</button>
-                                    </form>
-                                }
-                            }
-                            else if (row.IsCoveredNeedingReview)
-                            {
-                                @* US-110 R3 *@
-                                <span class="requirement-status badge text-bg-warning">Covered, needs review</span>
-                            }
-                            else if (row.IsCovered)
-                            {
-                                <span class="requirement-status badge text-bg-success">Covered</span>
-                                @if (row.CoveredThrough is { } through)
-                                {
-                                    @* US-142 R6 *@
-                                    <div class="small text-muted covered-through">through @through</div>
-                                }
-                                @if (!row.HasEvidence)
-                                {
-                                    @* US-057 R4 *@
-                                    <div><span class="evidence-status badge text-bg-warning mt-1">No evidence</span></div>
-                                }
-                            }
-                            else
-                            {
-                                <span class="requirement-status badge text-bg-danger">Not covered</span>
-                            }
-                            @if (row.NeedsReview)
-                            {
-                                @* US-110 R4, R5: the old and the new text, and "Still correct"; "Remove" is the × on the link or evidence *@
-                                <div class="needs-review small mt-2 border-start border-warning ps-2">
-                                    <div class="fw-semibold">The text changed in this version</div>
-                                    @if (row.PreviousRequirement is { } previous)
-                                    {
-                                        <div class="previous-text text-muted"><span class="text-decoration-line-through">@previous.Title@(string.IsNullOrEmpty(previous.Description) ? "" : ": " + previous.Description)</span></div>
-                                    }
-                                    <div class="current-text">@requirement.Title@(string.IsNullOrEmpty(requirement.Description) ? "" : ": " + requirement.Description)</div>
-                                    @if (!project.IsClosed && canLink && (!row.NotApplicableNeedsReview || canDecide))
-                                    {
-                                        <form asp-action="ConfirmReview" method="post" class="confirm-review mt-1">
-                                            <input type="hidden" name="projectId" value="@project.Id" />
-                                            <input type="hidden" name="requirementId" value="@requirement.Id" />
-                                            <input type="hidden" name="sub" value="@activeSlug" />
-                                            <input type="hidden" name="show" value="@showFilter" />
-                                            <button type="submit" class="btn btn-sm btn-outline-success">Still correct</button>
-                                        </form>
-                                    }
-                                </div>
-                            }
-                        </td>
-                    </tr>
+                    var implementsName = framework.Framework.ImplementsFrameworkId is { } implementsId
+                        ? compliance.Frameworks.FirstOrDefault(f => f.Framework.Id == implementsId)?.Framework.ShortName ?? "the directive"
+                        : null;
+                    string? group = null;
+                    foreach (var row in rowsOfFramework)
+                    {
+                        @* US-043 R7: e.g. "Part I – Essential cybersecurity requirements" *@
+                        if (row.Requirement.Group is not null && row.Requirement.Group != group)
+                        {
+                            group = row.Requirement.Group;
+                            <tr class="requirement-group table-light"><th colspan="4">@group</th></tr>
+                        }
+
+                        var open = Model.OpenRequirement is { } target && !all
+                            && string.Equals(target, row.Requirement.Code, StringComparison.OrdinalIgnoreCase);
+                        <partial name="_RequirementRow" model="new RequirementRowModel(project, framework, row, activeSlug, showFilter, canLink, canDecide,
+                            openStories, Model.EvidenceTab?.Evidence ?? [], projectRisks, NameOf, Model.Language, hasTranslations,
+                            Depth(row.Requirement.Id), withChildren.Contains(row.Requirement.Id), open, implementsName)" />
+                    }
                 }
             </tbody>
         </table>
+    }
+
+    @if (Model.CanBeAdded.Any())
+    {
+        @* R15: frameworks switched on for the organisation that the project does not use yet *@
+        <section class="mt-3 small" id="unused-frameworks">
+            <span class="text-muted">Not used by this project:</span>
+            @foreach (var unused in Model.CanBeAdded.OrderBy(f => f.Name))
+            {
+                <span class="d-inline-flex align-items-center gap-1 ms-2 unused-framework" data-framework="@unused.Name">
+                    @FrameworkNames.Short(unused.Name)
+                    @if (!project.IsClosed && await Permissions.CanAsync(Permission.EditProjects))
+                    {
+                        <form asp-action="AddFramework" method="post" class="d-inline add-unused-framework">
+                            <input type="hidden" name="projectId" value="@project.Id" />
+                            <input type="hidden" name="frameworkId" value="@unused.Id" />
+                            <input type="hidden" name="back" value="@ProjectTabs.Compliance" />
+                            <button type="submit" class="btn btn-sm btn-link p-0">Add to project</button>
+                        </form>
+                    }
+                </span>
+            }
+        </section>
     }
 </section>

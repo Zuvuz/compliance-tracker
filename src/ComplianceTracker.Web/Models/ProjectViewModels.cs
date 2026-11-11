@@ -134,6 +134,9 @@ namespace ComplianceTracker.Web.Models
         public const string HasSuggestions = "has-suggestions";
         public const string NotApplicable = "not-applicable";
         public const string NeedsReview = "needs-review";
+
+        // US-144 R13: the sub-tab with every framework's requirements
+        public const string AllSub = "all";
         public const string Recommendations = "recommendations"; // US-143 R6
 
         // In the order they are shown, with the text on the button
@@ -260,6 +263,9 @@ namespace ComplianceTracker.Web.Models
         // US-059: the Evidence tab, and the project's evidence for "Pick existing evidence" on the Compliance tab
         public EvidenceTab? EvidenceTab { get; init; }
         public string? Sub { get; init; }
+
+        // US-144 R12: the requirement code in the address, e.g. ".../compliance/cra/I.2(d)"; that row is shown open
+        public string? OpenRequirement { get; init; }
         public string? Search { get; init; }
         public string ComplianceFilter { get; init; } = ComplianceFilters.All;
 

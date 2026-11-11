@@ -144,10 +144,11 @@ namespace ComplianceTracker.Web.Controllers
         // Each tab has its own address (R6), e.g. /Projects/Details/{id}/frameworks. Without a tab: Overview.
         // US-041: the Compliance tab has one sub-tab per framework, e.g. /Projects/Details/{id}/compliance/cra.
         // q searches the requirements (US-019 R3); show filters them (US-021 R6, US-044 R2: ComplianceFilters).
-        [HttpGet("Projects/Details/{id:guid}/{tab?}/{sub?}")]
+        // US-144 R12: one requirement has its own address, e.g. /Projects/Details/{id}/compliance/cra/I.2(d)
+        [HttpGet("Projects/Details/{id:guid}/{tab?}/{sub?}/{req?}")]
         // US-042: on the Risks tab, status, level and due=1 filter the register (R8)
         public async Task<IActionResult> Details(
-            Guid id, string? tab, string? sub, string? q, string? show,
+            Guid id, string? tab, string? sub, string? q, string? show, string? req,
             string? status, string? level, string? due,
             // US-101: the Activity tab's filters (q is the search there too)
             string? from, string? to, string? group, string? user, string? sort, string? page,
@@ -208,7 +209,7 @@ namespace ComplianceTracker.Web.Controllers
                 : null;
 
             // US-042: the register, sorted by level; closed risks only when asked for (R7). US-048 R3: the overview counts them.
-            var allRisks = activeTab is ProjectTabs.Risks or ProjectTabs.Overview ? await _risks.ForProjectAsync(id, cancellationToken) ?? [] : [];
+            var allRisks = activeTab is ProjectTabs.Risks or ProjectTabs.Overview or ProjectTabs.Compliance ? await _risks.ForProjectAsync(id, cancellationToken) ?? [] : [];
             var classified = activeTab is ProjectTabs.Overview ? await classifications.ForProjectAsync(id, cancellationToken) ?? [] : [];
             var securityEvents = activeTab is ProjectTabs.SecurityEvents or ProjectTabs.Overview
                 ? await securityEventQueries.ForProjectAsync(id, cancellationToken) ?? []
@@ -238,6 +239,7 @@ namespace ComplianceTracker.Web.Controllers
 
             // An unknown sub-tab is "not found", like an unknown tab
             if (activeTab == ProjectTabs.Compliance && sub is not null
+                && !(sub == ComplianceFilters.AllSub && compliance?.Frameworks.Count > 1)
                 && compliance?.Frameworks.Any(f => FrameworkNames.Slug(f.Framework.Name) == sub) != true)
             {
                 return NotFound();
@@ -269,6 +271,7 @@ namespace ComplianceTracker.Web.Controllers
                 Compliance = compliance,
                 EvidenceTab = evidenceTab,
                 Sub = sub,
+                OpenRequirement = activeTab == ProjectTabs.Compliance ? req : null,
                 Search = q,
                 ComplianceFilter = ComplianceFilters.Find(show),
                 Risks = risks,
@@ -456,9 +459,10 @@ namespace ComplianceTracker.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
-        public async Task<IActionResult> MarkNotApplicable(Guid projectId, Guid requirementId, string? reason, string? sub, CancellationToken cancellationToken)
+        // US-144 R14: riskId names a risk of the project as the justification
+        public async Task<IActionResult> MarkNotApplicable(Guid projectId, Guid requirementId, string? reason, string? sub, Guid? riskId, CancellationToken cancellationToken)
         {
-            await _compliance.MarkNotApplicableAsync(projectId, requirementId, reason ?? "", cancellationToken);
+            await _compliance.MarkNotApplicableAsync(projectId, requirementId, reason ?? "", cancellationToken, riskId);
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
         }
 
@@ -1346,10 +1350,13 @@ namespace ComplianceTracker.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Frameworks)]
-        public async Task<IActionResult> AddFramework(Guid projectId, Guid frameworkId, Guid? frameworkVersionId, CancellationToken cancellationToken)
+        public async Task<IActionResult> AddFramework(Guid projectId, Guid frameworkId, Guid? frameworkVersionId, string? back, CancellationToken cancellationToken)
         {
             await _service.AddFrameworkAsync(projectId, frameworkId, frameworkVersionId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Frameworks }); // Post/Redirect/Get
+
+            // US-144 R15: added from the Compliance tab, the page goes back there
+            var tab = back == ProjectTabs.Compliance ? ProjectTabs.Compliance : ProjectTabs.Frameworks;
+            return RedirectToAction(nameof(Details), new { id = projectId, tab }); // Post/Redirect/Get
         }
 
         // POST /Projects/UseNewest: R6
