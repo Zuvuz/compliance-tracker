@@ -270,9 +270,14 @@ namespace ComplianceTracker.Application.Compliance
             var (organizationId, user, project) = await OpenProjectAsync(projectId, cancellationToken);
             var suggestion = await RequireSuggestionAsync(project, suggestionId, cancellationToken);
             var evidence = await RequireEvidenceAsync(project, suggestion.EvidenceId, cancellationToken);
-            var code = (await RequirementsOfProjectAsync(organizationId, project, cancellationToken)).GetValueOrDefault(suggestion.RequirementId)?.Code ?? "?";
+            var rejectedRequirement = (await RequirementsOfProjectAsync(organizationId, project, cancellationToken)).GetValueOrDefault(suggestion.RequirementId);
+            var code = rejectedRequirement?.Code ?? "?";
 
             suggestion.Reject(reason, comment, user.Id, Now, user.Role);
+            if (rejectedRequirement is not null)
+            {
+                suggestion.JudgedOn(Fingerprint.Pair(Ai.RejectionMemory.Of(evidence), Ai.RejectionMemory.Of(rejectedRequirement))); // US-145 R1
+            }
             await _log.LogAsync(ActivityAction.EvidenceLinkRejected, project.Id, $"{code}: {evidence.Title} ({reason})", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
@@ -301,6 +306,18 @@ namespace ComplianceTracker.Application.Compliance
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        // US-145 R6: a person takes back the rejection of a requirement suggestion; it can be suggested again at once
+        public async Task UndoRejectionAsync(Guid projectId, Guid suggestionId, CancellationToken cancellationToken = default)
+        {
+            var (organizationId, _, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var suggestion = await RequireSuggestionAsync(project, suggestionId, cancellationToken);
+            var evidence = await RequireEvidenceAsync(project, suggestion.EvidenceId, cancellationToken);
+            suggestion.UndoRejection();
+            var code = (await RequirementsOfProjectAsync(organizationId, project, cancellationToken)).GetValueOrDefault(suggestion.RequirementId)?.Code ?? "?";
+            await _log.LogAsync(ActivityAction.SuggestionRejectionUndone, project.Id, $"Evidence {code}: {evidence.Title}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
         // R6: approving links them (source AiApproved)
         public async Task ApproveStoryAsync(Guid projectId, Guid suggestionId, CancellationToken cancellationToken = default)
         {
@@ -320,6 +337,11 @@ namespace ComplianceTracker.Application.Compliance
             var evidence = await RequireEvidenceAsync(project, suggestion.EvidenceId, cancellationToken);
             var story = (await _workItems.ListAsync(project.Id, cancellationToken)).FirstOrDefault(w => w.Id == suggestion.WorkItemId);
             suggestion.Reject(reason, comment, user.Id, Now, user.Role);
+            if (story is not null)
+            {
+                suggestion.JudgedOn(Fingerprint.Pair(Ai.RejectionMemory.Of(evidence), Ai.RejectionMemory.Of(story))); // US-145 R1
+            }
+
             await _log.LogAsync(ActivityAction.EvidenceStorySuggestionRejected, project.Id, $"{story?.Title ?? "?"}: {evidence.Title} ({reason})", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
@@ -383,11 +405,13 @@ namespace ComplianceTracker.Application.Compliance
         {
             var linked = (await _stories.ListActiveLinksAsync(project.Id, cancellationToken)).Where(l => l.EvidenceId == evidence.Id).Select(l => l.WorkItemId);
             var existing = (await _stories.ListSuggestionsAsync(project.Id, cancellationToken)).Where(s => s.EvidenceId == evidence.Id).ToList();
-            var excluded = existing.Where(s => more || s.Status is SuggestionStatus.Approved or SuggestionStatus.Rejected)
+            var stories = (await _workItems.ListAsync(project.Id, cancellationToken)).Where(w => w.State != Domain.WorkItems.WorkItemState.Removed).ToList();
+            string Pair(Guid workItemId) => stories.FirstOrDefault(s => s.Id == workItemId) is { } s
+                ? Fingerprint.Pair(Ai.RejectionMemory.Of(evidence), Ai.RejectionMemory.Of(s)) : "";
+            var excluded = existing.Where(s => s.Status == SuggestionStatus.Approved || s.StillRejects(Pair(s.WorkItemId))
+                    || (more && s.Status is SuggestionStatus.Pending or SuggestionStatus.Replaced))
                 .Select(s => s.WorkItemId).Concat(linked).ToHashSet();
-            var candidates = (await _workItems.ListAsync(project.Id, cancellationToken))
-                .Where(w => w.State != Domain.WorkItems.WorkItemState.Removed && !excluded.Contains(w.Id))
-                .ToList();
+            var candidates = stories.Where(w => !excluded.Contains(w.Id)).ToList();
             if (candidates.Count == 0)
             {
                 return 0;
@@ -428,7 +452,14 @@ namespace ComplianceTracker.Application.Compliance
             var linked = (await _evidence.ListActiveLinksAsync(project.Id, cancellationToken))
                 .Where(l => l.EvidenceId == evidence.Id).Select(l => l.RequirementId);
             var existing = (await _suggestions.ListAsync(project.Id, cancellationToken)).Where(s => s.EvidenceId == evidence.Id).ToList();
-            var excluded = existing.Where(s => more || s.Status is SuggestionStatus.Approved or SuggestionStatus.Rejected)
+            var byId = requirements.ToDictionary(r => r.Id);
+            string Pair(Guid requirementId) => byId.TryGetValue(requirementId, out var r)
+                ? Fingerprint.Pair(Ai.RejectionMemory.Of(evidence), Ai.RejectionMemory.Of(r)) : "";
+
+            // US-145 R2: approved, or rejected while neither side changed (all ever suggested for "Show more", but not a
+            // rejection that went stale or was taken back)
+            var excluded = existing.Where(s => s.Status == SuggestionStatus.Approved || s.StillRejects(Pair(s.RequirementId))
+                    || (more && s.Status is SuggestionStatus.Pending or SuggestionStatus.Replaced))
                 .Select(s => s.RequirementId)
                 .Concat(linked)
                 .Concat(notApplicable)
@@ -451,6 +482,17 @@ namespace ComplianceTracker.Application.Compliance
                 .Select(c => EvidenceLinkSuggestion.Create(project.Id, evidence.Id, c.Requirement.Id, c.Score, rank++,
                     _embeddings.Name, EvidenceRationalePrompt.Version, Now, _limits.MinimumScoreForEvidence))
                 .ToList();
+
+            // US-145 R4
+            var users = (await _member.FindOrganizationAsync(cancellationToken))?.Users ?? [];
+            foreach (var suggestion in made)
+            {
+                if (existing.Where(s => s.RequirementId == suggestion.RequirementId && s.Status == SuggestionStatus.Rejected).OrderByDescending(s => s.DecidedAt).FirstOrDefault() is { } earlier)
+                {
+                    suggestion.NoteEarlierRejection(Ai.RejectionMemory.Note(earlier.RejectedFingerprint, Pair(suggestion.RequirementId),
+                        users.FirstOrDefault(u => u.Id == earlier.DecidedById)?.Name ?? "Unknown", earlier.DecidedAt, earlier.RejectionReason, "evidence"));
+                }
+            }
 
             if (made.Count > 0)
             {

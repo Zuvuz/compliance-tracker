@@ -26,6 +26,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await _web.PostFormAsync(form.GetAttribute("action")!, Hidden(form));
         }
 
+        [Given("I reject the AI suggestion {string} for {string} because {string}")]
         [When("I reject the AI suggestion {string} for {string} because {string}")]
         public async Task WhenIReject(string code, string title, string reason)
         {
@@ -48,6 +49,17 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await OpenAsync();
             var form = Document(title).QuerySelector("form.more-document-suggestions")
                 ?? throw new Xunit.Sdk.XunitException($"'{title}' has no way to ask the AI for more.");
+            await _web.PostFormAsync(form.GetAttribute("action")!, Hidden(form));
+        }
+
+        // US-145 R6
+        [When("I undo the rejection of {string} for {string}")]
+        public async Task WhenIUndoTheRejection(string code, string title)
+        {
+            await OpenAsync();
+            var form = Document(title).QuerySelectorAll("li.rejected-suggestion").FirstOrDefault(s => s.GetAttribute("data-code") == code)
+                ?.QuerySelector("form.undo-rejection")
+                ?? throw new Xunit.Sdk.XunitException($"'{title}' has no rejected suggestion '{code}' to undo.");
             await _web.PostFormAsync(form.GetAttribute("action")!, Hidden(form));
         }
 
@@ -81,6 +93,11 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         [Then("{string} has no AI suggestions")]
         public async Task ThenHasNoSuggestions(string title) => Assert.Empty(await CodesAsync(title));
+
+        // US-145 R4: the note on a suggestion that came back
+        [Then("the AI suggestion {string} for {string} says {string}")]
+        public async Task ThenTheSuggestionSays(string code, string title, string text)
+            => Assert.Contains(text, (await SuggestionAsync(title, code)).QuerySelector(".earlier-rejection")?.TextContent ?? "", StringComparison.Ordinal);
 
         // ---------------------------------------------------------- Helpers
 

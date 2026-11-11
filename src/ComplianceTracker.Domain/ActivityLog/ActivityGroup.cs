@@ -37,7 +37,8 @@ namespace ComplianceTracker.Domain.ActivityLog
             ActivityAction.EvidenceLinkedToStory or ActivityAction.EvidenceUnlinkedFromStory or ActivityAction.EvidenceStorySuggested
                 or ActivityAction.EvidenceStorySuggestionRejected => ActivityGroup.Evidence,
             ActivityAction.RequirementSuggestionsAsked or ActivityAction.StoryDraftWritten or ActivityAction.StoryDraftAccepted
-                or ActivityAction.StoryDraftDiscarded or ActivityAction.StoryDraftLinked or ActivityAction.GapDismissed => ActivityGroup.Ai,
+                or ActivityAction.StoryDraftDiscarded or ActivityAction.StoryDraftLinked or ActivityAction.GapDismissed
+                or ActivityAction.SuggestionRejectionUndone => ActivityGroup.Ai,
             ActivityAction.RiskMeasuresSuggested or ActivityAction.RiskMeasureSuggestionApproved
                 or ActivityAction.RiskMeasureSuggestionRejected => ActivityGroup.Risks,
             ActivityAction.ProjectCreated or ActivityAction.ProjectUpdated or ActivityAction.ProjectPhaseChanged

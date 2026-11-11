@@ -264,6 +264,11 @@
                                                 <span class="badge text-bg-info ai-generated">AI-generated</span>
                                             </div>
                                             <div class="text-muted suggestion-rationale">@(suggestion.Rationale ?? "The AI is writing a rationale…")</div>
+                                            @if (suggestion.EarlierRejection is { } earlier)
+                                            {
+                                                @* US-145 R4 *@
+                                                <div class="small text-muted earlier-rejection">@earlier</div>
+                                            }
                                             @if (canChange)
                                             {
                                                 <div class="d-flex flex-wrap gap-2 mt-1">
@@ -290,6 +295,29 @@
                                         </li>
                                     }
                                 </ul>
+                            }
+                            @if (row.Rejected.Count > 0)
+                            {
+                                @* US-145 R6 *@
+                                <details class="small mt-1 rejected-evidence-suggestions">
+                                    <summary class="text-muted">Rejected suggestions (@row.Rejected.Count)</summary>
+                                    <ul class="list-unstyled mb-0">
+                                        @foreach (var no in row.Rejected)
+                                        {
+                                            <li class="rejected-suggestion d-flex flex-wrap align-items-center gap-1" data-code="@no.Requirement.Code">
+                                                <span>@no.Requirement.Code · @no.Suggestion.RejectionReason</span>
+                                                @if (canChange)
+                                                {
+                                                    <form asp-action="UndoEvidenceRejection" method="post" class="undo-rejection">
+                                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                                        <input type="hidden" name="suggestionId" value="@no.Suggestion.Id" />
+                                                        <button type="submit" class="btn btn-sm btn-link p-0">Undo rejection</button>
+                                                    </form>
+                                                }
+                                            </li>
+                                        }
+                                    </ul>
+                                </details>
                             }
                             @if (canChange)
                             {

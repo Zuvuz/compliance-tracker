@@ -116,6 +116,42 @@ namespace ComplianceTracker.Domain.Organizations
             }
         }
 
+        // ---------------------------------------------------------- US-145: a rejection holds until what was judged changes
+
+        // R1: the fingerprint of both sides when it was rejected ("item|requirement"); null for rejections before US-145
+        public string? RejectedFingerprint { get; private set; }
+
+        // R4: on a suggestion that comes back, the earlier rejection and what changed, e.g. "Rejected before by Bo …"
+        public string? EarlierRejection { get; private set; }
+
+        public void JudgedOn(string fingerprint)
+        {
+            if (Status != SuggestionStatus.Rejected)
+            {
+                throw new DomainException("Only a rejection keeps what was judged");
+            }
+
+            RejectedFingerprint = fingerprint;
+        }
+
+        // R2, R7: blocks the pair while neither side changed; a rejection without a fingerprint holds until it gets one
+        public bool StillRejects(string currentFingerprint)
+            => Status == SuggestionStatus.Rejected && (RejectedFingerprint is null || RejectedFingerprint == currentFingerprint);
+
+        // R6: a person takes the rejection back
+        public void UndoRejection()
+        {
+            if (Status != SuggestionStatus.Rejected)
+            {
+                throw new DomainException("Only a rejected suggestion can be taken back");
+            }
+
+            Status = SuggestionStatus.RejectionUndone;
+        }
+
+        public void NoteEarlierRejection(string? note)
+            => EarlierRejection = string.IsNullOrWhiteSpace(note) ? null : note.Length <= 300 ? note : note[..300];
+
         private void EnsurePending()
         {
             if (!IsPending)

@@ -687,6 +687,25 @@ namespace ComplianceTracker.Web.Controllers
                 ? RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence })
                 : RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
 
+        // POST /Projects/UndoEvidenceRejection, UndoStoryRejection: US-145 R6, the pair can be suggested again
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
+        public async Task<IActionResult> UndoEvidenceRejection(Guid projectId, Guid suggestionId, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
+        {
+            await evidence.UndoRejectionAsync(projectId, suggestionId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> UndoStoryRejection(Guid projectId, Guid suggestionId, string? sub, [FromServices] Application.Ai.MappingSuggestionService mappings, CancellationToken cancellationToken)
+        {
+            await mappings.UndoRejectionAsync(projectId, suggestionId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
         // POST /Projects/AskTheAi: US-106 R1–R3, about one requirement
         [HttpPost]
         [ValidateAntiForgeryToken]

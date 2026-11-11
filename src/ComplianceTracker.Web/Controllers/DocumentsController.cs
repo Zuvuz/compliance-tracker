@@ -26,7 +26,7 @@ namespace ComplianceTracker.Web.Controllers
             var view = await _service.ViewAsync(cancellationToken);
             return view is null
                 ? RedirectToAction("Index", "Projects")
-                : View(view with { Suggestions = await _suggestions.PendingAsync(cancellationToken) }); // US-136 R2
+                : View(view with { Suggestions = await _suggestions.PendingAsync(cancellationToken), Rejected = await _suggestions.RejectedAsync(cancellationToken) }); // US-136 R2, US-145
         }
 
         // POST /Documents/Upload: R1
@@ -123,6 +123,16 @@ namespace ComplianceTracker.Web.Controllers
             Guid suggestionId, Domain.Mappings.RejectionReason? reason, string? comment, CancellationToken cancellationToken)
         {
             await _suggestions.RejectAsync(suggestionId, reason, comment, cancellationToken);
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST /Documents/UndoRejection: US-145 R6, the pair can be suggested again
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> UndoRejection(Guid suggestionId, CancellationToken cancellationToken)
+        {
+            await _suggestions.UndoRejectionAsync(suggestionId, cancellationToken);
             return RedirectToAction(nameof(Index));
         }
 

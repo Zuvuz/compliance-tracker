@@ -45,7 +45,9 @@ namespace ComplianceTracker.Application.Compliance
             // The requirements of the versions the project follows now; links to others stay as history
             var requirements = compliance.Frameworks.SelectMany(f => f.Requirements).ToDictionary(r => r.Requirement.Id);
             var links = await _evidence.ListActiveLinksAsync(project.Id, cancellationToken);
-            var pending = (await _suggestions.ListAsync(project.Id, cancellationToken)).Where(s => s.IsPending).ToList();
+            var all = await _suggestions.ListAsync(project.Id, cancellationToken);
+            var pending = all.Where(s => s.IsPending).ToList();
+            var rejected = all.Where(s => s.Status == SuggestionStatus.Rejected).ToList(); // US-145 R6
             var today = _clock.Today();
 
             // US-146: the stories evidence is linked to, the AI's pending story suggestions, and the open risks
@@ -71,7 +73,9 @@ namespace ComplianceTracker.Application.Compliance
                 {
                     Stories = storyLinks.Where(l => l.EvidenceId == e.Id).Select(l => new LinkedStory(l, stories[l.WorkItemId])).ToList(),
                     StorySuggestions = storySuggestions.Where(s => s.EvidenceId == e.Id).OrderByDescending(s => s.Score)
-                        .Select(s => new SuggestedStory(s, stories[s.WorkItemId])).ToList()
+                        .Select(s => new SuggestedStory(s, stories[s.WorkItemId])).ToList(),
+                    Rejected = rejected.Where(s => s.EvidenceId == e.Id && requirements.ContainsKey(s.RequirementId))
+                        .OrderByDescending(s => s.DecidedAt).Select(s => new SuggestedRequirement(s, requirements[s.RequirementId].Requirement)).ToList()
                 })
                 .Select(row => row with { Trace = EvidenceTraces.For(row, compliance, risks) })
                 .ToList();
@@ -91,6 +95,9 @@ namespace ComplianceTracker.Application.Compliance
         // US-146 R5, R6: the stories the evidence shows are done, and the AI's pending story suggestions
         public IReadOnlyList<LinkedStory> Stories { get; init; } = [];
         public IReadOnlyList<SuggestedStory> StorySuggestions { get; init; } = [];
+
+        // US-145 R6: rejected requirement suggestions, so a person can take one back
+        public IReadOnlyList<SuggestedRequirement> Rejected { get; init; } = [];
 
         // US-146 R2: the thread the evidence is part of
         public EvidenceTrace Trace { get; init; } = EvidenceTrace.Empty;

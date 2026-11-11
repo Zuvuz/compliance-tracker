@@ -116,6 +116,11 @@
                             <li class="document-suggestion border-start border-3 border-info ps-2 my-1" data-code="@suggestion.RequirementCode" data-framework="@entry.Framework">
                                 <span class="small"><strong>@entry.Framework @suggestion.RequirementCode</strong> @entry.Title
                                     <span class="text-muted">· score @suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span></span>
+                                @if (suggestion.EarlierRejection is { } earlier)
+                                {
+                                    @* US-145 R4 *@
+                                    <div class="small text-muted earlier-rejection">@earlier</div>
+                                }
                                 @if (Model.CanManage)
                                 {
                                     <div class="d-flex flex-wrap gap-2 mt-1">
@@ -141,6 +146,28 @@
                         }
                     </ul>
                 </div>
+            }
+            @if (Model.Rejected.TryGetValue(document.Id, out var rejected))
+            {
+                @* US-145 R6: a rejection can be taken back *@
+                <details class="small mt-1 rejected-document-suggestions">
+                    <summary class="text-muted">Rejected suggestions (@rejected.Count)</summary>
+                    <ul class="list-unstyled mb-0">
+                        @foreach (var no in rejected)
+                        {
+                            <li class="rejected-suggestion d-flex flex-wrap align-items-center gap-1" data-code="@no.RequirementCode">
+                                <span>@no.RequirementCode · @no.RejectionReason</span>
+                                @if (Model.CanManage)
+                                {
+                                    <form asp-action="UndoRejection" method="post" class="undo-rejection">
+                                        <input type="hidden" name="suggestionId" value="@no.Id" />
+                                        <button type="submit" class="btn btn-sm btn-link p-0">Undo rejection</button>
+                                    </form>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </details>
             }
             @if (Model.CanManage)
             {

@@ -3418,6 +3418,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<string>("EarlierRejection")
+                        .HasColumnType("text");
+
                     b.Property<string>("EmbeddingModel")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -3447,6 +3450,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<string>("RationaleModel")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("RejectedFingerprint")
+                        .HasColumnType("text");
 
                     b.Property<string>("RejectionReason")
                         .HasMaxLength(50)
@@ -3546,6 +3552,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<string>("EarlierRejection")
+                        .HasColumnType("text");
+
                     b.Property<string>("EmbeddingModel")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -3562,6 +3571,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.Property<int>("Rank")
                         .HasColumnType("integer");
+
+                    b.Property<string>("RejectedFingerprint")
+                        .HasColumnType("text");
 
                     b.Property<string>("RejectionReason")
                         .HasMaxLength(50)
@@ -3704,6 +3716,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<string>("EarlierRejection")
+                        .HasColumnType("text");
+
                     b.Property<string>("EmbeddingModel")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -3730,6 +3745,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<string>("RationaleModel")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("RejectedFingerprint")
+                        .HasColumnType("text");
 
                     b.Property<string>("RejectionReason")
                         .HasMaxLength(40)
@@ -4000,6 +4018,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("DocumentId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("EarlierRejection")
+                        .HasColumnType("text");
+
                     b.Property<string>("EmbeddingModel")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -4021,6 +4042,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.Property<int>("Rank")
                         .HasColumnType("integer");
+
+                    b.Property<string>("RejectedFingerprint")
+                        .HasColumnType("text");
 
                     b.Property<string>("RejectionReason")
                         .HasMaxLength(50)
@@ -5001,6 +5025,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<string>("EarlierRejection")
+                        .HasColumnType("text");
+
                     b.Property<string>("EmbeddingModel")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -5008,6 +5035,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("RejectedFingerprint")
+                        .HasColumnType("text");
 
                     b.Property<string>("RejectionReason")
                         .HasMaxLength(50)
