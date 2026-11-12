@@ -102,7 +102,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task ThenTheFirstAuditIsCorrected(string project)
         {
             await OpenAsync(project);
-            Assert.NotNull(_web.Page!.QuerySelectorAll("#audits li.audit").Last().QuerySelector(".audit-corrected"));
+            // Both may have the same date and time, so the order on the page does not tell which is first
+            Assert.Single(_web.Page!.QuerySelectorAll("#audits li.audit"), a => a.QuerySelector(".audit-corrected") is not null);
         }
 
         [Then("the project {string} has no audits")]
