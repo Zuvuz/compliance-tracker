@@ -1354,6 +1354,25 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Porte, der blokerer.
   - Godkendelse af en anden person (four-eyes som US-135).
 
+### B90 – Gaten før Released (US-072)
+
+- **Beslutning:**
+  - **Gaten:** før et produkt går til Released, viser Overview gaten "Ready for release" med fem tjek:
+    - **Dækning:** hvert gældende krav er dækket. Anbefalinger tæller ikke (US-143).
+    - **Evidens:** hvert dækket krav har gyldig evidens.
+    - **Fund:** der er ingen åbne critical- eller high-fund fra scanninger, og der er mindst én scanning.
+    - **SBOM:** der er uploadet en SBOM (US-079).
+    - **Support:** der er en slutdato for support (US-025).
+  - **Antal:** hvert tjek viser, hvor meget der mangler, fx "3 requirements without evidence", og linker til, hvor det rettes.
+  - **Som i B89:** gaten blokerer ikke, men kræver en begrundelse, som logges med faseskiftet.
+  - **Rækkefølge:** gaten gælder også, når et projekt springer direkte fra Planning til Released. Domænets egne regler kommer først, fx "Set the support end date before release". Gaten tjekkes derefter, og intet gemmes, hvis den afviser.
+  - En supportdato, der sendes med selve frigivelsen, tæller som opfyldt.
+  - "Not available yet" fra issuet bruges ikke, fordi scanninger og SBOM nu findes.
+- **Begrundelse:** CRA kræver, at et produkt ikke markedsføres med kendte udnyttelige sårbarheder, at komponenterne er kendt, og at dokumentationen er på plads. Gaten samler det ét sted, lige før det gælder.
+- **Fravalgt:**
+  - Selve overensstemmelsesvurderingen og CE-mærkning.
+  - At gaten blokerer.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

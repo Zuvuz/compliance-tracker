@@ -161,12 +161,14 @@ namespace ComplianceTracker.Application.Projects
             }
 
             // US-071 R1–R3: a gate between the phases warns; moving on with a check not met needs a reason
+            // US-072: the release gate, with a support end date sent in the same step
             var (ownOrganization, _) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
-            var gate = await _gates.ForAsync(ownOrganization, project, phase, cancellationToken);
-            var reason = gate?.Pass(gateReason);
+            var gate = project.IsClosed ? null : await _gates.ForAsync(ownOrganization, project, phase, cancellationToken, supportEndsOn);
 
+            // The domain's own rules come first (e.g. "Set the support end date before release"); nothing is saved if the
+            // gate then refuses
             await ApplyPhaseAsync(project, phase, supportEndsOn, supportReason, today, null, null, null, null, cancellationToken,
-                describe: gate is null ? null : change => gate.Describe(change, reason));
+                describe: gate is null ? null : change => gate.Describe(change, gate.Pass(gateReason)));
             return true;
         }
 
