@@ -53,6 +53,9 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<Domain.Scanning.Scan> Scans => Set<Domain.Scanning.Scan>();
         public DbSet<Domain.Scanning.ScanFile> ScanFiles => Set<Domain.Scanning.ScanFile>();
         public DbSet<Domain.Scanning.Finding> Findings => Set<Domain.Scanning.Finding>();
+        public DbSet<Domain.Audits.Audit> Audits => Set<Domain.Audits.Audit>(); // US-134
+        public DbSet<Domain.Audits.AuditFinding> AuditFindings => Set<Domain.Audits.AuditFinding>();
+        public DbSet<Domain.Audits.AuditReportFile> AuditReportFiles => Set<Domain.Audits.AuditReportFile>();
         public DbSet<Domain.Scanning.Sbom> Sboms => Set<Domain.Scanning.Sbom>(); // US-079
         public DbSet<Domain.Scanning.SbomComponent> SbomComponents => Set<Domain.Scanning.SbomComponent>();
         public DbSet<Domain.Scanning.SbomFile> SbomFiles => Set<Domain.Scanning.SbomFile>();

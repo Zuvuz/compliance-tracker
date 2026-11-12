@@ -203,6 +203,152 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("ApprovalRequests", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Audits.Audit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AuditorCompany")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("AuditorName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("CertificateIssuer")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("CertificateNumber")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateOnly?>("CertificateValidFrom")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("CertificateValidTo")
+                        .HasColumnType("date");
+
+                    b.Property<Guid?>("CorrectsAuditId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("HeldOn")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("RecordedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RecordedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ReportFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("ReportSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Result")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrectsAuditId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("RecordedById");
+
+                    b.ToTable("Audits", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Audits.AuditFinding", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AuditId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CloseReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ClosedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("DueOn")
+                        .HasColumnType("date");
+
+                    b.Property<Guid?>("EvidenceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuditId");
+
+                    b.HasIndex("ClosedById");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("AuditFindings", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Audits.AuditReportFile", b =>
+                {
+                    b.Property<Guid>("AuditId")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("AuditId");
+
+                    b.ToTable("AuditReportFiles", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Feedback.Feedback", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6020,6 +6166,55 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Audits.Audit", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Audits.Audit", null)
+                        .WithMany()
+                        .HasForeignKey("CorrectsAuditId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("RecordedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Audits.AuditFinding", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Audits.Audit", null)
+                        .WithMany("Findings")
+                        .HasForeignKey("AuditId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ClosedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Audits.AuditReportFile", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Audits.Audit", null)
+                        .WithOne()
+                        .HasForeignKey("ComplianceTracker.Domain.Audits.AuditReportFile", "AuditId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Feedback.Feedback", b =>
                 {
                     b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
@@ -7185,6 +7380,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ComplianceTracker.Infrastructure.Persistence.SealedReportFile", "SigningId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Audits.Audit", b =>
+                {
+                    b.Navigation("Findings");
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Frameworks.Framework", b =>

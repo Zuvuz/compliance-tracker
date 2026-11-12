@@ -19,6 +19,7 @@ Feature: No organisation can reach another organisation's data
     And I have added the action "Phishing training" to the risk "Phishing"
     And "Acme Portal" has a "Trivy" scan with the findings "CVE-2026-1111" and "CVE-2026-2222"
     And I upload the CycloneDX SBOM "sbom.cdx.json" with 3 components for version "2.1.0"
+    And an audit of "Acme Portal" found "Access reviews not documented" for "Anna" due "2026-12-31"
     And I import the risks file "risks.csv" into "Acme Portal" with the rows
       | Title        | Likelihood | Impact |
       | Old firmware | 2          | 3      |

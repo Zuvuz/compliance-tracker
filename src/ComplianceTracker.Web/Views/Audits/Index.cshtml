@@ -1,0 +1,147 @@
+@* US-134: the audits of a project, or of the organisation (its area), with their findings and certificates.
+   Ids used by the tests: #audit-recorded, #record-audit (form), #audits with li.audit (data-scope) holding .audit-summary,
+   .audit-certificate, .audit-corrected and li.audit-finding (data-title) with .finding-state and form.close-finding (reason);
+   #organisation-audits; #certificate-badges .certificate-badge. *@
+@using ComplianceTracker.Domain.Audits
+@model AuditsViewModel
+@{
+    var project = Model.Project;
+    var overview = Model.Overview;
+    var canRecord = !project.IsClosed && await Permissions.CanAsync(Permission.DecideCompliance);
+    var canClose = !project.IsClosed && await Permissions.CanAsync(Permission.LinkWork);
+    var name = project.IsOrganisationArea ? $"the organisation {Model.Organization.Name}" : project.Name;
+    ViewData["Title"] = $"Audits – {(project.IsOrganisationArea ? Model.Organization.Name : project.Name)}";
+    string NameOf(Guid id) => Model.Organization.Users.FirstOrDefault(u => u.Id == id)?.Name ?? "Unknown";
+}
+
+<p class="mb-1"><a asp-controller="Projects" asp-action="Details" asp-route-id="@project.Id">← @(project.IsOrganisationArea ? "Organisation" : project.Name)</a></p>
+<h1 class="h4">Audits of @name</h1>
+<p class="small text-muted">Internal and external audits, their findings and any certificate (ISO/IEC 27001 9.2 and 10.2, CRA Art. 32). A recorded audit is never changed; a mistake is corrected by recording a new audit that refers to it.</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+@if (TempData["AuditRecorded"] is string recorded)
+{
+    <div class="alert alert-success py-2" id="audit-recorded" role="status">Recorded: @recorded</div>
+}
+
+@if (overview.Badges.Count > 0)
+{
+    <p id="certificate-badges">
+        @foreach (var badge in overview.Badges)
+        {
+            <span class="badge @(badge.State switch { CertificateState.Valid => "text-bg-success", CertificateState.ExpiringSoon => "text-bg-warning", _ => "text-bg-danger" }) certificate-badge me-1">@badge.Text</span>
+        }
+    </p>
+}
+
+<ul class="list-unstyled" id="audits">
+    @if (overview.Own.Count == 0)
+    {
+        <li class="text-muted" id="no-audits">No audits recorded yet</li>
+    }
+    @foreach (var audit in overview.Own)
+    {
+        var correctedBy = overview.CorrectedBy(audit);
+        <li class="audit card mb-2 @(correctedBy is null ? "" : "opacity-50")" data-scope="@audit.Scope">
+            <div class="card-body small">
+                <div class="fw-semibold audit-summary">@audit.Kind audit of @audit.Scope · @audit.HeldOn.ToString("dd-MM-yyyy") · @audit.Result</div>
+                <div class="text-muted">By @audit.AuditorName@(audit.AuditorCompany is { } company ? $", {company}" : "") · recorded by @NameOf(audit.RecordedById) ·
+                    <a asp-action="Report" asp-route-projectId="@project.Id" asp-route-auditId="@audit.Id">@audit.ReportFileName</a> <span title="@audit.ReportSha256">(SHA-256 @audit.ReportSha256[..8]…)</span></div>
+                @if (audit.HasCertificate)
+                {
+                    <div class="audit-certificate">Certificate @audit.CertificateNumber from @audit.CertificateIssuer, valid @audit.CertificateValidFrom?.ToString("dd-MM-yyyy") – @audit.CertificateValidTo?.ToString("dd-MM-yyyy")</div>
+                }
+                @if (correctedBy is not null)
+                {
+                    <div class="audit-corrected">Corrected by the record of @correctedBy.RecordedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</div>
+                }
+                @if (audit.Findings.Count > 0)
+                {
+                    <ul class="list-unstyled mt-2 mb-0">
+                        @foreach (var finding in audit.Findings)
+                        {
+                            <li class="audit-finding border-start border-3 ps-2 my-1 @(finding.IsOpen ? finding.IsOverdue(overview.Today) ? "border-danger" : "border-warning" : "border-success")" data-title="@finding.Title">
+                                <span>@finding.Title</span>
+                                <span class="text-muted">· @NameOf(finding.OwnerId) · due @finding.DueOn.ToString("dd-MM-yyyy")</span>
+                                <span class="finding-state">@(finding.IsOpen ? finding.IsOverdue(overview.Today) ? "Overdue" : "Open" : $"Closed: {finding.CloseReason}")</span>
+                                @if (finding.IsOpen && canClose && correctedBy is null)
+                                {
+                                    <form asp-action="CloseFinding" method="post" class="d-flex flex-wrap gap-1 mt-1 close-finding">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="findingId" value="@finding.Id" />
+                                        <input name="reason" maxlength="1000" class="form-control form-control-sm w-auto flex-grow-1" placeholder="What was done" aria-label="Reason for closing" required />
+                                        <button type="submit" class="btn btn-sm btn-outline-success">Close finding</button>
+                                    </form>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </li>
+    }
+</ul>
+
+@if (overview.Organisation.Count > 0)
+{
+    <h2 class="h6 mt-3">The organisation's audits</h2>
+    <ul class="list-unstyled small" id="organisation-audits">
+        @foreach (var audit in overview.Organisation)
+        {
+            <li class="audit" data-scope="@audit.Scope">@audit.Kind audit of @audit.Scope · @audit.HeldOn.ToString("dd-MM-yyyy") · @audit.Result@(audit.HasCertificate ? $" · certificate {audit.CertificateNumber} to {audit.CertificateValidTo:dd-MM-yyyy}" : "")</li>
+        }
+    </ul>
+}
+
+@if (canRecord)
+{
+    <h2 class="h6 mt-4">Record an audit</h2>
+    <form asp-action="Record" method="post" enctype="multipart/form-data" id="record-audit" class="card card-body small">
+        <input type="hidden" name="projectId" value="@project.Id" />
+        <div class="row g-2">
+            <div class="col-md-3"><label class="form-label">Kind</label>
+                <select name="kind" class="form-select form-select-sm"><option value="External">External</option><option value="Internal">Internal</option></select></div>
+            <div class="col-md-5"><label class="form-label">Scope</label>
+                <input name="scope" maxlength="200" class="form-control form-control-sm" placeholder="e.g. ISO/IEC 27001:2022" required /></div>
+            <div class="col-md-4"><label class="form-label">Date</label>
+                <input type="date" name="heldOn" class="form-control form-control-sm" required /></div>
+            <div class="col-md-4"><label class="form-label">Auditor</label>
+                <input name="auditorName" maxlength="200" class="form-control form-control-sm" required /></div>
+            <div class="col-md-4"><label class="form-label">Company</label>
+                <input name="auditorCompany" maxlength="200" class="form-control form-control-sm" placeholder="e.g. Bureau Veritas" /></div>
+            <div class="col-md-4"><label class="form-label">Result</label>
+                <select name="result" class="form-select form-select-sm"><option value="Passed">Passed</option><option value="PassedWithRemarks">Passed with remarks</option><option value="Failed">Failed</option></select></div>
+            <div class="col-12"><label class="form-label">The auditor's signed report</label>
+                <input type="file" name="file" accept=".pdf,.png,.jpg,.jpeg,.txt,.md" class="form-control form-control-sm" required /></div>
+            <div class="col-12 fw-semibold mt-2">Certificate (if the audit gave one)</div>
+            <div class="col-md-3"><input name="certificateNumber" maxlength="200" class="form-control form-control-sm" placeholder="Number" aria-label="Certificate number" /></div>
+            <div class="col-md-3"><input name="certificateIssuer" maxlength="200" class="form-control form-control-sm" placeholder="Issuer" aria-label="Certificate issuer" /></div>
+            <div class="col-md-3"><input type="date" name="certificateValidFrom" class="form-control form-control-sm" aria-label="Valid from" /></div>
+            <div class="col-md-3"><input type="date" name="certificateValidTo" class="form-control form-control-sm" aria-label="Valid to" /></div>
+            <div class="col-12 fw-semibold mt-2">Findings</div>
+            @for (var i = 0; i < 5; i++)
+            {
+                <div class="col-md-6"><input name="findingTitle" maxlength="200" class="form-control form-control-sm" placeholder="Finding @(i + 1)" aria-label="Finding @(i + 1)" /></div>
+                <div class="col-md-3"><select name="findingOwner" class="form-select form-select-sm" aria-label="Owner of finding @(i + 1)">
+                    @foreach (var member in Model.Organization.Members)
+                    {
+                        <option value="@member.Id">@member.Name</option>
+                    }
+                </select></div>
+                <div class="col-md-3"><input type="date" name="findingDue" class="form-control form-control-sm" aria-label="Deadline of finding @(i + 1)" /></div>
+            }
+            @if (overview.Own.Count > 0)
+            {
+                <div class="col-12 mt-2"><label class="form-label">Corrects an earlier record (optional)</label>
+                    <select name="correctsAuditId" class="form-select form-select-sm">
+                        <option value="">No, a new audit</option>
+                        @foreach (var audit in overview.Own.Where(a => overview.CorrectedBy(a) is null))
+                        {
+                            <option value="@audit.Id">@audit.Scope · @audit.HeldOn.ToString("dd-MM-yyyy")</option>
+                        }
+                    </select></div>
+            }
+        </div>
+        <div><button type="submit" class="btn btn-primary btn-sm mt-3">Record audit</button></div>
+    </form>
+}

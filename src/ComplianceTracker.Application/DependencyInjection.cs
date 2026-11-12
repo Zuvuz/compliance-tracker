@@ -54,6 +54,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<Projects.PhaseGates>(); // US-071
             services.AddScoped<ActivityLog.ActivityLogExportService>(); // US-055
             services.AddScoped<Reports.StatementOfApplicabilityQueries>(); // US-053
+            services.AddScoped<Audits.AuditService>(); // US-134
             services.AddScoped<RiskService>();
             services.AddScoped<RiskImportService>(); // US-049
             services.AddScoped<MemberService>();

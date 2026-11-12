@@ -1430,6 +1430,24 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At organisationen sætter "not applicable" for hele organisationen et sted for sig. Organisationsområdet kan allerede markere sine egne kontroller.
   - En manuel implementeringsstatus.
 
+### B94 – Audits, fund og certifikater (US-134)
+
+- **Beslutning:**
+  - **Hvem registrerer:** compliance-ansvarlige (DecideCompliance) registrerer en afholdt audit. De angiver art, scope, dato, auditor, resultat og uploader auditorens underskrevne rapport, som gemmes med SHA-256. Den eksterne auditor får intet eget login til det; læsning er Auditor-rollen (US-010).
+  - **Ingen four-eyes:** en registreret audit ændres aldrig og rettes kun ved en ny registrering, der henviser til den. Den gamle vises som "Corrected by …". Derfor tilføjer en anden person kun lidt.
+  - **Organisationens audits** registreres på organisationsområdet. Dens certifikat vises også i hvert projekts header.
+  - **Certifikat:** et badge, fx "ISO/IEC 27001 certified until 30-06-2027".
+    - 90 dage før udløb står det under "Needs attention" ("Certificate DK-1234 expires in 48 days").
+    - Efter udløb siger badget "expired".
+    - Pr. standard vises det nyeste certifikat, der ikke er rettet.
+  - **Fund:** et fund har en ejer og en frist og står under "Needs attention", til det lukkes. Det lukkes én gang med en begrundelse, som alle med LinkWork kan give. Evidens kan knyttes til, men kræves ikke.
+  - **Ingen log ved udløb:** "CertificateExpiring" logges ikke, fordi der intet sker på det tidspunkt. Det ses under "Needs attention".
+  - Registrering og lukning logges som `AuditRecorded` og `AuditFindingClosed`.
+- **Begrundelse:** ISO 27001 9.2 og 10.2 kræver, at audits og deres fund følges op, og CRA Art. 32 kan kræve et bemyndiget organs vurdering. Med auditorens egen rapport og en uforanderlig registrering kan man stole på historikken.
+- **Fravalgt:**
+  - Auditorens eget login og signatur i trackeren.
+  - Certifikatet i PDF-rapporterne (US-131). Det kommer i auditpakken (US-076).
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

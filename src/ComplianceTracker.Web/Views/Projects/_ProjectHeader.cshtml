@@ -18,6 +18,7 @@
     @* US-142: the organisation area: no lifecycle, no support period, nothing to edit *@
     <h1 class="mb-1" id="organisation-area-title">Organisation <span class="text-muted fs-4" id="project-name">@Model.Organization?.Name</span></h1>
     <p class="text-muted mb-3" id="project-intended-purpose">The frameworks the whole organisation follows, such as NIS2.</p>
+    <partial name="_CertificateBadges" model="Model" />
 }
 else
 {
@@ -29,6 +30,7 @@ else
             <span id="project-phase" class="badge @phaseBadge fs-6 align-middle">@project.Phase</span>
         </h1>
         <p class="text-muted mb-1" id="project-intended-purpose">@project.IntendedPurpose</p>
+        <partial name="_CertificateBadges" model="Model" />
         @if (project.IsClosed && project.RetainUntil is { } keptUntil)
         {
             @* US-074 R1, R5 *@

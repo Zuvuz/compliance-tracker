@@ -1,0 +1,13 @@
+@* US-134 R3: a badge per valid (or expired) certificate of the project or the organisation; #certificate-badges *@
+@using ComplianceTracker.Domain.Audits
+@model ProjectDetailsViewModel
+@if (Model.Audits is { } audits && audits.Badges.Count > 0)
+{
+    <p class="mb-1" id="certificate-badges">
+        @foreach (var badge in audits.Badges)
+        {
+            <a asp-controller="Audits" asp-action="Index" asp-route-projectId="@Model.Project.Id"
+               class="badge text-decoration-none @(badge.State switch { CertificateState.Valid => "text-bg-success", CertificateState.ExpiringSoon => "text-bg-warning", _ => "text-bg-danger" }) certificate-badge me-1">@badge.Text</a>
+        }
+    </p>
+}

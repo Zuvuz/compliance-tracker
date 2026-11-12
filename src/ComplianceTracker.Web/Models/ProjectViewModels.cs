@@ -313,6 +313,9 @@ namespace ComplianceTracker.Web.Models
         // US-053: whether the organisation has ISO/IEC 27001, for the Statement of Applicability on the area's Reports tab
         public bool HasIso27001 { get; init; }
 
+        // US-134: the project's and the organisation's audits, for the header's certificate badge and the Overview
+        public Application.Audits.AuditOverview? Audits { get; init; }
+
         // US-107 R3: the organisation's GitHub Projects to choose from
         public IReadOnlyList<Application.WorkItems.GitHubProjectInfo> GitHubProjectChoices { get; init; } = [];
         public string? RiskStatusFilter { get; init; }
@@ -405,4 +408,7 @@ namespace ComplianceTracker.Web.Models
 
     // US-049: the risk import page; Preview is null until a file is uploaded
     public record RiskImportViewModel(Domain.Projects.Project Project, Application.Risks.RiskImportPreview? Preview);
+
+    // US-134: the Audits page
+    public record AuditsViewModel(Domain.Projects.Project Project, Domain.Organizations.Organization Organization, Application.Audits.AuditOverview Overview);
 }
