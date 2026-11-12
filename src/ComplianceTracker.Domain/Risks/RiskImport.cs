@@ -39,7 +39,10 @@ namespace ComplianceTracker.Domain.Risks
                 throw new DomainException("The file is larger than 1 MB");
             }
 
-            var name = Path.GetFileName(string.IsNullOrWhiteSpace(fileName) ? "risks.csv" : fileName.Trim());
+            // Only the file's own name, also when a browser sends a Windows path (Path.GetFileName on Linux keeps the backslashes)
+            var given = string.IsNullOrWhiteSpace(fileName) ? "risks.csv" : fileName.Trim().Replace('\\', '/');
+            var name = given[(given.LastIndexOf('/') + 1)..];
+            name = name.Length == 0 ? "risks.csv" : name;
             return new RiskImport
             {
                 ProjectId = projectId,
