@@ -1292,6 +1292,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At afvisninger udløber efter en fast tid: det siger intet om, hvorvidt noget har ændret sig.
   - At gemme hele teksten for at vise forskellen: fingeraftrykket er nok til at se, at noget har ændret sig, og gemmer ingen fortrolig tekst to gange.
 
+### B86 – Sårbarhedskontakt pr. projekt (US-103)
+
+- **Beslutning:**
+  - Hvert projekt har én adresse til rapporter om sårbarheder i produktet (CRA Art. 13(17)).
+  - **Standarden beregnes og gemmes ikke:** organisationens Compliance Manager (den første efter navn), ellers den første Admin. Fjernes personen, overtager den næste af sig selv.
+  - En adresse kan sættes i hånden, fx `security@acme.dk`. Et tomt felt går tilbage til standarden.
+  - Adressen skal være én gyldig e-mail på højst 320 tegn.
+  - Overview viser adressen og hvor den kommer fra, fx "anna@acme.dk (Compliance Manager)".
+  - Ændringen logges som `ProjectUpdated` med gammel og ny værdi.
+- **Begrundelse:** CRA kræver ét kontaktpunkt. Når standarden beregnes, er den altid en person, der stadig er i organisationen.
+- **Fravalgt:**
+  - At modtage eller videresende rapporter i trackeren.
+  - En `security.txt` pr. produkt.
 ### B87 – SBOM pr. produktversion (US-079)
 
 - **Beslutning:**

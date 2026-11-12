@@ -35,6 +35,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
 
             // US-025: the support period
             builder.Property(p => p.SupportPeriodReason).HasMaxLength(Project.MaxSupportReasonLength);
+            builder.Property(p => p.VulnerabilityContactEmail).HasMaxLength(Project.MaxEmailLength); // US-103
 
             // Belongs to exactly one organisation (R5).
             // Restrict: an organisation cannot be deleted while it has projects.

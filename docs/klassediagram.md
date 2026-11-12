@@ -237,7 +237,17 @@ classDiagram
     +ChangeRequirementMethods(methods: RequirementMethods) ProjectChange?
     +EndSupport(lastPlacedOnMarket: DateOnly, keepUntil: DateOnly?, today: DateOnly) ProjectChange
     +EnsureMayBeRemoved(today: DateOnly)
+    -vulnerabilityContactEmail: string?
+    +SetVulnerabilityContact(email: string?, defaultContact: VulnerabilityContact) ProjectChange?
   }
+  class VulnerabilityContact {
+    <<record>>
+    +Email: string?
+    +Source: string
+    +For(project: Project, members: User[])$ VulnerabilityContact
+    +Default(members: User[])$ VulnerabilityContact
+  }
+  Project ..> VulnerabilityContact : US-103
   class ProjectChange {
     <<record>>
     +Field: string

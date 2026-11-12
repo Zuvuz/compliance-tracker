@@ -1456,6 +1456,10 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             ViewData["ExcludedFromAiSharing"] = project.ExcludedFromAiSharing; // US-130
+            ViewData["VulnerabilityContactEmail"] = project.VulnerabilityContactEmail; // US-103
+            ViewData["VulnerabilityContactDefault"] = (await _organizations.MineAsync(cancellationToken)) is { } organization
+                ? VulnerabilityContact.Default(organization.Members).ToString()
+                : "";
             return View(EditProjectViewModel.From(project));
         }
 
@@ -1467,6 +1471,16 @@ namespace ComplianceTracker.Web.Controllers
             await _service.UpdateAsync(
                 model.Id, model.Name ?? "", model.Description, model.IntendedPurpose ?? "", model.Scope, cancellationToken, model.Version);
             return RedirectToAction(nameof(Details), new { id = model.Id }); // Post/Redirect/Get
+        }
+
+        // POST /Projects/SetVulnerabilityContact: US-103 R2–R4; an empty field goes back to the default
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Edit), IdFrom = "projectId")]
+        public async Task<IActionResult> SetVulnerabilityContact(Guid projectId, string? email, CancellationToken cancellationToken)
+        {
+            await _service.SetVulnerabilityContactAsync(projectId, email, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId });
         }
 
         // POST /Projects/SetAiSharing: US-130 R4

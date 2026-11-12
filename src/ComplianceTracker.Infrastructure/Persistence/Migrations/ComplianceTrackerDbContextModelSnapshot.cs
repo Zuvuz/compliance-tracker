@@ -4514,6 +4514,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
 
+                    b.Property<string>("VulnerabilityContactEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("OrganizationId")
