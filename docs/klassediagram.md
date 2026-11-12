@@ -1643,6 +1643,19 @@ classDiagram
   PhaseGates ..> ComplianceQueries : coverage and evidence (US-072)
   PhaseGates ..> IScanRepository : open findings
   PhaseGates ..> ISbomRepository : SBOM
+  class ActivityLogExportService {
+    +ExportAsync(query, scope, projectId, format) ActivityExportFile?
+    +Period(query, today)$ (DateOnly, DateOnly)
+    +Rows(entries, subjects, users)$ string[][]
+  }
+  class CsvFile {
+    <<static>>
+    +Write(header, rows)$ byte[]
+    +Cell(value: string)$ string
+  }
+  ActivityLogExportService ..> ActivityLogQueries : same filters (US-055)
+  ActivityLogExportService ..> CsvFile
+  ActivityLogExportService ..> IPdfWriter
   PhaseGate "1" *-- "1..*" GateCheck
   PhaseGates ..> PhaseGate : works out (US-071)
   ProjectService --> PhaseGates : before a phase change

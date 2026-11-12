@@ -52,6 +52,20 @@ namespace ComplianceTracker.Web.Controllers
                 projectFilter));
         }
 
+        // GET /Activity/Export?format=csv|pdf&...: US-055, the entries the same filters find; the last 90 days without dates
+        [HttpGet]
+        public async Task<IActionResult> Export(
+            string? format, string? q, string? from, string? to, string? group, string? user, string? project,
+            [FromServices] ActivityLogExportService export, CancellationToken cancellationToken)
+        {
+            var (query, parsed) = ActivityFilters.Parse(q, from, to, group, user, "oldest", null);
+            var ignored = parsed.ToList();
+            var (scope, projectId, _) = Project(project, ignored);
+            var file = await export.ExportAsync(query, scope, projectId,
+                string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase) ? ActivityExportFormat.Pdf : ActivityExportFormat.Csv, cancellationToken);
+            return file is null ? Forbid() : File(file.Content, file.ContentType, file.FileName); // R4: Admins and Auditors (US-102 R6)
+        }
+
         // R3: "none" = not about a project, a project's id = that project; anything else is ignored and said so
         private static (ActivityProjectScope Scope, Guid? ProjectId, string? Filter) Project(string? value, IList<string> ignored)
         {

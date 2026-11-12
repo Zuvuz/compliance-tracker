@@ -51,8 +51,17 @@ namespace ComplianceTracker.Application.ActivityLog
         }
 
         // One page of the organisation's entries, or null for a member who may not see them
-        public async Task<OrganizationActivity?> ForOrganizationAsync(
+        public Task<OrganizationActivity?> ForOrganizationAsync(
             ActivityLogQuery query, ActivityProjectScope scope, Guid? projectId, CancellationToken cancellationToken = default)
+            => SearchAsync(query, scope, projectId, null, cancellationToken);
+
+        // US-055: every entry the filters find, up to "take", oldest first is up to the caller (the query's sort)
+        public Task<OrganizationActivity?> AllAsync(
+            ActivityLogQuery query, ActivityProjectScope scope, Guid? projectId, int take, CancellationToken cancellationToken = default)
+            => SearchAsync(query, scope, projectId, take, cancellationToken);
+
+        private async Task<OrganizationActivity?> SearchAsync(
+            ActivityLogQuery query, ActivityProjectScope scope, Guid? projectId, int? take, CancellationToken cancellationToken)
         {
             if (!await CanSeeAllAsync(cancellationToken))
             {
@@ -78,8 +87,8 @@ namespace ComplianceTracker.Application.ActivityLog
                 query.UserId,
                 query.SystemOnly,
                 query.Sort,
-                (page - 1) * ActivityLogQuery.PageSize,
-                ActivityLogQuery.PageSize,
+                take is null ? (page - 1) * ActivityLogQuery.PageSize : 0,
+                take ?? ActivityLogQuery.PageSize,
                 // R1: the search also finds entries about a project, member or framework with that name
                 SubjectsNamed: named.Select(s => s.Id).ToList(),
                 // R3
