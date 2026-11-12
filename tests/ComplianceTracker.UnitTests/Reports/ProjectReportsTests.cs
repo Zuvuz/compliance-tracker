@@ -11,9 +11,11 @@ public class ProjectReportsTests
         // Arrange / Act
         var reports = ProjectReports.For(frameworkCount: 0, followsCra: false);
 
-        // Assert: R3, every report is still listed (R1)
-        Assert.Equal([ProjectReports.Traceability, ProjectReports.TechnicalDocumentation], reports.Select(r => r.Key));
-        Assert.All(reports, r => Assert.False(r.IsAvailable));
+        // Assert: R3, every report is still listed (R1); those made from frameworks say why they cannot be made.
+        // US-054: the risk assessment needs no framework.
+        Assert.Equal([ProjectReports.Traceability, ProjectReports.TechnicalDocumentation], reports.Select(r => r.Key).Take(2));
+        Assert.All(FromFrameworks(reports), r => Assert.False(r.IsAvailable));
+        Assert.True(reports.Single(r => r.Key == ProjectReports.RiskAssessment).IsAvailable);
         Assert.Equal("Add a framework to the project to make a traceability report", reports[0].Unavailable);
     }
 
@@ -46,7 +48,7 @@ public class ProjectReportsTests
         var reports = ProjectReports.For(frameworkCount: 0, followsCra: true);
 
         // Assert
-        Assert.All(reports, r => Assert.False(r.IsAvailable));
+        Assert.All(FromFrameworks(reports), r => Assert.False(r.IsAvailable));
     }
 
     [Fact]
@@ -56,8 +58,12 @@ public class ProjectReportsTests
         var reports = ProjectReports.For(compliance: null);
 
         // Assert
-        Assert.All(reports, r => Assert.False(r.IsAvailable));
+        Assert.All(FromFrameworks(reports), r => Assert.False(r.IsAvailable));
     }
+
+    // The reports that are made from the project's frameworks
+    private static IEnumerable<ProjectReport> FromFrameworks(IEnumerable<ProjectReport> reports)
+        => reports.Where(r => r.Key is ProjectReports.Traceability or ProjectReports.TechnicalDocumentation);
 
     [Fact]
     public void Every_report_says_who_it_is_for_and_its_format()
