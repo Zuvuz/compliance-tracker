@@ -29,10 +29,12 @@ namespace ComplianceTracker.Web.Diagnostics
     {
         public const string TooManyRequests = "Too many requests. Try again in a minute";
 
-        // R2, R3, R6: GETs, /health and static files are never limited; a form with a file is an upload
+        // R2, R3, R6: GETs, /health and static files are never limited; a form with a file is an upload.
+        // The pipeline's upload API (/api/…) has its own limit per token (US-122 R6), so it is left to that.
         public static RequestKind KindOf(string method, string path, string? contentType)
         {
-            if (!HttpMethods.IsPost(method) || path.StartsWith("/health", StringComparison.OrdinalIgnoreCase))
+            if (!HttpMethods.IsPost(method) || path.StartsWith("/health", StringComparison.OrdinalIgnoreCase)
+                || path.StartsWith("/api/", StringComparison.OrdinalIgnoreCase))
             {
                 return RequestKind.Free;
             }
