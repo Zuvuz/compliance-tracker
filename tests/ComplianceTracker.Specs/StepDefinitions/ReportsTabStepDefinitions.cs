@@ -36,6 +36,10 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public void ThenISeeTheReports(string first, string second)
             => Assert.Equal([first, second], Reports().Select(r => r.GetAttribute("data-title")!));
 
+        [Then("I see the reports {string}, {string}, {string} and {string}")]
+        public void ThenISeeFourReports(string first, string second, string third, string fourth)
+            => Assert.Equal([first, second, third, fourth], Reports().Select(r => r.GetAttribute("data-title")!));
+
         [Then("I see the reports {string}, {string} and {string}")]
         public void ThenISeeThreeReports(string first, string second, string third)
             => Assert.Equal([first, second, third], Reports().Select(r => r.GetAttribute("data-title")!));

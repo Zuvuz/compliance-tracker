@@ -195,8 +195,8 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I open the \"Reports\" tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 16
-    await testRunner.ThenAsync("I see the reports \"Traceability\", \"Technical documentation (draft)\" and \"Risk ass" +
-                        "essment\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("I see the reports \"Traceability\", \"Technical documentation (draft)\", \"Risk assess" +
+                        "ment\" and \"Audit package\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 17
     await testRunner.AndAsync("the \"Traceability\" report is for \"The team, an auditor or the management\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

@@ -1724,6 +1724,14 @@ classDiagram
   Audit --> Project
   Audit --> Audit : corrects (US-134 R4)
   AuditService ..> Audit
+  class AuditPackageService {
+    +CreateAsync(projectId, frameworks, from, to) ReportSnapshot
+    +Period(from, to, today)$ (DateOnly, DateOnly)
+    +Contents(...)$ string
+    +Zip(parts)$ byte[]
+  }
+  AuditPackageService ..> ReportFiles : the reports (US-076)
+  AuditPackageService ..> ReportSnapshot : kept as a locked report
   PhaseGate "1" *-- "1..*" GateCheck
   PhaseGates ..> PhaseGate : works out (US-071)
   ProjectService --> PhaseGates : before a phase change
