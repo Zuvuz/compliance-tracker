@@ -51,6 +51,10 @@ builder.Services
     .AddApplication()
     .AddInfrastructure();
 
+// US-139: the page a slow query was made for
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<ComplianceTracker.Infrastructure.Persistence.ICurrentRequestPath, ComplianceTracker.Web.Diagnostics.HttpRequestPath>();
+
 // Who is signed in: read from the sign-in cookie of the current request (US-029 R1),
 // or from the SignalR connection inside a hub call (US-018)
 builder.Services.AddHttpContextAccessor();
@@ -186,6 +190,18 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// US-139: how many database queries the request made, for the tests' limits and the debug log
+app.Use(async (context, next) =>
+{
+    await next();
+    var queries = context.RequestServices.GetService<ComplianceTracker.Infrastructure.Persistence.RequestQueryCounter>()?.Count ?? 0;
+    if (queries > 0)
+    {
+        context.RequestServices.GetRequiredService<ComplianceTracker.Infrastructure.Persistence.IQueryCountObserver>().Counted(context.Request.Path, queries);
+    }
+});
+
 app.UseRouting();
 
 app.UseAuthentication();   // who is the user?
