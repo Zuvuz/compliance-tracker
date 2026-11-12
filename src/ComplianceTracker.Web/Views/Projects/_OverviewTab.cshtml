@@ -384,6 +384,22 @@
             </div>
         </div>
 
+        @* US-103 R5: the vulnerability contact in use and where it comes from *@
+        @if (Model.Organization is { } contactOrganization)
+        {
+            var contact = VulnerabilityContact.For(project, contactOrganization.Members);
+            <div class="card mb-3" id="vulnerability-contact">
+                <div class="card-body small">
+                    <h2 class="h6 card-title">Vulnerability contact</h2>
+                    <p class="mb-1"><span id="vulnerability-contact-value" class="@(contact.Email is null ? "text-danger" : "")">@contact</span></p>
+                    @if (canChangePhase)
+                    {
+                        <a asp-action="Edit" asp-route-id="@project.Id" asp-fragment="project-vulnerability-contact">Change</a>
+                    }
+                </div>
+            </div>
+        }
+
         @* US-025: the support period (CRA Art. 13(8)); the end date can only move later (R3) *@
         @if (project.Phase == LifecyclePhase.Released || project.SupportEndsOn is not null)
         {

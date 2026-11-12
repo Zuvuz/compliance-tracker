@@ -283,6 +283,52 @@ namespace ComplianceTracker.Domain.Projects
             }
         }
 
+        // ---------------------------------------------------------- Vulnerability contact (US-103)
+
+        public const int MaxEmailLength = 320;
+
+        // R2: an address set by hand; null means the default person (VulnerabilityContact.Default)
+        public string? VulnerabilityContactEmail { get; private set; }
+
+        // R2–R4: a valid e-mail address, or empty to go back to the default. "defaultContact" names the default for the log.
+        // Returns the change, or null when nothing changed.
+        public ProjectChange? SetVulnerabilityContact(string? email, VulnerabilityContact defaultContact)
+        {
+            EnsureOpen();
+            var cleaned = string.IsNullOrWhiteSpace(email) ? null : email.Trim();
+            if (cleaned is not null && !IsEmail(cleaned))
+            {
+                throw new DomainException("Enter a valid e-mail address");
+            }
+
+            if (cleaned == VulnerabilityContactEmail)
+            {
+                return null;
+            }
+
+            var fallback = $"({defaultContact.Source})";
+            var change = new ProjectChange("Vulnerability contact", VulnerabilityContactEmail ?? fallback, cleaned ?? fallback);
+            VulnerabilityContactEmail = cleaned;
+            return change;
+        }
+
+        // R3: one address of at most 320 characters, with a name, an "@" and a domain with a dot
+        public static bool IsEmail(string value)
+        {
+            if (value.Length > MaxEmailLength || value.Any(char.IsWhiteSpace))
+            {
+                return false;
+            }
+
+            var at = value.LastIndexOf('@');
+            return at > 0
+                && value.IndexOf('@') == at
+                && value.IndexOf('.', at) > at + 1
+                && !value.EndsWith('.')
+                && System.Net.Mail.MailAddress.TryCreate(value, out var parsed)
+                && parsed.Address == value;
+        }
+
         // ---------------------------------------------------------- Support period (US-025)
 
         // R2: under five years after release needs a reason. R3: the date can only move later. Returns the change, or
