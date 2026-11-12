@@ -1305,6 +1305,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - At modtage eller videresende rapporter i trackeren.
   - En `security.txt` pr. produkt.
+### B87 – SBOM pr. produktversion (US-079)
+
+- **Beslutning:**
+  - **Formater:** CycloneDX JSON (1.4 eller nyere) og SPDX 2.3 JSON kan uploades på Scans-fanen. Formatet findes ud fra indholdet, med én importer pr. format som for scanninger (B36).
+  - **Pr. version:** en SBOM gælder én produktversion, fx "2.1.0". En ny SBOM for samme version erstatter den viste, og den gamle gemmes.
+  - **Komponenter:** hver komponent vises med navn, version, package URL og licens. Den samme komponent vises kun én gang, og listen kan søges.
+  - **Åbne fund:** en komponent markeres, når et åbent fund nævner dens navn som helt ord og dens version, sådan som Trivy skriver det ("Package: openssl", "Installed Version: 3.0.1"). En komponent, der ikke kan matches, markeres ikke.
+  - **Evidens:** en SBOM kan bruges som evidens, fx for CRA bilag I del II (1). Derfor er `.json` nu en tilladt evidenstype, og indholdet tjekkes som UTF-8-tekst.
+  - Importen logges som `SbomImported`.
+- **Begrundelse:** CRA kræver, at komponenterne er kendt og dokumenteret. Fund fra scanninger findes allerede i trackeren, så de kan vises ved komponenterne uden opslag i eksterne databaser.
+- **Fravalgt:**
+  - Opslag i OSV eller NVD: kun scanninger bruges.
+  - XML-formater: de kan komme senere som en ny importer.
+  - Tjek af licenser.
 
 ## Åbne spørgsmål til klassediagrammet
 

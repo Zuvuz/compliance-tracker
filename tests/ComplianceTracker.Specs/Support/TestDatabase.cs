@@ -91,6 +91,9 @@ namespace ComplianceTracker.Specs.Support
                 DELETE FROM "ApplicabilitySuggestions";
                 DELETE FROM "AiEvaluations";
                 DELETE FROM "Findings";
+                DELETE FROM "SbomFiles";
+                DELETE FROM "SbomComponents";
+                DELETE FROM "Sboms";
                 DELETE FROM "ScanFiles";
                 DELETE FROM "Scans";
                 DELETE FROM "ScanUploadTokens";

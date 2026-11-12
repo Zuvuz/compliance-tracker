@@ -157,6 +157,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         ScanImported,
         FindingAccepted,
 
+        // US-079 R7: an SBOM was imported. SubjectId points at the project; Details holds e.g.
+        // "CycloneDX 1.6 · 214 components · version 2.1.0 (sbom.cdx.json)".
+        SbomImported,
+
         // US-120 R8: the traceability matrix was downloaded. SubjectId points at the project; Details holds e.g.
         // "Excel for Auditor: CRA".
         ReportDownloaded,

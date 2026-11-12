@@ -44,6 +44,30 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
             => _db.Scans.CountAsync(s => s.UploadTokenId == tokenId && s.ScannedAt >= since, cancellationToken);
     }
 
+    // EF Core implementation of ISbomRepository (US-079). The organisation check happens before, on the project.
+    public class SbomRepository : ISbomRepository
+    {
+        private readonly ComplianceTrackerDbContext _db;
+
+        public SbomRepository(ComplianceTrackerDbContext db)
+        {
+            _db = db;
+        }
+
+        public async Task<IReadOnlyList<Sbom>> ListAsync(Guid projectId, CancellationToken cancellationToken = default)
+            => await _db.Sboms.Include(s => s.Components).Where(s => s.ProjectId == projectId)
+                .OrderByDescending(s => s.ImportedAt).AsSplitQuery().ToListAsync(cancellationToken);
+
+        public async Task<byte[]?> GetContentAsync(Guid sbomId, CancellationToken cancellationToken = default)
+            => await _db.SbomFiles.Where(f => f.SbomId == sbomId).Select(f => f.Content).FirstOrDefaultAsync(cancellationToken);
+
+        public async Task AddAsync(Sbom sbom, byte[] content, CancellationToken cancellationToken = default)
+        {
+            await _db.Sboms.AddAsync(sbom, cancellationToken);
+            await _db.SbomFiles.AddAsync(new SbomFile(sbom.Id, content), cancellationToken);
+        }
+    }
+
     // EF Core implementation of IScanUploadTokenRepository (US-122)
     public class ScanUploadTokenRepository : IScanUploadTokenRepository
     {

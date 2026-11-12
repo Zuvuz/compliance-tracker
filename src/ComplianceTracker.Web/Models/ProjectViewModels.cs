@@ -303,6 +303,10 @@ namespace ComplianceTracker.Web.Models
         // US-078: the Scans tab, and the Overview's count of open high and critical findings
         public Application.Scanning.ScanOverview? Scans { get; init; }
 
+        // US-079: the SBOM section of the Scans tab, and the search in its components
+        public Application.Scanning.SbomOverview? Sboms { get; init; }
+        public string? SbomFilter { get; init; }
+
         // US-107 R3: the organisation's GitHub Projects to choose from
         public IReadOnlyList<Application.WorkItems.GitHubProjectInfo> GitHubProjectChoices { get; init; } = [];
         public string? RiskStatusFilter { get; init; }

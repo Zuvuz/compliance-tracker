@@ -32,6 +32,54 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
         }
     }
 
+    // US-079: "Sboms" with their "SbomComponents", and the files in "SbomFiles"
+    public class SbomConfiguration : IEntityTypeConfiguration<Sbom>
+    {
+        public void Configure(EntityTypeBuilder<Sbom> builder)
+        {
+            builder.ToTable("Sboms");
+            builder.HasKey(s => s.Id);
+            builder.Property(s => s.Id).ValueGeneratedNever();
+            builder.Property(s => s.ProductVersion).IsRequired().HasMaxLength(Sbom.MaxVersionLength);
+            builder.Property(s => s.Format).IsRequired().HasMaxLength(50);
+            builder.Property(s => s.FileName).IsRequired().HasMaxLength(255);
+            builder.Property(s => s.Sha256).IsRequired().HasMaxLength(64);
+            builder.Ignore(s => s.Summary);
+            builder.HasOne<Project>().WithMany().HasForeignKey(s => s.ProjectId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<User>().WithMany().HasForeignKey(s => s.UploadedById).OnDelete(DeleteBehavior.Restrict);
+            builder.HasIndex(s => new { s.ProjectId, s.ImportedAt });
+            builder.HasMany(s => s.Components).WithOne().HasForeignKey(c => c.SbomId).OnDelete(DeleteBehavior.Cascade);
+            builder.Navigation(s => s.Components).HasField("_components").UsePropertyAccessMode(PropertyAccessMode.Field);
+        }
+    }
+
+    public class SbomComponentConfiguration : IEntityTypeConfiguration<SbomComponent>
+    {
+        public void Configure(EntityTypeBuilder<SbomComponent> builder)
+        {
+            builder.ToTable("SbomComponents");
+            builder.HasKey(c => c.Id);
+            builder.Property(c => c.Id).ValueGeneratedNever();
+            builder.Property(c => c.Name).IsRequired().HasMaxLength(300);
+            builder.Property(c => c.Version).HasMaxLength(200);
+            builder.Property(c => c.PackageUrl).HasMaxLength(1000);
+            builder.Property(c => c.License).HasMaxLength(300);
+            builder.Property(c => c.Supplier).HasMaxLength(300);
+        }
+    }
+
+    public class SbomFileConfiguration : IEntityTypeConfiguration<SbomFile>
+    {
+        public void Configure(EntityTypeBuilder<SbomFile> builder)
+        {
+            builder.ToTable("SbomFiles");
+            builder.HasKey(f => f.SbomId);
+            builder.Property(f => f.SbomId).ValueGeneratedNever();
+            builder.Property(f => f.Content).IsRequired();
+            builder.HasOne<Sbom>().WithOne().HasForeignKey<SbomFile>(f => f.SbomId).OnDelete(DeleteBehavior.Cascade);
+        }
+    }
+
     // US-122: only the hash of a token is stored, and it is unique
     public class ScanUploadTokenConfiguration : IEntityTypeConfiguration<ScanUploadToken>
     {
