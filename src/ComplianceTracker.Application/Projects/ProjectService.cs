@@ -261,6 +261,23 @@ namespace ComplianceTracker.Application.Projects
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        // US-103 R2–R4, R6: set the vulnerability contact (EditProjects), or clear it to go back to the default; logged
+        public async Task SetVulnerabilityContactAsync(Guid projectId, string? email, CancellationToken cancellationToken = default)
+        {
+            var (organization, _) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
+            var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
+                ?? throw new DomainException("Project not found");
+
+            var change = project.SetVulnerabilityContact(email, VulnerabilityContact.Default(organization.Members));
+            if (change is null)
+            {
+                return;
+            }
+
+            await _log.LogAsync(ActivityAction.ProjectUpdated, project.Id, change.ToString(), cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
         // US-025 R2, R3, R5: set or move the support end date, logged with old and new
         public async Task SetSupportPeriodAsync(Guid projectId, DateOnly endsOn, string? reason, CancellationToken cancellationToken = default)
         {

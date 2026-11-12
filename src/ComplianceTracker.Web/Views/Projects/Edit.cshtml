@@ -40,6 +40,18 @@
             <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-link">Cancel</a>
         </form>
 
+        @* US-103: where reports about vulnerabilities go; empty means the default person *@
+        <form asp-action="SetVulnerabilityContact" method="post" class="mt-4 border-top pt-3" id="project-vulnerability-contact">
+            <input type="hidden" name="projectId" value="@Model.Id" />
+            <label for="vulnerability-contact" class="form-label">Vulnerability contact</label>
+            <div class="d-flex flex-wrap gap-1">
+                <input type="email" name="email" id="vulnerability-contact" maxlength="320" class="form-control w-auto flex-grow-1"
+                       value="@(ViewData["VulnerabilityContactEmail"] as string)" placeholder="@(ViewData["VulnerabilityContactDefault"] as string)" />
+                <button type="submit" class="btn btn-outline-secondary">Save contact</button>
+            </div>
+            <p class="small text-muted mt-1 mb-0">Where users report vulnerabilities in the product (CRA Art. 13(17)). Leave it empty to use the project's Compliance Manager.</p>
+        </form>
+
         @* US-130 R4: a confidential project is left out of AI improvement *@
         @{ var excluded = ViewData["ExcludedFromAiSharing"] is true; }
         <form asp-action="SetAiSharing" method="post" data-confirm="This changes whether the project's AI decisions may be used to improve the AI." class="mt-4 border-top pt-3" id="project-ai-sharing">
