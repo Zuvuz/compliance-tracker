@@ -1551,6 +1551,25 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Persondata i kundernes eget indhold.
   - En databehandleraftale, som er juridisk tekst og ikke kode.
 
+### B100 – Last- og stresstest med k6, startet i hånden (US-138)
+
+- **Beslutning:**
+  - **Værktøj:** k6 (open source) fra Docker-imaget. Den nye workflow `load-test.yml` køres kun med `workflow_dispatch`, så den ikke bruger minutter af sig selv.
+  - **Systemet:** hele systemet startes med `docker compose --profile full`. En lille override (`tests/load/docker-compose.load.yml`) gør testdatabasen tilgængelig for seed-værktøjet.
+  - **Login:** k6 går gennem Keycloaks egen login-formular med testbrugere, som workflowen laver i test-realmen med et tilfældigt kodeord for den ene kørsel. Kravet om engangskode fjernes kun for dem. Realm-filen ændres ikke.
+  - **Data:** `tests/load/seed` (C#) fylder en tom testdatabase med domænets egne regler. Loggen forsegles som en hash-kæde, og værktøjet nægter at køre mod en database med data (R6). Et scenarie kører det mod testdatabasen og tjekker antal, kæden og at en bruger kan se projekterne.
+  - **Grænser:** p95 under 1 s for sider og under 5 s for rapporter, og under 1 % fejl.
+    - Stresstesten går op til fire gange så mange brugere og stopper ikke ved grænserne.
+    - Et minut efter tjekker en smoke-test, at systemet kommer sig.
+  - **Resultater** gemmes i 90 dage.
+  - **Langsomme sider** bliver egne issues, medmindre rettelsen er lille.
+- **Begrundelse:** Kun gratis værktøjer, og kun når nogen vil vide det. Testen viser, hvor mange brugere trackeren kan klare, før en kunde opdager det.
+- **Fravalgt:**
+  - En betalt cloud-lasttest.
+  - En fast kørsel hver uge.
+  - Test af AI-gatewayen og Keycloak selv.
+  - Soak-tests over mange timer.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

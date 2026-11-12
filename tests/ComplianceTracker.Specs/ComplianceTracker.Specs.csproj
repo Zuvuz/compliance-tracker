@@ -25,6 +25,7 @@
     <ProjectReference Include="..\..\src\ComplianceTracker.Domain\ComplianceTracker.Domain.csproj" />
     <ProjectReference Include="..\..\src\ComplianceTracker.Infrastructure\ComplianceTracker.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\ComplianceTracker.Web\ComplianceTracker.Web.csproj" />
+    <ProjectReference Include="..\load\seed\ComplianceTracker.LoadSeed.csproj" />
   </ItemGroup>
 
   <!-- US-094: where the repository is, so the guardrail tests can read the app's source code wherever the tests run -->

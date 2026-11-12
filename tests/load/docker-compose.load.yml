@@ -1,0 +1,6 @@
+# US-138: only for the load test in CI: the test database is reachable from the runner, so the seed can fill it.
+# Used together with docker-compose.yml: docker compose -f docker-compose.yml -f tests/load/docker-compose.load.yml --profile full up
+services:
+  postgres-full:
+    ports:
+      - "127.0.0.1:55432:5432"

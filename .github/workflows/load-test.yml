@@ -1,0 +1,129 @@
+# US-138: the load and stress test of the tracker (k6). Run by hand only (Actions → Load test → Run workflow), so it costs
+# nothing by itself. It starts the whole system in docker compose with test data and test users, never production (R6).
+name: Load test
+
+on:
+  workflow_dispatch:
+    inputs:
+      users:
+        description: Users at once in the load test (the stress test goes to four times as many)
+        default: "50"
+      duration:
+        description: How long the load test runs
+        default: 5m
+
+permissions:
+  contents: read
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    # Placeholders, as in ci.yml. No real secrets: the stack lives only in this job.
+    env:
+      POSTGRES_PASSWORD: load-placeholder
+      KEYCLOAK_ADMIN_PASSWORD: load-placeholder
+      KEYCLOAK_CLIENT_SECRET: load-only-client-secret
+      KEYCLOAK: --resolve keycloak.localhost:8543:127.0.0.1
+      LOAD_USERS: ${{ inputs.users }}
+      LOAD_DURATION: ${{ inputs.duration }}
+      COMPOSE: docker compose -f docker-compose.yml -f tests/load/docker-compose.load.yml --profile full
+
+    steps:
+      - name: Hent koden
+        uses: actions/checkout@v7
+
+      - name: Giv Keycloak-klienten et kendt test-secret
+        run: |
+          jq '.clients |= map(if .clientId == "compliance-tracker-web" then .secret = env.KEYCLOAK_CLIENT_SECRET else . end)' \
+            keycloak/compliance-tracker-realm.json > realm.json && mv realm.json keycloak/compliance-tracker-realm.json
+
+      - name: Start hele systemet
+        run: |
+          $COMPOSE build
+          $COMPOSE up -d
+
+      - name: Vent på webappen, Keycloak og migreringen
+        run: |
+          for i in $(seq 1 90); do
+            if curl -fsS --cacert certs/ca.crt https://localhost:8443/health > /dev/null \
+              && curl -fsS --cacert certs/ca.crt $KEYCLOAK https://keycloak.localhost:8543/realms/compliance-tracker/.well-known/openid-configuration > /dev/null; then
+              break
+            fi
+            sleep 5
+          done
+          test "$($COMPOSE ps -a migrate --format '{{.ExitCode}}')" = "0"
+
+      - name: Lav testbrugerne i test-realmen
+        run: |
+          # A random password for this run only; it is never printed
+          password="Load-$(openssl rand -hex 12)"
+          echo "::add-mask::$password"
+          echo "LOAD_PASSWORD=$password" >> "$GITHUB_ENV"
+          token=$(curl -fsS --cacert certs/ca.crt $KEYCLOAK \
+            -d grant_type=password -d client_id=admin-cli -d username=admin -d "password=$KEYCLOAK_ADMIN_PASSWORD" \
+            https://keycloak.localhost:8543/realms/master/protocol/openid-connect/token | jq -r .access_token)
+          api=https://keycloak.localhost:8543/admin/realms/compliance-tracker/users
+          echo '[]' > users.json
+          for i in $(seq 1 "$LOAD_USERS"); do
+            name="load-user-$i"
+            curl -fsS --cacert certs/ca.crt $KEYCLOAK -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+              -d "{\"username\":\"$name\",\"email\":\"$name@load.test\",\"firstName\":\"Load\",\"lastName\":\"User $i\",\"enabled\":true,\"emailVerified\":true,\"credentials\":[{\"type\":\"password\",\"value\":\"$password\",\"temporary\":false}]}" \
+              "$api"
+            id=$(curl -fsS --cacert certs/ca.crt $KEYCLOAK -H "Authorization: Bearer $token" "$api?username=$name&exact=true" | jq -r '.[0].id')
+            # The realm asks new users to set up a one-time code; test users sign in with a password only
+            curl -fsS --cacert certs/ca.crt $KEYCLOAK -X PUT -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+              -d '{"requiredActions":[]}' "$api/$id"
+            jq --arg sub "$id" --arg name "Load User $i" --arg email "$name@load.test" '. += [{Sub: $sub, Name: $name, Email: $email}]' users.json > u.json && mv u.json users.json
+          done
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Fyld testdatabasen
+        run: |
+          dotnet run --project tests/load/seed -- \
+            "Host=127.0.0.1;Port=55432;Database=compliance_tracker;Username=postgres;Password=$POSTGRES_PASSWORD;SSL Mode=Require;Trust Server Certificate=true" \
+            users.json
+
+      - name: Smoke test
+        run: |
+          mkdir -p load-results
+          docker run --rm --network host -v "$PWD/tests/load:/scripts:ro" -v "$PWD/load-results:/results" \
+            -e LOAD_PASSWORD -e LOAD_USERS grafana/k6:0.54.0 run /scripts/smoke.js
+
+      - name: Load test (R2, R3)
+        run: |
+          docker run --rm --network host -v "$PWD/tests/load:/scripts:ro" -v "$PWD/load-results:/results" \
+            -e LOAD_PASSWORD -e LOAD_USERS -e LOAD_DURATION grafana/k6:0.54.0 run /scripts/load.js
+
+      - name: Stress test (R4)
+        if: always()
+        run: |
+          docker run --rm --network host -v "$PWD/tests/load:/scripts:ro" -v "$PWD/load-results:/results" \
+            -e LOAD_PASSWORD -e LOAD_USERS grafana/k6:0.54.0 run /scripts/stress.js
+
+      - name: Kommer sig igen inden for et minut (R5)
+        if: always()
+        run: |
+          sleep 60
+          docker run --rm --network host -v "$PWD/tests/load:/scripts:ro" \
+            -e LOAD_PASSWORD -e LOAD_USERS grafana/k6:0.54.0 run /scripts/smoke.js
+
+      - name: Gem resultaterne (R7)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: load-results
+          path: load-results/
+          retention-days: 90
+
+      - name: Logs
+        if: failure()
+        run: $COMPOSE logs --no-color
+
+      - name: Stop
+        if: always()
+        run: $COMPOSE down -v
