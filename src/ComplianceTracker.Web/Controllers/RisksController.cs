@@ -61,6 +61,96 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction("Details", "Projects", new { id = model.ProjectId, tab = ProjectTabs.Risks });
         }
 
+        // ---------------------------------------------------------- Import (US-049)
+
+        // GET /Risks/Import?projectId=...&importId=...: the upload, and the preview of an uploaded file (R3)
+        [HttpGet]
+        public async Task<IActionResult> Import(Guid projectId, Guid? importId, [FromServices] RiskImportService imports, CancellationToken cancellationToken)
+        {
+            var project = await _projects.GetAsync(projectId, cancellationToken);
+            if (project is null)
+            {
+                return NotFound();
+            }
+
+            if (!await imports.CanImportAsync(cancellationToken))
+            {
+                return Forbid(); // R8
+            }
+
+            RiskImportPreview? preview = null;
+            if (importId is { } id)
+            {
+                try
+                {
+                    preview = await imports.PreviewAsync(projectId, id, cancellationToken);
+                }
+                catch (DomainException)
+                {
+                    return NotFound(); // another project's or organisation's import
+                }
+            }
+
+            return View(new RiskImportViewModel(project, preview));
+        }
+
+        // POST /Risks/Import: R8, R9. Stores the file and shows its preview; nothing is saved as risks yet.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(2 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 2 * 1024 * 1024)]
+        public async Task<IActionResult> Import(Guid projectId, IFormFile? file, [FromServices] RiskImportService imports, CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (file is null || file.Length == 0)
+                {
+                    throw new DomainException("Choose a CSV file or an Excel workbook");
+                }
+
+                using var memory = new MemoryStream();
+                await file.CopyToAsync(memory, cancellationToken);
+                var import = await imports.UploadAsync(projectId, file.FileName, memory.ToArray(), cancellationToken);
+                return RedirectToAction(nameof(Import), new { projectId, importId = import.Id });
+            }
+            catch (DomainException error)
+            {
+                TempData[DomainExceptionFilter.TempDataKey] = error.Message;
+                return RedirectToAction(nameof(Import), new { projectId });
+            }
+        }
+
+        // POST /Risks/ConfirmImport: R2, R4, R6, R7. All rows become risks, or none.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmImport(Guid projectId, Guid importId, bool importAnyway, [FromServices] RiskImportService imports, CancellationToken cancellationToken)
+        {
+            int count;
+            try
+            {
+                count = await imports.ConfirmAsync(projectId, importId, importAnyway, cancellationToken);
+            }
+            catch (DomainException error)
+            {
+                // Back to the preview, with the reason
+                TempData[DomainExceptionFilter.TempDataKey] = error.Message;
+                return RedirectToAction(nameof(Import), new { projectId, importId });
+            }
+
+            TempData["RisksImported"] = $"Imported {count} {(count == 1 ? "risk" : "risks")}";
+            return RedirectToAction("Details", "Projects", new { id = projectId, tab = ProjectTabs.Risks });
+        }
+
+        // GET /Risks/Template: R1, the columns to fill in, with one example row (";" as Danish Excel writes it)
+        [HttpGet]
+        public IActionResult Template()
+        {
+            var text = string.Join(";", RiskImportRows.Columns) + "\r\n"
+                + "Stolen session cookie;Session cookie stolen via XSS;3;4;Anna;Reduce;;2026-05-01\r\n";
+            return File(System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(text)).ToArray(),
+                "text/csv", "risk-register-template.csv");
+        }
+
         // GET /Risks/Edit/{id}
         [HttpGet]
         public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)

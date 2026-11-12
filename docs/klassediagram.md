@@ -1591,6 +1591,33 @@ classDiagram
   ISbomImporter <|.. CycloneDxSbomImporter
   ISbomImporter <|.. SpdxSbomImporter
   SbomService ..> Finding : marks components (US-079 R6)
+  class RiskImport {
+    -id: Guid
+    -projectId: Guid
+    -fileName: string
+    -sha256: string
+    -createdById: Guid
+    -createdAt: DateTime
+    -confirmedAt: DateTime?
+    -importedCount: int
+    +Create(projectId, fileName, content, userId, at)$ RiskImport
+    +Confirm(importedCount: int, at: DateTime)
+  }
+  class RiskImportService {
+    +UploadAsync(projectId, fileName, content) RiskImport
+    +PreviewAsync(projectId, importId) RiskImportPreview
+    +ConfirmAsync(projectId, importId, importAnyway) int
+  }
+  class IRiskSheetReader {
+    <<interface>>
+    +CanRead(fileName: string, content: byte[]) bool
+    +Read(content: byte[]) string[][]
+  }
+  RiskImport --> Project
+  RiskImportService ..> IRiskSheetReader
+  IRiskSheetReader <|.. CsvRiskSheetReader
+  IRiskSheetReader <|.. XlsxRiskSheetReader
+  RiskImportService ..> Risk : creates (US-049)
   SecurityEvent --> SecurityEventKind
   SecurityEvent ..> SecurityReportKind
   SecurityEventService --> ISecurityEventRepository

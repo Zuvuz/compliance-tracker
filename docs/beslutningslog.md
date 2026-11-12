@@ -1320,6 +1320,22 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - XML-formater: de kan komme senere som en ny importer.
   - Tjek af licenser.
 
+### B88 – Import af risici fra et regneark (US-049)
+
+- **Beslutning:**
+  - **Filtyper:** CSV med `;` eller `,` og Excel-projektmapper (.xlsx). Separatoren findes ud fra overskriftsrækken. Excel læses med `DocumentFormat.OpenXml`, som projektet allerede bruger.
+  - **To trin:** filen gemmes først (`RiskImport`), og en forhåndsvisning viser hver række med niveau og fejl. Først når personen bekræfter, bliver rækkerne til risici. Importen gemmes, så loggen og risiciene kan pege på filen.
+  - **Alt eller intet:** én fejl i én række stopper hele importen. Fejlen nævner rækkens nummer og feltet, fx "Row 2: Likelihood must be 1 to 5".
+  - **Dubletter:** en titel, der allerede findes i projektet, springes over, medmindre personen vælger "Import anyway". Den samme titel to gange i filen er en fejl.
+  - **Ejer:** en ejer, der ikke er medlem, gemmes som tekst på risikoen. Den, der importerer, bliver ejer.
+  - **Accept:** en accepteret risiko kræver en begrundelse. En High- eller Critical-risiko kræver stadig en anden person (US-135), så den forbliver åben med behandlingen Accept.
+  - "Last reviewed" sætter datoen for seneste gennemgang, ellers bruges importdatoen.
+  - **Grænser:** højst 1 MB og 500 rækker, og kun roller med `ManageRisks` kan importere. Importen logges én gang som `RisksImported`.
+- **Begrundelse:** Organisationer har ofte et risikoregister i Excel allerede. At tjekke alle rækker først og importere alt eller intet giver ingen halve registre.
+- **Fravalgt:**
+  - Import fra andre værktøjers formater (Jira, ServiceNow).
+  - Den nye risikoside: den er delt ud i US-147.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

@@ -78,6 +78,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         RiskUpdated,
         RiskReviewed,
 
+        // US-049 R7: risks were imported from a file. SubjectId points at the project; Details holds e.g.
+        // "Imported 14 risks from risks-2026.csv".
+        RisksImported,
+
         // Members and roles (US-009, US-010). SubjectId points at the member or the invitation.
         MemberRoleChanged,
         InvitationCreated,
