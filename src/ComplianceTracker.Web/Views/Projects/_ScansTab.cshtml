@@ -4,7 +4,10 @@
    .finding-severity and the form .accept-finding (reason); #closed-findings rows .finding (data-rule) with .finding-state;
    #no-scans. US-121: form #fetch-from-github, .scan-source on each latest scan, #scan-imported lines (.scan-line).
    US-122: .scan-build on each latest scan; #upload-tokens with form #create-upload-token (name), #new-upload-token (shown
-   once), rows .upload-token (data-name) with .token-created, .token-last-used, .token-revoked and form .revoke-upload-token. *@
+   once), rows .upload-token (data-name) with .token-created, .token-last-used, .token-revoked and form .revoke-upload-token.
+   US-079: #project-sboms with form #upload-sbom (productVersion, file), #no-sbom, rows .sbom (data-version) with .sbom-summary
+   and form .sbom-as-evidence (requirementId); #sbom-components rows .sbom-component (data-name) with .component-version,
+   .component-purl, .component-license and .component-findings; form #search-components (q). *@
 @using ComplianceTracker.Domain.Scanning
 @model ProjectDetailsViewModel
 @{
@@ -226,4 +229,106 @@
             </details>
         }
     }
+
+    @* US-079: the product's SBOM per version (CRA Annex I, Part II (1)) *@
+    @{
+        var sboms = Model.Sboms;
+        var shown = sboms?.Shown;
+        var search = Model.SbomFilter?.Trim();
+        var components = (sboms?.Components ?? [])
+            .Where(c => string.IsNullOrEmpty(search)
+                || c.Component.Name.Contains(search, StringComparison.OrdinalIgnoreCase)
+                || (c.Component.PackageUrl?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (c.Component.License?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false))
+            .ToList();
+    }
+    <div id="project-sboms" class="mt-4 border-top pt-3">
+        <h2 class="h6">SBOM</h2>
+        <p class="small text-muted">The components of each product version, from a CycloneDX (1.4 or newer) or SPDX 2.3 JSON file, e.g. from Syft or Trivy. A new SBOM for the same version replaces the shown one; the old one is kept.</p>
+
+        @if (canChange)
+        {
+            <form asp-action="UploadSbom" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 mb-3" id="upload-sbom">
+                <input type="hidden" name="projectId" value="@project.Id" />
+                <input name="productVersion" maxlength="100" class="form-control form-control-sm w-auto" placeholder="Product version, e.g. 2.1.0" aria-label="Product version" required />
+                <input type="file" name="file" accept=".json" class="form-control form-control-sm w-auto" aria-label="SBOM file (max 50 MB)" required />
+                <button type="submit" class="btn btn-sm btn-primary">Upload SBOM</button>
+            </form>
+        }
+
+        @if (sboms is null || !sboms.HasAny)
+        {
+            <p class="text-muted small" id="no-sbom">No SBOM yet</p>
+        }
+        else
+        {
+            <table class="table table-sm align-middle" id="sboms">
+                <thead><tr><th>Version</th><th>Imported</th><th>Contents</th><th>SHA-256</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var sbom in sboms.LatestPerVersion)
+                    {
+                        <tr class="sbom @(sbom.Id == shown?.Id ? "table-active" : "")" data-version="@sbom.ProductVersion">
+                            <td><a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Scans" asp-route-sbom="@sbom.ProductVersion" asp-fragment="sbom-components">@sbom.ProductVersion</a></td>
+                            <td class="text-nowrap">@sbom.ImportedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
+                            <td class="sbom-summary">@sbom.Summary</td>
+                            <td class="small text-muted" title="@sbom.Sha256">@sbom.Sha256[..8]…</td>
+                            <td>
+                                @if (canChange && requirements.Count > 0)
+                                {
+                                    @* R4: the SBOM as evidence, e.g. for CRA Annex I, Part II (1) *@
+                                    <form asp-action="SbomAsEvidence" method="post" class="d-flex gap-1 sbom-as-evidence">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="sbomId" value="@sbom.Id" />
+                                        <select name="requirementId" class="form-select form-select-sm" aria-label="Requirement the SBOM proves">
+                                            @foreach (var item in requirements)
+                                            {
+                                                <option value="@item.Requirement.Id">@item.Framework @item.Requirement.Code</option>
+                                            }
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Use as evidence</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (shown is not null)
+            {
+                <h3 class="h6 mt-3">Components of version @shown.ProductVersion (@shown.Components.Count)</h3>
+                <form method="get" asp-action="Details" asp-route-id="@project.Id" asp-fragment="sbom-components" class="d-flex gap-1 mb-2" id="search-components">
+                    <input type="hidden" name="tab" value="@ProjectTabs.Scans" />
+                    <input type="hidden" name="sbom" value="@shown.ProductVersion" />
+                    <input name="q" value="@search" class="form-control form-control-sm w-auto" placeholder="Search name, package URL or licence" aria-label="Search the components" />
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">Search</button>
+                </form>
+                <table class="table table-sm small align-middle" id="sbom-components">
+                    <thead><tr><th>Component</th><th>Version</th><th>Package URL</th><th>Licence</th><th>Findings</th></tr></thead>
+                    <tbody>
+                        @foreach (var entry in components)
+                        {
+                            <tr class="sbom-component @(entry.OpenFindings.Count > 0 ? "table-warning" : "")" data-name="@entry.Component.Name">
+                                <td>@entry.Component.Name</td>
+                                <td class="component-version">@entry.Component.Version</td>
+                                <td class="component-purl text-break">@entry.Component.PackageUrl</td>
+                                <td class="component-license">@entry.Component.License</td>
+                                <td class="component-findings">
+                                    @if (entry.FindingsText is { } findingsText)
+                                    {
+                                        @* R6: the component has open findings from a scan *@
+                                        <span title="@string.Join(", ", entry.OpenFindings.Select(f => f.RuleId))">@findingsText</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                @if (components.Count == 0)
+                {
+                    <p class="text-muted small">No components match "@search"</p>
+                }
+            }
+        }
+    </div>
 </section>

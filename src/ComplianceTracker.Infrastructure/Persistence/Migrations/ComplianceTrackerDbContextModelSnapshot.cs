@@ -5142,6 +5142,99 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("Findings", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Scanning.Sbom", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("Format")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("ImportedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ProductVersion")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("UploadedById")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UploadedById");
+
+                    b.HasIndex("ProjectId", "ImportedAt");
+
+                    b.ToTable("Sboms", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Scanning.SbomComponent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("License")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("PackageUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid>("SbomId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Supplier")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Version")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SbomId");
+
+                    b.ToTable("SbomComponents", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Scanning.SbomFile", b =>
+                {
+                    b.Property<Guid>("SbomId")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("SbomId");
+
+                    b.ToTable("SbomFiles", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Scanning.Scan", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6737,6 +6830,39 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Scanning.Sbom", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UploadedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Scanning.SbomComponent", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Scanning.Sbom", null)
+                        .WithMany("Components")
+                        .HasForeignKey("SbomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Scanning.SbomFile", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Scanning.Sbom", null)
+                        .WithOne()
+                        .HasForeignKey("ComplianceTracker.Domain.Scanning.SbomFile", "SbomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Scanning.Scan", b =>
                 {
                     b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
@@ -7019,6 +7145,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("ComplianceTracker.Domain.Risks.RiskAction", b =>
                 {
                     b.Navigation("Links");
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Scanning.Sbom", b =>
+                {
+                    b.Navigation("Components");
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.WorkItems.RequirementDocument", b =>

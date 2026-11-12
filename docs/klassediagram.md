@@ -1542,6 +1542,45 @@ classDiagram
   SecurityEventSuggestionService --> IExploitedVulnerabilityList
   SecurityEventSuggestionService --> SecurityEventService
   ScanService --> SecurityEventSuggestionService : after import
+  class Sbom {
+    -id: Guid
+    -projectId: Guid
+    -productVersion: string
+    -format: string
+    -fileName: string
+    -sha256: string
+    -importedAt: DateTime
+    -uploadedById: Guid
+    +Summary: string
+    +Create(projectId, productVersion, format, fileName, content, components, userId, at)$ Sbom
+  }
+  class SbomComponent {
+    -id: Guid
+    -name: string
+    -version: string?
+    -packageUrl: string?
+    -license: string?
+    -supplier: string?
+    +IsNamedIn(text: string?) bool
+  }
+  class ISbomImporter {
+    <<interface>>
+    +CanRead(fileName: string, content: byte[]) bool
+    +Read(content: byte[]) SbomRead
+  }
+  class SbomService {
+    +UploadAsync(projectId, productVersion, fileName, content) Sbom
+    +ForProjectAsync(projectId, version) SbomOverview?
+    +FileAsync(projectId, sbomId)
+    +Latest(sboms)$ Sbom[]
+    +Match(sbom, openFindings)$ SbomComponentView[]
+  }
+  Sbom "1" *-- "0..*" SbomComponent
+  Sbom --> Project
+  SbomService ..> ISbomImporter : picks by content
+  ISbomImporter <|.. CycloneDxSbomImporter
+  ISbomImporter <|.. SpdxSbomImporter
+  SbomService ..> Finding : marks components (US-079 R6)
   SecurityEvent --> SecurityEventKind
   SecurityEvent ..> SecurityReportKind
   SecurityEventService --> ISecurityEventRepository

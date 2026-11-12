@@ -89,6 +89,9 @@ namespace ComplianceTracker.Specs.Support
                 services.AddSingleton<ComplianceTracker.Application.Reports.IReportSealer, ComplianceTracker.Infrastructure.Reports.ReportSealer>();
                 services.AddSingleton<ComplianceTracker.Application.Reports.IPdfWriter, ComplianceTracker.Infrastructure.Reports.PdfPigReportWriter>(); // US-131
                 services.AddSingleton<ComplianceTracker.Application.Scanning.IScanImporter, ComplianceTracker.Infrastructure.Scanning.SarifScanImporter>();
+                services.AddScoped<ComplianceTracker.Application.Scanning.ISbomRepository, SbomRepository>(); // US-079
+                services.AddSingleton<ComplianceTracker.Application.Scanning.ISbomImporter, ComplianceTracker.Infrastructure.Scanning.CycloneDxSbomImporter>();
+                services.AddSingleton<ComplianceTracker.Application.Scanning.ISbomImporter, ComplianceTracker.Infrastructure.Scanning.SpdxSbomImporter>();
                 services.AddScoped<IRiskRepository, RiskRepository>(); // US-042
                 services.AddScoped<IClassificationRepository, ClassificationRepository>(); // US-026
                 services.AddScoped<ComplianceTracker.Application.Security.ISecurityEventRepository, SecurityEventRepository>(); // US-073

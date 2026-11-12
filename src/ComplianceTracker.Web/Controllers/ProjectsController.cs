@@ -152,11 +152,14 @@ namespace ComplianceTracker.Web.Controllers
             string? status, string? level, string? due,
             // US-101: the Activity tab's filters (q is the search there too)
             string? from, string? to, string? group, string? user, string? sort, string? page,
+            // US-079: the SBOM version shown on the Scans tab
+            string? sbom,
             [FromServices] ClassificationService classifications,
             [FromServices] Application.Projects.GapFinder gapFinder,
             [FromServices] Application.Security.SecurityEventQueries securityEventQueries,
             [FromServices] EvidenceQueries evidenceQueries,
             [FromServices] Application.Scanning.ScanService scans,
+            [FromServices] Application.Scanning.SbomService sbomService,
             [FromServices] Application.Security.SecurityEventSuggestionService suggestionService,
             [FromServices] Application.Approvals.ApprovalService approvalService,
             [FromServices] Application.Organizations.OrganisationDocumentService documentService,
@@ -216,6 +219,9 @@ namespace ComplianceTracker.Web.Controllers
                 ? await securityEventQueries.ForProjectAsync(id, cancellationToken) ?? []
                 : [];
             var scanOverview = activeTab is ProjectTabs.Scans or ProjectTabs.Overview ? await scans.ForProjectAsync(id, cancellationToken) : null;
+            var sbomOverview = activeTab is ProjectTabs.Scans
+                ? await sbomService.ForProjectAsync(id, sbom, cancellationToken)
+                : null; // US-079
             // US-128: suggested security events, on their tab and under "Needs attention"
             var eventSuggestions = activeTab is ProjectTabs.SecurityEvents or ProjectTabs.Overview
                 ? await suggestionService.ForProjectAsync(id, cancellationToken)
@@ -291,6 +297,8 @@ namespace ComplianceTracker.Web.Controllers
                 Signings = signings,
                 WaitingForSignature = waitingForSignature,
                 Scans = scanOverview,
+                Sboms = sbomOverview,
+                SbomFilter = q,
                 RiskStatusFilter = status,
                 RiskLevelFilter = level,
                 OnlyReviewDue = due == "1",
@@ -883,6 +891,42 @@ namespace ComplianceTracker.Web.Controllers
         {
             await scans.AcceptFindingAsync(projectId, findingId, reason, cancellationToken);
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
+        }
+
+        // POST /Projects/UploadSbom: US-079 R1, R2, R7. The SBOM is for one product version.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(MaxScanRequestSize)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaxScanRequestSize)]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Scans)]
+        public async Task<IActionResult> UploadSbom(
+            Guid projectId, string? productVersion, IFormFile? file, [FromServices] Application.Scanning.SbomService sboms, CancellationToken cancellationToken)
+        {
+            if (file is null || file.Length == 0)
+            {
+                throw new Domain.Common.DomainException("Choose a CycloneDX or SPDX file");
+            }
+
+            using var memory = new MemoryStream();
+            await file.CopyToAsync(memory, cancellationToken);
+            var sbom = await sboms.UploadAsync(projectId, productVersion, file.FileName, memory.ToArray(), cancellationToken);
+            TempData["ScanImported"] = sbom.Summary;
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans, sbom = sbom.ProductVersion });
+        }
+
+        // POST /Projects/SbomAsEvidence: US-079 R4. The SBOM file becomes evidence for the requirement (US-057), with its SHA-256.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Scans)]
+        public async Task<IActionResult> SbomAsEvidence(
+            Guid projectId, Guid sbomId, Guid requirementId, [FromServices] Application.Scanning.SbomService sboms, CancellationToken cancellationToken)
+        {
+            var (sbom, content) = await sboms.FileAsync(projectId, sbomId, cancellationToken)
+                ?? throw new Domain.Common.DomainException("SBOM not found");
+            await _compliance.AddEvidenceFileAsync(projectId, requirementId, $"SBOM {sbom.ProductVersion} ({sbom.Format})",
+                sbom.FileName, content, null, cancellationToken);
+            TempData["ScanImported"] = $"SBOM {sbom.ProductVersion} added as evidence";
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans, sbom = sbom.ProductVersion });
         }
 
         // POST /Projects/ScanAsEvidence: R5. The scan file becomes evidence for the requirement (US-057), with its SHA-256.

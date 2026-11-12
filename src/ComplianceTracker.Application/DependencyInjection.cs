@@ -49,6 +49,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<AiEvaluationService>(); // US-116
             services.AddScoped<TrainingDataExport>(); // US-123
             services.AddScoped<Scanning.ScanService>(); // US-078
+            services.AddScoped<Scanning.SbomService>(); // US-079
             services.AddScoped<AiFeedbackService>();
             services.AddScoped<RiskService>();
             services.AddScoped<MemberService>();

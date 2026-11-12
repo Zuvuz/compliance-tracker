@@ -364,6 +364,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "eventid" => ids.SecurityEvent, // US-073
                 "actionid" => ids.RiskAction, // US-111
                 "scanid" => ids.Scan, // US-078
+                "sbomid" => ids.Sbom, // US-079
                 "findingid" => ids.Finding,
                 "tokenid" => ids.UploadToken, // US-122
                 "snapshotid" => ids.ReportSnapshot, // US-050
@@ -387,10 +388,10 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Guid Organization, Guid Project, Guid Risk, Guid Measure, Guid Evidence, Guid WorkItem, Guid Link,
             Guid Document, Guid DocumentVersion, Guid Framework, Guid FrameworkVersion, Guid FrameworkRequirement,
             Guid CraRequirement, Guid Member, Guid Invitation, Guid SecurityEvent, Guid RiskAction, Guid Scan, Guid Finding, Guid UploadToken,
-            Guid ApprovalRequest, Guid OrganisationDocument, Guid OrganisationDocumentLink, Guid ReportSnapshot)
+            Guid ApprovalRequest, Guid OrganisationDocument, Guid OrganisationDocumentLink, Guid ReportSnapshot, Guid Sbom)
         {
             public IEnumerable<Guid> All => [Organization, Project, Risk, Measure, Evidence, WorkItem, Link, Document,
-                DocumentVersion, Framework, FrameworkVersion, FrameworkRequirement, Member, Invitation, SecurityEvent, RiskAction, Scan, Finding, UploadToken, ApprovalRequest, OrganisationDocument, OrganisationDocumentLink, ReportSnapshot];
+                DocumentVersion, Framework, FrameworkVersion, FrameworkRequirement, Member, Invitation, SecurityEvent, RiskAction, Scan, Finding, UploadToken, ApprovalRequest, OrganisationDocument, OrganisationDocumentLink, ReportSnapshot, Sbom];
         }
 
         private async Task<Ids> IdsAsync(string organisation)
@@ -428,7 +429,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 await db.ApprovalRequests.Where(r => r.ProjectId == project.Id).Select(r => r.Id).SingleAsync(), // US-135
                 await db.OrganisationDocuments.Where(d => d.OrganizationId == org.Id).Select(d => d.Id).SingleAsync(), // US-136
                 await db.OrganisationDocuments.Where(d => d.OrganizationId == org.Id).SelectMany(d => d.Links).Select(l => l.Id).SingleAsync(), // US-136
-                await db.ReportSnapshots.Where(s => s.ProjectId == project.Id).Select(s => s.Id).SingleAsync()); // US-050
+                await db.ReportSnapshots.Where(s => s.ProjectId == project.Id).Select(s => s.Id).SingleAsync(), // US-050
+                await db.Sboms.Where(s => s.ProjectId == project.Id).Select(s => s.Id).SingleAsync()); // US-079
         }
 
         // A form token for the caller, from a page they may open (their own Users page)
