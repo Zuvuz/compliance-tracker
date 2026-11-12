@@ -317,6 +317,52 @@
             <div class="card-body">
                 <h2 class="h6 card-title">Lifecycle phase</h2>
                 <p class="mb-1 fw-semibold">@project.Phase</p>
+                @if (Model.NextGate is { } gate)
+                {
+                    @* US-071 R2: what must be in place before the next phase, each with a link to where it is fixed *@
+                    string? FixUrl(string key) => key switch
+                    {
+                        "scope" => Url.Action("Edit", new { id = project.Id }),
+                        "frameworks" => Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Frameworks }),
+                        "classification" => Url.Action("Details", new { id = project.Id }) + "#classification",
+                        "risks" => Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks }),
+                        "coverage" => Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Compliance, show = ComplianceFilters.NotCovered }),
+                        "evidence" => Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Compliance }),
+                        "findings" or "sbom" => Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Scans }),
+                        "support" => Url.Action("Details", new { id = project.Id }) + "#support-period",
+                        _ => null
+                    };
+                    <div class="border rounded p-2 my-2 small" id="phase-gate" data-name="@gate.Name">
+                        <div class="fw-semibold mb-1">@gate.Name <span class="badge @(gate.IsMet ? "text-bg-success" : "text-bg-warning")" id="phase-gate-state">@(gate.IsMet ? "Ready" : $"{gate.NotMet.Count} not met")</span></div>
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var check in gate.Checks)
+                            {
+                                var state = check.State switch
+                                {
+                                    GateCheckState.Met => "Met",
+                                    GateCheckState.NotMet => "Not met",
+                                    _ => "Not available yet"
+                                };
+                                <li class="gate-check" data-key="@check.Key" data-state="@state">
+                                    <span class="@(check.State == GateCheckState.Met ? "text-success" : check.State == GateCheckState.NotMet ? "text-danger" : "text-muted")">@(check.State == GateCheckState.Met ? "✓" : check.State == GateCheckState.NotMet ? "✗" : "–")</span>
+                                    @if (check.State == GateCheckState.NotMet && FixUrl(check.Key) is { } fix)
+                                    {
+                                        <a href="@fix" class="gate-check-text">@check.Text</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="gate-check-text">@check.Text</span>
+                                    }
+                                    <span class="visually-hidden gate-check-state">@state</span>
+                                </li>
+                            }
+                        </ul>
+                        @if (!gate.IsMet)
+                        {
+                            <div class="text-muted mt-1">You can still move on, with a reason.</div>
+                        }
+                    </div>
+                }
                 @* US-024 R2: EndOfSupport is final. US-048 R8: only roles that may edit the project. *@
                 @if (canChangePhase)
                 {
@@ -329,6 +375,11 @@
                             }
                         </select>
                         <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">Change phase</button>
+                        @if (Model.NextGate is { IsMet: false } openGate)
+                        {
+                            @* US-071 R3: needed when a check is not met *@
+                            <input name="gateReason" maxlength="1000" class="form-control form-control-sm" placeholder="Reason, as @openGate.NotMet.Count @(openGate.NotMet.Count == 1 ? "check is" : "checks are") not met" aria-label="Reason for moving on" />
+                        }
                         @if (project.SupportEndsOn is null && otherPhases.Contains(LifecyclePhase.Released))
                         {
                             @* US-025 R1, R2: needed when the new phase is Released *@

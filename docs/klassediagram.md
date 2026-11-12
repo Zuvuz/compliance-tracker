@@ -1618,6 +1618,30 @@ classDiagram
   IRiskSheetReader <|.. CsvRiskSheetReader
   IRiskSheetReader <|.. XlsxRiskSheetReader
   RiskImportService ..> Risk : creates (US-049)
+  class PhaseGate {
+    <<record>>
+    +Name: string
+    +From: LifecyclePhase
+    +To: LifecyclePhase
+    +Checks: GateCheck[]
+    +IsMet: bool
+    +Pass(reason: string?) string?
+    +Describe(change: ProjectChange, reason: string?) string
+  }
+  class GateCheck {
+    <<record>>
+    +Key: string
+    +Text: string
+    +State: GateCheckState
+  }
+  class PhaseGates {
+    +NextAsync(projectId) PhaseGate?
+    +ForAsync(organization, project, to) PhaseGate?
+    +DevelopmentChecks(project, unclassified, risks)$ GateCheck[]
+  }
+  PhaseGate "1" *-- "1..*" GateCheck
+  PhaseGates ..> PhaseGate : works out (US-071)
+  ProjectService --> PhaseGates : before a phase change
   SecurityEvent --> SecurityEventKind
   SecurityEvent ..> SecurityReportKind
   SecurityEventService --> ISecurityEventRepository

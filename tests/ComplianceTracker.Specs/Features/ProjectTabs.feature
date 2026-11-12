@@ -66,7 +66,7 @@ Feature: Project page with tabs
   Scenario: The activity tab shows what changed
     Given "Acme Portal" is in phase "Development"
     When I open the "Activity" tab of "Acme Portal"
-    Then the first row is "ProjectPhaseChanged" by "Anna" with "Phase: Planning → Development"
+    Then the first row is "ProjectPhaseChanged" by "Anna" with "Phase: Planning → Development, 3 checks not met: Set up for the test"
 
   @US-022 @iso27001-A.5.15 @integration
   Scenario: Other organisations cannot see the activity

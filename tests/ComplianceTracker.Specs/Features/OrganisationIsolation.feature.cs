@@ -151,16 +151,16 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.AndAsync("I upload the CycloneDX SBOM \"sbom.cdx.json\" with 3 components for version \"2.1.0\"" +
                     "", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-            global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
+            global::Reqnroll.Table table15 = new global::Reqnroll.Table(new string[] {
                         "Title",
                         "Likelihood",
                         "Impact"});
-            table1.AddRow(new string[] {
+            table15.AddRow(new string[] {
                         "Old firmware",
                         "2",
                         "3"});
 #line 22
-    await testRunner.AndAsync("I import the risks file \"risks.csv\" into \"Acme Portal\" with the rows", ((string)(null)), table1, "And ");
+    await testRunner.AndAsync("I import the risks file \"risks.csv\" into \"Acme Portal\" with the rows", ((string)(null)), table15, "And ");
 #line hidden
 #line 25
     await testRunner.AndAsync("I have created the upload token \"GitHub Actions\" for \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

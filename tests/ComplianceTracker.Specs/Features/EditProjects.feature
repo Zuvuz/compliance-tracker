@@ -32,7 +32,7 @@ Feature: Edit a project
 
   @US-024 @iso27001-A.5.9 @integration
   Scenario: Move a project to the next phase
-    When I change the phase of "Acme Portal" to "Development"
+    When I move "Acme Portal" to "Development" with the reason "Kick-off done"
     Then the page of "Acme Portal" shows phase "Development"
 
   @US-024 @integration
@@ -43,9 +43,9 @@ Feature: Edit a project
 
   @US-024 @iso27001-A.8.15 @integration
   Scenario: Phase changes are logged with the old and new phase
-    When I change the phase of "Acme Portal" to "Development"
+    When I move "Acme Portal" to "Development" with the reason "Kick-off done"
     Then the activity log for "Acme ApS" has "ProjectPhaseChanged" for "Anna" concerning "Acme Portal"
-    And the "ProjectPhaseChanged" entry says "Phase: Planning → Development"
+    And the "ProjectPhaseChanged" entry says "Phase: Planning → Development, 3 checks not met: Kick-off done"
 
   @US-024 @iso27001-A.8.15 @integration
   Scenario: Edits are logged with the old and new value

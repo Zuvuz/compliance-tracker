@@ -26,7 +26,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             var id = await ProjectIdAsync(projectName);
             await _web.OpenAsync($"/Projects/Details/{id}");
-            var fields = new Dictionary<string, string> { ["projectId"] = id.ToString(), ["phase"] = phase };
+            // US-071, US-072: a gate the project does not pass yet asks for a reason; the gates are tested in their own features
+            var fields = new Dictionary<string, string> { ["projectId"] = id.ToString(), ["phase"] = phase, ["gateReason"] = "Set up for the test" };
             if (phase == "Released")
             {
                 fields["supportEndsOn"] = DateTime.UtcNow.AddYears(6).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
@@ -39,6 +40,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         // ---------------------------------------------------------- When
 
+        [Given("I change the scope of {string} to {string}")]
         [When("I change the scope of {string} to {string}")]
         public Task WhenIChangeTheScope(string projectName, string scope)
             => EditAsync(projectName, "Scope", scope);

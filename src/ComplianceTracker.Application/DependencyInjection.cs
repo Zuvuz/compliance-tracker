@@ -51,6 +51,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<Scanning.ScanService>(); // US-078
             services.AddScoped<Scanning.SbomService>(); // US-079
             services.AddScoped<AiFeedbackService>();
+            services.AddScoped<Projects.PhaseGates>(); // US-071
             services.AddScoped<RiskService>();
             services.AddScoped<RiskImportService>(); // US-049
             services.AddScoped<MemberService>();

@@ -25,6 +25,7 @@ namespace ComplianceTracker.Application.Projects
     public class ProjectService : IApprovalExecutor
     {
         private readonly IProjectRepository _projects;
+        private readonly PhaseGates _gates;
         private readonly IFrameworkRepository _frameworks;
         private readonly CurrentMember _member;
         private readonly IActivityLogger _log;
@@ -45,8 +46,10 @@ namespace ComplianceTracker.Application.Projects
             VersionCarryOver carryOver,
             Security.ISecurityEventRepository securityEvents,
             ApprovalGate approvals,
-            Organizations.OrganisationDocumentService documents)
+            Organizations.OrganisationDocumentService documents,
+            PhaseGates gates)
         {
+            _gates = gates;
             _approvals = approvals;
             _documents = documents;
             _securityEvents = securityEvents;
@@ -136,7 +139,8 @@ namespace ComplianceTracker.Application.Projects
         // US-135 R2: end of support waits for a second person; returns false when it waits
         public async Task<bool> ChangePhaseAsync(
             Guid projectId, LifecyclePhase phase, DateOnly? supportEndsOn = null, string? supportReason = null,
-            CancellationToken cancellationToken = default, DateOnly? lastPlacedOnMarket = null, DateOnly? keepUntil = null)
+            CancellationToken cancellationToken = default, DateOnly? lastPlacedOnMarket = null, DateOnly? keepUntil = null,
+            string? gateReason = null)
         {
             var project = await ProjectAsync(projectId, cancellationToken);
             var today = _clock.Today();
@@ -156,7 +160,13 @@ namespace ComplianceTracker.Application.Projects
                 return false;
             }
 
-            await ApplyPhaseAsync(project, phase, supportEndsOn, supportReason, today, null, null, null, null, cancellationToken);
+            // US-071 R1–R3: a gate between the phases warns; moving on with a check not met needs a reason
+            var (ownOrganization, _) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
+            var gate = await _gates.ForAsync(ownOrganization, project, phase, cancellationToken);
+            var reason = gate?.Pass(gateReason);
+
+            await ApplyPhaseAsync(project, phase, supportEndsOn, supportReason, today, null, null, null, null, cancellationToken,
+                describe: gate is null ? null : change => gate.Describe(change, reason));
             return true;
         }
 
@@ -197,7 +207,7 @@ namespace ComplianceTracker.Application.Projects
         private async Task ApplyPhaseAsync(
             Project project, LifecyclePhase phase, DateOnly? supportEndsOn, string? supportReason, DateOnly today,
             DateOnly? lastPlacedOnMarket, DateOnly? keepUntil, User? asUser, User? approver, CancellationToken cancellationToken,
-            bool save = true)
+            bool save = true, Func<ProjectChange, string>? describe = null)
         {
             if (phase == LifecyclePhase.Released && supportEndsOn is { } endsOn && project.Phase != LifecyclePhase.Released)
             {
@@ -214,7 +224,7 @@ namespace ComplianceTracker.Application.Projects
             {
                 if (asUser is null)
                 {
-                    await _log.LogAsync(ActivityAction.ProjectPhaseChanged, project.Id, change.ToString(), cancellationToken);
+                    await _log.LogAsync(ActivityAction.ProjectPhaseChanged, project.Id, describe?.Invoke(change) ?? change.ToString(), cancellationToken);
                 }
                 else
                 {

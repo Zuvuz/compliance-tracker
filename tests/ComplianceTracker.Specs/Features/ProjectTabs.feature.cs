@@ -510,7 +510,7 @@ namespace ComplianceTracker.Specs.Features
 #line hidden
 #line 69
     await testRunner.ThenAsync("the first row is \"ProjectPhaseChanged\" by \"Anna\" with \"Phase: Planning → Developm" +
-                        "ent\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+                        "ent, 3 checks not met: Set up for the test\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
