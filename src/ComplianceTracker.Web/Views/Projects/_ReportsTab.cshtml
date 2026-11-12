@@ -90,6 +90,22 @@
                                 </form>
                             }
                         }
+                        else if (report.Key == ComplianceTracker.Application.Reports.ProjectReports.RiskAssessment)
+                        {
+                            @* US-054 *@
+                            <a asp-action="RiskAssessment" asp-route-id="@project.Id" class="btn btn-sm btn-outline-secondary" id="reports-risk-assessment">Excel</a>
+                            <a asp-action="RiskAssessment" asp-route-id="@project.Id" asp-route-format="csv" class="btn btn-sm btn-outline-secondary" id="reports-risk-assessment-csv">CSV</a>
+                            <a asp-action="RiskAssessment" asp-route-id="@project.Id" asp-route-format="pdf" class="btn btn-sm btn-outline-secondary" id="reports-risk-assessment-pdf">PDF</a>
+                            @if (canLock)
+                            {
+                                <form asp-action="LockReport" method="post" class="d-inline lock-report" data-report="@report.Key"
+                                      data-confirm="The risk assessment is made now as PDF and kept with its fingerprint. A locked report can never be changed or deleted.">
+                                    <input type="hidden" name="projectId" value="@project.Id" />
+                                    <input type="hidden" name="report" value="@report.Key" />
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Lock as PDF</button>
+                                </form>
+                            }
+                        }
                     </div>
                 </div>
             </div>

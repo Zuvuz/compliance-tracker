@@ -36,6 +36,10 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public void ThenISeeTheReports(string first, string second)
             => Assert.Equal([first, second], Reports().Select(r => r.GetAttribute("data-title")!));
 
+        [Then("I see the reports {string}, {string} and {string}")]
+        public void ThenISeeThreeReports(string first, string second, string third)
+            => Assert.Equal([first, second, third], Reports().Select(r => r.GetAttribute("data-title")!));
+
         [Then("the {string} report is for {string}")]
         public void ThenTheReportIsFor(string title, string forWhom)
             => Assert.StartsWith($"For: {forWhom}", Report(title).QuerySelector(".report-for")!.TextContent.Trim());

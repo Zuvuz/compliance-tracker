@@ -1394,6 +1394,24 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At låse eksporten (US-050). Den kommer i den låste auditpakke (US-076).
   - Serverens egne logs.
 
+### B92 – Rapport over risikovurderingen (US-054)
+
+- **Beslutning:**
+  - **Hvor:** "Risk assessment" er en rapport på projektets Reports-fane som Excel, CSV og PDF. Den kan låses som de andre (US-050).
+  - **Fire afsnit i fast rækkefølge:**
+    - **Criteria:** matrixen med niveauet for hver sandsynlighed × konsekvens.
+    - **Risks:** åbne og accepterede risici efter niveau, score og titel. Hver viser tiltag, handlinger, ejer, seneste gennemgang og næste gennemgang, eller "Review due".
+    - **Accepted risks:** hvem der accepterede, deres rolle, hvornår og hvorfor.
+    - **Closed risks:** med dato og begrundelse.
+  - **CSV** indeholder kun afsnittet Risks, så værktøjer kan læse én tabel.
+  - **Kun den nuværende tilstand.** Historikken findes i aktivitetsloggen (US-055).
+  - **PDF-tekst:** standardfonten mangler omkring 45 tegn, som Windows-1252 ellers har, fx "å", "ö", "×" og "€". De gav en fejl i alle PDF-rapporter. De skrives nu i en nær form ("aa", "o", "x", "EUR"). En test skriver hvert tegn i overskrift og celle.
+- **Begrundelse:** En markedsovervågningsmyndighed eller en auditor beder om risikovurderingen som ét dokument (CRA Art. 13(2), ISO 27001 6.1.2 og 8.2). Rapporten genbruger rapportmodellen, så Excel og PDF har samme indhold.
+- **Fravalgt:**
+  - Historik pr. risiko.
+  - Trusselsmodellering.
+  - Et indlejret font, så alle tegn kan vises. Det er større og kan komme senere.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

@@ -1656,6 +1656,14 @@ classDiagram
   ActivityLogExportService ..> ActivityLogQueries : same filters (US-055)
   ActivityLogExportService ..> CsvFile
   ActivityLogExportService ..> IPdfWriter
+  class RiskAssessmentReport {
+    <<static>>
+    +Build(project, risks, names, madeBy, now)$ ReportDocument
+    +Sorted(risks)$ Risk[]
+    +Criteria()$ ReportRow[]
+    +NextReview(risk)$ DateTime
+  }
+  ReportFiles ..> RiskAssessmentReport : US-054
   PhaseGate "1" *-- "1..*" GateCheck
   PhaseGates ..> PhaseGate : works out (US-071)
   ProjectService --> PhaseGates : before a phase change

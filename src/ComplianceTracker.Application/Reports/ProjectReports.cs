@@ -13,6 +13,7 @@ namespace ComplianceTracker.Application.Reports
     {
         public const string Traceability = "traceability";
         public const string TechnicalDocumentation = "technical-documentation";
+        public const string RiskAssessment = "risk-assessment"; // US-054
 
         public static IReadOnlyList<ProjectReport> For(int frameworkCount, bool followsCra) =>
         [
@@ -23,7 +24,11 @@ namespace ComplianceTracker.Application.Reports
             new(TechnicalDocumentation, "Technical documentation (draft)", "The manufacturer's technical file",
                 "The structure of CRA Annex VII, filled in from the project's data.",
                 "Word or PDF",
-                followsCra && frameworkCount > 0 ? null : "Add the CRA to the project to make the technical documentation draft")
+                followsCra && frameworkCount > 0 ? null : "Add the CRA to the project to make the technical documentation draft"),
+            new(RiskAssessment, "Risk assessment", "A market surveillance authority, an auditor or the management",
+                "The criteria, every risk by level with its measures and actions, the accepted risks with who accepted them, and the closed ones.",
+                "Excel, CSV or PDF",
+                null)
         ];
 
         public static IReadOnlyList<ProjectReport> For(ProjectCompliance? compliance)
