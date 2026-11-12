@@ -1,3 +1,4 @@
+using ComplianceTracker.Web.Diagnostics;
 using ComplianceTracker.Application.Compliance;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Application.Projects;
@@ -198,6 +199,7 @@ namespace ComplianceTracker.Web.Controllers
         }
 
         // POST /Risks/SuggestMeasures: US-106 R12, the AI suggests requirements and stories that could reduce the risk
+        [AiRateLimit] // US-097 R1
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "id")]

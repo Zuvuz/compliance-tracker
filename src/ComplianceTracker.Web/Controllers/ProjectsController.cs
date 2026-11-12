@@ -1,3 +1,4 @@
+using ComplianceTracker.Web.Diagnostics;
 using ComplianceTracker.Application.Risks;
 using ComplianceTracker.Domain.Risks;
 using ComplianceTracker.Application.Ai;
@@ -668,6 +669,7 @@ namespace ComplianceTracker.Web.Controllers
         }
 
         // POST /Projects/MoreEvidenceSuggestions: R3, "Show more"
+        [AiRateLimit] // US-097 R1
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
@@ -721,6 +723,7 @@ namespace ComplianceTracker.Web.Controllers
         }
 
         // POST /Projects/AskTheAi: US-106 R1–R3, about one requirement
+        [AiRateLimit] // US-097 R1
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
@@ -1428,6 +1431,7 @@ namespace ComplianceTracker.Web.Controllers
         // ---------------------------------------------------------- AI suggestions (US-020, US-036)
 
         // POST /Projects/SuggestMappings: R1, R8
+        [AiRateLimit] // US-097 R1
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.ProductRequirements)]
@@ -1448,6 +1452,7 @@ namespace ComplianceTracker.Web.Controllers
         }
 
         // POST /Projects/SuggestForNotCovered: US-044 R3, R8. Only the open framework's not-covered requirements.
+        [AiRateLimit] // US-097 R1
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
@@ -1460,6 +1465,7 @@ namespace ComplianceTracker.Web.Controllers
         // ---------------------------------------------------------- Not applicable, suggested by the AI (US-060, US-061)
 
         // POST /Projects/SuggestNotApplicable: US-060 R6. Only the open framework's not covered requirements.
+        [AiRateLimit] // US-097 R1
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]

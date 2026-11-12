@@ -49,6 +49,9 @@ builder.Services
 // US-098: JSON logs with the request's reference, outside Development
 builder.AddOperationalLogging();
 
+// US-097: limits on uploads, other changes and the AI
+builder.AddRateLimits();
+
 // Each layer registers its own services (US-029 R2):
 // Application = use cases, queries, activity logger and clock; Infrastructure = database and repositories
 builder.Services
@@ -221,6 +224,9 @@ app.UseAuthentication();   // who is the user?
 
 // US-098: every log line of a request carries its reference and the user; refused access and errors are watched
 app.UseOperationalLogging();
+
+// US-097: after the user is known, so the limits are per user (and the 429s are logged by the line above)
+app.UseRateLimiter();
 app.UseAuthorization();    // what may the user do?
 
 // CSS, JavaScript and images must be available without sign-in

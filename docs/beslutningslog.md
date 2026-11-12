@@ -1515,6 +1515,22 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Advarsler på e-mail eller chat.
   - Serilog.
 
+### B98 – Grænser for tunge handlinger (US-097)
+
+- **Beslutning:**
+  - **Værktøj:** ASP.NET Core's egen rate limiter, så der kommer ingen ny pakke.
+  - **Grænser:**
+    - **Ændringer:** 120 POST i minuttet pr. bruger (Keycloaks "sub", ellers IP-adressen).
+    - **Uploads:** en formular med en fil tæller som upload, 20 i minuttet.
+    - **AI:** "Ask the AI", "Suggest", "Show more" og forslag for "not covered", "not applicable" og tiltag er begrænset til 10 i minuttet pr. organisation. Organisationen findes via et filter, fordi den ikke står i login-cookien.
+  - **Aldrig begrænset:** GET, `/health` og statiske filer.
+  - **Når en grænse rammes:** svaret er 429 med "Too many requests. Try again in a minute" og `Retry-After: 60`. Handlingen kører ikke, så intet ændres, og hændelsen logges som en sikkerhedshændelse (US-098).
+  - **Indstillinger:** grænserne er `RateLimits:*`.
+- **Begrundelse:** Én bruger eller et script må ikke kunne gøre trackeren eller den lokale AI langsom for alle andre. Grænsen pr. organisation for AI deler AI'en retfærdigt mellem kunderne.
+- **Fravalgt:**
+  - Grænser på tværs af flere servere, fordi der kun er én instans.
+  - Grænser for login, som Keycloak tager sig af (US-089).
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
