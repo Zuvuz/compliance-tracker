@@ -44,6 +44,24 @@ namespace ComplianceTracker.Domain.Users
             Role = role;
         }
 
+        // US-095 R3: a removed member whose personal data is erased: the name and e-mail are replaced by a pseudonym, and
+        // the link to Keycloak is cut. What they did stays, under the pseudonym.
+        public const string ErasedPrefix = "erased:";
+
+        public bool IsErased => ExternalId.StartsWith(ErasedPrefix, StringComparison.Ordinal);
+
+        // e.g. "Former member 7F3A"
+        public string Pseudonym => $"Former member {Id.ToString("N")[..4].ToUpperInvariant()}";
+
+        internal void Pseudonymise()
+        {
+            Name = Pseudonym;
+            Email = $"{Id:N}@erased.invalid";
+            ExternalId = ErasedPrefix + Id.ToString("N");
+            HidesGetStarted = false;
+            SignsForManagement = false;
+        }
+
         // Internal: users are only created through Organization, so they always belong to one.
         // EF Core also uses this constructor; the parameter names match the property names.
         internal User(string externalId, string name, string email, UserRole role)

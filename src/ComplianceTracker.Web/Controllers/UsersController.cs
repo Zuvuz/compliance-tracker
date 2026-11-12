@@ -46,6 +46,30 @@ namespace ComplianceTracker.Web.Controllers
             return View(new MembersViewModel(organization, await _memberQueries.OpenInvitationsAsync(cancellationToken)));
         }
 
+        // GET /Users/MyData: US-095 R2, for every member (not only those who manage members)
+        [HttpGet]
+        public async Task<IActionResult> MyData([FromServices] Application.Organizations.PersonalDataService personalData, CancellationToken cancellationToken)
+        {
+            if (await _organizations.MineAsync(cancellationToken) is null)
+            {
+                return RedirectToAction("Create", "Organizations");
+            }
+
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+            return File(await personalData.ExportMineAsync(cancellationToken), "application/json", "my-data.json");
+        }
+
+        // POST /Users/ErasePersonalData: US-095 R3, a removed member's name and e-mail become a pseudonym
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> ErasePersonalData(Guid memberId, [FromServices] Application.Organizations.PersonalDataService personalData, CancellationToken cancellationToken)
+        {
+            var erased = await personalData.EraseAsync(memberId, cancellationToken);
+            TempData["PersonalDataErased"] = $"The personal data is erased; the member is now \"{erased.Pseudonym}\". Remove the account in Keycloak too.";
+            return RedirectToAction(nameof(Index));
+        }
+
         // POST /Users/ChangeRole: US-010 R2, R3, R6
         [HttpPost]
         [ValidateAntiForgeryToken]
