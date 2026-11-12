@@ -1,3 +1,4 @@
+using ComplianceTracker.Web.Diagnostics;
 using ComplianceTracker.Application.Ai;
 using ComplianceTracker.Application;
 using ComplianceTracker.Application.Common;
@@ -44,6 +45,9 @@ builder.Services
     // so the Content-Security-Policy can forbid inline styles.
     .AddViewOptions(options => options.HtmlHelperOptions.ClientValidationEnabled = false)
     .AddControllersAsServices();
+
+// US-098: JSON logs with the request's reference, outside Development
+builder.AddOperationalLogging();
 
 // Each layer registers its own services (US-029 R2):
 // Application = use cases, queries, activity logger and clock; Infrastructure = database and repositories
@@ -128,6 +132,15 @@ builder.Services
         options.MapInboundClaims = false; // keep Keycloak's claim names: "sub", "email", "name"
         options.TokenValidationParameters.NameClaimType = "name"; // User.Identity.Name shows the name
 
+        // US-098 R4: a failed sign-in is a security event (only the kind of failure, never a token)
+        options.Events.OnRemoteFailure = context =>
+        {
+            ComplianceTracker.Web.Diagnostics.OperationalLogging.SignInFailed(
+                context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(ComplianceTracker.Web.Diagnostics.OperationalLogging.SecurityCategory),
+                context.Failure);
+            return Task.CompletedTask;
+        };
+
         // Log every sign-in once Keycloak has confirmed the user (US-004 R6)
         options.Events.OnTokenValidated = async context =>
         {
@@ -205,6 +218,9 @@ app.Use(async (context, next) =>
 app.UseRouting();
 
 app.UseAuthentication();   // who is the user?
+
+// US-098: every log line of a request carries its reference and the user; refused access and errors are watched
+app.UseOperationalLogging();
 app.UseAuthorization();    // what may the user do?
 
 // CSS, JavaScript and images must be available without sign-in

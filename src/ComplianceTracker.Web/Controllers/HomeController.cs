@@ -31,6 +31,7 @@ public class HomeController : Controller
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        // US-098 R3: the same reference as in the log lines of the request
+        return View(new ErrorViewModel { RequestId = ComplianceTracker.Web.Diagnostics.OperationalLogging.Reference(HttpContext) });
     }
 }

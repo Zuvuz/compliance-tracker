@@ -114,6 +114,9 @@ namespace ComplianceTracker.Specs.Support
         // Direct access to the test database, for setting up data and checking results
         public ComplianceTrackerDbContext CreateDbContext() => TestDatabase.CreateContext(_database.ConnectionString);
 
+        // US-098
+        public CapturedLogs Logs => App.Factory.Services.GetRequiredService<CapturedLogs>();
+
         // US-139
         public QueryCounts QueryCounts => (QueryCounts)App.Factory.Services.GetRequiredService<ComplianceTracker.Infrastructure.Persistence.IQueryCountObserver>();
 
