@@ -44,7 +44,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // called by the other organisation, where "not found" is the right answer.
         private static readonly Dictionary<string, string> EmptyForOwn = new()
         {
-            ["Projects.SealedReport"] = "Only a sealed report has this file; sealing needs a seal certificate and two signers (US-132), tested in SigningReports.feature"
+            ["Projects.SealedReport"] = "Only a sealed report has this file; sealing needs a seal certificate and two signers (US-132), tested in SigningReports.feature",
+            ["Projects.StatementOfApplicability"] = "Only an organisation with its own ISO/IEC 27001 has one; the fixture's one framework is a policy (US-053), tested in StatementOfApplicability.feature"
         };
 
         private readonly WebScenario _web;

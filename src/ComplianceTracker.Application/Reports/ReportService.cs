@@ -50,12 +50,14 @@ namespace ComplianceTracker.Application.Reports
         private readonly IReportSnapshotRepository _snapshots;
         private readonly ICurrentUser _currentUser;
         private readonly TimeProvider _clock;
+        private readonly StatementOfApplicabilityQueries _soa;
 
         public ReportFiles(
             ProjectQueries projects, OrganizationQueries organizations, ComplianceQueries compliance, RiskQueries risks, ScanService scans,
             SecurityEventQueries events, TechnicalDocumentationQueries drafts, IPdfWriter pdf, IReportSnapshotRepository snapshots,
-            ICurrentUser currentUser, TimeProvider clock)
+            ICurrentUser currentUser, TimeProvider clock, StatementOfApplicabilityQueries soa)
         {
+            _soa = soa;
             _snapshots = snapshots;
             _projects = projects;
             _organizations = organizations;
@@ -153,6 +155,22 @@ namespace ComplianceTracker.Application.Reports
             return null;
         }
 
+        // US-053: the organisation's Statement of Applicability; null without ISO/IEC 27001 (R6) or for another organisation's project
+        public async Task<(ReportDocument Document, ReportFile Pdf)?> StatementOfApplicabilityAsync(Guid projectId, CancellationToken cancellationToken = default)
+        {
+            if (await _projects.GetAsync(projectId, cancellationToken) is null || await _soa.ForOrganizationAsync(cancellationToken) is not { } found)
+            {
+                return null;
+            }
+
+            var now = _clock.GetUtcNow().UtcDateTime;
+            var document = StatementOfApplicability.Build(found.Organization, found.Framework, found.Projects, _currentUser.Identity.Name, now);
+            var header = new PdfHeader(found.Organization.Name, "Organisation", StatementOfApplicability.Title, now, _currentUser.Identity.Name);
+            return (document, new ReportFile(ProjectReports.StatementOfApplicability, document.Title,
+                $"statement-of-applicability-{FrameworkSlugs.Slug(found.Organization.Name)}-{_clock.Today():yyyy-MM-dd}.pdf", "application/pdf",
+                _pdf.FromReport(document, header)));
+        }
+
         // US-054: the risk assessment, as the report model (Excel, CSV) and as PDF
         public async Task<(ReportDocument Document, ReportFile Pdf)?> RiskAssessmentAsync(Guid projectId, CancellationToken cancellationToken = default)
         {
@@ -241,6 +259,15 @@ namespace ComplianceTracker.Application.Reports
             var (organization, user) = await _member.RequireAsync(Permission.DecideCompliance, cancellationToken);
             var made = await _files.TechnicalDocumentationAsync(projectId, cancellationToken)
                 ?? throw new DomainException("The report cannot be made for this project");
+            return await LockAsync(organization.Id, projectId, user, made.Pdf, cancellationToken);
+        }
+
+        // US-053
+        public async Task<ReportSnapshot> LockStatementOfApplicabilityAsync(Guid projectId, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.DecideCompliance, cancellationToken);
+            var made = await _files.StatementOfApplicabilityAsync(projectId, cancellationToken)
+                ?? throw new DomainException("Upload ISO/IEC 27001 as a framework to make the Statement of Applicability");
             return await LockAsync(organization.Id, projectId, user, made.Pdf, cancellationToken);
         }
 

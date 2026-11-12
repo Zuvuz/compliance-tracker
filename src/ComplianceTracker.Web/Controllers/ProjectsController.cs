@@ -161,6 +161,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] Application.Scanning.ScanService scans,
             [FromServices] Application.Scanning.SbomService sbomService,
             [FromServices] Application.Projects.PhaseGates phaseGates,
+            [FromServices] Application.Reports.StatementOfApplicabilityQueries soa,
             [FromServices] Application.Security.SecurityEventSuggestionService suggestionService,
             [FromServices] Application.Approvals.ApprovalService approvalService,
             [FromServices] Application.Organizations.OrganisationDocumentService documentService,
@@ -300,6 +301,7 @@ namespace ComplianceTracker.Web.Controllers
                 Scans = scanOverview,
                 Sboms = sbomOverview,
                 NextGate = activeTab is ProjectTabs.Overview ? await phaseGates.NextAsync(id, cancellationToken) : null, // US-071
+                HasIso27001 = activeTab is ProjectTabs.Reports && project.IsOrganisationArea && await soa.ForOrganizationAsync(cancellationToken) is not null, // US-053
                 SbomFilter = q,
                 RiskStatusFilter = status,
                 RiskLevelFilter = level,
@@ -1093,6 +1095,39 @@ namespace ComplianceTracker.Web.Controllers
             return File(writer.ToDocx(draft), "application/vnd.openxmlformats-officedocument.wordprocessingml.document", draft.FileName);
         }
 
+        // ---------------------------------------------------------- Statement of Applicability (US-053)
+
+        // GET /Projects/StatementOfApplicability/{id}?format=xlsx|csv|pdf: the organisation's SoA; for anyone in the
+        // organisation, also the Auditor; 404 without ISO/IEC 27001 or for other organisations. Every download is logged.
+        [HttpGet]
+        public async Task<IActionResult> StatementOfApplicability(
+            Guid id, string? format,
+            [FromServices] Application.Reports.ISpreadsheetWriter spreadsheet,
+            [FromServices] Application.Reports.ReportFiles files,
+            [FromServices] Application.ActivityLog.IActivityLogger log,
+            [FromServices] Application.Common.IUnitOfWork unitOfWork,
+            CancellationToken cancellationToken)
+        {
+            if (await files.StatementOfApplicabilityAsync(id, cancellationToken) is not { } made)
+            {
+                return NotFound();
+            }
+
+            var kind = format?.ToLowerInvariant() switch { "pdf" => "PDF", "csv" => "CSV", _ => "Excel" };
+            await log.LogAsync(Domain.ActivityLog.ActivityAction.ReportDownloaded, id, $"{kind} for Statement of Applicability", cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+            var stem = Path.GetFileNameWithoutExtension(made.Pdf.FileName);
+            return kind switch
+            {
+                "PDF" => File(made.Pdf.Content, made.Pdf.ContentType, made.Pdf.FileName),
+                "CSV" => File(Application.Common.CsvFile.Write(Application.Reports.StatementOfApplicability.Columns,
+                    made.Document.Sheets[0].Rows.Select(r => r.Cells)), "text/csv; charset=utf-8", stem + ".csv"),
+                _ => File(spreadsheet.ToXlsx(made.Document), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", stem + ".xlsx")
+            };
+        }
+
         // ---------------------------------------------------------- Risk assessment (US-054)
 
         // GET /Projects/RiskAssessment/{id}?format=xlsx|csv|pdf: for anyone in the organisation, also the Auditor; 404 for
@@ -1265,6 +1300,8 @@ namespace ComplianceTracker.Web.Controllers
                 ? await reports.LockTechnicalDocumentationAsync(projectId, cancellationToken)
                 : report == Application.Reports.ProjectReports.RiskAssessment
                 ? await reports.LockRiskAssessmentAsync(projectId, cancellationToken) // US-054
+                : report == Application.Reports.ProjectReports.StatementOfApplicability
+                ? await reports.LockStatementOfApplicabilityAsync(projectId, cancellationToken) // US-053
                 : await reports.LockTraceabilityAsync(projectId,
                     Enum.TryParse<Application.Reports.ReportAudience>(audience, ignoreCase: true, out var reader) ? reader : Application.Reports.ReportAudience.Team,
                     string.IsNullOrEmpty(sub) ? null : sub, cancellationToken);
