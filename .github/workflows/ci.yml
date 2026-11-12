@@ -74,7 +74,7 @@ jobs:
 
       - name: Gem dækningsrapporten (US-140)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report-${{ github.sha }}
           path: coverage-report
@@ -205,7 +205,7 @@ jobs:
           test "$components" -gt 0
 
       - name: Gem SBOM'en (US-093)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sbom-web-${{ github.sha }}
           path: sbom-web.cdx.json
