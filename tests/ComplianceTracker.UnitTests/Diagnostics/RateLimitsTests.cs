@@ -13,7 +13,7 @@ public class RateLimitsTests
     [InlineData("POST", "/Projects/AskTheAi", "application/x-www-form-urlencoded", RequestKind.Post)]
     [InlineData("POST", "/Projects/UploadScan", "multipart/form-data; boundary=x", RequestKind.Upload)]
     [InlineData("post", "/Risks/Import", "MULTIPART/FORM-DATA", RequestKind.Upload)]
-    [InlineData("POST", "/api/projects/1/scans", null, RequestKind.Post)]
+    [InlineData("POST", "/api/projects/1/scans", "multipart/form-data", RequestKind.Free)] // US-122 has its own limit per token
     public void Only_changes_are_limited_and_a_form_with_a_file_is_an_upload(string method, string path, string? contentType, RequestKind expected)
         => Assert.Equal(expected, RateLimits.KindOf(method, path, contentType));
 

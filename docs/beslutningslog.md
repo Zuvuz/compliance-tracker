@@ -1523,7 +1523,7 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
     - **Ændringer:** 120 POST i minuttet pr. bruger (Keycloaks "sub", ellers IP-adressen).
     - **Uploads:** en formular med en fil tæller som upload, 20 i minuttet.
     - **AI:** "Ask the AI", "Suggest", "Show more" og forslag for "not covered", "not applicable" og tiltag er begrænset til 10 i minuttet pr. organisation. Organisationen findes via et filter, fordi den ikke står i login-cookien.
-  - **Aldrig begrænset:** GET, `/health` og statiske filer.
+  - **Aldrig begrænset:** GET, `/health` og statiske filer. Pipelinens upload-API (`/api/…`) har sin egen grænse pr. token (US-122 R6) og tælles ikke med her.
   - **Når en grænse rammes:** svaret er 429 med "Too many requests. Try again in a minute" og `Retry-After: 60`. Handlingen kører ikke, så intet ændres, og hændelsen logges som en sikkerhedshændelse (US-098).
   - **Indstillinger:** grænserne er `RateLimits:*`.
 - **Begrundelse:** Én bruger eller et script må ikke kunne gøre trackeren eller den lokale AI langsom for alle andre. Grænsen pr. organisation for AI deler AI'en retfærdigt mellem kunderne.
