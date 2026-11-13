@@ -28,6 +28,9 @@ namespace ComplianceTracker.Specs.Support
         // US-060: the requirements the AI answers "does not apply" for, with the reason; every other answer is "APPLIES"
         public Dictionary<string, string> NotApplicable { get; } = new(StringComparer.Ordinal);
 
+        // US-038: the answer to "Check whether the evidence …" per requirement code; "Covers" when none is set
+        public Dictionary<string, string> EvidenceAnswers { get; } = new(StringComparer.Ordinal);
+
         // US-060, US-061: every prompt, so a scenario can check what the AI was told
         public List<string> Prompts { get; } = new();
         // US-117: tasks with their own model name, and tasks whose own model cannot be reached (FakeAiModels)
@@ -67,6 +70,14 @@ namespace ComplianceTracker.Specs.Support
                 if (prompt.Contains(ApplicabilityPrompt.Marker, StringComparison.Ordinal))
                 {
                     return Task.FromResult(NotApplicable.TryGetValue(code, out var reason) ? $"NOT APPLICABLE: {reason}" : "APPLIES");
+                }
+
+                // US-038: the evidence check's labelled answer
+                if (prompt.Contains(ComplianceTracker.Application.Compliance.EvidenceCheckPrompt.Marker, StringComparison.Ordinal))
+                {
+                    return Task.FromResult(EvidenceAnswers.TryGetValue(code, out var answer)
+                        ? answer
+                        : "VERDICT: Covers\nMISSING: Nothing\nQUOTES: The evidence shows it");
                 }
 
                 // US-106: a draft user story in the labelled shape the prompt asks for

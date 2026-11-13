@@ -57,6 +57,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<Audits.AuditService>(); // US-134
             services.AddScoped<Reports.AuditPackageService>(); // US-076
             services.AddScoped<Organizations.PersonalDataService>(); // US-095
+            services.AddScoped<Compliance.EvidenceCheckService>(); // US-038
             services.AddScoped<RiskService>();
             services.AddScoped<RiskImportService>(); // US-049
             services.AddScoped<MemberService>();

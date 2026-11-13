@@ -176,6 +176,73 @@
                                         <span> · valid until @until.ToString("dd-MM-yyyy")</span>
                                     }
                                 </div>
+                                @* US-038: the AI's check of the evidence, "AI-generated" until a person decides (R2) *@
+                                @if (item.Check is { } check)
+                                {
+                                    var verdict = check.DecidedVerdict ?? check.AiVerdict;
+                                    <div class="small evidence-check mt-1" data-verdict="@verdict" data-status="@check.Status">
+                                        @if (check.IsDecided)
+                                        {
+                                            <span class="badge @(verdict switch { ComplianceTracker.Domain.Mappings.EvidenceVerdict.Covers => "text-bg-success", ComplianceTracker.Domain.Mappings.EvidenceVerdict.PartlyCovers => "text-bg-warning", _ => "text-bg-danger" }) evidence-check-verdict">@(verdict switch { ComplianceTracker.Domain.Mappings.EvidenceVerdict.Covers => "Evidence confirmed", ComplianceTracker.Domain.Mappings.EvidenceVerdict.PartlyCovers => "Evidence partly", _ => "Evidence does not cover" })</span>
+                                            @if (check.DecisionReason is { } why)
+                                            {
+                                                <span class="text-muted">(@why)</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-info">AI-generated</span>
+                                            <span class="evidence-check-verdict">@ComplianceTracker.Domain.Mappings.EvidenceCheck.Text(check.AiVerdict)</span>
+                                        }
+                                        @if (check.Missing.Length > 0 && !check.Missing.Equals("Nothing", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <div class="text-muted evidence-check-missing">Missing: @check.Missing</div>
+                                        }
+                                        @if (check.Quotes.Length > 0)
+                                        {
+                                            <details class="evidence-check-quotes"><summary class="text-muted">Quotes</summary>
+                                                @foreach (var quote in check.Quotes.Split('\n'))
+                                                {
+                                                    <div class="fst-italic">“@quote”</div>
+                                                }
+                                            </details>
+                                        }
+                                        @if (!check.IsDecided && !project.IsClosed && Model.CanDecide)
+                                        {
+                                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                                <form asp-action="ConfirmEvidenceCheck" method="post" class="confirm-evidence-check">
+                                                    <input type="hidden" name="projectId" value="@project.Id" />
+                                                    <input type="hidden" name="checkId" value="@check.Id" />
+                                                    <input type="hidden" name="sub" value="@sub" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-success">Confirm</button>
+                                                </form>
+                                                <form asp-action="OverruleEvidenceCheck" method="post" class="d-flex flex-wrap gap-1 overrule-evidence-check">
+                                                    <input type="hidden" name="projectId" value="@project.Id" />
+                                                    <input type="hidden" name="checkId" value="@check.Id" />
+                                                    <input type="hidden" name="sub" value="@sub" />
+                                                    <select name="verdict" class="form-select form-select-sm w-auto" aria-label="Your verdict">
+                                                        @foreach (var option in Enum.GetValues<ComplianceTracker.Domain.Mappings.EvidenceVerdict>().Where(v => v != check.AiVerdict))
+                                                        {
+                                                            <option value="@option">@ComplianceTracker.Domain.Mappings.EvidenceCheck.Text(option)</option>
+                                                        }
+                                                    </select>
+                                                    <input name="reason" maxlength="1000" class="form-control form-control-sm w-auto" placeholder="Why" aria-label="Reason for overruling" required />
+                                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Overrule</button>
+                                                </form>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                @if (!item.IsExpired && evidence.IsActive && !project.IsClosed && Model.CanLink)
+                                {
+                                    <form asp-action="CheckEvidence" method="post" class="check-evidence mt-1">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="evidenceId" value="@evidence.Id" />
+                                        <input type="hidden" name="requirementId" value="@requirement.Id" />
+                                        <input type="hidden" name="sub" value="@sub" />
+                                        <button type="submit" class="btn btn-sm btn-link p-0">@(item.Check is null ? "Check with AI" : "Check again with AI")</button>
+                                    </form>
+                                }
                             </div>
                             @if (item.NeedsReview)
                             {
