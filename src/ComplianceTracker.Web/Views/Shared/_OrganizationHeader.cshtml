@@ -7,9 +7,4 @@
 @* Sector and size are still stored, but not shown: they are used later to decide which frameworks apply *@
 <p class="text-muted small mb-3">
     CVR <span id="organisation-cvr">@Model.Cvr</span>
-    @if (await Permissions.CanCheckActivityLogAsync())
-    {
-        @* US-091 R3 *@
-        <text> · </text><a id="check-activity-log" asp-controller="LogCheck" asp-action="Index">Check the activity log</a>
-    }
 </p>

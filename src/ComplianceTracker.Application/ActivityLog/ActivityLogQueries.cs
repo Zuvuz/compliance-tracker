@@ -83,7 +83,7 @@ namespace ComplianceTracker.Application.ActivityLog
                 named.Where(s => s.Kind == "Member").Select(s => s.Id).ToList(),
                 query.From is { } from ? from.ToDateTime(TimeOnly.MinValue, DateTimeKind.Local).ToUniversalTime() : null,
                 query.To is { } to ? to.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Local).ToUniversalTime() : null,
-                query.Group is { } group ? ActivityGroups.ActionsIn(group) : null,
+                query.Actions(),
                 query.UserId,
                 query.SystemOnly,
                 query.Sort,

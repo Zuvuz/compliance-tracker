@@ -123,7 +123,7 @@ namespace ComplianceTracker.Specs.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/ActivityLogProtection.feature.ndjson", 8);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/ActivityLogProtection.feature.ndjson", 9);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -410,6 +410,55 @@ namespace ComplianceTracker.Specs.Features
 #line hidden
 #line 48
     await testRunner.ThenAsync("the log is intact", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="The integrity check is found from the activity log")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "The activity log cannot be changed")]
+        [global::Xunit.TraitAttribute("Description", "The integrity check is found from the activity log")]
+        [global::Xunit.TraitAttribute("Category", "US-091")]
+        [global::Xunit.TraitAttribute("Category", "iso27001-A.8.15")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task TheIntegrityCheckIsFoundFromTheActivityLog()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-091",
+                    "iso27001-A.8.15",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "6";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The integrity check is found from the activity log", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 52
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 6
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 53
+    await testRunner.WhenAsync("I open the organisation\'s activity log", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 54
+    await testRunner.AndAsync("I click \"Verify log integrity\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 55
+    await testRunner.ThenAsync("the log is intact", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 56
+    await testRunner.AndAsync("the page explains what a fingerprint is", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 57
+    await testRunner.AndAsync("the organisation header has no link to the check", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

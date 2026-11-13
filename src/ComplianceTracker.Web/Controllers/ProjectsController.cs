@@ -172,7 +172,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] Application.Organizations.OrganisationAreaService areaService,
             [FromServices] Application.Organizations.DocumentSuggestionService documentSuggestions,
             [FromServices] Application.Common.CurrentMember member,
-            CancellationToken cancellationToken)
+            string[]? hide, CancellationToken cancellationToken)
         {
             // US-104 R1: shared links to the old "User stories" tab still work
             if (string.Equals(tab, ProjectTabs.OldProductRequirements, StringComparison.OrdinalIgnoreCase))
@@ -199,7 +199,7 @@ namespace ComplianceTracker.Web.Controllers
             var activity = activeTab is ProjectTabs.Overview
                 ? await _projects.ActivityAsync(id, cancellationToken)
                 : [];
-            var (activityQuery, activityIgnored) = ActivityFilters.Parse(q, from, to, group, user, sort, page);
+            var (activityQuery, activityIgnored) = ActivityFilters.Parse(q, from, to, group, user, sort, page, hide);
             var activityPage = activeTab is ProjectTabs.Activity
                 ? await _projects.SearchActivityAsync(id, activityQuery, cancellationToken)
                 : null;
@@ -887,7 +887,17 @@ namespace ComplianceTracker.Web.Controllers
             Guid projectId, [FromServices] Application.Scanning.ScanService scans, CancellationToken cancellationToken)
         {
             var lines = await scans.FetchFromGitHubAsync(projectId, cancellationToken);
-            TempData["ScanImported"] = string.Join("\n", lines);
+            if (lines.Where(l => !l.IsWarning).Select(l => l.Text).ToList() is { Count: > 0 } imported)
+            {
+                TempData["ScanImported"] = string.Join("\n", imported);
+            }
+
+            // #52: a source that could not be read is a warning, not a success
+            if (lines.Where(l => l.IsWarning).Select(l => l.Text).ToList() is { Count: > 0 } warnings)
+            {
+                TempData["ScanWarnings"] = string.Join("\n", warnings);
+            }
+
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
         }
 

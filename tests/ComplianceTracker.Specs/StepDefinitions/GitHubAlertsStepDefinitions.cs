@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ComplianceTracker.Specs.StepDefinitions
 {
     // US-121: fetching code scanning and Dependabot alerts from the pretend GitHub, on the Scans tab.
-    // UI contract: Views/Projects/_ScansTab.cshtml (#fetch-from-github, #scan-imported .scan-line, .latest-scan with .scan-source).
+    // UI contract: Views/Projects/_ScansTab.cshtml (#fetch-from-github, #scan-imported .scan-line, #scan-warnings .scan-line, .latest-scan with .scan-source).
     [Binding]
     public class GitHubAlertsStepDefinitions
     {
@@ -54,6 +54,14 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         [When("I open the Scans tab of {string}")]
         public Task WhenIOpenTheScansTab(string project) => OpenTabAsync(project);
+
+        // #52: a source that could not be read is shown in the yellow box, not the green one
+        [Then("the fetch warns {string}")]
+        public void ThenTheFetchWarns(string line)
+        {
+            Assert.Contains(line, _web.Page!.QuerySelectorAll("#scan-warnings.alert-warning .scan-line").Select(l => l.TextContent.Trim()));
+            Assert.DoesNotContain(line, _web.Page!.QuerySelectorAll("#scan-imported .scan-line").Select(l => l.TextContent.Trim()));
+        }
 
         [Then("the fetch says {string}")]
         public void ThenTheFetchSays(string line)

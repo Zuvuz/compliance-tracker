@@ -8,6 +8,9 @@ using ComplianceTracker.Domain.Users;
 
 namespace ComplianceTracker.Application.Scanning
 {
+    // One line of "Fetch from GitHub": what a source gave, or why it could not be read (a warning)
+    public record FetchLine(string Text, bool IsWarning);
+
     // US-078: what a scanner reported, read from its file. One importer per format (B36, like US-083's readers).
     public record ScanReport(string Tool, IReadOnlyList<ScanResult> Results);
 
@@ -103,8 +106,9 @@ namespace ComplianceTracker.Application.Scanning
             return scan;
         }
 
-        // US-121 R1, R6: "Fetch from GitHub" on the Scans tab. Returns a line per source for the page.
-        public async Task<IReadOnlyList<string>> FetchFromGitHubAsync(Guid projectId, CancellationToken cancellationToken = default)
+        // US-121 R1, R6: "Fetch from GitHub" on the Scans tab. Returns a line per source for the page; a source that could
+        // not be read is a warning (#52), so it is not shown as if it went well.
+        public async Task<IReadOnlyList<FetchLine>> FetchFromGitHubAsync(Guid projectId, CancellationToken cancellationToken = default)
         {
             var (userId, project) = await OpenProjectAsync(projectId, cancellationToken);
             var lines = await FetchAsync(project, userId, cancellationToken);
@@ -135,7 +139,7 @@ namespace ComplianceTracker.Application.Scanning
         }
 
         // R1–R5: both sources; each tool of a source becomes a scan of its own
-        private async Task<IReadOnlyList<string>> FetchAsync(Domain.Projects.Project project, Guid? userId, CancellationToken cancellationToken)
+        private async Task<IReadOnlyList<FetchLine>> FetchAsync(Domain.Projects.Project project, Guid? userId, CancellationToken cancellationToken)
         {
             if (project.GitHub is not { IsProject: false } link)
             {
@@ -162,12 +166,12 @@ namespace ComplianceTracker.Application.Scanning
                 throw new DomainException(error.Message);
             }
 
-            var lines = new List<string>();
+            var lines = new List<FetchLine>();
             foreach (var read in reads)
             {
                 if (read.Unavailable is { } why)
                 {
-                    lines.Add(why);
+                    lines.Add(new FetchLine(why, IsWarning: true));
                     continue;
                 }
 
@@ -179,7 +183,7 @@ namespace ComplianceTracker.Application.Scanning
                     .ToList();
                 if (tools.Count == 0)
                 {
-                    lines.Add($"{(read.Source == ScanSource.GitHubDependabot ? "Dependabot" : "Code scanning")}: no alerts");
+                    lines.Add(new FetchLine($"{(read.Source == ScanSource.GitHubDependabot ? "Dependabot" : "Code scanning")}: no alerts", IsWarning: false));
                     continue;
                 }
 
@@ -198,7 +202,7 @@ namespace ComplianceTracker.Application.Scanning
                     var content = GitHubAlertsSarif.Build(read.Source, tool, alerts.Where(a => !a.Dismissed));
                     var fileName = $"github-{(read.Source == ScanSource.GitHubDependabot ? "dependabot" : "code-scanning")}-{tool.ToLowerInvariant()}.sarif";
                     var scan = await ImportAsync(project, userId, fileName, content, read.Source, cancellationToken);
-                    lines.Add(scan.Summary);
+                    lines.Add(new FetchLine(scan.Summary, IsWarning: false));
                 }
             }
 

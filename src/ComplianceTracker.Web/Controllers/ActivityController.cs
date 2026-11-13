@@ -22,7 +22,7 @@ namespace ComplianceTracker.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> Index(
             string? q, string? from, string? to, string? group, string? user, string? sort, string? page, string? project,
-            CancellationToken cancellationToken)
+            string[]? hide, CancellationToken cancellationToken)
         {
             var organization = await _organizations.MineAsync(cancellationToken);
             if (organization is null)
@@ -30,7 +30,7 @@ namespace ComplianceTracker.Web.Controllers
                 return RedirectToAction("Create", "Organizations");
             }
 
-            var (query, parsed) = ActivityFilters.Parse(q, from, to, group, user, sort, page);
+            var (query, parsed) = ActivityFilters.Parse(q, from, to, group, user, sort, page, hide);
             var ignored = parsed.ToList();
             var (scope, projectId, projectFilter) = Project(project, ignored);
             var result = await _log.ForOrganizationAsync(query, scope, projectId, cancellationToken);
@@ -55,10 +55,10 @@ namespace ComplianceTracker.Web.Controllers
         // GET /Activity/Export?format=csv|pdf&...: US-055, the entries the same filters find; the last 90 days without dates
         [HttpGet]
         public async Task<IActionResult> Export(
-            string? format, string? q, string? from, string? to, string? group, string? user, string? project,
+            string? format, string? q, string? from, string? to, string? group, string? user, string? project, string[]? hide,
             [FromServices] ActivityLogExportService export, CancellationToken cancellationToken)
         {
-            var (query, parsed) = ActivityFilters.Parse(q, from, to, group, user, "oldest", null);
+            var (query, parsed) = ActivityFilters.Parse(q, from, to, group, user, "oldest", null, hide);
             var ignored = parsed.ToList();
             var (scope, projectId, _) = Project(project, ignored);
             var file = await export.ExportAsync(query, scope, projectId,

@@ -123,7 +123,7 @@ namespace ComplianceTracker.Specs.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/ActivitySearch.feature.ndjson", 13);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/ActivitySearch.feature.ndjson", 14);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -610,6 +610,63 @@ namespace ComplianceTracker.Specs.Features
 #line hidden
 #line 77
     await testRunner.AndAsync("it has the details \"100% covered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="Groups can be hidden")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Search, filter and sort a project\'s activity log")]
+        [global::Xunit.TraitAttribute("Description", "Groups can be hidden")]
+        [global::Xunit.TraitAttribute("Category", "US-101")]
+        [global::Xunit.TraitAttribute("Category", "iso27001-A.8.15")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task GroupsCanBeHidden()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-101",
+                    "iso27001-A.8.15",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "11";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Groups can be hidden", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 81
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 6
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 82
+    await testRunner.GivenAsync("the activity log of \"Acme Portal\" has an entry with the details \"I.2(d): MFA conf" +
+                        "ig\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 83
+    await testRunner.WhenAsync("I open the activity of \"Acme Portal\" with \"?hide=evidence\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 84
+    await testRunner.ThenAsync("I see 1 entry", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 85
+    await testRunner.AndAsync("the first entry is \"ProjectCreated\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 86
+    await testRunner.AndAsync("the group \"Evidence\" is ticked to be hidden", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 87
+    await testRunner.WhenAsync("I open the activity of \"Acme Portal\" with \"?hide=evidence,nonsense\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 88
+    await testRunner.ThenAsync("the page says the filter \"The action group \'nonsense\' was not understood and is i" +
+                        "gnored\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

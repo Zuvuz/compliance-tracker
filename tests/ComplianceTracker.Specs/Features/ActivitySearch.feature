@@ -75,3 +75,14 @@ Feature: Search, filter and sort a project's activity log
     When I search the activity of "Acme Portal" for "%"
     Then I see 1 entry
     And it has the details "100% covered"
+
+  # #52: groups such as sign-ins can be left out; the log itself never changes
+  @US-101 @iso27001-A.8.15 @integration
+  Scenario: Groups can be hidden
+    Given the activity log of "Acme Portal" has an entry with the details "I.2(d): MFA config"
+    When I open the activity of "Acme Portal" with "?hide=evidence"
+    Then I see 1 entry
+    And the first entry is "ProjectCreated"
+    And the group "Evidence" is ticked to be hidden
+    When I open the activity of "Acme Portal" with "?hide=evidence,nonsense"
+    Then the page says the filter "The action group 'nonsense' was not understood and is ignored"

@@ -52,7 +52,7 @@ namespace ComplianceTracker.Application.Projects
                 // R2: whole days in the user's local time, both included
                 query.From is { } from ? from.ToDateTime(TimeOnly.MinValue, DateTimeKind.Local).ToUniversalTime() : null,
                 query.To is { } to ? to.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Local).ToUniversalTime() : null,
-                query.Group is { } group ? ActivityGroups.ActionsIn(group) : null,
+                query.Actions(),
                 query.UserId,
                 query.SystemOnly,
                 query.Sort,

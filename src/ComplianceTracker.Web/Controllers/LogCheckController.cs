@@ -32,7 +32,7 @@ namespace ComplianceTracker.Web.Controllers
                 return Forbid();
             }
 
-            ViewData["Title"] = "Check the activity log";
+            ViewData["Title"] = "Verify log integrity";
             ViewData["Organization"] = organization;
             return View(check);
         }

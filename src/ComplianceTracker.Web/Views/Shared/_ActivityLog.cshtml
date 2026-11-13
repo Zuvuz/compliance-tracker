@@ -3,7 +3,8 @@
    Ids and classes used by the tests: rows activity-row, cells activity-time, activity-user, activity-action,
    activity-details, activity-about (a link on the organisation page), #no-activity, #activity-filters
    (inputs q, from, to, group, user, sort, project), #activity-count, #activity-no-match, #activity-ignored li,
-   a#activity-previous, a#activity-next, a#activity-clear. *@
+   a#activity-previous, a#activity-next, a#activity-clear. #52: #activity-hide with a checkbox per group
+   (input[name=hide][value=slug]), remembered per browser by activity-hide.js; a#verify-log-integrity. *@
 @using ComplianceTracker.Application.ActivityLog
 @using ComplianceTracker.Domain.ActivityLog
 @model ActivityLogViewModel
@@ -71,11 +72,30 @@
                 </select>
             </div>
         }
-        <div class="col-12 d-flex gap-2">
+        @* #52: groups can be left out, e.g. sign-ins; the choice is remembered in this browser only *@
+        <fieldset class="col-12" id="activity-hide">
+            <legend class="form-label small mb-0">Hide</legend>
+            <div class="d-flex flex-wrap gap-3">
+                @foreach (var group in Enum.GetValues<ActivityGroup>())
+                {
+                    var slug = ActivityFilters.Slug(group);
+                    <div class="form-check form-check-inline small m-0">
+                        <input class="form-check-input" type="checkbox" name="hide" value="@slug" id="activity-hide-@slug" checked="@(query.Hidden?.Contains(group) == true)" />
+                        <label class="form-check-label" for="activity-hide-@slug">@ActivityGroups.Title(group)</label>
+                    </div>
+                }
+            </div>
+        </fieldset>
+        <div class="col-12 d-flex flex-wrap gap-2 align-items-center">
             <button type="submit" class="btn btn-sm btn-primary">Show</button>
             @if (Model.HasFilters || query.Sort != ActivitySort.Newest)
             {
                 <a id="activity-clear" class="btn btn-sm btn-outline-secondary" href="@Model.Address">Clear filters</a>
+            }
+            @if (await Permissions.CanCheckActivityLogAsync())
+            {
+                @* #52, US-091 R3: the check of the log's fingerprints, next to the log it checks *@
+                <a id="verify-log-integrity" class="small ms-auto" asp-controller="LogCheck" asp-action="Index">Verify log integrity</a>
             }
         </div>
     </form>
@@ -159,3 +179,5 @@
         </nav>
     }
 </section>
+
+<script src="~/js/activity-hide.js" asp-append-version="true"></script>

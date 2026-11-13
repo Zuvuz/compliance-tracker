@@ -22,7 +22,7 @@ namespace ComplianceTracker.Web.Models
         public static string Slug(ActivityGroup group) => group.ToString().ToLowerInvariant();
 
         public static (ActivityLogQuery Query, IReadOnlyList<string> Ignored) Parse(
-            string? q, string? from, string? to, string? group, string? user, string? sort, string? page)
+            string? q, string? from, string? to, string? group, string? user, string? sort, string? page, IEnumerable<string>? hide = null)
         {
             var ignored = new List<string>();
 
@@ -91,6 +91,21 @@ namespace ComplianceTracker.Web.Models
                 pageNumber = 1;
             }
 
+            // #52: hide=sign-in&hide=members (or hide=sign-in,members, as a page link carries it)
+            var hidden = new List<ActivityGroup>();
+            foreach (var slug in (hide ?? []).SelectMany(h => (h ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)))
+            {
+                var match = Enum.GetValues<ActivityGroup>().Cast<ActivityGroup?>().FirstOrDefault(g => Slug(g!.Value) == slug.ToLowerInvariant());
+                if (match is null)
+                {
+                    ignored.Add($"The action group '{slug}' was not understood and is ignored");
+                }
+                else if (!hidden.Contains(match.Value))
+                {
+                    hidden.Add(match.Value);
+                }
+            }
+
             var query = new ActivityLogQuery(
                 string.IsNullOrWhiteSpace(q) ? null : q.Trim(),
                 Date(from, "from"),
@@ -99,7 +114,8 @@ namespace ComplianceTracker.Web.Models
                 userId,
                 systemOnly,
                 chosenSort,
-                pageNumber);
+                pageNumber,
+                hidden.Count == 0 ? null : hidden);
             return (query, ignored);
         }
 
@@ -110,6 +126,7 @@ namespace ComplianceTracker.Web.Models
             ["from"] = query.From?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             ["to"] = query.To?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             ["group"] = query.Group is { } g ? Slug(g) : null,
+            ["hide"] = query.Hidden is { Count: > 0 } hidden ? string.Join(",", hidden.Select(Slug)) : null,
             ["user"] = query.SystemOnly ? System : query.UserId?.ToString(),
             ["sort"] = query.Sort == ActivitySort.Newest ? null : Sorts.First(s => s.Sort == query.Sort).Slug,
             ["page"] = (page ?? query.Page) == 1 ? null : (page ?? query.Page).ToString(CultureInfo.InvariantCulture)

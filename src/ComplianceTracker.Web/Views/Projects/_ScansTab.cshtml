@@ -2,7 +2,8 @@
    Ids and classes used by the tests: #upload-scan (file), #scan-imported, #latest-scans rows .latest-scan (data-tool)
    with .scan-summary and the form .scan-as-evidence (requirementId); #open-findings rows .finding (data-rule) with
    .finding-severity and the form .accept-finding (reason); #closed-findings rows .finding (data-rule) with .finding-state;
-   #no-scans. US-121: form #fetch-from-github, .scan-source on each latest scan, #scan-imported lines (.scan-line).
+   #no-scans. US-121: form #fetch-from-github, .scan-source on each latest scan, #scan-imported lines (.scan-line),
+   #scan-warnings lines (.scan-line) for a source that could not be read (#52).
    US-122: .scan-build on each latest scan; #upload-tokens with form #create-upload-token (name), #new-upload-token (shown
    once), rows .upload-token (data-name) with .token-created, .token-last-used, .token-revoked and form .revoke-upload-token.
    US-079: #project-sboms with form #upload-sbom (productVersion, file), #no-sbom, rows .sbom (data-version) with .sbom-summary
@@ -34,6 +35,16 @@
     {
         <div class="alert alert-success py-2" id="scan-imported" role="status">
             @foreach (var line in imported.Split('\n'))
+            {
+                <div class="scan-line">@line</div>
+            }
+        </div>
+    }
+
+    @if (TempData["ScanWarnings"] is string warnings)
+    {
+        <div class="alert alert-warning py-2" id="scan-warnings" role="alert">
+            @foreach (var line in warnings.Split('\n'))
             {
                 <div class="scan-line">@line</div>
             }
