@@ -1336,6 +1336,24 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Import fra andre værktøjers formater (Jira, ServiceNow).
   - Den nye risikoside: den er delt ud i US-147.
 
+### B89 – Faseporte advarer og kræver en begrundelse (US-071)
+
+- **Beslutning:**
+  - **Gaten:** før et projekt går fra Planning til Development, viser Overview gaten "Ready for Development" med fire tjek:
+    - formål og scope er beskrevet
+    - projektet følger mindst ét framework
+    - projektet er klassificeret under hver forordning, det følger (US-026)
+    - der er mindst én risiko i registret
+  - **Trackeren beregner selv hvert tjek,** og et tjek bliver Met af sig selv, når det er på plads. Tjeklisterne fra US-047 er ikke nødvendige og kan senere tilføje manuelle punkter.
+  - **Gaten blokerer ikke.** Hvis et tjek ikke er opfyldt, kræver faseskiftet en begrundelse.
+  - **Log:** begrundelsen gemmes i aktivitetsloggen sammen med skiftet, fx "Phase: Planning → Development, 1 check not met: Risk workshop next week". Er alle tjek opfyldt, står der "all checks met". Der er ingen ny tabel, fordi loggen er den uforanderlige registrering af skiftet.
+  - **Kun fremad:** at gå tilbage til en tidligere fase har ingen gate.
+  - Samme mekanisme (`PhaseGate`) bruges til gaten før Released (US-072).
+- **Begrundelse:** Et team skal kunne gå videre, når der er en god grund. En begrundelse i loggen giver auditoren sporbarheden, uden at trackeren står i vejen.
+- **Fravalgt:**
+  - Porte, der blokerer.
+  - Godkendelse af en anden person (four-eyes som US-135).
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

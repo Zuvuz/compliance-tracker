@@ -160,6 +160,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] EvidenceQueries evidenceQueries,
             [FromServices] Application.Scanning.ScanService scans,
             [FromServices] Application.Scanning.SbomService sbomService,
+            [FromServices] Application.Projects.PhaseGates phaseGates,
             [FromServices] Application.Security.SecurityEventSuggestionService suggestionService,
             [FromServices] Application.Approvals.ApprovalService approvalService,
             [FromServices] Application.Organizations.OrganisationDocumentService documentService,
@@ -298,6 +299,7 @@ namespace ComplianceTracker.Web.Controllers
                 WaitingForSignature = waitingForSignature,
                 Scans = scanOverview,
                 Sboms = sbomOverview,
+                NextGate = activeTab is ProjectTabs.Overview ? await phaseGates.NextAsync(id, cancellationToken) : null, // US-071
                 SbomFilter = q,
                 RiskStatusFilter = status,
                 RiskLevelFilter = level,
@@ -1499,10 +1501,11 @@ namespace ComplianceTracker.Web.Controllers
         [OnDomainError(nameof(Details), IdFrom = "projectId")]
         public async Task<IActionResult> ChangePhase(
             Guid projectId, LifecyclePhase phase, DateOnly? supportEndsOn, string? supportReason,
-            DateOnly? lastPlacedOnMarket, DateOnly? keepUntil, CancellationToken cancellationToken)
+            DateOnly? lastPlacedOnMarket, DateOnly? keepUntil, string? gateReason, CancellationToken cancellationToken)
         {
             // US-074: for End of support, the last day on the market and an optional later retention date
-            if (!await _service.ChangePhaseAsync(projectId, phase, supportEndsOn, supportReason, cancellationToken, lastPlacedOnMarket, keepUntil))
+            // US-071 R3: the reason for moving on although a check of the gate is not met
+            if (!await _service.ChangePhaseAsync(projectId, phase, supportEndsOn, supportReason, cancellationToken, lastPlacedOnMarket, keepUntil, gateReason))
             {
                 // US-135 R2
                 TempData["ApprovalRequested"] = "End of support needs another member's approval. It waits under \"Waiting for approval\" below.";

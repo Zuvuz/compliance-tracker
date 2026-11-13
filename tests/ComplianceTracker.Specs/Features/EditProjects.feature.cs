@@ -341,7 +341,7 @@ namespace ComplianceTracker.Specs.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 35
-    await testRunner.WhenAsync("I change the phase of \"Acme Portal\" to \"Development\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.WhenAsync("I move \"Acme Portal\" to \"Development\" with the reason \"Kick-off done\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 36
     await testRunner.ThenAsync("the page of \"Acme Portal\" shows phase \"Development\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -422,14 +422,15 @@ namespace ComplianceTracker.Specs.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 46
-    await testRunner.WhenAsync("I change the phase of \"Acme Portal\" to \"Development\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.WhenAsync("I move \"Acme Portal\" to \"Development\" with the reason \"Kick-off done\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 47
     await testRunner.ThenAsync("the activity log for \"Acme ApS\" has \"ProjectPhaseChanged\" for \"Anna\" concerning \"" +
                         "Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 48
-    await testRunner.AndAsync("the \"ProjectPhaseChanged\" entry says \"Phase: Planning → Development\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the \"ProjectPhaseChanged\" entry says \"Phase: Planning → Development, 3 checks not" +
+                        " met: Kick-off done\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

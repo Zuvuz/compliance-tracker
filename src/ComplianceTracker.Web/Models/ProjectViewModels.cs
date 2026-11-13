@@ -307,6 +307,9 @@ namespace ComplianceTracker.Web.Models
         public Application.Scanning.SbomOverview? Sboms { get; init; }
         public string? SbomFilter { get; init; }
 
+        // US-071: the gate to the project's next phase, on the Overview
+        public Domain.Projects.PhaseGate? NextGate { get; init; }
+
         // US-107 R3: the organisation's GitHub Projects to choose from
         public IReadOnlyList<Application.WorkItems.GitHubProjectInfo> GitHubProjectChoices { get; init; } = [];
         public string? RiskStatusFilter { get; init; }
