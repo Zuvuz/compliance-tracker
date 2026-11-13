@@ -13,7 +13,7 @@ Feature: All reports in one tab
   @US-129 @iso27001-7.5.3 @cra-annex7 @integration
   Scenario: The Reports tab lists the reports
     When I open the "Reports" tab of "Acme Portal"
-    Then I see the reports "Traceability", "Technical documentation (draft)" and "Risk assessment"
+    Then I see the reports "Traceability", "Technical documentation (draft)", "Risk assessment" and "Audit package"
     And the "Traceability" report is for "The team, an auditor or the management"
     And the "Traceability" report can be downloaded
     And the "Technical documentation (draft)" report can be downloaded

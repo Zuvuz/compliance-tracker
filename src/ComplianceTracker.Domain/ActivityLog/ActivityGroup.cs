@@ -55,7 +55,7 @@ namespace ComplianceTracker.Domain.ActivityLog
             ActivityAction.RequirementLinked or ActivityAction.RequirementUnlinked or ActivityAction.RequirementMarkedNotApplicable
                 or ActivityAction.RequirementMarkedApplicable or ActivityAction.LinkReviewed or ActivityAction.ReportDownloaded or ActivityAction.ActivityLogExported or ActivityAction.ApplicabilitySuggested
                 or ActivityAction.ApplicabilitySuggestionAccepted or ActivityAction.ApplicabilitySuggestionRejected => ActivityGroup.Requirements,
-            ActivityAction.AuditRecorded or ActivityAction.AuditFindingClosed => ActivityGroup.Evidence, // US-134
+            ActivityAction.AuditRecorded or ActivityAction.AuditFindingClosed or ActivityAction.AuditPackageCreated => ActivityGroup.Evidence, // US-134, US-076
             ActivityAction.EvidenceAdded or ActivityAction.EvidenceRemoved or ActivityAction.EvidenceLinked
                 or ActivityAction.EvidenceUnlinked or ActivityAction.EvidenceLinkSuggested or ActivityAction.EvidenceLinkApproved
                 or ActivityAction.EvidenceLinkRejected or ActivityAction.EvidenceSuggested or ActivityAction.EvidenceSuggestionAccepted

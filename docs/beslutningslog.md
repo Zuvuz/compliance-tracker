@@ -1448,6 +1448,32 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Auditorens eget login og signatur i trackeren.
   - Certifikatet i PDF-rapporterne (US-131). Det kommer i auditpakken (US-076).
 
+### B95 – Auditpakken gemmes som en låst rapport (US-076)
+
+- **Beslutning:**
+  - **Indhold:** pakken er en ZIP med:
+    - **Indholdsfortegnelse:** en tekstfil, der lister hver fil med SHA-256 og evidens, der er et link, og siger, hvad der ikke kom med og hvorfor (R6).
+    - **Rapporter:**
+      - traceability for en auditor pr. valgt framework
+      - ledelsesrapporten som compliance-status
+      - SoA, hvis organisationen har ISO/IEC 27001
+      - risikovurderingen
+      - projektets aktivitetslog som CSV for perioden
+    - **Filer:**
+      - hver evidensfil
+      - den nyeste version af hvert kravdokument
+      - den nyeste SBOM pr. version
+      - audits med auditorens rapport og deres fund
+  - **Låsning:** pakken gemmes som en låst rapport (US-050, `ReportSnapshot`) og ikke i en ny tabel. Den står derfor under "Locked reports" med sit fingeraftryk, kan hentes og tjekkes og ændres aldrig. Signering (US-132) tilbydes kun for PDF'er.
+  - **Fingeraftryk:** pakkens eget SHA-256 vises i trackeren og i loggen (`AuditPackageCreated`). Indholdsfortegnelsen kan ikke indeholde pakkens eget fingeraftryk, men har hver fils.
+  - **Valg:** brugeren vælger frameworks og periode. Uden datoer er perioden de seneste 12 måneder.
+  - **Hvem:** alle i organisationen, også Auditoren (R4). Pakken læser kun data og gemmer en låst kopi.
+  - **Samme pakke:** filerne skrives i fast rækkefølge med fast tidsstempel, så de samme dele giver samme ZIP.
+- **Begrundelse:** Auditoren får alt i ét, og fingeraftrykket viser, at intet er ændret. Låste rapporter har allerede listen, download og tjek af fingeraftryk, så der er ingen grund til en ny mekanisme.
+- **Fravalgt:**
+  - At dele pakken uden for trackeren.
+  - En signatur med certifikat på ZIP'en.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

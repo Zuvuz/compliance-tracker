@@ -1097,6 +1097,21 @@ namespace ComplianceTracker.Web.Controllers
             return File(writer.ToDocx(draft), "application/vnd.openxmlformats-officedocument.wordprocessingml.document", draft.FileName);
         }
 
+        // ---------------------------------------------------------- Audit package (US-076)
+
+        // POST /Projects/CreateAuditPackage: R1–R5, for every member, also the Auditor. It is listed under the locked reports.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Reports)]
+        public async Task<IActionResult> CreateAuditPackage(
+            Guid projectId, string[]? frameworks, DateOnly? from, DateOnly? to, [FromServices] Application.Reports.AuditPackageService packages,
+            CancellationToken cancellationToken)
+        {
+            var snapshot = await packages.CreateAsync(projectId, frameworks, from, to, cancellationToken);
+            TempData["ReportLocked"] = $"Made \"{snapshot.Title}\" with the fingerprint {snapshot.Sha256}";
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Reports });
+        }
+
         // ---------------------------------------------------------- Statement of Applicability (US-053)
 
         // GET /Projects/StatementOfApplicability/{id}?format=xlsx|csv|pdf: the organisation's SoA; for anyone in the

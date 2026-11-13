@@ -15,6 +15,7 @@ namespace ComplianceTracker.Application.Reports
         public const string TechnicalDocumentation = "technical-documentation";
         public const string RiskAssessment = "risk-assessment"; // US-054
         public const string StatementOfApplicability = "statement-of-applicability"; // US-053
+        public const string AuditPackage = "audit-package"; // US-076
 
         public static IReadOnlyList<ProjectReport> For(int frameworkCount, bool followsCra) =>
         [
@@ -29,6 +30,10 @@ namespace ComplianceTracker.Application.Reports
             new(RiskAssessment, "Risk assessment", "A market surveillance authority, an auditor or the management",
                 "The criteria, every risk by level with its measures and actions, the accepted risks with who accepted them, and the closed ones.",
                 "Excel, CSV or PDF",
+                null),
+            new(AuditPackage, "Audit package", "An external auditor",
+                "One locked ZIP: the reports, every evidence file with its SHA-256, the activity log for a period, the requirement documents, the SBOMs and the audits.",
+                "ZIP, locked at once",
                 null)
         ];
 

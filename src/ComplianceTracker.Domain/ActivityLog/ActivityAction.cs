@@ -179,6 +179,9 @@ namespace ComplianceTracker.Domain.ActivityLog
         AuditRecorded,
         AuditFindingClosed,
 
+        // US-076 R5: an audit package was made. SubjectId points at the project; Details holds its title and SHA-256.
+        AuditPackageCreated,
+
         // US-130 R4: a project was left out of (or taken back into) AI improvement. SubjectId points at the project.
         ProjectAiSharingChanged,
 
