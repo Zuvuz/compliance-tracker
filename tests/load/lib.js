@@ -43,7 +43,18 @@ export function signIn(username, stopOnFailure = true) {
     throw new Error(`No Keycloak sign-in form for ${username} (status ${login.status})`);
   }
 
-  const back = http.post(action, { username, password: PASSWORD, credentialId: '' }, { redirects: 10, tags: { kind: 'signin' } });
+  let back = http.post(action, { username, password: PASSWORD, credentialId: '' }, { redirects: 10, tags: { kind: 'signin' } });
+
+  // Keycloak answers with a page whose form a browser posts to /signin-oidc by script (response_mode=form_post);
+  // k6 runs no script, so the form is posted here, as the browser would
+  const answer = parseHTML(String(back.body)).find('form[action$="/signin-oidc"]');
+  if (answer.size() > 0) {
+    const fields = {};
+    answer.find('input[type=hidden]').each((_, input) => {
+      fields[input.getAttribute('name')] = input.getAttribute('value') || '';
+    });
+    back = http.post(answer.attr('action'), fields, { redirects: 10, tags: { kind: 'signin' } });
+  }
   const signedIn = back.status === 200 && back.url.startsWith(BASE) && !String(back.body).includes('kc-form-login');
   check(back, { 'signed in': () => signedIn });
   if (!signedIn) {
