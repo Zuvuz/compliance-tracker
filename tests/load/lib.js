@@ -125,7 +125,12 @@ export function round(projects) {
     if (!fromTracker && !left[path.replace(id, '{id}')]) {
       // Once per page and user: which page sent the signed-in user back to Keycloak, and where it ended
       left[path.replace(id, '{id}')] = true;
-      console.warn(`${path.replace(id, '{id}')} ended at ${r.url.split('?')[0]} (status ${r.status})`);
+      // The first step without following redirects, and which cookies k6 holds for the tracker (names only)
+      const first = http.get(`${BASE}${path}`, { redirects: 0, tags: { kind: 'debug' } });
+      const names = Object.keys(http.cookieJar().cookiesForURL(`${BASE}${path}`)).join(', ');
+      console.warn(`${path.replace(id, '{id}')} ended at ${r.url.split('?')[0]} (status ${r.status}); `
+        + `first answer ${first.status} to ${(first.headers.Location || '').split('?')[0]}; cookies [${names}]; `
+        + `sets [${Object.keys(first.cookies).join(', ')}]`);
     }
     sleep(Math.random() * 2 + 1);
   };
