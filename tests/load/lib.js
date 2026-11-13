@@ -49,8 +49,11 @@ export function signIn(username, stopOnFailure = true) {
   if (!signedIn) {
     // Where it stopped and what Keycloak said, without the password; the test stops, as its figures would be wrong
     const doc = parseHTML(String(back.body));
+    const forms = [];
+    doc.find('form').each((_, f) => forms.push(f.getAttribute('id') || f.getAttribute('action').split('?')[0].split('/').pop()));
     console.error(`Sign-in of ${username} stopped at ${back.url.split('?')[0]} (status ${back.status}): `
-      + `"${text(doc, '#kc-page-title')}" ${text(doc, '.kc-feedback-text, #input-error, .alert-error, .pf-c-alert__title, .pf-v5-c-alert__title')}`);
+      + `title "${text(doc, 'title')}", heading "${text(doc, 'h1')}", forms [${forms.join(', ')}], `
+      + `message "${text(doc, '[id*=error], [class*=alert], [class*=helper-text], [class*=feedback]').slice(0, 200)}"`);
     if (stopOnFailure) {
       exec.test.abort(`${username} could not sign in`);
     }
