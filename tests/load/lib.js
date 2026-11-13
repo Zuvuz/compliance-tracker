@@ -12,6 +12,8 @@ const PASSWORD = __ENV.LOAD_PASSWORD;
 // The test stack uses its own certificate authority, and Keycloak's name points at this machine
 export const common = {
   insecureSkipTLSVerify: true,
+  // A user signs in once and stays signed in; k6 would otherwise empty the cookie jar before every iteration
+  noCookiesReset: true,
   hosts: { 'keycloak.localhost': '127.0.0.1' },
 };
 
@@ -125,12 +127,9 @@ export function round(projects) {
     if (!fromTracker && !left[path.replace(id, '{id}')]) {
       // Once per page and user: which page sent the signed-in user back to Keycloak, and where it ended
       left[path.replace(id, '{id}')] = true;
-      // The first step without following redirects, and which cookies k6 holds for the tracker (names only)
-      const first = http.get(`${BASE}${path}`, { redirects: 0, tags: { kind: 'debug' } });
+      // Which cookies k6 still holds for the tracker (names only), as a lost sign-in cookie is the usual cause
       const names = Object.keys(http.cookieJar().cookiesForURL(`${BASE}${path}`)).join(', ');
-      console.warn(`${path.replace(id, '{id}')} ended at ${r.url.split('?')[0]} (status ${r.status}); `
-        + `first answer ${first.status} to ${(first.headers.Location || '').split('?')[0]}; cookies [${names}]; `
-        + `sets [${Object.keys(first.cookies).join(', ')}]`);
+      console.warn(`${path.replace(id, '{id}')} ended at ${r.url.split('?')[0]} (status ${r.status}); cookies [${names}]`);
     }
     sleep(Math.random() * 2 + 1);
   };
