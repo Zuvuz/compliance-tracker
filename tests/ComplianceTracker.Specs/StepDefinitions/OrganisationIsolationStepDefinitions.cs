@@ -37,6 +37,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             ["suggestionId"] = "The fixture has no AI suggestion (that needs the pretend AI's ranking)",
             ["draftId"] = "The fixture has no story draft (that needs the pretend AI's writing); AskTheAi.feature tests it (US-106)",
+            ["mappingId"] = "The fixture has no cross-mapping (that needs the pretend AI's vectors and two frameworks); CrossMapping.feature tests it (US-037)",
             ["checkId"] = "The fixture has no evidence check (that needs the pretend AI's answer); EvidenceCheck.feature tests it (US-038)",
             ["requestId"] = "The fixture has no framework activation waiting for approval (that needs an import from EUR-Lex); CompleteRequirements.feature tests it (US-137)"
         };
@@ -45,6 +46,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // called by the other organisation, where "not found" is the right answer.
         private static readonly Dictionary<string, string> EmptyForOwn = new()
         {
+            ["Frameworks.CrossMapping"] = "The page only takes versions the organisation's projects use, and the fixture's framework is used by none (US-037), tested in CrossMapping.feature",
             ["Projects.SealedReport"] = "Only a sealed report has this file; sealing needs a seal certificate and two signers (US-132), tested in SigningReports.feature",
             ["Projects.StatementOfApplicability"] = "Only an organisation with its own ISO/IEC 27001 has one; the fixture's one framework is a policy (US-053), tested in StatementOfApplicability.feature"
         };
@@ -360,6 +362,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "versionid" => frameworks ? ids.FrameworkVersion : ids.DocumentVersion,
                 "frameworkid" => ids.Framework,
                 "frameworkversionid" => ids.FrameworkVersion,
+                "from" or "to" => ids.FrameworkVersion, // US-037: the Cross-mapping page's two versions
                 "memberid" or "ownerid" => ids.Member,
                 "invitationid" => ids.Invitation,
                 "measureid" => ids.Measure,

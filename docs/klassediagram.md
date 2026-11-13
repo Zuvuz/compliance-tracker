@@ -1772,6 +1772,28 @@ classDiagram
   }
   RiskDraftService ..> RiskDraft : US-112
   RiskDraft --> Risk : accepted as
+  class RequirementMapping {
+    -id: Guid
+    -organizationId: Guid
+    -fromVersionId: Guid
+    -toVersionId: Guid
+    -fromRequirementId: Guid
+    -toRequirementId: Guid
+    -strength: MappingStrength
+    -score: double
+    -status: SuggestionStatus
+    +Approve(userId, role, at)
+    +Reject(reason, comment, userId, role, at)
+    +StrengthOf(score)$ MappingStrength
+  }
+  class CrossMappingService {
+    +ForPairAsync(from, to) CrossMappingView
+    +SuggestAsync(from, to) int
+    +ApproveAsync(mappingId)
+    +RejectAsync(mappingId, reason, comment)
+  }
+  CrossMappingService ..> RequirementMapping : US-037
+  RequirementMapping --> Requirement : from and to
   PhaseGate "1" *-- "1..*" GateCheck
   PhaseGates ..> PhaseGate : works out (US-071)
   ProjectService --> PhaseGates : before a phase change

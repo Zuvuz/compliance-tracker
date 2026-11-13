@@ -30,6 +30,7 @@ namespace ComplianceTracker.Application.Compliance
         private readonly Risks.IRiskRepository _risks;
         private readonly IClassificationRepository _classifications;
         private readonly IEvidenceCheckRepository _checks; // US-038
+        private readonly Ai.IRequirementMappingRepository _crossMappings; // US-037
 
         public ComplianceQueries(
             IProjectRepository projects,
@@ -48,12 +49,14 @@ namespace ComplianceTracker.Application.Compliance
             IApplicabilitySuggestionRepository applicabilitySuggestions,
             Risks.IRiskRepository risks,
             IClassificationRepository classifications,
-            IEvidenceCheckRepository checks)
+            IEvidenceCheckRepository checks,
+            Ai.IRequirementMappingRepository crossMappings)
         {
             _applicabilitySuggestions = applicabilitySuggestions;
             _risks = risks;
             _classifications = classifications;
             _checks = checks;
+            _crossMappings = crossMappings;
             _evidenceSuggestions = evidenceSuggestions;
             _evidenceStories = evidenceStories;
             _evidenceLinkSuggestions = evidenceLinkSuggestions;
@@ -230,6 +233,9 @@ namespace ComplianceTracker.Application.Compliance
 
             // US-142 R6: a national law (or an implementing act) and the directive cover each other where they match
             result = NationalLayers.Apply(result);
+
+            // US-037 R5: an approved "Same" match between two frameworks passes coverage on too
+            result = CrossMappings.Apply(result, await _crossMappings.ListAsync(project.OrganizationId, cancellationToken));
 
             // US-020: the pending AI suggestions, best first per story
             var requirements = result.SelectMany(f => f.Requirements).ToDictionary(r => r.Requirement.Id, r => r.Requirement);

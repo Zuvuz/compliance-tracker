@@ -6,7 +6,11 @@
     ViewData["Title"] = "Frameworks";
 }
 
-<h1>Frameworks</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <h1>Frameworks</h1>
+    @* US-037 *@
+    <a asp-action="CrossMapping" class="btn btn-sm btn-outline-secondary" id="cross-mapping-link">Cross-mapping between frameworks</a>
+</div>
 <p>The standards and policies @Model.Organization.Name follows. Upload each as a PDF of at most 20 MB.</p>
 <p><a id="built-in-link" asp-action="BuiltIn">Built-in frameworks (CRA, AI Act)</a> can be switched on without uploading anything.</p>
 

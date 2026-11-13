@@ -1606,6 +1606,21 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Agenter, der handler af sig selv efter en tidsplan.
   - Udkast til handlinger (US-111).
 
+### B103 – Cross-mapping mellem frameworks foreslås af AI og godkendes af en person (US-037)
+
+- **Beslutning:**
+  - **Siden:** "Cross-mapping between frameworks" under Frameworks. Man vælger to versioner, som organisationens projekter bruger, og ser forslag og godkendte matches. Alle medlemmer kan se siden; at foreslå og beslutte kræver ManageFrameworks.
+  - **Forslagene:** hvert krav i den ene version sammenlignes med hvert krav i den anden via tekstens vektor (Embedding-opgavens model). De bedste 4 pr. krav over grænsen bliver forslag, mærket "AI-generated". Grænsen er historie-grænsen (US-105), dog mindst 0,5, så svage ligheder ikke bliver støj.
+  - **Styrken følger scoren:** Same fra 0,85, Partly fra 0,7, ellers Related.
+  - **Begrundelsen er en skabelon** med styrke, de to krav og scoren, ikke et kald til en tekstmodel, fordi der kan være hundredvis af par.
+  - **Beslutning:** godkend, eller afvis med en grund fra den faste liste (B14). Et afgjort par foreslås ikke igen; at spørge igen erstatter kun de ventende.
+  - **Dækning:** et godkendt Same lader dækningen gå videre til det ikke-dækkede krav, vist som "through CRA I.2(d)" (samme felt som US-142). Kun egen dækning går videre, så det aldrig går i ring. Partly og Related er kun hints.
+  - **Isolation:** et match hører til organisationen og præcis de to versioner. En version, organisationen ikke følger, giver "not found".
+- **Begrundelse:** Arbejde for ét framework tæller også for et andet, uden at teamet skal mappe hundredvis af krav i hånden, mens hver match stadig er en persons beslutning (AI Act Art. 14).
+- **Fravalgt:**
+  - At Partly også tæller som dækning.
+  - En begrundelse fra tekstmodellen for hvert par.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
