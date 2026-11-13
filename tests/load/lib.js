@@ -107,6 +107,8 @@ export function summaryText(name, data) {
 }
 
 // R2: what a user does: the dashboard, a project's tabs, its activity, and now and then a report
+const left = {};
+
 export function round(projects) {
   if (projects.length === 0) {
     return; // a stress user that could not sign in has nothing to do
@@ -115,10 +117,16 @@ export function round(projects) {
   const id = projects[Math.floor(Math.random() * projects.length)];
   const get = (path, kind) => {
     const r = http.get(`${BASE}${path}`, { tags: { kind, name: path.replace(id, '{id}') } });
+    const fromTracker = r.url.startsWith(BASE);
     check(r, {
       [`${kind} answered`]: (x) => x.status === 200,
-      'from the tracker': (x) => x.url.startsWith(BASE),
+      'from the tracker': () => fromTracker,
     });
+    if (!fromTracker && !left[path.replace(id, '{id}')]) {
+      // Once per page and user: which page sent the signed-in user back to Keycloak, and where it ended
+      left[path.replace(id, '{id}')] = true;
+      console.warn(`${path.replace(id, '{id}')} ended at ${r.url.split('?')[0]} (status ${r.status})`);
+    }
     sleep(Math.random() * 2 + 1);
   };
 

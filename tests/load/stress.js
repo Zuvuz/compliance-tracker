@@ -21,6 +21,10 @@ export const options = {
   thresholds: {
     'http_req_duration{kind:page}': [{ threshold: 'p(95)<1000', abortOnFail: false }],
     http_req_failed: [{ threshold: 'rate<0.01', abortOnFail: false }],
+    // Not limits, but they make k6 count how many were signed in and stayed in the tracker under stress
+    'checks{check:signed in}': [{ threshold: 'rate>=0', abortOnFail: false }],
+    'checks{check:from the tracker}': [{ threshold: 'rate>=0', abortOnFail: false }],
+    'http_req_duration{kind:report}': [{ threshold: 'p(95)<5000', abortOnFail: false }],
   },
 };
 
