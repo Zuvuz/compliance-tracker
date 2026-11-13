@@ -76,6 +76,7 @@ namespace ComplianceTracker.Application.Compliance
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
         private readonly IAiLimits _limits;
+        private readonly DiagramReaders _diagrams; // US-149
 
         public EvidenceService(
             IProjectRepository projects,
@@ -93,9 +94,11 @@ namespace ComplianceTracker.Application.Compliance
             IActivityLogger log,
             IUnitOfWork unitOfWork,
             TimeProvider clock,
-            IAiLimits limits)
+            IAiLimits limits,
+            DiagramReaders diagrams)
         {
             _limits = limits;
+            _diagrams = diagrams;
             _projects = projects;
             _frameworks = frameworks;
             _applicability = applicability;
@@ -133,6 +136,19 @@ namespace ComplianceTracker.Application.Compliance
                 var file = EvidenceFile.Create(fileName ?? "", content);
                 evidence = Evidence.ForFile(project.Id, title, file, validUntil, user.Id, user.Role, Now);
                 stored = file.Content;
+
+                // US-149: a diagram is read once, when it is added; one that cannot be read is still kept (R4)
+                if (_diagrams.Read(file.ContentType, file.Content) is { } diagram)
+                {
+                    if (diagram.Content is { } read)
+                    {
+                        evidence.ReadAsDiagram(read);
+                    }
+                    else
+                    {
+                        evidence.DiagramUnreadable(diagram.Error!);
+                    }
+                }
             }
             else
             {
@@ -140,7 +156,9 @@ namespace ComplianceTracker.Application.Compliance
             }
 
             await _evidence.AddAsync(evidence, stored, cancellationToken);
-            await _log.LogAsync(ActivityAction.EvidenceAdded, project.Id, evidence.Title, cancellationToken);
+            await _log.LogAsync(ActivityAction.EvidenceAdded, project.Id,
+                evidence.DiagramSummary is { } diagramSummary ? $"{evidence.Title} ({diagramSummary.Replace("Diagram: ", "diagram: ")})" : evidence.Title,
+                cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             try

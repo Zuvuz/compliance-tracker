@@ -69,6 +69,12 @@ namespace ComplianceTracker.Specs.Support
                 services.AddSingleton<IGitHubProjects>(provider => (GitHubWorkItemSource)provider.GetRequiredService<IWorkItemSource>()); // US-107
                 services.AddSingleton<ComplianceTracker.Application.Scanning.IGitHubSecurityAlerts>(provider => (GitHubWorkItemSource)provider.GetRequiredService<IWorkItemSource>()); // US-121
                 services.AddSingleton<IEvidenceTextReader, ComplianceTracker.Infrastructure.Compliance.EvidenceTextReader>();
+                // US-149: one reader per diagram format
+                services.AddSingleton<ComplianceTracker.Application.Compliance.IDiagramReader, ComplianceTracker.Infrastructure.Compliance.DrawioDiagramReader>();
+                services.AddSingleton<ComplianceTracker.Application.Compliance.IDiagramReader, ComplianceTracker.Infrastructure.Compliance.MermaidDiagramReader>();
+                services.AddSingleton<ComplianceTracker.Application.Compliance.IDiagramReader, ComplianceTracker.Infrastructure.Compliance.PlantUmlDiagramReader>();
+                services.AddSingleton<ComplianceTracker.Application.Compliance.IDiagramReader, ComplianceTracker.Infrastructure.Compliance.BpmnDiagramReader>();
+                services.AddSingleton<ComplianceTracker.Application.Compliance.IDiagramReader, ComplianceTracker.Infrastructure.Compliance.SvgDiagramReader>();
 
                 // US-020: not used by these tests, but the use cases must be creatable
                 services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();

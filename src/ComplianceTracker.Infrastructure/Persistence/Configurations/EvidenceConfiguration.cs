@@ -22,6 +22,13 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(e => e.ContentType).HasMaxLength(100);
             builder.Property(e => e.Sha256).HasMaxLength(64);
             builder.Property(e => e.AddedRole).HasConversion<string>().HasMaxLength(50);
+            // US-149
+            builder.Property(e => e.DiagramElements).HasMaxLength(Evidence.MaxDiagramTextLength);
+            builder.Property(e => e.DiagramLinks).HasMaxLength(Evidence.MaxDiagramTextLength);
+            builder.Property(e => e.DiagramError).HasMaxLength(300);
+            builder.Ignore(e => e.IsDiagram);
+            builder.Ignore(e => e.DiagramSummary);
+            builder.Ignore(e => e.DiagramCutNote);
             builder.Ignore(e => e.IsActive);
             builder.Ignore(e => e.IsFile);
 

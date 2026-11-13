@@ -90,6 +90,12 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<IEvidenceSuggestionRepository, EvidenceSuggestionRepository>(); // US-058
             services.AddSingleton<ITestResultsReader, Compliance.TestResultsReader>();
             services.AddSingleton<IEvidenceTextReader, Compliance.EvidenceTextReader>();
+            // US-149: one reader per diagram format
+            services.AddSingleton<IDiagramReader, Compliance.DrawioDiagramReader>();
+            services.AddSingleton<IDiagramReader, Compliance.MermaidDiagramReader>();
+            services.AddSingleton<IDiagramReader, Compliance.PlantUmlDiagramReader>();
+            services.AddSingleton<IDiagramReader, Compliance.BpmnDiagramReader>();
+            services.AddSingleton<IDiagramReader, Compliance.SvgDiagramReader>();
             services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();
             services.AddScoped<IApplicabilitySuggestionRepository, ApplicabilitySuggestionRepository>(); // US-060
             services.AddScoped<IAiEvaluationRepository, AiEvaluationRepository>(); // US-116

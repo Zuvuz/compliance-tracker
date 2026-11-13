@@ -46,6 +46,49 @@ namespace ComplianceTracker.Domain.Mappings
 
         public bool IsFile => FileName is not null;
 
+        // US-149: what a diagram file says, read when it was added (R3), or why it could not be read (R4)
+        public const int MaxDiagramTextLength = 4000;
+        public int? DiagramElementCount { get; private set; }
+        public int? DiagramLinkCount { get; private set; }
+        public int? DiagramTotalElements { get; private set; }
+        public string? DiagramElements { get; private set; }
+        public string? DiagramLinks { get; private set; }
+        public string? DiagramError { get; private set; }
+
+        public bool IsDiagram => DiagramElementCount is not null || DiagramError is not null;
+
+        public string? DiagramSummary => DiagramError is not null
+            ? "The diagram could not be read"
+            : DiagramElementCount is { } elements
+                ? $"Diagram: {elements} element{(elements == 1 ? "" : "s")}, {DiagramLinkCount} link{(DiagramLinkCount == 1 ? "" : "s")}"
+                : null;
+
+        public string? DiagramCutNote => DiagramTotalElements > DiagramElementCount
+            ? $"Read the first {DiagramElementCount:N0} of {DiagramTotalElements:N0} elements"
+            : null;
+
+        // R1–R3, R5
+        public void ReadAsDiagram(DiagramContent diagram)
+        {
+            DiagramElementCount = diagram.Elements.Count;
+            DiagramLinkCount = diagram.Links.Count;
+            DiagramTotalElements = diagram.TotalElements;
+            DiagramElements = Cut(string.Join("\n", diagram.Elements.Select(e => e.Name)));
+            DiagramLinks = Cut(string.Join("\n", diagram.Links.Select(l => l.ToString())));
+            DiagramError = null;
+        }
+
+        // R4: the file is kept; the reason is shown
+        public void DiagramUnreadable(string reason)
+        {
+            DiagramError = string.IsNullOrWhiteSpace(reason) ? "unknown reason" : reason.Trim().Length <= 300 ? reason.Trim() : reason.Trim()[..300];
+            DiagramElementCount = DiagramLinkCount = DiagramTotalElements = null;
+            DiagramElements = DiagramLinks = null;
+        }
+
+        private static string? Cut(string text)
+            => text.Length == 0 ? null : text.Length <= MaxDiagramTextLength ? text : text[..MaxDiagramTextLength];
+
         // For EF Core only
         private Evidence() { }
 

@@ -3427,6 +3427,27 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<int?>("DiagramElementCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("DiagramElements")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("DiagramError")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<int?>("DiagramLinkCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("DiagramLinks")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<int?>("DiagramTotalElements")
+                        .HasColumnType("integer");
+
                     b.Property<string>("FileName")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
