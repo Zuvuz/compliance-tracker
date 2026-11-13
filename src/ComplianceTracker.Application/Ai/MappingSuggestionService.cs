@@ -54,6 +54,7 @@ namespace ComplianceTracker.Application.Ai
         private readonly IRequirementApplicabilityRepository _applicability;
         private readonly IMappingSuggestionRepository _suggestions;
         private readonly IEmbeddingModel _embeddings;
+        private readonly IReranker? _reranker; // US-118
         private readonly IRationaleQueue _rationales;
         private readonly IWorkItemNotifier _notifier;
         private readonly CurrentMember _member;
@@ -86,6 +87,7 @@ namespace ComplianceTracker.Application.Ai
             _applicability = applicability;
             _suggestions = suggestions;
             _embeddings = models.Embedding(AiTask.Embedding); // US-117
+            _reranker = models.Reranker(); // US-118
             _rationales = rationales;
             _notifier = notifier;
             _member = member;
@@ -108,7 +110,7 @@ namespace ComplianceTracker.Application.Ai
 
             var made = await SuggestForAsync(context, context.Stories, excluded, startRank: _ => 1, cancellationToken);
             await _log.LogAsync(ActivityAction.MappingsSuggested, context.Project.Id,
-                $"{made} suggestions for {context.Stories.Count} user stories ({_embeddings.Name}, {RationalePrompt.Version})", cancellationToken);
+                $"{made} suggestions for {context.Stories.Count} user stories ({Models}, {RationalePrompt.Version})", cancellationToken);
             await SaveAndNotifyAsync(context.Project.Id, cancellationToken);
             return made;
         }
@@ -173,24 +175,24 @@ namespace ComplianceTracker.Application.Ai
             for (var r = 0; r < targets.Count; r++)
             {
                 var requirement = targets[r];
-                var best = context.Stories
-                    .Select((story, s) => (Story: story, Score: Similarity.Cosine(storyVectors[s], requirementVectors[r])))
-                    .Where(c => c.Score >= _limits.MinimumScoreForStories) // US-105 R1
-                    .Where(c => !excluded.Contains((c.Story.Id, requirement.Id)))
-                    .OrderByDescending(c => c.Score)
-                    .Take(StoriesPerRequirement);
+                // US-105 R1 and US-118: the limit applies to the rerank score when there is a reranker
+                var candidates = context.Stories
+                    .Select((story, s) => (Item: story, Search: Similarity.Cosine(storyVectors[s], requirementVectors[r])))
+                    .Where(c => !excluded.Contains((c.Item.Id, requirement.Id)));
+                var best = await Reranking.BestAsync(_reranker, RequirementText(requirement), candidates, StoryText,
+                    _limits.MinimumScoreForStories, StoriesPerRequirement, cancellationToken);
 
-                foreach (var (story, score) in best)
+                foreach (var ranked in best)
                 {
-                    made.Add(MappingSuggestion.Create(context.Project.Id, story.Id, requirement.Id, score, nextRank[story.Id]++,
-                        _embeddings.Name, RationalePrompt.Version, now, _limits.MinimumScoreForStories));
+                    made.Add(MappingSuggestion.Create(context.Project.Id, ranked.Item.Id, requirement.Id, ranked.Score, nextRank[ranked.Item.Id]++,
+                        _embeddings.Name, RationalePrompt.Version, now, _limits.MinimumScoreForStories).Reranked(ranked.SearchScore, _reranker?.Name));
                 }
             }
 
             await NoteEarlierRejectionsAsync(context, made, cancellationToken);
             await _suggestions.AddRangeAsync(made, cancellationToken);
             await _log.LogAsync(ActivityAction.MappingsSuggested, context.Project.Id,
-                $"{made.Count} suggestions for {targets.Count} not-covered requirements ({_embeddings.Name}, {RationalePrompt.Version})", cancellationToken);
+                $"{made.Count} suggestions for {targets.Count} not-covered requirements ({Models}, {RationalePrompt.Version})", cancellationToken);
             await SaveAndNotifyAsync(context.Project.Id, cancellationToken);
             return made.Count;
         }
@@ -335,19 +337,18 @@ namespace ComplianceTracker.Application.Ai
             for (var s = 0; s < stories.Count; s++)
             {
                 var story = stories[s];
-                var best = context.Requirements
-                    .Select((requirement, r) => (Requirement: requirement, Score: Similarity.Cosine(storyVectors[s], requirementVectors[r])))
-                    .Where(c => c.Score >= _limits.MinimumScoreForStories) // US-105 R1
-                    .Where(c => !excluded.Contains((story.Id, c.Requirement.Id)))
-                    .OrderByDescending(c => c.Score)
-                    .Take(BatchSize)
-                    .ToList();
+                // US-105 R1 and US-118: the limit applies to the rerank score when there is a reranker
+                var candidates = context.Requirements
+                    .Select((requirement, r) => (Item: requirement, Search: Similarity.Cosine(storyVectors[s], requirementVectors[r])))
+                    .Where(c => !excluded.Contains((story.Id, c.Item.Id)));
+                var best = await Reranking.BestAsync(_reranker, StoryText(story), candidates, RequirementText,
+                    _limits.MinimumScoreForStories, BatchSize, cancellationToken);
 
                 var rank = startRank(story);
-                foreach (var (requirement, score) in best)
+                foreach (var ranked in best)
                 {
-                    made.Add(MappingSuggestion.Create(context.Project.Id, story.Id, requirement.Id, score, rank++,
-                        _embeddings.Name, RationalePrompt.Version, now, _limits.MinimumScoreForStories));
+                    made.Add(MappingSuggestion.Create(context.Project.Id, story.Id, ranked.Item.Id, ranked.Score, rank++,
+                        _embeddings.Name, RationalePrompt.Version, now, _limits.MinimumScoreForStories).Reranked(ranked.SearchScore, _reranker?.Name));
                 }
             }
 
@@ -355,6 +356,9 @@ namespace ComplianceTracker.Application.Ai
             await _suggestions.AddRangeAsync(made, cancellationToken);
             return made.Count;
         }
+
+        // The models used, for the activity log: "nomic-embed-text" or "nomic-embed-text + bge-reranker" (US-118 R4)
+        private string Models => _reranker is null ? _embeddings.Name : $"{_embeddings.Name} + {_reranker.Name}";
 
         private async Task<IReadOnlyList<float[]>> EmbedAsync(IReadOnlyList<string> texts, CancellationToken cancellationToken)
         {

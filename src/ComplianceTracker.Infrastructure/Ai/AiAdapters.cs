@@ -141,6 +141,53 @@ namespace ComplianceTracker.Infrastructure.Ai
 
     // ---------------------------------------------------------- Shared
 
+    // US-118: a reranker on the organisation's own AI server, in the /v1/rerank format of TEI, vLLM and Jina:
+    // { model, query, documents } → { results: [{ index, relevance_score }] }. The AI-governance gateway is not involved.
+    public class OpenAiCompatibleReranker : IReranker
+    {
+        private readonly HttpClient _http;
+
+        public OpenAiCompatibleReranker(HttpClient http, string model)
+        {
+            _http = http;
+            Name = model;
+        }
+
+        public string Name { get; }
+
+        public async Task<IReadOnlyList<double>> RerankAsync(string query, IReadOnlyList<string> documents, CancellationToken cancellationToken = default)
+        {
+            var answer = await AiHttp.PostAsync<RerankAnswer>(_http, "v1/rerank", new { model = Name, query, documents, top_n = documents.Count }, cancellationToken);
+            return Scores(answer.Results, documents.Count, Name);
+        }
+
+        // One score per document, in the documents' order; the server may sort its answer by score
+        public static IReadOnlyList<double> Scores(IReadOnlyList<RerankResult>? results, int count, string model)
+        {
+            var scores = new double[count];
+            var seen = new bool[count];
+            foreach (var result in results ?? [])
+            {
+                if (result.Index < 0 || result.Index >= count || seen[result.Index])
+                {
+                    throw new AiUnavailableException($"The reranker {model} did not return one score per candidate");
+                }
+
+                scores[result.Index] = result.RelevanceScore ?? result.Score ?? 0;
+                seen[result.Index] = true;
+            }
+
+            return seen.All(s => s) ? scores : throw new AiUnavailableException($"The reranker {model} did not return one score per candidate");
+        }
+
+        public sealed record RerankResult(
+            [property: JsonPropertyName("index")] int Index,
+            [property: JsonPropertyName("relevance_score")] double? RelevanceScore,
+            [property: JsonPropertyName("score")] double? Score);
+
+        private sealed record RerankAnswer([property: JsonPropertyName("results")] List<RerankResult>? Results);
+    }
+
     internal static class AiHttp
     {
         // Every failure becomes AiUnavailableException with a message the user can act on

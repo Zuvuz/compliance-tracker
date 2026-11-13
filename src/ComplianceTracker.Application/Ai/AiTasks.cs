@@ -34,6 +34,9 @@ namespace ComplianceTracker.Application.Ai
 
         IRationaleWriter Writer(AiTask task);
 
+        // US-118 R5: the Ranking task's model, or null when none is set (then the search score is used as before)
+        IReranker? Reranker();
+
         // R1, for the operator: which model each task uses, and whether it has its own setting
         IReadOnlyList<AiTaskModel> Overview();
     }
@@ -60,6 +63,12 @@ namespace ComplianceTracker.Application.Ai
             AiTask.ImportFill => "Import fill",
             _ => task.ToString()
         };
+
+        // US-118 R5: the Ranking task has no default model; without its own it is off
+        public const string RankingOff = "Off (search score only)";
+
+        public static string DefaultModel(AiTask task, string embedding, string writer)
+            => task == AiTask.Ranking ? RankingOff : IsEmbedding(task) ? embedding : writer;
 
         // The tasks that use vectors; the rest write text
         public static bool IsEmbedding(AiTask task) => task == AiTask.Embedding;

@@ -17,11 +17,14 @@ namespace ComplianceTracker.Specs.Support
 
         public IRationaleWriter Writer(AiTask task) => For(task);
 
+        // US-118: only when a scenario switches it on (FakeAi.RerankerOn)
+        public IReranker? Reranker() => _ai.RerankerOn ? _ai : null;
+
         public IReadOnlyList<AiTaskModel> Overview()
             => Enum.GetValues<AiTask>()
                 .Select(task => _ai.TaskModels.TryGetValue(task, out var name)
                     ? new AiTaskModel(task, name, OwnSetting: true)
-                    : new AiTaskModel(task, AiTaskNames.IsEmbedding(task) ? ((IEmbeddingModel)_ai).Name : ((IRationaleWriter)_ai).Name, OwnSetting: false))
+                    : new AiTaskModel(task, AiTaskNames.DefaultModel(task, ((IEmbeddingModel)_ai).Name, ((IRationaleWriter)_ai).Name), OwnSetting: false))
                 .ToList();
 
         private TaskModel For(AiTask task)

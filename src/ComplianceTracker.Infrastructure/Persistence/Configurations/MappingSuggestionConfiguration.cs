@@ -25,6 +25,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(s => s.Rationale).HasMaxLength(1000);
             builder.Property(s => s.Comment).HasMaxLength(1000);
             builder.Property(s => s.EmbeddingModel).IsRequired().HasMaxLength(200);
+            builder.Property(s => s.RankingModel).HasMaxLength(200); // US-118
             builder.Property(s => s.RationaleModel).HasMaxLength(200);
             builder.Property(s => s.PromptVersion).IsRequired().HasMaxLength(50);
             builder.Property(s => s.ContextUsed).HasMaxLength(1000); // US-060
