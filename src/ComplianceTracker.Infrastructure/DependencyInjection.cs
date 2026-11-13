@@ -100,6 +100,8 @@ namespace ComplianceTracker.Infrastructure
             // US-142: the NIS2 area's storage and the ids of the built-in NIS2 catalogues
             services.AddScoped<Application.Organizations.INis2AssessmentRepository, Nis2AssessmentRepository>();
             services.AddScoped<Application.Organizations.IDocumentLinkSuggestionRepository, DocumentLinkSuggestionRepository>(); // US-136 R2
+            services.AddSingleton(new Application.Organizations.IndustryFrameworks(
+                Persistence.BuiltInFrameworks.Cra.FrameworkId, Persistence.BuiltInFrameworks.AiAct.FrameworkId)); // US-080
             services.AddSingleton(new Application.Organizations.Nis2Catalogues(
                 Persistence.BuiltInFrameworks.Nis2.FrameworkId, Persistence.BuiltInFrameworks.Nis2Denmark.FrameworkId,
                 Persistence.BuiltInFrameworks.Nis2Technical.FrameworkId));

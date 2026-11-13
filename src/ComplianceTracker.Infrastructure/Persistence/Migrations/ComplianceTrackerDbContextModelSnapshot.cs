@@ -4699,9 +4699,16 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(8)
                         .HasColumnType("character varying(8)");
 
+                    b.Property<string>("Industry")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<bool>("ProductsUseAi")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Sector")
                         .IsRequired()

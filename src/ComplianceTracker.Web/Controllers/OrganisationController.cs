@@ -14,10 +14,12 @@ namespace ComplianceTracker.Web.Controllers
         }
 
         // GET /Organisation: made the first time it is opened
-        public async Task<IActionResult> Index(CancellationToken cancellationToken)
+        public async Task<IActionResult> Index(string? tab, CancellationToken cancellationToken)
         {
             var area = await _area.EnsureAsync(cancellationToken);
-            return RedirectToAction("Details", "Projects", new { id = area.Id });
+            return tab is null
+                ? RedirectToAction("Details", "Projects", new { id = area.Id })
+                : RedirectToAction("Details", "Projects", new { id = area.Id, tab }); // US-080: e.g. the NIS2 scope check
         }
     }
 }

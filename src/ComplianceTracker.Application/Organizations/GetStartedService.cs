@@ -7,6 +7,7 @@ namespace ComplianceTracker.Application.Organizations
     public enum GetStartedStep
     {
         CreateOrganisation,
+        ChooseIndustry, // US-080
         SwitchOnRegulation,
         CreateProject,
         AddFrameworks,
@@ -60,6 +61,7 @@ namespace ComplianceTracker.Application.Organizations
             IReadOnlyList<GetStartedItem> items =
             [
                 new(GetStartedStep.CreateOrganisation, "Create the organisation", true, null),
+                new(GetStartedStep.ChooseIndustry, "Choose your industry", organization.Industry is not null, Permission.ManageMembers),
                 new(GetStartedStep.SwitchOnRegulation, "Switch on a regulation", status.RegulationOn, Permission.ManageFrameworks),
                 new(GetStartedStep.CreateProject, "Create a project", status.FirstProjectId is not null, Permission.EditProjects),
                 new(GetStartedStep.AddFrameworks, "Add the project's frameworks", status.HasProjectFramework, Permission.EditProjects),

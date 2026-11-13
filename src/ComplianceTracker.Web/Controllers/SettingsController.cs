@@ -24,7 +24,8 @@ namespace ComplianceTracker.Web.Controllers
 
         // GET /Settings
         [HttpGet]
-        public async Task<IActionResult> Index([FromServices] Application.Reports.ReportSigningService signing, CancellationToken cancellationToken)
+        public async Task<IActionResult> Index([FromServices] Application.Reports.ReportSigningService signing,
+            [FromServices] Application.Organizations.IndustryProfileService industry, CancellationToken cancellationToken)
         {
             var organization = await _organizations.MineAsync(cancellationToken);
             if (organization is null)
@@ -39,6 +40,7 @@ namespace ComplianceTracker.Web.Controllers
 
             ViewData["SharedCount"] = await _aiFeedback.SharedCountAsync(cancellationToken); // US-130 R6
             ViewData["Seal"] = await signing.SealAsync(cancellationToken); // US-132
+            ViewData["Industry"] = await industry.ViewAsync(cancellationToken); // US-080
             return View(organization);
         }
 
@@ -50,6 +52,17 @@ namespace ComplianceTracker.Web.Controllers
         {
             await _aiFeedback.SetSharingAsync(share, cancellationToken);
             return RedirectToAction(nameof(Index));
+        }
+
+        // POST /Settings/ChooseIndustry: US-080 R1, R6
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> ChooseIndustry(Domain.Organizations.Industry? industry, bool productsUseAi,
+            [FromServices] Application.Organizations.IndustryProfileService profiles, CancellationToken cancellationToken)
+        {
+            await profiles.ChooseAsync(industry, productsUseAi, cancellationToken);
+            return Redirect(Url.Action(nameof(Index)) + "#industry-profile");
         }
 
         // POST /Settings/SetCountry: US-142 R6

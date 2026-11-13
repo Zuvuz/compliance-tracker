@@ -26,6 +26,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
 
             // Enums are stored as text, so new values never shift existing data
             builder.Property(o => o.Sector).HasConversion<string>().HasMaxLength(50);
+            builder.Property(o => o.Industry).HasConversion<string>().HasMaxLength(20); // US-080
             builder.Property(o => o.Size).HasConversion<string>().HasMaxLength(50);
 
             // US-142 R6

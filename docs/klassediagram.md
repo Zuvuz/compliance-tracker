@@ -33,6 +33,8 @@ classDiagram
     -sector: Sector
     -size: OrganizationSize
     -country: string
+    -industry: Industry?
+    -productsUseAi: bool
     -users: List~User~
     -projects: List~Project~
     -controls: List~Control~
@@ -1805,6 +1807,21 @@ classDiagram
     +RejectAsync(mappingId, reason, comment)
   }
   CrossMappingService ..> RequirementMapping : US-037
+  class IIndustryProfile {
+    <<interface>>
+    +Industry: Industry
+    +For(productsUseAi, frameworks) IndustryProfile
+  }
+  class IndustryProfiles {
+    +For(industry, productsUseAi) IndustryProfile
+  }
+  class IndustryProfileService {
+    +ViewAsync() IndustryView
+    +ChooseAsync(industry, productsUseAi)
+  }
+  IndustryProfiles o-- IIndustryProfile : US-080
+  IndustryProfileService ..> IndustryProfiles
+  IndustryProfileService ..> Organization : industry
   RequirementMapping --> Requirement : from and to
   PhaseGate "1" *-- "1..*" GateCheck
   PhaseGates ..> PhaseGate : works out (US-071)
