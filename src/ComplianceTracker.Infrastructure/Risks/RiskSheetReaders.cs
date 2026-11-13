@@ -142,13 +142,13 @@ namespace ComplianceTracker.Infrastructure.Risks
                 using var stream = new MemoryStream(content, writable: false);
                 using var document = SpreadsheetDocument.Open(stream, false);
                 var workbook = document.WorkbookPart ?? throw new DomainException("The workbook has no sheets");
-                var first = workbook.Workbook.Sheets?.Elements<Sheet>().FirstOrDefault()
+                var first = workbook.Workbook?.Sheets?.Elements<Sheet>().FirstOrDefault()
                     ?? throw new DomainException("The workbook has no sheets");
                 var sheet = (WorksheetPart)workbook.GetPartById(first.Id!.Value!);
-                var shared = workbook.SharedStringTablePart?.SharedStringTable.Elements<SharedStringItem>().Select(s => s.InnerText).ToList() ?? [];
+                var shared = workbook.SharedStringTablePart?.SharedStringTable?.Elements<SharedStringItem>().Select(s => s.InnerText).ToList() ?? [];
 
                 var rows = new List<IReadOnlyList<string>>();
-                foreach (var row in sheet.Worksheet.Descendants<Row>().Take(RiskImportLimits.MaxSheetRows))
+                foreach (var row in (sheet.Worksheet?.Descendants<Row>() ?? []).Take(RiskImportLimits.MaxSheetRows))
                 {
                     var cells = new List<string>();
                     foreach (var cell in row.Elements<Cell>())

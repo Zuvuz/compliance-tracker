@@ -64,6 +64,10 @@ namespace ComplianceTracker.Specs.Support
                 // US-139: the scenarios read how many queries a page made
                 services.AddSingleton<ComplianceTracker.Infrastructure.Persistence.IQueryCountObserver, QueryCounts>();
 
+                // US-098: the scenarios read the app's log lines
+                services.AddSingleton<CapturedLogs>();
+                services.AddSingleton<Microsoft.Extensions.Logging.ILoggerProvider>(provider => provider.GetRequiredService<CapturedLogs>());
+
                 // US-018: the GitHub adapter talks to the pretend GitHub instead of api.github.com
                 services.AddHttpClient<GitHubWorkItemSource>().ConfigurePrimaryHttpMessageHandler(github.CreateHandler);
 

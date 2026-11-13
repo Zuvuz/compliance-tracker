@@ -1497,6 +1497,24 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - At sænke Overview og Compliance nu. De laver mange kald, men et fast antal. Det kan blive en egen forbedring, hvis lasttesten (US-138) viser, at de er langsomme.
 
+### B97 – Driftslogs med reference og sikkerhedshændelser (US-098)
+
+- **Beslutning:**
+  - **Format:** logs skrives som JSON til stdout med .NET's egen JSON-logger, så der kommer ingen ny pakke. Development bruger stadig den læselige konsol. Indstillingen `Logging:Format` vælger.
+  - **Reference og bruger:** hver loglinje i en request bærer referencen (W3C trace id) og brugerens Keycloak-id ("sub"). Fejlsiden viser samme reference og ingen tekniske detaljer.
+  - **Ingen organisation i hver linje:** organisationens id står ikke i hver linje, fordi det ville koste et databasekald pr. request (US-139). Brugerens id finder organisationen.
+  - **Sikkerhedshændelser (Warning) med faste EventId'er:**
+    - adgang nægtet: 403, eller 404 på en side for en logget ind bruger
+    - en ramt grænse for requests (429)
+    - et mislykket login, hvor kun typen af fejl logges og aldrig token eller besked
+  - **Fejlrate:** mere end 10 fejl (5xx) inden for 5 minutter giver én "Error rate high"-linje, som et logsystem kan alarmere på.
+  - `docs/drift-og-logs.md` beskriver felterne og hændelserne.
+- **Begrundelse:** Operatøren skal kunne finde en fejl ud fra den reference, en bruger giver, og blive advaret, før kunderne opdager det, uden at logs bliver en kilde til persondata.
+- **Fravalgt:**
+  - At drive et logsystem.
+  - Advarsler på e-mail eller chat.
+  - Serilog.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
