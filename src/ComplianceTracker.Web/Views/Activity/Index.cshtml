@@ -3,7 +3,28 @@
 
 <partial name="_OrganizationHeader" model="Model.Organization" />
 
-<h1 class="h4 mb-3">Activity</h1>
-<p class="small text-muted">Everything that happened in the organisation: sign-ins, members, frameworks and every project.</p>
+@{
+    // US-055: the export uses the filters shown; without dates it is the last 90 days
+    string ExportUrl(string format)
+    {
+        var values = Context.Request.Query
+            .Where(q => q.Key is not ("page" or "sort" or "format"))
+            .ToDictionary(q => q.Key, q => (string?)q.Value.ToString());
+        values["format"] = format;
+        return Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(Url.Action("Export")!, values);
+    }
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+        <h1 class="h4 mb-1">Activity</h1>
+        <p class="small text-muted mb-0">Everything that happened in the organisation: sign-ins, members, frameworks and every project.</p>
+    </div>
+    <div class="d-flex gap-1 align-items-center" id="export-activity">
+        <span class="small text-muted">Export what the filters show (the last 90 days without dates):</span>
+        <a class="btn btn-sm btn-outline-secondary" id="export-activity-csv" href="@ExportUrl("csv")">CSV</a>
+        <a class="btn btn-sm btn-outline-secondary" id="export-activity-pdf" href="@ExportUrl("pdf")">PDF</a>
+    </div>
+</div>
 
 <partial name="_ActivityLog" model="Model" />

@@ -1373,6 +1373,27 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Selve overensstemmelsesvurderingen og CE-mærkning.
   - At gaten blokerer.
 
+### B91 – Eksport af aktivitetsloggen (US-055)
+
+- **Beslutning:**
+  - **Hvor:** eksporten ligger på organisationens Activity-side (/Activity) som knapperne "CSV" og "PDF" og bruger de filtre, siden viser: søgning, periode, gruppe, person og projekt.
+  - **Periode:** uden datoer de seneste 90 dage. Begge datoer er med.
+  - **Hvem:** de samme som må se hele loggen (US-102 R6), altså Admin og Auditor. Issuet sagde "alle i organisationen", men det ville give andre roller adgang til en log, de ikke må se på siden.
+  - **Kolonner:**
+    - tid i UTC (ISO 8601)
+    - handling
+    - projekt
+    - hvad den ellers handler om, fx et medlem
+    - person (eller "System")
+    - rolle på tidspunktet
+    - detaljer
+  - **Én CSV-skriver** (`CsvFile`) for alle eksporter: UTF-8 med BOM, `;`, og ingen celle kan køre som en formel. Traceability-matrixen bruger den nu også.
+  - Eksporten logges som `ActivityLogExported` med format, periode og antal.
+- **Begrundelse:** En auditor vil tjekke beslutningerne i sine egne værktøjer. Samme adgang som siden giver ingen nye huller.
+- **Fravalgt:**
+  - At låse eksporten (US-050). Den kommer i den låste auditpakke (US-076).
+  - Serverens egne logs.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

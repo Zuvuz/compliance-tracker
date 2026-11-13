@@ -62,16 +62,7 @@ namespace ComplianceTracker.Application.Compliance
         }
 
         // R3: UTF-8 with a BOM and ";" as separator, so it opens in Danish Excel. R6: no cell can run as a formula.
-        public static byte[] ToCsv(IEnumerable<IReadOnlyList<string>> rows)
-        {
-            var text = new StringBuilder();
-            foreach (var line in rows.Prepend(Columns))
-            {
-                text.Append(string.Join(';', line.Select(Cell))).Append("\r\n");
-            }
-
-            return [.. Encoding.UTF8.GetPreamble(), .. Encoding.UTF8.GetBytes(text.ToString())];
-        }
+        public static byte[] ToCsv(IEnumerable<IReadOnlyList<string>> rows) => Common.CsvFile.Write(Columns, rows);
 
         // e.g. "PR 42 (https://github.com/acme/portal/pull/42) | Pentest report (pentest.pdf, SHA-256 9c1e…, expired)"
         private static string EvidenceText(RequirementCoverage requirement)
@@ -81,18 +72,5 @@ namespace ComplianceTracker.Application.Compliance
                 var source = e.IsFile ? $"{e.FileName}, SHA-256 {e.Sha256}" : e.Url;
                 return $"{e.Title} ({source}{(item.IsExpired ? ", expired" : "")})";
             }));
-
-        // A cell that starts like a formula gets a leading ' (OWASP CSV injection); cells with ; " or a new line are quoted
-        private static string Cell(string value)
-        {
-            if (value.Length > 0 && "=+-@\t\r".Contains(value[0]))
-            {
-                value = "'" + value;
-            }
-
-            return value.IndexOfAny([';', '"', '\n', '\r']) >= 0
-                ? "\"" + value.Replace("\"", "\"\"") + "\""
-                : value;
-        }
     }
 }

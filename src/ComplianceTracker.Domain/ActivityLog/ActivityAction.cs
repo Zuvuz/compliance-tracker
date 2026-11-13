@@ -169,6 +169,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         // "Excel for Auditor: CRA".
         ReportDownloaded,
 
+        // US-055 R5: the activity log was exported. SubjectId is the organisation (or the project); Details holds e.g.
+        // "CSV, 14-08-2026 – 12-11-2026, all projects (312 entries)".
+        ActivityLogExported,
+
         // US-130 R4: a project was left out of (or taken back into) AI improvement. SubjectId points at the project.
         ProjectAiSharingChanged,
 
