@@ -1,3 +1,4 @@
+using ComplianceTracker.Web.Diagnostics;
 using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Web.Filters;
@@ -137,6 +138,7 @@ namespace ComplianceTracker.Web.Controllers
         }
 
         // POST /Documents/MoreSuggestions: US-136 R2, the next requirements for a document
+        [AiRateLimit] // US-097 R1
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Index))]

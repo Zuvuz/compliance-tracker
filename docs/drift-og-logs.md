@@ -27,3 +27,4 @@ Logs indeholder aldrig navne, e-mails, tokens, adgangskoder, connection strings,
 - `Logging:LogLevel:*`: niveauerne, som i alle .NET-apps
 - `Logging:Format`: `json` eller `simple`
 - `Database:SlowQueryMilliseconds`: hvornår et databasekald er langsomt (500)
+- `RateLimits:AiPerOrganisationPerMinute` (10), `RateLimits:UploadsPerUserPerMinute` (20) og `RateLimits:PostsPerUserPerMinute` (120): grænserne fra US-097
