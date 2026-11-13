@@ -26,7 +26,7 @@ public class PdfReportWriterTests
 
     [Theory]
     [InlineData("Æblegrød øst Åen", "Æblegrød øst Åen")]
-    [InlineData("€ – — … „quoted“", "€ – — … „quoted“")]
+    [InlineData("€ – — … „quoted“", "EUR – — … „quoted“")] // US-054: the standard font has no €
     [InlineData("Status: Open → Closed", "Status: Open -> Closed")]
     [InlineData("A ↔ B", "A <-> B")]
     [InlineData("Emoji 🙂 here", "Emoji ? here")]

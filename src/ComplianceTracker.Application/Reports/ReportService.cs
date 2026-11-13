@@ -153,6 +153,35 @@ namespace ComplianceTracker.Application.Reports
             return null;
         }
 
+        // US-054: the risk assessment, as the report model (Excel, CSV) and as PDF
+        public async Task<(ReportDocument Document, ReportFile Pdf)?> RiskAssessmentAsync(Guid projectId, CancellationToken cancellationToken = default)
+        {
+            var project = await _projects.GetAsync(projectId, cancellationToken);
+            var organization = await _organizations.MineAsync(cancellationToken);
+            var risks = await _risks.ForProjectAsync(projectId, cancellationToken);
+            if (project is null || organization is null || risks is null)
+            {
+                return null;
+            }
+
+            var compliance = await _compliance.ForProjectAsync(projectId, cancellationToken);
+            var several = (compliance?.Frameworks.Count ?? 0) > 1;
+            var requirements = (compliance?.Frameworks ?? [])
+                .SelectMany(f => f.Requirements.Select(r => (r.Requirement.Id, Name: several ? $"{FrameworkSlugs.Short(f.Framework.Name)} {r.Requirement.Code}" : r.Requirement.Code)))
+                .GroupBy(r => r.Id).ToDictionary(g => g.Key, g => g.First().Name);
+            var stories = (compliance?.WorkItems ?? []).ToDictionary(w => w.Id, w => w.Title);
+            var names = new RiskAssessmentReport.Names(
+                id => organization.Users.FirstOrDefault(u => u.Id == id)?.Name ?? "Unknown",
+                id => requirements.GetValueOrDefault(id),
+                id => stories.GetValueOrDefault(id));
+
+            var now = _clock.GetUtcNow().UtcDateTime;
+            var document = RiskAssessmentReport.Build(project, risks, names, _currentUser.Identity.Name, now);
+            var header = new PdfHeader(organization.Name, project.Name, RiskAssessmentReport.Title, now, _currentUser.Identity.Name);
+            return (document, new ReportFile(ProjectReports.RiskAssessment, document.Title,
+                $"risk-assessment-{FrameworkSlugs.Slug(project.Name)}-{_clock.Today():yyyy-MM-dd}.pdf", "application/pdf", _pdf.FromReport(document, header)));
+        }
+
         // US-056
         public async Task<(GeneratedDocument Draft, ReportFile Pdf)?> TechnicalDocumentationAsync(Guid projectId, CancellationToken cancellationToken = default)
         {
@@ -211,6 +240,15 @@ namespace ComplianceTracker.Application.Reports
         {
             var (organization, user) = await _member.RequireAsync(Permission.DecideCompliance, cancellationToken);
             var made = await _files.TechnicalDocumentationAsync(projectId, cancellationToken)
+                ?? throw new DomainException("The report cannot be made for this project");
+            return await LockAsync(organization.Id, projectId, user, made.Pdf, cancellationToken);
+        }
+
+        // US-054
+        public async Task<ReportSnapshot> LockRiskAssessmentAsync(Guid projectId, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.DecideCompliance, cancellationToken);
+            var made = await _files.RiskAssessmentAsync(projectId, cancellationToken)
                 ?? throw new DomainException("The report cannot be made for this project");
             return await LockAsync(organization.Id, projectId, user, made.Pdf, cancellationToken);
         }

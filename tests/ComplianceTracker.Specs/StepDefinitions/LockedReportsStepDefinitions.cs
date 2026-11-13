@@ -37,6 +37,14 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await _web.PostFormAsync(form.GetAttribute("action")!, Hidden(form));
         }
 
+        // US-054
+        [When("I lock the risk assessment of {string}")]
+        public async Task WhenILockTheRiskAssessment(string project)
+        {
+            var form = await LockFormAsync(project, "risk-assessment");
+            await _web.PostFormAsync(form.GetAttribute("action")!, Hidden(form));
+        }
+
         [When("I check the downloaded file of that report")]
         public async Task WhenICheckTheDownloadedFile()
         {

@@ -47,6 +47,16 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await DownloadAsync(href);
         }
 
+        // US-054
+        [When("I download the risk assessment of {string} as PDF from the Reports tab")]
+        public async Task WhenIDownloadTheRiskAssessmentAsPdf(string project)
+        {
+            await WhenIOpenTheReportsTab(project);
+            var href = _web.Page!.QuerySelector("a#reports-risk-assessment-pdf")?.GetAttribute("href")
+                ?? throw new Xunit.Sdk.XunitException("The Reports tab has no PDF of the risk assessment.");
+            await DownloadAsync(href);
+        }
+
         // ---------------------------------------------------------- Then
 
         [Then("the file is a PDF named {string}")]

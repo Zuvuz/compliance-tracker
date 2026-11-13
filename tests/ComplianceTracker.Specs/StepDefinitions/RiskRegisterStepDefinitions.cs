@@ -21,6 +21,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         // ---------------------------------------------------------- Given / When
 
+        [Given("I add the risk {string} to {string} with likelihood {int} and impact {int}")]
         [When("I add the risk {string} to {string} with likelihood {int} and impact {int}")]
         public async Task WhenIAddTheRisk(string title, string projectName, int likelihood, int impact)
         {

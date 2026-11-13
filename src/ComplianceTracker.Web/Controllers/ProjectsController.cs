@@ -1093,6 +1093,39 @@ namespace ComplianceTracker.Web.Controllers
             return File(writer.ToDocx(draft), "application/vnd.openxmlformats-officedocument.wordprocessingml.document", draft.FileName);
         }
 
+        // ---------------------------------------------------------- Risk assessment (US-054)
+
+        // GET /Projects/RiskAssessment/{id}?format=xlsx|csv|pdf: for anyone in the organisation, also the Auditor; 404 for
+        // other organisations. Every download is logged.
+        [HttpGet]
+        public async Task<IActionResult> RiskAssessment(
+            Guid id, string? format,
+            [FromServices] Application.Reports.ISpreadsheetWriter spreadsheet,
+            [FromServices] Application.Reports.ReportFiles files,
+            [FromServices] Application.ActivityLog.IActivityLogger log,
+            [FromServices] Application.Common.IUnitOfWork unitOfWork,
+            CancellationToken cancellationToken)
+        {
+            if (await files.RiskAssessmentAsync(id, cancellationToken) is not { } made)
+            {
+                return NotFound();
+            }
+
+            var kind = format?.ToLowerInvariant() switch { "pdf" => "PDF", "csv" => "CSV", _ => "Excel" };
+            await log.LogAsync(Domain.ActivityLog.ActivityAction.ReportDownloaded, id, $"{kind} for Risk assessment", cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+            var stem = Path.GetFileNameWithoutExtension(made.Pdf.FileName);
+            return kind switch
+            {
+                "PDF" => File(made.Pdf.Content, made.Pdf.ContentType, made.Pdf.FileName),
+                "CSV" => File(Application.Common.CsvFile.Write(Application.Reports.RiskAssessmentReport.RiskColumns,
+                    made.Document.Sheets[1].Rows.Select(r => r.Cells)), "text/csv; charset=utf-8", stem + ".csv"),
+                _ => File(spreadsheet.ToXlsx(made.Document), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", stem + ".xlsx")
+            };
+        }
+
         // ---------------------------------------------------------- Traceability matrix (US-052)
 
         // GET /Projects/Traceability/{id}?sub=cra: the matrix as CSV, for one regulation or all of them.
@@ -1230,6 +1263,8 @@ namespace ComplianceTracker.Web.Controllers
         {
             var snapshot = report == Application.Reports.ProjectReports.TechnicalDocumentation
                 ? await reports.LockTechnicalDocumentationAsync(projectId, cancellationToken)
+                : report == Application.Reports.ProjectReports.RiskAssessment
+                ? await reports.LockRiskAssessmentAsync(projectId, cancellationToken) // US-054
                 : await reports.LockTraceabilityAsync(projectId,
                     Enum.TryParse<Application.Reports.ReportAudience>(audience, ignoreCase: true, out var reader) ? reader : Application.Reports.ReportAudience.Team,
                     string.IsNullOrEmpty(sub) ? null : sub, cancellationToken);
