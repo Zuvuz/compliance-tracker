@@ -62,7 +62,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] Application.Organizations.IndustryProfileService profiles, CancellationToken cancellationToken)
         {
             await profiles.ChooseAsync(industry, productsUseAi, cancellationToken);
-            return Redirect(Url.Action(nameof(Index)) + "#industry-profile");
+            return RedirectToAction(nameof(Index), null, null, "industry-profile");
         }
 
         // POST /Settings/SetCountry: US-142 R6

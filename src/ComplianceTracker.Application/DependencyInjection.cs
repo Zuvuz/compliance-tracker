@@ -64,7 +64,12 @@ namespace ComplianceTracker.Application
             services.AddScoped<RiskImportService>(); // US-049
             services.AddScoped<MemberService>();
             services.AddScoped<GetStartedService>(); // US-096
-            services.AddSingleton(sp => new Organizations.IndustryProfiles(Organizations.IndustryProfiles.All, sp.GetRequiredService<Organizations.IndustryFrameworks>())); // US-080
+            // US-080: one class per industry, picked by IndustryProfiles
+            services.AddSingleton<Organizations.IIndustryProfile, Organizations.SoftwareProfile>();
+            services.AddSingleton<Organizations.IIndustryProfile, Organizations.MedtechProfile>();
+            services.AddSingleton<Organizations.IIndustryProfile, Organizations.FintechProfile>();
+            services.AddSingleton<Organizations.IIndustryProfile, Organizations.OtherProfile>();
+            services.AddSingleton<Organizations.IndustryProfiles>();
             services.AddScoped<Organizations.IndustryProfileService>(); // US-080
             services.AddScoped<SystemAdminService>();
             services.AddScoped<Feedback.FeedbackService>(); // US-063
