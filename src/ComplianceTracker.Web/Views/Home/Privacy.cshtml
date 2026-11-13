@@ -1,7 +1,40 @@
-﻿@* Placeholder from the MVC template. Should describe which personal data is stored (names, e-mails) and why. *@
+@* US-095 R1: which personal data the tracker keeps, why and how long, and the member's rights. The facts are the
+   tracker's; the legal wording must be checked by someone who knows the GDPR. Ids used by the tests: #personal-data
+   (li[data-item]), #my-data-link. *@
 @{
-    ViewData["Title"] = "Privacy Policy";
+    ViewData["Title"] = "Privacy";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<h1>Privacy</h1>
+<p class="text-muted">How the compliance tracker handles personal data about its users (GDPR Art. 13).</p>
+
+<h2 class="h5">What the tracker keeps about you</h2>
+<ul id="personal-data">
+    <li data-item="name">Your name and e-mail address, as Keycloak gives them when you sign in</li>
+    <li data-item="keycloak-id">Your id in Keycloak, which recognises you at the next sign-in</li>
+    <li data-item="role">Your organisation and your role in it</li>
+    <li data-item="activity">What you did in the tracker and when (the activity log), including your sign-ins</li>
+    <li data-item="content">What you wrote yourself, such as reasons, risk descriptions and comments</li>
+</ul>
+
+<h2 class="h5">Why, and on what basis</h2>
+<p>The tracker needs your name and role to show who decided what, and keeps the activity log as the evidence a
+    compliance system must keep (ISO/IEC 27001 A.8.15, the documentation the CRA requires). The basis is your
+    organisation's legitimate interest and its legal duties as a manufacturer (GDPR Art. 6(1)(c) and (f)).</p>
+
+<h2 class="h5">How long</h2>
+<p>As long as you are a member. When you are removed, your organisation's Admin can erase your personal data: your name
+    and e-mail are then replaced by a pseudonym such as "Former member 7F3A" everywhere in the tracker. The activity log
+    is kept for as long as the law or your organisation requires, under the pseudonym; it is never deleted, because
+    it must show that nothing was changed afterwards. Text you wrote yourself is kept as it is.</p>
+
+<h2 class="h5">Your rights</h2>
+<ul>
+    <li>Get a copy of your data: <a asp-controller="Users" asp-action="MyData" id="my-data-link">download my data</a> (JSON)</li>
+    <li>Have your data corrected: your name and e-mail come from Keycloak and are changed there</li>
+    <li>Have your data erased: ask your organisation's Admin to remove you and erase your personal data</li>
+</ul>
+
+<h2 class="h5">Who to contact</h2>
+<p>Your organisation is responsible for the data about its members; contact its Admin first. Questions about the
+    tracker itself go to its operator (see <a href="/.well-known/security.txt">security.txt</a>).</p>

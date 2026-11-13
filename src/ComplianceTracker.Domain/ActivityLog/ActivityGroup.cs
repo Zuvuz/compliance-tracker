@@ -26,6 +26,7 @@ namespace ComplianceTracker.Domain.ActivityLog
             ActivityAction.UserSignedIn or ActivityAction.UserSignedOut => ActivityGroup.SignIn,
             ActivityAction.MemberRoleChanged or ActivityAction.InvitationCreated or ActivityAction.InvitationRevoked
                 or ActivityAction.InvitationAccepted or ActivityAction.MemberRemoved
+                or ActivityAction.PersonalDataExported or ActivityAction.PersonalDataErased
                 or ActivityAction.MemberSignsForManagementChanged => ActivityGroup.Members,
             ActivityAction.OrganizationCreated or ActivityAction.FeedbackSent or ActivityAction.FeedbackIssueCreated
                 or ActivityAction.FeedbackDismissed

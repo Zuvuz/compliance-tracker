@@ -1531,6 +1531,26 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Grænser på tværs af flere servere, fordi der kun er én instans.
   - Grænser for login, som Keycloak tager sig af (US-089).
 
+### B99 – Persondata: indsigt og sletning som pseudonym (US-095)
+
+- **Beslutning:**
+  - **Privatlivssiden** siger, hvilke persondata trackeren gemmer, hvorfor, på hvilket grundlag, hvor længe og hvem man kontakter. Den juridiske ordlyd skal stadig læses af en, der kender GDPR.
+  - **"My data":** hvert medlem kan hente sine egne data som JSON: profil, organisation, rolle og de logposter, medlemmet selv har lavet.
+  - **Sletning:** Admin kan slette persondata for et medlem, der er fjernet (US-090).
+    - Navn og e-mail bliver et pseudonym, fx "Former member 7F3A".
+    - Forbindelsen til Keycloak skæres over.
+    - Medlemmets id bevares, så alt det, medlemmet gjorde, nu står under pseudonymet.
+    - Et aktivt medlem kan ikke slettes, og sletning sker kun én gang.
+    - Kontoen i Keycloak slettes af operatøren dér.
+  - **Aktivitetsloggen ændres ikke.** Den er kædet med hashes (US-091), så detaljer skrevet før sletningen, fx et navn i "MemberRemoved", bliver stående. Navnet ved siden af hver post kommer fra medlemmets id og viser derfor pseudonymet.
+  - **Egen tekst:** det, medlemmer selv skrev, ændres ikke, og privatlivssiden siger det.
+  - **Log:** eksport og sletning logges uden selve persondataene (`PersonalDataExported`, `PersonalDataErased`).
+- **Begrundelse:** GDPR giver ret til indsigt og sletning. Et compliance-system skal samtidig kunne vise, hvem der besluttede hvad, og at loggen ikke er ændret. Et pseudonym opfylder begge dele.
+- **Fravalgt:**
+  - At slette logposter.
+  - Persondata i kundernes eget indhold.
+  - En databehandleraftale, som er juridisk tekst og ikke kode.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

@@ -182,6 +182,11 @@ namespace ComplianceTracker.Domain.ActivityLog
         // US-076 R5: an audit package was made. SubjectId points at the project; Details holds its title and SHA-256.
         AuditPackageCreated,
 
+        // US-095 R6: a member downloaded their own data, or an Admin erased a removed member's. SubjectId is the member;
+        // Details never holds the personal data itself (only the pseudonym after an erasure).
+        PersonalDataExported,
+        PersonalDataErased,
+
         // US-130 R4: a project was left out of (or taken back into) AI improvement. SubjectId points at the project.
         ProjectAiSharingChanged,
 

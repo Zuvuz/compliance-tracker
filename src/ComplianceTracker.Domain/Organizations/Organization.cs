@@ -219,6 +219,30 @@ namespace ComplianceTracker.Domain.Organizations
             return member;
         }
 
+        // US-095 R3: an Admin erases the personal data of a member who has been removed (US-090); an active member cannot
+        // be erased, and erasing twice is refused
+        public User ErasePersonalData(Guid memberId, Guid adminId)
+        {
+            if (_users.FirstOrDefault(u => u.Id == adminId)?.Can(Permission.ManageMembers) != true)
+            {
+                throw new DomainException("Your role does not allow this");
+            }
+
+            var member = _users.FirstOrDefault(u => u.Id == memberId) ?? throw new DomainException("Member not found");
+            if (member.IsActive)
+            {
+                throw new DomainException("Remove the member first");
+            }
+
+            if (member.IsErased)
+            {
+                throw new DomainException("The member's personal data is already erased");
+            }
+
+            member.Pseudonymise();
+            return member;
+        }
+
         // US-010: the system admin (the tracker's owner) changes a role, e.g. when an organisation has locked itself out.
         // The caller checks that the person is the system admin.
         public ProjectChange? ChangeRoleAsSystemAdmin(Guid memberId, UserRole role) => SetRole(memberId, role);

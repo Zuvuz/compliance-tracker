@@ -73,6 +73,40 @@
     </tbody>
 </table>
 
+@* US-095 R3: removed members whose personal data can be erased (#removed-members, li.removed-member[data-member]) *@
+@{
+    var removed = organization.Users.Where(u => !u.IsActive).OrderBy(u => u.Name).ToList();
+}
+@if (canManage && removed.Count > 0)
+{
+    <h2 class="h6 mt-4">Removed members</h2>
+    @if (TempData["PersonalDataErased"] is string erased)
+    {
+        <div class="alert alert-success py-2" id="personal-data-erased" role="status">@erased</div>
+    }
+    <ul class="list-unstyled small" id="removed-members">
+        @foreach (var user in removed)
+        {
+            <li class="removed-member d-flex flex-wrap align-items-center gap-2 mb-1" data-member="@user.Name">
+                <span>@user.Name</span>
+                @if (user.IsErased)
+                {
+                    <span class="text-muted">Personal data erased</span>
+                }
+                else
+                {
+                    <span class="text-muted">@user.Email · removed @user.RemovedAt?.ToLocalTime().ToString("dd-MM-yyyy")</span>
+                    <form asp-action="ErasePersonalData" method="post" class="d-inline erase-personal-data"
+                          data-confirm="The name and e-mail become a pseudonym everywhere in the tracker. This cannot be undone.">
+                        <input type="hidden" name="memberId" value="@user.Id" />
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Erase personal data</button>
+                    </form>
+                }
+            </li>
+        }
+    </ul>
+}
+
 <details class="mb-4">
     <summary class="small">What may each role do?</summary>
     <table class="table table-sm small mt-2">
