@@ -7,20 +7,20 @@
 
 <partial name="_OrganizationHeader" model="organization" />
 
-<h1 class="h4">Check the activity log</h1>
-<p class="small text-muted">
-    Every log entry holds a fingerprint of itself and of the entry before it. A changed, removed or added entry
-    breaks the chain from that point. The database also refuses to change or delete entries.
+<p class="mb-1"><a asp-controller="Activity" asp-action="Index" id="back-to-activity">← Activity</a></p>
+<h1 class="h4">Verify log integrity</h1>
+<p class="small text-muted" id="fingerprint-explained">
+    A fingerprint is a short code calculated from an entry's content and the fingerprint of the entry before it, so the
+    entries form a chain: a changed, removed or added entry breaks the chain from that point. Entries from before
+    fingerprints were added (US-091) have none, but the database still refuses to change or delete them.
 </p>
 
 @if (Model.IsIntact)
 {
     <div class="alert alert-success" id="log-check-result" data-intact="true">
-        The log is intact (@Model.Checked entries)
-        @if (Model.WithoutFingerprint > 0)
-        {
-            <text>; @Model.WithoutFingerprint older entries from before the fingerprints have no fingerprint</text>
-        }
+        @(Model.WithoutFingerprint > 0
+            ? $"The log is intact ({Model.Checked} entries); {Model.WithoutFingerprint} older entries from before the fingerprints have no fingerprint"
+            : $"The log is intact ({Model.Checked} entries)")
     </div>
 }
 else

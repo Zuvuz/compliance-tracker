@@ -46,3 +46,12 @@ Feature: The activity log cannot be changed
     Then access is denied
     When "Ida" checks the activity log
     Then the log is intact
+
+  # #52: the check sits with the log it checks, named for what it does
+  @US-091 @iso27001-A.8.15 @integration
+  Scenario: The integrity check is found from the activity log
+    When I open the organisation's activity log
+    And I click "Verify log integrity"
+    Then the log is intact
+    And the page explains what a fingerprint is
+    And the organisation header has no link to the check

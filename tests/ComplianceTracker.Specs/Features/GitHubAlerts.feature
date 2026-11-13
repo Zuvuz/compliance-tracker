@@ -48,7 +48,7 @@ Feature: Fetch security alerts from GitHub
     Given GitHub has the open "CodeQL" alert 7 "js/xss" with the severity "high" for "acme/portal"
     And Dependabot alerts are switched off for "acme/portal"
     When I fetch the security alerts of "Acme Portal" from GitHub
-    Then the fetch says "Dependabot alerts are switched off for this repository. Switch them on under Settings → Code security."
+    Then the fetch warns "Dependabot alerts are switched off for this repository. Switch them on under Settings → Code security."
     And the fetch says "CodeQL: 1 new, 0 fixed, 1 open"
 
   @US-121 @integration

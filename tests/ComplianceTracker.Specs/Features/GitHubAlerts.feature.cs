@@ -399,8 +399,8 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I fetch the security alerts of \"Acme Portal\" from GitHub", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 51
-    await testRunner.ThenAsync("the fetch says \"Dependabot alerts are switched off for this repository. Switch th" +
-                        "em on under Settings → Code security.\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the fetch warns \"Dependabot alerts are switched off for this repository. Switch t" +
+                        "hem on under Settings → Code security.\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 52
     await testRunner.AndAsync("the fetch says \"CodeQL: 1 new, 0 fixed, 1 open\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
