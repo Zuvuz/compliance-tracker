@@ -1638,7 +1638,11 @@ classDiagram
     +NextAsync(projectId) PhaseGate?
     +ForAsync(organization, project, to) PhaseGate?
     +DevelopmentChecks(project, unclassified, risks)$ GateCheck[]
+    +ReleaseChecks(facts: ReleaseFacts)$ GateCheck[]
   }
+  PhaseGates ..> ComplianceQueries : coverage and evidence (US-072)
+  PhaseGates ..> IScanRepository : open findings
+  PhaseGates ..> ISbomRepository : SBOM
   PhaseGate "1" *-- "1..*" GateCheck
   PhaseGates ..> PhaseGate : works out (US-071)
   ProjectService --> PhaseGates : before a phase change

@@ -62,7 +62,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
             {
                 ["projectId"] = id.ToString(),
                 ["phase"] = "Released",
-                ["supportEndsOn"] = date
+                ["supportEndsOn"] = date,
+                ["gateReason"] = "Set up for the test" // US-072: the release gate is tested in ReleaseGate.feature
             };
             if (reason is not null)
             {

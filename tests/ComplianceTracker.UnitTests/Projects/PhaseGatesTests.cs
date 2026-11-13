@@ -71,4 +71,55 @@ public class PhaseGatesTests
     [Fact]
     public void A_complete_project_meets_every_check()
         => Assert.All(Checks(WithFramework(), risks: 1).Values, c => Assert.Equal(GateCheckState.Met, c.State));
+
+    // ---------------------------------------------------------- The gate to Released (US-072 R1, R2)
+
+    private static readonly PhaseGates.ReleaseFacts Ready = new(1, 0, 0, true, 0, 0, "2.1.0", new DateOnly(2032, 12, 1));
+
+    private static Dictionary<string, (string Text, GateCheckState State)> Release(PhaseGates.ReleaseFacts facts)
+        => PhaseGates.ReleaseChecks(facts).ToDictionary(c => c.Key, c => (c.Text, c.State));
+
+    [Fact]
+    public void A_ready_product_meets_every_release_check()
+    {
+        var checks = Release(Ready);
+
+        Assert.Equal(["coverage", "evidence", "findings", "sbom", "support"], checks.Keys);
+        Assert.All(checks.Values, c => Assert.Equal(GateCheckState.Met, c.State));
+        Assert.Equal("SBOM uploaded (version 2.1.0)", checks["sbom"].Text);
+        Assert.Equal("Supported until 01-12-2032", checks["support"].Text);
+    }
+
+    [Fact]
+    public void Missing_coverage_and_evidence_are_counted()
+    {
+        var checks = Release(Ready with { NotCovered = 3, WithoutEvidence = 1 });
+
+        Assert.Equal(("3 requirements not covered", GateCheckState.NotMet), checks["coverage"]);
+        Assert.Equal(("1 requirement without evidence", GateCheckState.NotMet), checks["evidence"]);
+    }
+
+    [Fact]
+    public void Without_a_framework_coverage_is_not_met()
+        => Assert.Equal(("Follows no framework", GateCheckState.NotMet), Release(Ready with { Frameworks = 0 })["coverage"]);
+
+    [Theory]
+    [InlineData(1, 0, "1 open critical finding")]
+    [InlineData(0, 2, "2 open high findings")]
+    [InlineData(2, 1, "2 open critical findings and 1 open high finding")]
+    public void Open_critical_and_high_findings_are_named(int critical, int high, string text)
+        => Assert.Equal((text, GateCheckState.NotMet), Release(Ready with { OpenCritical = critical, OpenHigh = high })["findings"]);
+
+    [Fact]
+    public void Without_a_scan_the_findings_check_is_not_met()
+        => Assert.Equal(("No security scan yet", GateCheckState.NotMet), Release(Ready with { Scanned = false })["findings"]);
+
+    [Fact]
+    public void Without_an_SBOM_or_a_support_date_those_checks_are_not_met()
+    {
+        var checks = Release(Ready with { SbomVersion = null, SupportEndsOn = null });
+
+        Assert.Equal(GateCheckState.NotMet, checks["sbom"].State);
+        Assert.Equal(("No support end date", GateCheckState.NotMet), checks["support"]);
+    }
 }
