@@ -90,7 +90,8 @@ jobs:
 
       - name: Smoke test
         run: |
-          mkdir -p load-results
+          # k6 runs as its own user in the container, so the folder must be writable for it
+          mkdir -p load-results && chmod a+rwx load-results
           docker run --rm --network host -v "$PWD/tests/load:/scripts:ro" -v "$PWD/load-results:/results" \
             -e LOAD_PASSWORD -e LOAD_USERS grafana/k6:0.54.0 run /scripts/smoke.js
 
@@ -104,6 +105,13 @@ jobs:
         run: |
           docker run --rm --network host -v "$PWD/tests/load:/scripts:ro" -v "$PWD/load-results:/results" \
             -e LOAD_PASSWORD -e LOAD_USERS grafana/k6:0.54.0 run /scripts/stress.js
+
+      - name: Resultaterne findes (R7)
+        if: always()
+        run: |
+          ls -l load-results
+          test -s load-results/load-summary.json
+          test -s load-results/stress-summary.json
 
       - name: Kommer sig igen inden for et minut (R5)
         if: always()

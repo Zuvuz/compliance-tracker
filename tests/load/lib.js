@@ -1,6 +1,7 @@
 // US-138: what the load test's scripts share: the addresses, the sign-in through Keycloak's own form, and a user's round
 // through the tracker. Only test users and test data (R6); the addresses point at the test stack in docker compose.
 import http from 'k6/http';
+import exec from 'k6/execution';
 import { check, group, sleep } from 'k6';
 import { parseHTML } from 'k6/html';
 
@@ -14,15 +15,23 @@ export const common = {
   hosts: { 'keycloak.localhost': '127.0.0.1' },
 };
 
-// R3: pages under 1 second, report downloads under 5 seconds (p95), and under 1 % errors
+// R3: pages under 1 second, report downloads under 5 seconds (p95), and under 1 % errors. Every user must be signed in
+// and every page must come from the tracker itself, or the figures measure the sign-in page instead (fixed after the
+// first run, where no user was signed in).
 export const limits = {
   'http_req_duration{kind:page}': ['p(95)<1000'],
   'http_req_duration{kind:report}': ['p(95)<5000'],
   http_req_failed: ['rate<0.01'],
+  'checks{check:signed in}': ['rate==1'],
+  'checks{check:from the tracker}': ['rate>0.99'],
 };
 
+// The text of an element on a Keycloak page, to say why a sign-in stopped there
+const text = (doc, selector) => doc.find(selector).text().trim().replace(/\s+/g, ' ');
+
 // Sign in like a browser: a page that needs sign-in sends us to Keycloak, whose form we fill in and post
-export function signIn(username) {
+// stopOnFailure: the smoke and load tests stop, as their figures would be wrong; the stress test goes on (R4)
+export function signIn(username, stopOnFailure = true) {
   if (!PASSWORD) {
     throw new Error('Set LOAD_PASSWORD to the test users\' password');
   }
@@ -35,11 +44,21 @@ export function signIn(username) {
   }
 
   const back = http.post(action, { username, password: PASSWORD, credentialId: '' }, { redirects: 10, tags: { kind: 'signin' } });
-  check(back, { 'signed in': (r) => r.status === 200 && r.url.startsWith(BASE) });
+  const signedIn = back.status === 200 && back.url.startsWith(BASE) && !String(back.body).includes('kc-form-login');
+  check(back, { 'signed in': () => signedIn });
+  if (!signedIn) {
+    // Where it stopped and what Keycloak said, without the password; the test stops, as its figures would be wrong
+    const doc = parseHTML(String(back.body));
+    console.error(`Sign-in of ${username} stopped at ${back.url.split('?')[0]} (status ${back.status}): `
+      + `"${text(doc, '#kc-page-title')}" ${text(doc, '.kc-feedback-text, #input-error, .alert-error, .pf-c-alert__title, .pf-v5-c-alert__title')}`);
+    if (stopOnFailure) {
+      exec.test.abort(`${username} could not sign in`);
+    }
+  }
 }
 
 // The projects the signed-in user can see, from the links on the projects page
-export function projectIds() {
+export function projectIds(stopOnFailure = true) {
   const page = http.get(`${BASE}/Projects`, { tags: { kind: 'page' } });
   const ids = [];
   parseHTML(page.body).find('a[href^="/Projects/Details/"]').each((_, a) => {
@@ -48,15 +67,40 @@ export function projectIds() {
       ids.push(id);
     }
   });
+  if (ids.length === 0 && stopOnFailure) {
+    exec.test.abort(`The projects page lists no project (status ${page.status}, ${page.url.split('?')[0]})`);
+  }
   return ids;
+}
+
+// The figures that answer R3, as text for the job's log (handleSummary replaces k6's own summary)
+export function summaryText(name, data) {
+  const m = data.metrics;
+  const p95 = (key) => (m[key] ? `${Math.round(m[key].values['p(95)'])} ms` : 'none');
+  const rate = (key) => (m[key] ? `${(m[key].values.rate * 100).toFixed(2)} %` : 'none');
+  return [
+    `${name}: ${m.http_reqs ? m.http_reqs.values.count : 0} requests, ${m.vus_max ? m.vus_max.values.max : 0} users at most`,
+    `  pages p95: ${p95('http_req_duration{kind:page}')} (limit 1000 ms)`,
+    `  reports p95: ${p95('http_req_duration{kind:report}')} (limit 5000 ms)`,
+    `  failed requests: ${rate('http_req_failed')} (limit 1 %)`,
+    `  signed in: ${rate('checks{check:signed in}')}, pages from the tracker: ${rate('checks{check:from the tracker}')}`,
+    '',
+  ].join('\n');
 }
 
 // R2: what a user does: the dashboard, a project's tabs, its activity, and now and then a report
 export function round(projects) {
+  if (projects.length === 0) {
+    return; // a stress user that could not sign in has nothing to do
+  }
+
   const id = projects[Math.floor(Math.random() * projects.length)];
   const get = (path, kind) => {
     const r = http.get(`${BASE}${path}`, { tags: { kind, name: path.replace(id, '{id}') } });
-    check(r, { [`${kind} answered`]: (x) => x.status === 200 });
+    check(r, {
+      [`${kind} answered`]: (x) => x.status === 200,
+      'from the tracker': (x) => x.url.startsWith(BASE),
+    });
     sleep(Math.random() * 2 + 1);
   };
 
