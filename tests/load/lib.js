@@ -50,8 +50,12 @@ export function signIn(username, stopOnFailure = true) {
   const answer = parseHTML(String(back.body)).find('form[action$="/signin-oidc"]');
   if (answer.size() > 0) {
     const fields = {};
-    answer.find('input[type=hidden]').each((_, input) => {
-      fields[input.getAttribute('name')] = input.getAttribute('value') || '';
+    // Every named field (Keycloak writes TYPE="HIDDEN" in capitals, which a [type=hidden] selector misses)
+    answer.find('input').each((_, input) => {
+      const name = input.getAttribute('name');
+      if (name) {
+        fields[name] = input.getAttribute('value') || '';
+      }
     });
     back = http.post(answer.attr('action'), fields, { redirects: 10, tags: { kind: 'signin' } });
   }
