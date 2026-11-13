@@ -7,7 +7,7 @@ namespace ComplianceTracker.Specs.Support
     // is exactly that score: each requirement code is its own axis, and a story points along the axes of its scores.
     // Reqnroll creates one per scenario and gives the same instance to WebScenario and the steps.
     // US-105: it also holds the limits, 0 unless a scenario sets them, so older scenarios see every suggestion
-    public sealed class FakeAi : IEmbeddingModel, IRationaleWriter, IAiLimits
+    public sealed class FakeAi : IEmbeddingModel, IRationaleWriter, IAiLimits, IReranker
     {
         public double MinimumScoreForStories { get; set; }
         public double MinimumScoreForEvidence { get; set; }
@@ -41,6 +41,29 @@ namespace ComplianceTracker.Specs.Support
         // US-117: tasks with their own model name, and tasks whose own model cannot be reached (FakeAiModels)
         public Dictionary<AiTask, string> TaskModels { get; } = new();
         public HashSet<AiTask> UnavailableTasks { get; } = new();
+
+        // US-118: the pretend reranker, off unless a scenario switches it on. A score is set per (story or evidence title,
+        // requirement code); a pair without one gets its search score, so only the named pairs move.
+        public bool RerankerOn { get; set; }
+        public Dictionary<(string Title, string Code), double> RerankScores { get; } = new();
+        string IReranker.Name => "fake-rerank";
+
+        public Task<IReadOnlyList<double>> RerankAsync(string query, IReadOnlyList<string> documents, CancellationToken cancellationToken = default)
+        {
+            ThrowIfUnavailable();
+            lock (this)
+            {
+                var queryVector = Vector(query);
+                return Task.FromResult<IReadOnlyList<double>>(documents.Select(document =>
+                {
+                    var (q, d) = (query.Split('\n')[0], document.Split('\n')[0]);
+                    return RerankScores.TryGetValue((q, d), out var whole) ? whole
+                        : RerankScores.TryGetValue((q, d.Split(' ')[0]), out var a) ? a
+                        : RerankScores.TryGetValue((d, q.Split(' ')[0]), out var b) ? b
+                        : ComplianceTracker.Application.Ai.Similarity.Cosine(queryVector, Vector(document));
+                }).ToList());
+            }
+        }
 
         string IEmbeddingModel.Name => "fake-embed";
         string IRationaleWriter.Name => "fake-chat";

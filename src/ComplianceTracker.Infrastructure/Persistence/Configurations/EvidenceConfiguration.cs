@@ -75,6 +75,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.ToTable("EvidenceLinkSuggestions");
             builder.HasKey(s => s.Id);
             builder.Property(s => s.Id).ValueGeneratedNever();
+            builder.Property(s => s.RankingModel).HasMaxLength(200); // US-118
             builder.Property(s => s.Rationale).HasMaxLength(1000);
             builder.Property(s => s.EmbeddingModel).IsRequired().HasMaxLength(200);
             builder.Property(s => s.RationaleModel).HasMaxLength(200);
@@ -123,6 +124,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.ToTable("EvidenceStorySuggestions");
             builder.HasKey(s => s.Id);
             builder.Property(s => s.Id).ValueGeneratedNever();
+            builder.Property(s => s.RankingModel).HasMaxLength(200); // US-118
             builder.Property(s => s.EmbeddingModel).IsRequired().HasMaxLength(200);
             builder.Property(s => s.Status).HasConversion<string>().HasMaxLength(50);
             builder.Property(s => s.DecidedRole).HasConversion<string>().HasMaxLength(50);

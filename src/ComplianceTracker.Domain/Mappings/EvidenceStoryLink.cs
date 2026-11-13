@@ -62,6 +62,10 @@ namespace ComplianceTracker.Domain.Mappings
         public double MinimumScore { get; private set; }
         public DateTime CreatedAt { get; private set; }
 
+        // US-118 R4: with a reranker, Score is its score and this is the search score it had before; null without one
+        public double? SearchScore { get; private set; }
+        public string? RankingModel { get; private set; }
+
         public SuggestionStatus Status { get; private set; } = SuggestionStatus.Pending;
         public Guid? DecidedById { get; private set; }
         public UserRole? DecidedRole { get; private set; }
@@ -93,6 +97,18 @@ namespace ComplianceTracker.Domain.Mappings
                 MinimumScore = minimumScore,
                 CreatedAt = at
             };
+        }
+
+        // US-118 R4: made from a reranked candidate
+        public EvidenceStorySuggestion Reranked(double? searchScore, string? model)
+        {
+            if (searchScore is not null && !string.IsNullOrWhiteSpace(model))
+            {
+                SearchScore = Math.Round(Math.Clamp(searchScore.Value, 0, 1), 4);
+                RankingModel = model.Length <= 200 ? model : model[..200];
+            }
+
+            return this;
         }
 
         public void Approve(Guid userId, DateTime at, UserRole? role = null)

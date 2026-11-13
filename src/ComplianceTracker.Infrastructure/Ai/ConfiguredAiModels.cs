@@ -51,11 +51,15 @@ namespace ComplianceTracker.Infrastructure.Ai
             return new TaskRationaleWriter(task, writer);
         }
 
+        // US-118: only when Ai:Tasks:Ranking:Model is set (R5); always the /v1/rerank format, whatever the provider
+        public IReranker? Reranker()
+            => Own(AiTask.Ranking) is { } own ? new TaskReranker(new OpenAiCompatibleReranker(Client(own), own.Model!)) : null;
+
         public IReadOnlyList<AiTaskModel> Overview()
             => Enum.GetValues<AiTask>()
                 .Select(task => Own(task) is { } own
                     ? new AiTaskModel(task, own.Model!, OwnSetting: true)
-                    : new AiTaskModel(task, AiTaskNames.IsEmbedding(task) ? _defaultEmbedding.Name : _defaultWriter.Name, OwnSetting: false))
+                    : new AiTaskModel(task, AiTaskNames.DefaultModel(task, _defaultEmbedding.Name, _defaultWriter.Name), OwnSetting: false))
                 .ToList();
 
         // The task's own setting, when it names a model; the section's key is matched without regard to case
@@ -103,6 +107,30 @@ namespace ComplianceTracker.Infrastructure.Ai
             catch (AiUnavailableException error)
             {
                 throw new AiUnavailableException($"{AiTaskNames.Title(_task)} is unavailable: the model {Name} cannot be reached", error);
+            }
+        }
+    }
+
+    internal sealed class TaskReranker : IReranker
+    {
+        private readonly IReranker _inner;
+
+        public TaskReranker(IReranker inner)
+        {
+            _inner = inner;
+        }
+
+        public string Name => _inner.Name;
+
+        public async Task<IReadOnlyList<double>> RerankAsync(string query, IReadOnlyList<string> documents, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await _inner.RerankAsync(query, documents, cancellationToken);
+            }
+            catch (AiUnavailableException error)
+            {
+                throw new AiUnavailableException($"{AiTaskNames.Title(AiTask.Ranking)} is unavailable: the model {Name} cannot be reached", error);
             }
         }
     }

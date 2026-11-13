@@ -1016,8 +1016,20 @@ classDiagram
     <<interface>>
     +Embedding(task: AiTask) IEmbeddingModel
     +Writer(task: AiTask) IRationaleWriter
+    +Reranker() IReranker?
     +Overview() IReadOnlyList~AiTaskModel~
   }
+  class IReranker {
+    <<interface>>
+    +Name: string
+    +RerankAsync(query, documents) IReadOnlyList~double~
+  }
+  class Reranking {
+    +Candidates: int = 20$
+    +BestAsync(reranker, query, scored, text, minimum, take)$ IReadOnlyList~Ranked~
+  }
+  IAiModels ..> IReranker : US-118
+  Reranking ..> IReranker
   class ConfiguredAiModels {
     +Embedding(task: AiTask) IEmbeddingModel
     +Writer(task: AiTask) IRationaleWriter

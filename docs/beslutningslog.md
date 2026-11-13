@@ -1567,7 +1567,7 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - En betalt cloud-lasttest.
   - En fast kørsel hver uge.
-  - Test af AI-gatewayen og Keycloak selv.
+  - Test af den lokale AI-server og Keycloak selv.
   - Soak-tests over mange timer.
 
 ### B101 – AI-tjek af evidens, og en afvist evidens tæller ikke (US-038)
@@ -1620,6 +1620,22 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - At Partly også tæller som dækning.
   - En begrundelse fra tekstmodellen for hvert par.
+
+### B104 – En reranker afgør rækkefølgen af AI'ens forslag (US-118)
+
+- **Beslutning:**
+  - **Tre trin:** forslag til stories (US-020, US-044), til evidens (US-059) og fra evidens til stories (US-146) laves sådan:
+    - søgning med vektorer finder de bedste 20 kandidater, uanset deres søgescore
+    - en reranker læser kravet og hver kandidat sammen og giver en ny score
+    - US-105's grænse gælder for rerank-scoren, og kun de beholdte får skrevet en begrundelse
+  - **Begge scorer gemmes** sammen med rerank-modellen, og forslaget viser "score 0.82 (search 0.61)".
+  - **Rerankeren kaldes som en ny klient** mod organisationens egen AI-server i formatet `/v1/rerank` (TEI, vLLM, Jina). Modellen sættes med `Ai:Tasks:Ranking:Model`, og `Ai:Tasks:Ranking:BaseUrl`, når den kører på en anden server.
+  - **Uden en model til Ranking-opgaven** bevares dagens opførsel, og AI-oversigten viser "Off (search score only)".
+  - **Svar:** et svar uden præcis én score pr. kandidat afvises. Kan rerankeren ikke nås, gemmes intet, og siden siger det.
+- **Begrundelse:** En cross-encoder læser teksterne sammen og rammer derfor oftere rigtigt end to vektorer (AI Act Art. 15). Begge scorer vises, så man kan se, hvad rerankeren ændrede (Art. 13).
+- **Fravalgt:**
+  - Reranking i gap-finderen (US-119 kan bruge den senere).
+  - Forslag til cross-mapping (US-037). Her er der hundredvis af par, og godkendelsen er alligevel en persons.
 
 ## Åbne spørgsmål til klassediagrammet
 
