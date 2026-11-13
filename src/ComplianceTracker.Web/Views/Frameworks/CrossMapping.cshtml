@@ -1,0 +1,110 @@
+@* US-037: which requirements in two framework versions ask for the same thing. The AI suggests, a person decides; an
+   approved "Same" counts as coverage. Ids used by the tests: form#choose-pair (from, to), form#suggest-cross-mapping,
+   #cross-mapping-message, #pending-matches li.match (data-from, data-to) with .match-strength and the forms
+   .approve-match and .reject-match (reason, comment), #approved-matches li.match. *@
+@using ComplianceTracker.Domain.Mappings
+@model ComplianceTracker.Application.Ai.CrossMappingView
+@{
+    ViewData["Title"] = "Cross-mapping";
+    var canDecide = await Permissions.CanAsync(Permission.ManageFrameworks);
+    string Badge(MappingStrength strength) => strength switch
+    {
+        MappingStrength.Same => "text-bg-success",
+        MappingStrength.Partly => "text-bg-warning",
+        _ => "text-bg-light border"
+    };
+}
+
+<p class="mb-1"><a asp-action="Index">← Frameworks</a></p>
+<h1 class="h3">Cross-mapping</h1>
+<p class="text-muted small">Requirements in two frameworks that ask for the same thing, so work done for one also counts for the other. The AI suggests matches by how alike the texts are; nothing counts until a person approves it. An approved "Same" shows a requirement as covered through the other; "Partly" and "Related" are hints.</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+@if (TempData["CrossMapping"] is string message)
+{
+    <div class="alert alert-info py-2" id="cross-mapping-message" role="status">@message</div>
+}
+
+<form method="get" asp-action="CrossMapping" class="d-flex flex-wrap gap-2 align-items-center mb-3" id="choose-pair">
+    <select name="from" class="form-select form-select-sm w-auto" aria-label="First framework">
+        @foreach (var version in Model.Versions)
+        {
+            <option value="@version.Version.Id" selected="@(version.Version.Id == Model.From?.Version.Id)">@version.Label</option>
+        }
+    </select>
+    <span>and</span>
+    <select name="to" class="form-select form-select-sm w-auto" aria-label="Second framework">
+        @foreach (var version in Model.Versions)
+        {
+            <option value="@version.Version.Id" selected="@(version.Version.Id == Model.To?.Version.Id)">@version.Label</option>
+        }
+    </select>
+    <button type="submit" class="btn btn-sm btn-outline-secondary">Show</button>
+</form>
+
+@if (Model.Versions.Count < 2)
+{
+    <p class="text-muted" id="too-few-frameworks">The organisation's projects follow fewer than two frameworks, so there is nothing to match.</p>
+}
+else if (Model.From is { } from && Model.To is { } to)
+{
+    @if (canDecide)
+    {
+        <form asp-action="SuggestCrossMapping" method="post" class="mb-3" id="suggest-cross-mapping">
+            <input type="hidden" name="from" value="@from.Version.Id" />
+            <input type="hidden" name="to" value="@to.Version.Id" />
+            <button type="submit" class="btn btn-sm btn-primary">Suggest matches</button>
+        </form>
+    }
+
+    <h2 class="h6">Waiting for a decision (@Model.Pending.Count)</h2>
+    <ul class="list-unstyled small" id="pending-matches">
+        @foreach (var row in Model.Pending)
+        {
+            <li class="match border-start border-3 border-info ps-2 my-2" data-from="@row.From.Code" data-to="@row.To.Code">
+                <span class="badge text-bg-info">AI-generated</span>
+                <span class="badge @Badge(row.Mapping.Strength) match-strength">@row.Mapping.Strength</span>
+                <strong>@from.Framework.ShortName @row.From.Code</strong> @row.From.Title ↔ <strong>@to.Framework.ShortName @row.To.Code</strong> @row.To.Title
+                <div class="text-muted">@row.Mapping.Rationale</div>
+                @if (canDecide)
+                {
+                    <div class="d-flex flex-wrap gap-1 mt-1">
+                        <form asp-action="DecideCrossMapping" method="post" class="approve-match">
+                            <input type="hidden" name="from" value="@from.Version.Id" />
+                            <input type="hidden" name="to" value="@to.Version.Id" />
+                            <input type="hidden" name="mappingId" value="@row.Mapping.Id" />
+                            <input type="hidden" name="approve" value="true" />
+                            <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
+                        </form>
+                        <form asp-action="DecideCrossMapping" method="post" class="d-flex flex-wrap gap-1 reject-match">
+                            <input type="hidden" name="from" value="@from.Version.Id" />
+                            <input type="hidden" name="to" value="@to.Version.Id" />
+                            <input type="hidden" name="mappingId" value="@row.Mapping.Id" />
+                            <input type="hidden" name="approve" value="false" />
+                            <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason">
+                                <option value="">Reason…</option>
+                                @foreach (var reason in Enum.GetValues<RejectionReason>())
+                                {
+                                    <option value="@reason">@reason</option>
+                                }
+                            </select>
+                            <input name="comment" maxlength="1000" class="form-control form-control-sm w-auto" placeholder="Comment" aria-label="Comment" />
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Reject</button>
+                        </form>
+                    </div>
+                }
+            </li>
+        }
+    </ul>
+
+    <h2 class="h6 mt-3">Approved matches (@Model.Approved.Count)</h2>
+    <ul class="list-unstyled small" id="approved-matches">
+        @foreach (var row in Model.Approved)
+        {
+            <li class="match" data-from="@row.From.Code" data-to="@row.To.Code">
+                <span class="badge @Badge(row.Mapping.Strength) match-strength">@row.Mapping.Strength</span>
+                @from.Framework.ShortName @row.From.Code ↔ @to.Framework.ShortName @row.To.Code
+            </li>
+        }
+    </ul>
+}

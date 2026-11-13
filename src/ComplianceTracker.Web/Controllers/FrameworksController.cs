@@ -1,3 +1,4 @@
+using ComplianceTracker.Web.Diagnostics;
 using ComplianceTracker.Application.Approvals;
 using ComplianceTracker.Domain.Approvals;
 using ComplianceTracker.Domain.Frameworks;
@@ -44,6 +45,69 @@ namespace ComplianceTracker.Web.Controllers
         // GET /Frameworks: the list of the organisation's frameworks and the "add" form
         [HttpGet]
         public async Task<IActionResult> Index(CancellationToken cancellationToken)
+            => await IndexPageAsync(cancellationToken);
+
+        // ---------------------------------------------------------- Cross-mapping (US-037)
+
+        // GET /Frameworks/CrossMapping?from=…&to=…: R1, R6, for every member
+        [HttpGet]
+        public async Task<IActionResult> CrossMapping(Guid? from, Guid? to, [FromServices] Application.Ai.CrossMappingService crossMapping, CancellationToken cancellationToken)
+        {
+            var view = await crossMapping.ForPairAsync(from, to, cancellationToken);
+            if (view is null)
+            {
+                return RedirectToAction("Create", "Organizations");
+            }
+
+            // A version the organisation does not follow (or another organisation's) is not found
+            return (from is not null && view.From is null) || (to is not null && view.To is null) ? NotFound() : View(view);
+        }
+
+        // POST /Frameworks/SuggestCrossMapping: R1, R2
+        [AiRateLimit] // US-097 R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SuggestCrossMapping(Guid from, Guid to, [FromServices] Application.Ai.CrossMappingService crossMapping, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var count = await crossMapping.SuggestAsync(from, to, cancellationToken);
+                TempData["CrossMapping"] = count == 0 ? "The AI found no requirements that ask for the same thing" : $"The AI suggests {count} matches";
+            }
+            catch (Domain.Common.DomainException error)
+            {
+                TempData[Filters.DomainExceptionFilter.TempDataKey] = error.Message;
+            }
+
+            return RedirectToAction(nameof(CrossMapping), new { from, to });
+        }
+
+        // POST /Frameworks/DecideCrossMapping: R3, approve, or reject with a reason
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DecideCrossMapping(Guid from, Guid to, Guid mappingId, bool approve, Domain.Mappings.RejectionReason? reason, string? comment,
+            [FromServices] Application.Ai.CrossMappingService crossMapping, CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (approve)
+                {
+                    await crossMapping.ApproveAsync(mappingId, cancellationToken);
+                }
+                else
+                {
+                    await crossMapping.RejectAsync(mappingId, reason, comment, cancellationToken);
+                }
+            }
+            catch (Domain.Common.DomainException error)
+            {
+                TempData[Filters.DomainExceptionFilter.TempDataKey] = error.Message;
+            }
+
+            return RedirectToAction(nameof(CrossMapping), new { from, to });
+        }
+
+        private async Task<IActionResult> IndexPageAsync(CancellationToken cancellationToken)
         {
             // Users without an organisation must create one first
             var organization = await _organizations.MineAsync(cancellationToken);

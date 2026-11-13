@@ -95,6 +95,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<IRiskRepository, RiskRepository>(); // US-042
                 services.AddScoped<IRiskDraftRepository, RiskDraftRepository>(); // US-112
                 services.AddScoped<IEvidenceCheckRepository, EvidenceCheckRepository>(); // US-038
+                services.AddScoped<ComplianceTracker.Application.Ai.IRequirementMappingRepository, RequirementMappingRepository>(); // US-037
                 services.AddScoped<ComplianceTracker.Application.Audits.IAuditRepository, AuditRepository>(); // US-134
                 services.AddScoped<IRiskImportRepository, RiskImportRepository>(); // US-049
                 services.AddSingleton<IRiskSheetReader, ComplianceTracker.Infrastructure.Risks.CsvRiskSheetReader>();
