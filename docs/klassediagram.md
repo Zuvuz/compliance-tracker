@@ -1820,6 +1820,24 @@ classDiagram
     +ChooseAsync(industry, productsUseAi)
   }
   IndustryProfiles o-- IIndustryProfile : US-080
+  class DiagramContent {
+    +Format: DiagramFormat
+    +Elements: List~DiagramElement~
+    +Links: List~DiagramLink~
+    +TotalElements: int
+    +Text() string
+  }
+  class IDiagramReader {
+    <<interface>>
+    +Format: DiagramFormat
+    +Read(content) DiagramContent
+  }
+  class DiagramReaders {
+    +Read(contentType, content) DiagramContent
+  }
+  DiagramReaders o-- IDiagramReader : US-149
+  IDiagramReader ..> DiagramContent
+  Evidence ..> DiagramContent : read when added
   IndustryProfileService ..> IndustryProfiles
   IndustryProfileService ..> Organization : industry
   RequirementMapping --> Requirement : from and to

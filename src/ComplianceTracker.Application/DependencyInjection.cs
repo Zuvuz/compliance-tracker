@@ -64,6 +64,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<RiskImportService>(); // US-049
             services.AddScoped<MemberService>();
             services.AddScoped<GetStartedService>(); // US-096
+            services.AddSingleton<Compliance.DiagramReaders>(); // US-149
             // US-080: one class per industry, picked by IndustryProfiles
             services.AddSingleton<Organizations.IIndustryProfile, Organizations.SoftwareProfile>();
             services.AddSingleton<Organizations.IIndustryProfile, Organizations.MedtechProfile>();

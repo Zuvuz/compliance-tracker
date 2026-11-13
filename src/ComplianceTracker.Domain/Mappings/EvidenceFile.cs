@@ -26,7 +26,16 @@ namespace ComplianceTracker.Domain.Mappings
             [".sarif"] = "application/sarif+json",
 
             // US-079 R4: an SBOM (CycloneDX or SPDX is JSON text)
-            [".json"] = "application/json"
+            [".json"] = "application/json",
+
+            // US-149 R1: diagrams, all text (checked as UTF-8) that the tracker reads but never runs
+            [".drawio"] = "application/vnd.jgraph.mxfile",
+            [".mmd"] = "text/vnd.mermaid",
+            [".mermaid"] = "text/vnd.mermaid",
+            [".puml"] = "text/vnd.plantuml",
+            [".plantuml"] = "text/vnd.plantuml",
+            [".bpmn"] = "application/bpmn+xml",
+            [".svg"] = "image/svg+xml"
         };
 
         private static readonly Dictionary<string, byte[]> Signatures = new()
@@ -70,7 +79,7 @@ namespace ComplianceTracker.Domain.Mappings
             // ASVS V5.2.2: both the extension and the content must agree, whatever the browser claims
             if (!ContentTypes.TryGetValue(Path.GetExtension(name), out var contentType) || !ContentMatches(contentType, content))
             {
-                throw new DomainException("Only PDF, PNG, JPG, TXT, CSV, Markdown, SARIF and JSON files are allowed");
+                throw new DomainException("Only PDF, PNG, JPG, TXT, CSV, Markdown, SARIF, JSON and diagram files (draw.io, Mermaid, PlantUML, BPMN, SVG) are allowed");
             }
 
             return new EvidenceFile(name, contentType, content);

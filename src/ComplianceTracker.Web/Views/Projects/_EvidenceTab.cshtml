@@ -47,6 +47,11 @@
                                 {
                                     <a class="fw-semibold" asp-action="EvidenceFile" asp-route-id="@project.Id" asp-route-evidenceId="@evidence.Id">@evidence.Title</a>
                                     <span class="small text-muted">@evidence.FileName</span>
+                                    @if (evidence.DiagramSummary is { } diagramSummary)
+                                    {
+                                        @* US-149 *@
+                                        <span class="badge @(evidence.DiagramError is null ? "text-bg-light border" : "text-bg-warning") diagram-summary">@diagramSummary</span>
+                                    }
                                 }
                                 else
                                 {
@@ -82,6 +87,38 @@
                                     </form>
                                 }
                             </div>
+                            @if (evidence.IsDiagram)
+                            {
+                                @* US-149: what the diagram says, or why it could not be read (R3, R4, R5) *@
+                                <div class="small mt-1 diagram-content">
+                                    @if (evidence.DiagramError is { } diagramError)
+                                    {
+                                        <div class="text-warning-emphasis diagram-error">The diagram could not be read: @diagramError</div>
+                                    }
+                                    else
+                                    {
+                                        @if (evidence.DiagramCutNote is { } cut)
+                                        {
+                                            <div class="text-muted diagram-cut">@cut</div>
+                                        }
+                                        <details>
+                                            <summary class="text-muted">What the diagram shows</summary>
+                                            <ul class="mb-1">
+                                                @foreach (var link in (evidence.DiagramLinks ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                                                {
+                                                    <li class="diagram-link">@link</li>
+                                                }
+                                            </ul>
+                                            <div class="text-muted">Elements:
+                                                @foreach (var element in (evidence.DiagramElements ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                                                {
+                                                    <span class="badge text-bg-light border diagram-element">@element</span>
+                                                }
+                                            </div>
+                                        </details>
+                                    }
+                                </div>
+                            }
                             <div class="fold-part" data-fold-key="@foldKey">
                             @if (evidence.Sha256 is not null)
                             {
@@ -355,7 +392,7 @@
                         <input type="hidden" name="projectId" value="@project.Id" />
                         <input name="title" class="form-control form-control-sm" maxlength="200" placeholder="Title, e.g. Access policy 2026" aria-label="Title" required />
                         <input name="url" type="url" class="form-control form-control-sm" placeholder="Link (https://…)" aria-label="Link" />
-                        <input name="file" type="file" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg,.txt,.csv,.md" aria-label="Or a file (max 10 MB)" />
+                        <input name="file" type="file" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg,.txt,.csv,.md,.drawio,.mmd,.mermaid,.puml,.plantuml,.bpmn,.svg" aria-label="Or a file (max 10 MB)" />
                         <div class="d-flex gap-1 align-items-center">
                             <label class="small text-muted text-nowrap" for="evidence-valid-until">Valid until</label>
                             <input name="validUntil" id="evidence-valid-until" type="date" class="form-control form-control-sm" />

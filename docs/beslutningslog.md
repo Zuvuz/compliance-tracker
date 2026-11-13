@@ -1651,6 +1651,21 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At slå frameworks til automatisk ud fra branchen.
   - At bygge alle tre brancher på én gang.
 
+### B106 – Diagrammer læses som tekst, uden AI og uden at køre noget (US-149)
+
+- **Beslutning:**
+  - **Formater:** draw.io (`.drawio`, også komprimerede sider), Mermaid (`.mmd`, `.mermaid`), PlantUML (`.puml`, `.plantuml`), BPMN 2.0 (`.bpmn`) og SVG (`.svg`) kan uploades som evidens. Hvert format har sin egen læser bag `IDiagramReader`.
+  - **Det, der læses:** elementer (navn og slags), pile med deres labels og grupper. En SVG giver sin tekst; en SVG eksporteret fra draw.io giver hele diagrammet, den bærer.
+  - **Sikkerhed:** intet i filen køres. XML læses med DTD'er og eksterne entiteter slået fra; scripts og styles i en SVG læses aldrig. Filen hentes altid som download med `nosniff`.
+  - **Brug:** det læste gemmes på evidensen, når den tilføjes, og vises under filen ("Diagram: 3 elements, 2 links"). Det er også evidensens tekst for AI'ens forslag, evidens-tjekket og søgningen, ligesom en PDF's tekst.
+  - **Grænser:** højst 2.000 elementer og pile; ellers står der, hvor mange der blev læst.
+  - **Fejl:** et diagram, der ikke kan læses, gemmes stadig som evidens med årsagen.
+  - **Billeder** (PNG, JPG, PDF) gemmes som i dag; at læse dem kræver en vision-model (US-151).
+- **Begrundelse:** Arkitektur-, dataflow- og procesdiagrammer er dokumentation, CRA (Annex VII) og ISO/IEC 27001 (A.8.27) kræver. Tekstformaterne kan læses præcist uden AI, så resultatet er det samme hver gang.
+- **Fravalgt:**
+  - At tegne eller rette diagrammer i trackeren.
+  - At læse `.xml` som draw.io, da endelsen også bruges af mange andre formater.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
