@@ -57,6 +57,33 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             // US-049: where an imported risk came from
             builder.Property(r => r.ImportedFrom).HasMaxLength(255);
             builder.Property(r => r.ImportedOwner).HasMaxLength(200);
+            builder.Ignore(r => r.IsAiDrafted); // US-112
+        }
+    }
+
+    // US-112: the AI agent's drafts
+    public class RiskDraftConfiguration : IEntityTypeConfiguration<RiskDraft>
+    {
+        public void Configure(EntityTypeBuilder<RiskDraft> builder)
+        {
+            builder.ToTable("RiskDrafts");
+            builder.HasKey(d => d.Id);
+            builder.Property(d => d.Id).ValueGeneratedNever();
+            builder.Property(d => d.Title).IsRequired().HasMaxLength(RiskDraft.MaxTitleLength);
+            builder.Property(d => d.Threat).IsRequired().HasMaxLength(RiskDraft.MaxTextLength);
+            builder.Property(d => d.Asset).IsRequired().HasMaxLength(RiskDraft.MaxTitleLength);
+            builder.Property(d => d.BasedOn).IsRequired().HasMaxLength(RiskDraft.MaxTextLength);
+            builder.Property(d => d.Reasoning).IsRequired().HasMaxLength(RiskDraft.MaxTextLength);
+            builder.Property(d => d.Model).IsRequired().HasMaxLength(200);
+            builder.Property(d => d.PromptVersion).IsRequired().HasMaxLength(50);
+            builder.Property(d => d.Status).HasConversion<string>().HasMaxLength(20);
+            builder.Property(d => d.DecidedRole).HasConversion<string>().HasMaxLength(50);
+            builder.Property(d => d.DiscardReason).HasMaxLength(1000);
+            builder.Ignore(d => d.IsOpen);
+            builder.Ignore(d => d.Level);
+            builder.HasOne<Project>().WithMany().HasForeignKey(d => d.ProjectId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<User>().WithMany().HasForeignKey(d => d.DecidedById).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+            builder.HasIndex(d => d.ProjectId);
         }
     }
 

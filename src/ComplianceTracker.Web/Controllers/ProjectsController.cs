@@ -164,6 +164,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] Application.Projects.PhaseGates phaseGates,
             [FromServices] Application.Reports.StatementOfApplicabilityQueries soa,
             [FromServices] Application.Audits.AuditService audits,
+            [FromServices] Application.Risks.RiskDraftService riskDrafts,
             [FromServices] Application.Security.SecurityEventSuggestionService suggestionService,
             [FromServices] Application.Approvals.ApprovalService approvalService,
             [FromServices] Application.Organizations.OrganisationDocumentService documentService,
@@ -304,6 +305,7 @@ namespace ComplianceTracker.Web.Controllers
                 Sboms = sbomOverview,
                 NextGate = activeTab is ProjectTabs.Overview ? await phaseGates.NextAsync(id, cancellationToken) : null, // US-071
                 Audits = await audits.ForProjectAsync(id, cancellationToken), // US-134
+                RiskDrafts = activeTab is ProjectTabs.Risks ? await riskDrafts.OpenAsync(id, cancellationToken) : [], // US-112
                 HasIso27001 = activeTab is ProjectTabs.Reports && project.IsOrganisationArea && await soa.ForOrganizationAsync(cancellationToken) is not null, // US-053
                 SbomFilter = q,
                 RiskStatusFilter = status,

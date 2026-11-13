@@ -67,6 +67,13 @@ namespace ComplianceTracker.Domain.Risks
         public string? ImportedFrom { get; private set; }
         public string? ImportedOwner { get; private set; }
 
+        // US-112 R4: the risk came from the AI agent's draft, accepted by a person
+        public Guid? AiDraftId { get; private set; }
+
+        public bool IsAiDrafted => AiDraftId is not null;
+
+        public void FromAiDraft(Guid draftId) => AiDraftId = draftId;
+
         public void FromImport(string fileName, string? ownerText)
         {
             ImportedFrom = fileName.Length <= 255 ? fileName : fileName[^255..];

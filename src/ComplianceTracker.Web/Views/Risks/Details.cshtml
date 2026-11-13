@@ -24,6 +24,11 @@
     }
 </div>
 <p class="text-muted">@risk.Description</p>
+@if (risk.IsAiDrafted)
+{
+    @* US-112 R4 *@
+    <p class="small text-muted" id="risk-ai-drafted"><span class="badge text-bg-info">AI-drafted</span> From the AI agent's draft, accepted by a person</p>
+}
 @if (risk.ImportedFrom is { } importedFrom)
 {
     @* US-049 R5, R7 *@

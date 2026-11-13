@@ -316,6 +316,9 @@ namespace ComplianceTracker.Web.Models
         // US-134: the project's and the organisation's audits, for the header's certificate badge and the Overview
         public Application.Audits.AuditOverview? Audits { get; init; }
 
+        // US-112: the AI agent's open drafts, on the Risks tab
+        public IReadOnlyList<Domain.Risks.RiskDraft> RiskDrafts { get; init; } = [];
+
         // US-107 R3: the organisation's GitHub Projects to choose from
         public IReadOnlyList<Application.WorkItems.GitHubProjectInfo> GitHubProjectChoices { get; init; } = [];
         public string? RiskStatusFilter { get; init; }

@@ -31,6 +31,11 @@ namespace ComplianceTracker.Specs.Support
         // US-038: the answer to "Check whether the evidence …" per requirement code; "Covers" when none is set
         public Dictionary<string, string> EvidenceAnswers { get; } = new(StringComparer.Ordinal);
 
+        // US-112: the risk agent's answer; two risks when none is set
+        public string RiskDraftAnswer { get; set; } =
+            "RISK: Stolen session cookie\nTHREAT: An attacker steals a session cookie via XSS\nASSET: User accounts\nLIKELIHOOD: 3\nIMPACT: 4\nBASED ON: I.2(d) not covered\nWHY: Sign-in is not protected yet\n---\n"
+            + "RISK: Unpatched open-source component\nTHREAT: A known vulnerability in a library is exploited\nASSET: The product\nLIKELIHOOD: 2\nIMPACT: 4\nBASED ON: Intended purpose\nWHY: The product uses many libraries";
+
         // US-060, US-061: every prompt, so a scenario can check what the AI was told
         public List<string> Prompts { get; } = new();
         // US-117: tasks with their own model name, and tasks whose own model cannot be reached (FakeAiModels)
@@ -62,6 +67,16 @@ namespace ComplianceTracker.Specs.Support
         public Task<string> WriteAsync(string prompt, CancellationToken cancellationToken = default)
         {
             ThrowIfUnavailable();
+            if (prompt.Contains(ComplianceTracker.Application.Risks.RiskDraftPrompt.Marker, StringComparison.Ordinal))
+            {
+                lock (this)
+                {
+                    Prompts.Add(prompt);
+                }
+
+                return Task.FromResult(RiskDraftAnswer);
+            }
+
             var start = prompt.IndexOf("Requirement ", StringComparison.Ordinal) + "Requirement ".Length;
             var code = prompt[start..prompt.IndexOf(':', start)];
             lock (this)

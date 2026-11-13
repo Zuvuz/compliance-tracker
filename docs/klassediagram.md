@@ -1749,6 +1749,29 @@ classDiagram
   }
   EvidenceCheck --> Evidence : US-038
   EvidenceCheckService ..> EvidenceCheck
+  class RiskDraft {
+    -id: Guid
+    -projectId: Guid
+    -title: string
+    -threat: string
+    -asset: string
+    -likelihood: int
+    -impact: int
+    -basedOn: string
+    -reasoning: string
+    -status: RiskDraftStatus
+    -riskId: Guid?
+    +Accept(riskId, userId, role, at)
+    +Discard(reason, userId, role, at)
+  }
+  class RiskDraftService {
+    +DraftAsync(projectId) RiskDraftRun
+    +AcceptAsync(projectId, draftId, input) Risk
+    +DiscardAsync(projectId, draftId, reason)
+    +Keep(drafted, risks, drafts)$
+  }
+  RiskDraftService ..> RiskDraft : US-112
+  RiskDraft --> Risk : accepted as
   PhaseGate "1" *-- "1..*" GateCheck
   PhaseGates ..> PhaseGate : works out (US-071)
   ProjectService --> PhaseGates : before a phase change
