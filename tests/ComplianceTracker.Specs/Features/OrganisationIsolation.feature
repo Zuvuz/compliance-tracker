@@ -19,6 +19,9 @@ Feature: No organisation can reach another organisation's data
     And I have added the action "Phishing training" to the risk "Phishing"
     And "Acme Portal" has a "Trivy" scan with the findings "CVE-2026-1111" and "CVE-2026-2222"
     And I upload the CycloneDX SBOM "sbom.cdx.json" with 3 components for version "2.1.0"
+    And I import the risks file "risks.csv" into "Acme Portal" with the rows
+      | Title        | Likelihood | Impact |
+      | Old firmware | 2          | 3      |
     And I have created the upload token "GitHub Actions" for "Acme Portal"
     And I ask to accept the risk "Phishing" with the reason "Training given"
     And I have uploaded the policy "Access control policy" version "v1" with the content "Policy text v1"

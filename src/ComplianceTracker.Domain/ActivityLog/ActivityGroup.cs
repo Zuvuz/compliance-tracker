@@ -64,7 +64,7 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.OrganisationDocumentRemoved
                 or ActivityAction.DocumentLinkSuggested or ActivityAction.DocumentLinkApproved
                 or ActivityAction.DocumentLinkRejected => ActivityGroup.Evidence,
-            ActivityAction.RiskAdded or ActivityAction.RiskUpdated or ActivityAction.RiskReviewed
+            ActivityAction.RiskAdded or ActivityAction.RiskUpdated or ActivityAction.RiskReviewed or ActivityAction.RisksImported
                 or ActivityAction.RiskActionAdded or ActivityAction.RiskActionLinked or ActivityAction.RiskActionDone => ActivityGroup.Risks,
             ActivityAction.VulnerabilityRecorded or ActivityAction.IncidentRecorded or ActivityAction.SecurityReportSent
                 or ActivityAction.SecurityFixAvailable or ActivityAction.SecurityEventClosed

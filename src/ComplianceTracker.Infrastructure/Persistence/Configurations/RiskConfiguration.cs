@@ -53,6 +53,39 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Navigation(r => r.Actions).HasField("_actions").UsePropertyAccessMode(PropertyAccessMode.Field).AutoInclude();
 
             builder.HasIndex(r => r.ProjectId);
+
+            // US-049: where an imported risk came from
+            builder.Property(r => r.ImportedFrom).HasMaxLength(255);
+            builder.Property(r => r.ImportedOwner).HasMaxLength(200);
+        }
+    }
+
+    // US-049: imported risk registers, and their files in "RiskImportFiles"
+    public class RiskImportConfiguration : IEntityTypeConfiguration<RiskImport>
+    {
+        public void Configure(EntityTypeBuilder<RiskImport> builder)
+        {
+            builder.ToTable("RiskImports");
+            builder.HasKey(i => i.Id);
+            builder.Property(i => i.Id).ValueGeneratedNever();
+            builder.Property(i => i.FileName).IsRequired().HasMaxLength(255);
+            builder.Property(i => i.Sha256).IsRequired().HasMaxLength(64);
+            builder.Ignore(i => i.IsConfirmed);
+            builder.HasOne<Project>().WithMany().HasForeignKey(i => i.ProjectId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<User>().WithMany().HasForeignKey(i => i.CreatedById).OnDelete(DeleteBehavior.Restrict);
+            builder.HasIndex(i => i.ProjectId);
+        }
+    }
+
+    public class RiskImportFileConfiguration : IEntityTypeConfiguration<RiskImportFile>
+    {
+        public void Configure(EntityTypeBuilder<RiskImportFile> builder)
+        {
+            builder.ToTable("RiskImportFiles");
+            builder.HasKey(f => f.ImportId);
+            builder.Property(f => f.ImportId).ValueGeneratedNever();
+            builder.Property(f => f.Content).IsRequired();
+            builder.HasOne<RiskImport>().WithOne().HasForeignKey<RiskImportFile>(f => f.ImportId).OnDelete(DeleteBehavior.Cascade);
         }
     }
 

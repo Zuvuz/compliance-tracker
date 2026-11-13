@@ -4851,6 +4851,14 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<int>("Impact")
                         .HasColumnType("integer");
 
+                    b.Property<string>("ImportedFrom")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("ImportedOwner")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<DateTime?>("LastReviewedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -4980,6 +4988,59 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasIndex("WorkItemId");
 
                     b.ToTable("RiskActionLinks", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Risks.RiskImport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ConfirmedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<int>("ImportedCount")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("RiskImports", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Risks.RiskImportFile", b =>
+                {
+                    b.Property<Guid>("ImportId")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("ImportId");
+
+                    b.ToTable("RiskImportFiles", (string)null);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Risks.RiskMeasure", b =>
@@ -6779,6 +6840,30 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("WorkItemId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Risks.RiskImport", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Risks.RiskImportFile", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Risks.RiskImport", null)
+                        .WithOne()
+                        .HasForeignKey("ComplianceTracker.Domain.Risks.RiskImportFile", "ImportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Risks.RiskMeasure", b =>

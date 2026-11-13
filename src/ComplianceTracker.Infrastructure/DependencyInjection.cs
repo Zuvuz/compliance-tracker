@@ -103,6 +103,9 @@ namespace ComplianceTracker.Infrastructure
             services.AddSingleton<Application.Scanning.ISbomImporter, Scanning.CycloneDxSbomImporter>();
             services.AddSingleton<Application.Scanning.ISbomImporter, Scanning.SpdxSbomImporter>();
             services.AddScoped<IRiskRepository, RiskRepository>();
+            services.AddScoped<IRiskImportRepository, RiskImportRepository>(); // US-049
+            services.AddSingleton<IRiskSheetReader, Risks.CsvRiskSheetReader>();
+            services.AddSingleton<IRiskSheetReader, Risks.XlsxRiskSheetReader>();
             services.AddScoped<Application.Projects.IClassificationRepository, ClassificationRepository>(); // US-026
             services.AddScoped<Application.Security.ISecurityEventRepository, SecurityEventRepository>(); // US-073
 

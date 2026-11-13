@@ -24,6 +24,11 @@
     }
 </div>
 <p class="text-muted">@risk.Description</p>
+@if (risk.ImportedFrom is { } importedFrom)
+{
+    @* US-049 R5, R7 *@
+    <p class="small text-muted" id="risk-imported">Imported from @importedFrom@(risk.ImportedOwner is { } owner ? $"; the file named the owner {owner}, who is not a member" : "")</p>
+}
 
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
 

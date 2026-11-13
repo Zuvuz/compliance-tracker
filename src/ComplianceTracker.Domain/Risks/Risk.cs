@@ -63,6 +63,16 @@ namespace ComplianceTracker.Domain.Risks
         public DateTime? LastReviewedAt { get; private set; }
         public Guid? LastReviewedById { get; private set; }
 
+        // US-049 R7: the file the risk was imported from, and its owner as written when that is not a member (R5)
+        public string? ImportedFrom { get; private set; }
+        public string? ImportedOwner { get; private set; }
+
+        public void FromImport(string fileName, string? ownerText)
+        {
+            ImportedFrom = fileName.Length <= 255 ? fileName : fileName[^255..];
+            ImportedOwner = string.IsNullOrWhiteSpace(ownerText) ? null : ownerText.Trim().Length <= 200 ? ownerText.Trim() : ownerText.Trim()[..200];
+        }
+
         // R5: the project's requirements and user stories that reduce the risk
         public IReadOnlyList<RiskMeasure> Measures => _measures;
 

@@ -1,0 +1,101 @@
+@* US-049: import a risk register from a CSV file or an Excel workbook. Upload, preview every row with its errors, then
+   confirm. Ids used by the tests: #upload-risks (file), #risk-import-errors (li), #risk-import-preview rows
+   .import-row (data-title) with .import-level, .import-owner and .import-note, form #confirm-import (importAnyway),
+   #template-link. *@
+@using ComplianceTracker.Domain.Risks
+@model RiskImportViewModel
+@{
+    var project = Model.Project;
+    var preview = Model.Preview;
+    ViewData["Title"] = $"Import risks – {project.Name}";
+    string Badge(RiskLevel? level) => level switch
+    {
+        RiskLevel.Critical => "text-bg-dark",
+        RiskLevel.High => "text-bg-danger",
+        RiskLevel.Medium => "text-bg-warning",
+        RiskLevel.Low => "text-bg-success",
+        _ => "text-bg-light border"
+    };
+}
+
+<p class="mb-1"><a asp-controller="Projects" asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Risks">← Risks of @project.Name</a></p>
+<h1>Import risks</h1>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+<p class="text-muted small">
+    Bring in an existing risk register. The file needs the columns <strong>Title</strong>, <strong>Likelihood</strong> (1–5) and
+    <strong>Impact</strong> (1–5), and may have Description, Owner, Treatment (Reduce, Accept, Avoid, Transfer), Reason (for Accept)
+    and Last reviewed. CSV with ";" or ",", or an Excel workbook (.xlsx), at most 1 MB and 500 rows.
+    Every row is checked before anything is saved.
+    <a asp-action="Template" id="template-link">Download the template</a>
+</p>
+
+<form asp-action="Import" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 mb-4" id="upload-risks">
+    <input type="hidden" name="projectId" value="@project.Id" />
+    <input type="file" name="file" accept=".csv,.txt,.xlsx" class="form-control form-control-sm w-auto" aria-label="Risk register (CSV or .xlsx, max 1 MB)" required />
+    <button type="submit" class="btn btn-sm btn-outline-primary">Upload and check</button>
+</form>
+
+@if (preview is not null)
+{
+    <h2 class="h5">@preview.Import.FileName</h2>
+
+    @if (preview.Errors.Count > 0)
+    {
+        @* R2: nothing is imported while a row has an error *@
+        <div class="alert alert-danger" id="risk-import-errors" role="alert">
+            <p class="mb-1">Nothing is imported. Fix these in the file and upload it again:</p>
+            <ul class="mb-0">
+                @foreach (var error in preview.Errors)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        </div>
+    }
+
+    @if (preview.Rows.Count > 0)
+    {
+        <table class="table table-sm align-middle small" id="risk-import-preview">
+            <thead><tr><th>Row</th><th>Title</th><th>L × I</th><th>Level</th><th>Owner</th><th>Treatment</th><th>Last reviewed</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var row in preview.Rows)
+                {
+                    <tr class="import-row @(row.IsValid ? row.IsDuplicate ? "table-secondary" : "" : "table-danger")" data-title="@row.Title">
+                        <td>@row.Number</td>
+                        <td>@row.Title</td>
+                        <td>@(row.Likelihood?.ToString() ?? "?") × @(row.Impact?.ToString() ?? "?")</td>
+                        <td class="import-level"><span class="badge @Badge(row.Level)">@(row.Level?.ToString() ?? "–")</span></td>
+                        <td class="import-owner">@(row.OwnerText is null ? "You" : row.Owner is null ? $"{row.OwnerText} (not a member)" : row.Owner.Name)</td>
+                        <td>@row.Treatment@(row.Reason is { } reason ? $": {reason}" : "")</td>
+                        <td>@(row.LastReviewed?.ToString("dd-MM-yyyy") ?? "Today")</td>
+                        <td class="import-note">@(row.IsDuplicate ? "Already in the project" : "")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    @if (preview.Import.IsConfirmed)
+    {
+        <p class="text-muted" id="risk-import-done">This file was imported on @preview.Import.ConfirmedAt!.Value.ToLocalTime().ToString("dd-MM-yyyy HH:mm").</p>
+    }
+    else if (preview.CanImport)
+    {
+        var toImport = preview.ToImport(false).Count;
+        <form asp-action="ConfirmImport" method="post" class="d-flex flex-wrap align-items-center gap-3" id="confirm-import">
+            <input type="hidden" name="projectId" value="@project.Id" />
+            <input type="hidden" name="importId" value="@preview.Import.Id" />
+            @if (preview.Duplicates > 0)
+            {
+                @* R4: duplicates are skipped unless chosen *@
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" name="importAnyway" value="true" id="import-anyway" />
+                    <label class="form-check-label" for="import-anyway">Import the @preview.Duplicates already in the project anyway</label>
+                </div>
+            }
+            <button type="submit" class="btn btn-primary">Import @toImport @(toImport == 1 ? "risk" : "risks")</button>
+        </form>
+    }
+}

@@ -396,4 +396,7 @@ namespace ComplianceTracker.Web.Models
                 .Where(row => row.IsNewest || row.Projects.Count > 0))
             .ToList();
     }
+
+    // US-049: the risk import page; Preview is null until a file is uploaded
+    public record RiskImportViewModel(Domain.Projects.Project Project, Application.Risks.RiskImportPreview? Preview);
 }
