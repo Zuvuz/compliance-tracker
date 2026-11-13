@@ -57,7 +57,8 @@ namespace ComplianceTracker.Specs.Support
                 return Task.FromResult<IReadOnlyList<double>>(documents.Select(document =>
                 {
                     var (q, d) = (query.Split('\n')[0], document.Split('\n')[0]);
-                    return RerankScores.TryGetValue((q, d.Split(' ')[0]), out var a) ? a
+                    return RerankScores.TryGetValue((q, d), out var whole) ? whole
+                        : RerankScores.TryGetValue((q, d.Split(' ')[0]), out var a) ? a
                         : RerankScores.TryGetValue((d, q.Split(' ')[0]), out var b) ? b
                         : ComplianceTracker.Application.Ai.Similarity.Cosine(queryVector, Vector(document));
                 }).ToList());

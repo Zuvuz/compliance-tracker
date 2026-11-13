@@ -64,6 +64,27 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.Equal(text, suggestion.QuerySelector(".suggestion-search-score")?.TextContent.Trim());
         }
 
+        [Then("the story suggestion {string} of {string} shows the score {string} and {string}")]
+        public async Task ThenTheStorySuggestionShows(string story, string title, string score, string search)
+        {
+            var suggestion = (await EvidenceItemAsync(title)).QuerySelectorAll(".evidence-story-suggestion").FirstOrDefault(s => s.GetAttribute("data-story") == story)
+                ?? throw new Xunit.Sdk.XunitException($"'{title}' has no story suggestion '{story}'.");
+            Assert.Equal(score, suggestion.QuerySelector(".suggestion-score")?.TextContent.Trim());
+            Assert.Equal(search, suggestion.QuerySelector(".suggestion-search-score")?.TextContent.Trim());
+        }
+
+        private async Task<IElement> EvidenceItemAsync(string title)
+        {
+            await using (var db = _web.CreateDbContext())
+            {
+                var id = await db.Projects.Where(p => p.Name == Project).Select(p => p.Id).SingleAsync();
+                await _web.OpenAsync($"/Projects/Details/{id}/evidence");
+            }
+
+            return _web.Page!.QuerySelectorAll("#evidence-list .evidence-item").FirstOrDefault(e => e.GetAttribute("data-title") == title)
+                ?? throw new Xunit.Sdk.XunitException($"The Evidence tab does not list '{title}'.");
+        }
+
         private async Task<IElement> RowAsync(string code)
         {
             await _compliance.OpenSubTabWithAsync(Project, code);

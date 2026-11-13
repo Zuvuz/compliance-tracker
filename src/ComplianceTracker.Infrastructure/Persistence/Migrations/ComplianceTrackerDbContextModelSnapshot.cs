@@ -3811,6 +3811,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<int>("Rank")
                         .HasColumnType("integer");
 
+                    b.Property<string>("RankingModel")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<string>("RejectedFingerprint")
                         .HasColumnType("text");
 
@@ -3819,6 +3823,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.Property<double>("Score")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("SearchScore")
                         .HasColumnType("double precision");
 
                     b.Property<string>("Status")

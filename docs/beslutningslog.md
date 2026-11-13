@@ -1624,7 +1624,7 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 ### B104 – En reranker afgør rækkefølgen af AI'ens forslag (US-118)
 
 - **Beslutning:**
-  - **Tre trin:** forslag til stories (US-020, US-044) og til evidens (US-059) laves sådan:
+  - **Tre trin:** forslag til stories (US-020, US-044), til evidens (US-059) og fra evidens til stories (US-146) laves sådan:
     - søgning med vektorer finder de bedste 20 kandidater, uanset deres søgescore
     - en reranker læser kravet og hver kandidat sammen og giver en ny score
     - US-105's grænse gælder for rerank-scoren, og kun de beholdte får skrevet en begrundelse
@@ -1635,7 +1635,6 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** En cross-encoder læser teksterne sammen og rammer derfor oftere rigtigt end to vektorer (AI Act Art. 15). Begge scorer vises, så man kan se, hvad rerankeren ændrede (Art. 13).
 - **Fravalgt:**
   - Reranking i gap-finderen (US-119 kan bruge den senere).
-  - Reranking af stories til evidens (US-146). Det kan komme senere med samme hjælper.
   - Forslag til cross-mapping (US-037). Her er der hundredvis af par, og godkendelsen er alligevel en persons.
 
 ## Åbne spørgsmål til klassediagrammet

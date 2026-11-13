@@ -219,6 +219,11 @@
                                             <div class="d-flex flex-wrap align-items-center gap-1">
                                                 <span class="fw-semibold">@suggested.Story.Title</span>
                                                 <span class="badge text-bg-light suggestion-score">@suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span>
+                                                @if (suggestion.SearchScore is { } search)
+                                                {
+                                                    @* US-118 *@
+                                                    <span class="small text-muted suggestion-search-score">(search @search.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))</span>
+                                                }
                                                 <span class="badge text-bg-info ai-generated">AI-generated</span>
                                             </div>
                                             @if (canChange)

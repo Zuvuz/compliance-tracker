@@ -403,7 +403,7 @@ namespace ComplianceTracker.Application.Compliance
                ?? throw new DomainException("The suggestion was not found");
 
         // R6: the stories of the project the evidence may show are done; none linked, rejected or (for "Show more") ever suggested
-        private async Task<int> SuggestStoriesAsync(Project project, Evidence evidence, float[] evidenceVector, bool more, CancellationToken cancellationToken)
+        private async Task<int> SuggestStoriesAsync(Project project, Evidence evidence, string evidenceText, float[] evidenceVector, bool more, CancellationToken cancellationToken)
         {
             var linked = (await _stories.ListActiveLinksAsync(project.Id, cancellationToken)).Where(l => l.EvidenceId == evidence.Id).Select(l => l.WorkItemId);
             var existing = (await _stories.ListSuggestionsAsync(project.Id, cancellationToken)).Where(s => s.EvidenceId == evidence.Id).ToList();
@@ -421,12 +421,13 @@ namespace ComplianceTracker.Application.Compliance
 
             var vectors = await _embeddings.EmbedAsync(candidates.Select(Ai.MappingSuggestionService.StoryText).ToList(), cancellationToken);
             var rank = existing.Select(s => s.Rank).DefaultIfEmpty(0).Max() + 1;
-            var made = candidates
-                .Select((story, i) => (Story: story, Score: Similarity.Cosine(evidenceVector, vectors[i])))
-                .Where(c => c.Score >= _limits.MinimumScoreForEvidence)
-                .OrderByDescending(c => c.Score)
-                .Take(BatchSize)
-                .Select(c => EvidenceStorySuggestion.Create(project.Id, evidence.Id, c.Story.Id, c.Score, rank++, _embeddings.Name, Now, _limits.MinimumScoreForEvidence))
+            // US-118: reranked like the requirements; the limit applies to the rerank score when there is a reranker
+            var best = await Reranking.BestAsync(_reranker, evidenceText,
+                candidates.Select((story, i) => (Item: story, Search: Similarity.Cosine(evidenceVector, vectors[i]))),
+                Ai.MappingSuggestionService.StoryText, _limits.MinimumScoreForEvidence, BatchSize, cancellationToken);
+            var made = best
+                .Select(c => EvidenceStorySuggestion.Create(project.Id, evidence.Id, c.Item.Id, c.Score, rank++, _embeddings.Name, Now, _limits.MinimumScoreForEvidence)
+                    .Reranked(c.SearchScore, _reranker?.Name))
                 .ToList();
             if (made.Count == 0)
             {
@@ -474,7 +475,7 @@ namespace ComplianceTracker.Application.Compliance
                 [evidenceText, .. candidates.Select(Ai.MappingSuggestionService.RequirementText)], cancellationToken);
 
             // US-146 R6: the stories it may show are done, with the same evidence vector
-            var stories = await SuggestStoriesAsync(project, evidence, vectors[0], more, cancellationToken);
+            var stories = await SuggestStoriesAsync(project, evidence, evidenceText, vectors[0], more, cancellationToken);
 
             var rank = existing.Select(s => s.Rank).DefaultIfEmpty(0).Max() + 1;
             // US-105 R1 and US-118: the limit applies to the rerank score when there is a reranker

@@ -61,3 +61,10 @@ Feature: Rerank the AI's candidates
     Then "Access policy 2026" has the suggestion "SP-1" with score "0.82" marked "AI-generated"
     And the evidence suggestion "SP-1" of "Access policy 2026" says "(search 0.61)"
 
+  @US-118 @US-146 @aiact-art15 @integration
+  Scenario: Stories the evidence may show are reranked too
+    Given a reranker is configured
+    And the minimum score for evidence suggestions is 0.55
+    And the reranker scores "Access policy 2026" against "[US-041] Session timeout" with 0.9
+    When I upload the evidence "Access policy 2026" with the file "access-policy.pdf" on the Evidence tab of "Acme Portal"
+    Then the story suggestion "[US-041] Session timeout" of "Access policy 2026" shows the score "0.90" and "(search 0.00)"

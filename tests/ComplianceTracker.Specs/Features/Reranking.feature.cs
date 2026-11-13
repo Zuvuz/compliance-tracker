@@ -145,7 +145,7 @@ namespace ComplianceTracker.Specs.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Reranking.feature.ndjson", 7);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Reranking.feature.ndjson", 8);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -433,6 +433,60 @@ namespace ComplianceTracker.Specs.Features
 #line hidden
 #line 62
     await testRunner.AndAsync("the evidence suggestion \"SP-1\" of \"Access policy 2026\" says \"(search 0.61)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="Stories the evidence may show are reranked too")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Rerank the AI\'s candidates")]
+        [global::Xunit.TraitAttribute("Description", "Stories the evidence may show are reranked too")]
+        [global::Xunit.TraitAttribute("Category", "US-118")]
+        [global::Xunit.TraitAttribute("Category", "US-146")]
+        [global::Xunit.TraitAttribute("Category", "aiact-art15")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task StoriesTheEvidenceMayShowAreRerankedToo()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-118",
+                    "US-146",
+                    "aiact-art15",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "5";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Stories the evidence may show are reranked too", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 65
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 8
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 66
+    await testRunner.GivenAsync("a reranker is configured", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 67
+    await testRunner.AndAsync("the minimum score for evidence suggestions is 0.55", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 68
+    await testRunner.AndAsync("the reranker scores \"Access policy 2026\" against \"[US-041] Session timeout\" with " +
+                        "0.9", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 69
+    await testRunner.WhenAsync("I upload the evidence \"Access policy 2026\" with the file \"access-policy.pdf\" on t" +
+                        "he Evidence tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 70
+    await testRunner.ThenAsync("the story suggestion \"[US-041] Session timeout\" of \"Access policy 2026\" shows the" +
+                        " score \"0.90\" and \"(search 0.00)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
