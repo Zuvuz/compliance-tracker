@@ -1,6 +1,6 @@
 // US-138 R2, R3: 50 signed-in users for 5 minutes doing what users do; a run over a limit fails
 import exec from 'k6/execution';
-import { common, limits, projectIds, round, signIn, USERS } from './lib.js';
+import { common, limits, projectIds, round, signIn, summaryText, USERS } from './lib.js';
 
 export const options = {
   ...common,
@@ -22,5 +22,5 @@ export default function () {
 }
 
 export function handleSummary(data) {
-  return { '/results/load-summary.json': JSON.stringify(data, null, 2), stdout: '' };
+  return { '/results/load-summary.json': JSON.stringify(data, null, 2), stdout: summaryText('Load test', data) };
 }

@@ -10,7 +10,9 @@ Actions → **Load test** → **Run workflow**. Du kan vælge antal brugere (50)
 2. laver testbrugerne `load-user-1 … n` i test-realmen med et tilfældigt kodeord, som kun findes i den kørsel
 3. fylder databasen med `tests/load/seed`: 5 projekter, CRA, AI Act og ISO/IEC 27001, 1.000 stories, 300 evidens, 200 risici og 5.000 logposter
 4. kører `smoke.js`, `load.js` og `stress.js` og til sidst `smoke.js` igen efter et minut, som tjekker, at systemet kommer sig (R5)
-5. gemmer resultaterne (`load-results`) i 90 dage
+5. gemmer resultaterne (`load-results`) i 90 dage og skriver p95, fejl og login-andel i jobbets log
+
+En kørsel, hvor en bruger ikke kan logge ind, eller hvor en side ikke kommer fra trackeren selv, fejler (smoke- og loadtesten stopper med det samme og siger hvor login stoppede). Ellers måler den login-siden i stedet for trackeren, som i den første kørsel.
 
 ## Scripts
 

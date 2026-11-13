@@ -1,6 +1,6 @@
 // US-138: a short check that the stack and the sign-in work, before and after the heavier tests (R5: it recovers)
 import exec from 'k6/execution';
-import { common, limits, projectIds, round, signIn } from './lib.js';
+import { common, limits, projectIds, round, signIn, summaryText } from './lib.js';
 
 export const options = { ...common, vus: 2, duration: '30s', thresholds: limits };
 
@@ -13,4 +13,8 @@ export default function () {
   }
 
   round(projects);
+}
+
+export function handleSummary(data) {
+  return { stdout: summaryText('Smoke test', data) };
 }

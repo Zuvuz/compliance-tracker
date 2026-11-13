@@ -1,7 +1,7 @@
 // US-138 R4: more and more users until p95 or the errors pass the limits; the summary records where that happened.
 // The limits do not stop the run, so it goes on to the top; the workflow then checks that it recovers (R5).
 import exec from 'k6/execution';
-import { common, projectIds, round, signIn, USERS } from './lib.js';
+import { common, projectIds, round, signIn, summaryText, USERS } from './lib.js';
 
 export const options = {
   ...common,
@@ -21,6 +21,10 @@ export const options = {
   thresholds: {
     'http_req_duration{kind:page}': [{ threshold: 'p(95)<1000', abortOnFail: false }],
     http_req_failed: [{ threshold: 'rate<0.01', abortOnFail: false }],
+    // Not limits, but they make k6 count how many were signed in and stayed in the tracker under stress
+    'checks{check:signed in}': [{ threshold: 'rate>=0', abortOnFail: false }],
+    'checks{check:from the tracker}': [{ threshold: 'rate>=0', abortOnFail: false }],
+    'http_req_duration{kind:report}': [{ threshold: 'p(95)<5000', abortOnFail: false }],
   },
 };
 
@@ -28,13 +32,13 @@ let projects;
 
 export default function () {
   if (exec.vu.iterationInScenario === 0) {
-    signIn(`load-user-${((exec.vu.idInTest - 1) % USERS) + 1}`);
-    projects = projectIds();
+    signIn(`load-user-${((exec.vu.idInTest - 1) % USERS) + 1}`, false);
+    projects = projectIds(false);
   }
 
   round(projects);
 }
 
 export function handleSummary(data) {
-  return { '/results/stress-summary.json': JSON.stringify(data, null, 2), stdout: '' };
+  return { '/results/stress-summary.json': JSON.stringify(data, null, 2), stdout: summaryText('Stress test', data) };
 }
