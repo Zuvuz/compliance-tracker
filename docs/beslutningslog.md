@@ -1474,6 +1474,29 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At dele pakken uden for trackeren.
   - En signatur med certifikat på ZIP'en.
 
+### B96 – Grænse for databasekald pr. side (US-139)
+
+- **Beslutning:**
+  - **Tælling:** EF Core's egen `DbCommandInterceptor` tæller kaldene i hver request og logger et kald over 500 ms som en advarsel i alle miljøer. Advarslen nævner siden, men aldrig parameterværdier. De 500 ms er indstillingen `Database:SlowQueryMilliseconds`.
+  - **Testene:** et scenarie åbner de vigtige sider først med lidt data, derefter med 200 stories, 60 risici, 100 evidens og 15 projekter mere. Hver side skal holde sig under sin grænse og må ikke vokse med data (±2).
+  - **Målingen den 12-11-2026:** ingen side voksede med data, så der var ingen N+1-kald at rette. Antallet af kald var:
+    - Dashboard: 9
+    - Projects: 9
+    - Overview: 47
+    - Compliance: 49
+    - Evidence: 31
+    - Risks: 10
+    - Work items: 26
+    - Reports: 25
+    - Project activity: 11
+    - Frameworks: 2
+    - Organisation activity: 5
+    - Traceability download: 46
+  - **Grænserne** ligger lige over tallene. En grænse hæves kun i samme PR som den ændring, der kræver det, og med begrundelsen.
+- **Begrundelse:** En side, der bliver langsom, når data vokser, fanges i testene i stedet for hos en kunde. Kun gratis værktøjer, ingen profiler.
+- **Fravalgt:**
+  - At sænke Overview og Compliance nu. De laver mange kald, men et fast antal. Det kan blive en egen forbedring, hvis lasttesten (US-138) viser, at de er langsomme.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

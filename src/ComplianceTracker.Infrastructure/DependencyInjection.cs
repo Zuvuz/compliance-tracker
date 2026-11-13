@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using ComplianceTracker.Application.Risks;
 using ComplianceTracker.Application.Compliance;
 using ComplianceTracker.Application.ActivityLog;
@@ -46,7 +47,14 @@ namespace ComplianceTracker.Infrastructure
                         $"Set the environment variable 'ConnectionStrings__{ConnectionStringName}'.");
 
                 options.UseNpgsql(connectionString);
+
+                // US-139: counts the request's queries and logs slow ones
+                options.AddInterceptors(serviceProvider.GetRequiredService<QueryCountingInterceptor>());
             });
+            services.AddScoped<RequestQueryCounter>();
+            services.TryAddSingleton<ICurrentRequestPath, NoRequestPath>();
+            services.AddScoped<QueryCountingInterceptor>();
+            services.TryAddSingleton<IQueryCountObserver, NoQueryCountObserver>();
 
             // "Scoped" = one instance per HTTP request. The repositories and the unit of work
             // therefore share the same DbContext and save in the same transaction.

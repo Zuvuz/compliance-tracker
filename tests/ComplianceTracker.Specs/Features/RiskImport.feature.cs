@@ -181,21 +181,21 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table18 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table19 = new global::Reqnroll.Table(new string[] {
                             "Title",
                             "Likelihood",
                             "Impact",
                             "Owner",
                             "Treatment",
                             "Reason"});
-                table18.AddRow(new string[] {
+                table19.AddRow(new string[] {
                             "Stolen session cookie",
                             "3",
                             "4",
                             "Anna",
                             "Reduce",
                             ""});
-                table18.AddRow(new string[] {
+                table19.AddRow(new string[] {
                             "Old TLS on legacy API",
                             "2",
                             "3",
@@ -203,7 +203,7 @@ namespace ComplianceTracker.Specs.Features
                             "Accept",
                             "Retired in Q1"});
 #line 14
-    await testRunner.WhenAsync("I import the risks file \"risks.csv\" into \"Acme Portal\" with the rows", ((string)(null)), table18, "When ");
+    await testRunner.WhenAsync("I import the risks file \"risks.csv\" into \"Acme Portal\" with the rows", ((string)(null)), table19, "When ");
 #line hidden
 #line 18
     await testRunner.AndAsync("I confirm the import", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -249,21 +249,21 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table19 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table20 = new global::Reqnroll.Table(new string[] {
                             "Title",
                             "Likelihood",
                             "Impact",
                             "Owner",
                             "Treatment",
                             "Reason"});
-                table19.AddRow(new string[] {
+                table20.AddRow(new string[] {
                             "Stolen session cookie",
                             "3",
                             "4",
                             "Anna",
                             "Reduce",
                             ""});
-                table19.AddRow(new string[] {
+                table20.AddRow(new string[] {
                             "Broken row",
                             "6",
                             "3",
@@ -271,7 +271,7 @@ namespace ComplianceTracker.Specs.Features
                             "Reduce",
                             ""});
 #line 25
-    await testRunner.WhenAsync("I import the risks file \"risks.csv\" into \"Acme Portal\" with the rows", ((string)(null)), table19, "When ");
+    await testRunner.WhenAsync("I import the risks file \"risks.csv\" into \"Acme Portal\" with the rows", ((string)(null)), table20, "When ");
 #line hidden
 #line 29
     await testRunner.ThenAsync("the preview says \"Row 2: Likelihood must be 1 to 5\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -317,21 +317,21 @@ namespace ComplianceTracker.Specs.Features
 #line 35
     await testRunner.GivenAsync("the risk \"Stolen session cookie\" exists in \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table20 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table21 = new global::Reqnroll.Table(new string[] {
                             "Title",
                             "Likelihood",
                             "Impact",
                             "Owner",
                             "Treatment",
                             "Reason"});
-                table20.AddRow(new string[] {
+                table21.AddRow(new string[] {
                             "Stolen session cookie",
                             "3",
                             "4",
                             "Anna",
                             "Reduce",
                             ""});
-                table20.AddRow(new string[] {
+                table21.AddRow(new string[] {
                             "Phishing",
                             "2",
                             "2",
@@ -339,7 +339,7 @@ namespace ComplianceTracker.Specs.Features
                             "Reduce",
                             ""});
 #line 36
-    await testRunner.WhenAsync("I import the risks file \"risks.csv\" into \"Acme Portal\" with the rows", ((string)(null)), table20, "When ");
+    await testRunner.WhenAsync("I import the risks file \"risks.csv\" into \"Acme Portal\" with the rows", ((string)(null)), table21, "When ");
 #line hidden
 #line 40
     await testRunner.ThenAsync("the preview marks \"Stolen session cookie\" as \"Already in the project\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -389,16 +389,16 @@ namespace ComplianceTracker.Specs.Features
 #line 47
     await testRunner.GivenAsync("the risk \"Stolen session cookie\" exists in \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table21 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table22 = new global::Reqnroll.Table(new string[] {
                             "Title",
                             "Likelihood",
                             "Impact"});
-                table21.AddRow(new string[] {
+                table22.AddRow(new string[] {
                             "Stolen session cookie",
                             "3",
                             "4"});
 #line 48
-    await testRunner.WhenAsync("I import the risks file \"risks.csv\" into \"Acme Portal\" with the rows", ((string)(null)), table21, "When ");
+    await testRunner.WhenAsync("I import the risks file \"risks.csv\" into \"Acme Portal\" with the rows", ((string)(null)), table22, "When ");
 #line hidden
 #line 51
     await testRunner.AndAsync("I confirm the import and import the duplicates anyway", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -438,18 +438,18 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table22 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table23 = new global::Reqnroll.Table(new string[] {
                             "Title",
                             "Likelihood",
                             "Impact",
                             "Owner"});
-                table22.AddRow(new string[] {
+                table23.AddRow(new string[] {
                             "Phishing",
                             "2",
                             "2",
                             "Carl"});
 #line 56
-    await testRunner.WhenAsync("I import the risks file \"risks.csv\" into \"Acme Portal\" with the rows", ((string)(null)), table22, "When ");
+    await testRunner.WhenAsync("I import the risks file \"risks.csv\" into \"Acme Portal\" with the rows", ((string)(null)), table23, "When ");
 #line hidden
 #line 59
     await testRunner.ThenAsync("the preview shows the owner of \"Phishing\" as \"Carl (not a member)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -492,19 +492,19 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table23 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table24 = new global::Reqnroll.Table(new string[] {
                             "Title",
                             "Description",
                             "Likelihood",
                             "Impact"});
-                table23.AddRow(new string[] {
+                table24.AddRow(new string[] {
                             "Stolen session cookie",
                             "Stolen via XSS, or MITM",
                             "3",
                             "4"});
 #line 65
     await testRunner.WhenAsync("I import the comma-separated risks file \"risks.csv\" into \"Acme Portal\" with the r" +
-                        "ows", ((string)(null)), table23, "When ");
+                        "ows", ((string)(null)), table24, "When ");
 #line hidden
 #line 68
     await testRunner.AndAsync("I confirm the import", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -544,18 +544,18 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table24 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table25 = new global::Reqnroll.Table(new string[] {
                             "Title",
                             "Likelihood",
                             "Impact",
                             "Last reviewed"});
-                table24.AddRow(new string[] {
+                table25.AddRow(new string[] {
                             "Phishing",
                             "2",
                             "2",
                             "2026-05-01"});
 #line 73
-    await testRunner.WhenAsync("I import the Excel risks file \"risks.xlsx\" into \"Acme Portal\" with the rows", ((string)(null)), table24, "When ");
+    await testRunner.WhenAsync("I import the Excel risks file \"risks.xlsx\" into \"Acme Portal\" with the rows", ((string)(null)), table25, "When ");
 #line hidden
 #line 76
     await testRunner.AndAsync("I confirm the import", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -638,20 +638,20 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table25 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table26 = new global::Reqnroll.Table(new string[] {
                             "Title",
                             "Likelihood",
                             "Impact",
                             "Treatment",
                             "Reason"});
-                table25.AddRow(new string[] {
+                table26.AddRow(new string[] {
                             "Legacy database",
                             "4",
                             "4",
                             "Accept",
                             "Replaced in 2027"});
 #line 87
-    await testRunner.WhenAsync("I import the risks file \"risks.csv\" into \"Acme Portal\" with the rows", ((string)(null)), table25, "When ");
+    await testRunner.WhenAsync("I import the risks file \"risks.csv\" into \"Acme Portal\" with the rows", ((string)(null)), table26, "When ");
 #line hidden
 #line 90
     await testRunner.AndAsync("I confirm the import", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
