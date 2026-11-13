@@ -70,6 +70,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<Domain.Reports.OrganisationSeal> OrganisationSeals => Set<Domain.Reports.OrganisationSeal>();
         public DbSet<SealedReportFile> SealedReportFiles => Set<SealedReportFile>();
         public DbSet<Risk> Risks => Set<Risk>();
+        public DbSet<RiskDraft> RiskDrafts => Set<RiskDraft>(); // US-112
         public DbSet<RiskImport> RiskImports => Set<RiskImport>(); // US-049
         public DbSet<RiskImportFile> RiskImportFiles => Set<RiskImportFile>();
         public DbSet<ProjectClassification> ProjectClassifications => Set<ProjectClassification>(); // US-026

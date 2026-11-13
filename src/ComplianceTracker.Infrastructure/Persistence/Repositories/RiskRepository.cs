@@ -29,6 +29,23 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
             => await _db.RiskImportFiles.Where(f => f.ImportId == importId).Select(f => f.Content).FirstOrDefaultAsync(cancellationToken);
     }
 
+    // US-112: the AI agent's drafts
+    public class RiskDraftRepository : IRiskDraftRepository
+    {
+        private readonly ComplianceTrackerDbContext _db;
+
+        public RiskDraftRepository(ComplianceTrackerDbContext db)
+        {
+            _db = db;
+        }
+
+        public async Task<IReadOnlyList<RiskDraft>> ListAsync(Guid projectId, CancellationToken cancellationToken = default)
+            => await _db.RiskDrafts.Where(d => d.ProjectId == projectId).ToListAsync(cancellationToken);
+
+        public async Task AddRangeAsync(IEnumerable<RiskDraft> drafts, CancellationToken cancellationToken = default)
+            => await _db.RiskDrafts.AddRangeAsync(drafts, cancellationToken);
+    }
+
     public class RiskRepository : IRiskRepository
     {
         private readonly ComplianceTrackerDbContext _db;

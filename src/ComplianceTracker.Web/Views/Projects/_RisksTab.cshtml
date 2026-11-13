@@ -21,11 +21,72 @@
         @if (!project.IsClosed && await Permissions.CanAsync(Permission.ManageRisks))
         {
             <div class="d-flex gap-1">
+                @* US-112: the AI agent drafts; a person decides every risk *@
+                <form asp-controller="Risks" asp-action="Draft" method="post" class="d-inline" id="draft-risks">
+                    <input type="hidden" name="projectId" value="@project.Id" />
+                    <button type="submit" class="btn btn-outline-info btn-sm">Draft risks with AI</button>
+                </form>
                 <a class="btn btn-outline-secondary btn-sm" id="import-risks-link" asp-controller="Risks" asp-action="Import" asp-route-projectId="@project.Id">Import</a>
                 <a class="btn btn-primary btn-sm" id="add-risk-link" asp-controller="Risks" asp-action="Add" asp-route-projectId="@project.Id">Add risk</a>
             </div>
         }
     </div>
+
+    @if (TempData["RisksDrafted"] is string drafted)
+    {
+        <div class="alert alert-info py-2" id="risks-drafted" role="status">@drafted</div>
+    }
+
+    @if (Model.RiskDrafts.Count > 0)
+    {
+        @* US-112 R2, R4, R5: each draft with why; accept after editing, or discard with a reason. #risk-drafts .risk-draft[data-title] *@
+        var canDecideDrafts = !project.IsClosed && await Permissions.CanAsync(Permission.ManageRisks);
+        <div class="card mb-3 border-info" id="risk-drafts">
+            <div class="card-body small">
+                <h2 class="h6 card-title"><span class="badge text-bg-info">AI-generated</span> Drafts waiting for your decision (@Model.RiskDrafts.Count)</h2>
+                @foreach (var draft in Model.RiskDrafts)
+                {
+                    <details class="risk-draft border-start border-3 border-info ps-2 my-2" data-title="@draft.Title">
+                        <summary><span class="badge @Badge(draft.Level)">@draft.Level</span> @draft.Title <span class="text-muted">· @draft.Likelihood × @draft.Impact</span></summary>
+                        <div class="mt-1"><strong>Threat:</strong> @draft.Threat</div>
+                        <div><strong>Asset:</strong> @draft.Asset</div>
+                        <div class="risk-draft-based-on"><strong>Based on:</strong> @draft.BasedOn</div>
+                        <div class="text-muted risk-draft-why">@draft.Reasoning</div>
+                        @if (canDecideDrafts)
+                        {
+                            <form asp-controller="Risks" asp-action="AcceptDraft" method="post" class="row g-1 mt-1 accept-risk-draft">
+                                <input type="hidden" name="projectId" value="@project.Id" />
+                                <input type="hidden" name="draftId" value="@draft.Id" />
+                                <div class="col-md-6"><input name="title" value="@draft.Title" maxlength="200" class="form-control form-control-sm" aria-label="Title" required /></div>
+                                <div class="col-md-6"><input name="description" value="@draft.Threat" maxlength="4000" class="form-control form-control-sm" aria-label="Description" /></div>
+                                <div class="col-auto"><input type="number" name="likelihood" min="1" max="5" value="@draft.Likelihood" class="form-control form-control-sm" aria-label="Likelihood" /></div>
+                                <div class="col-auto"><input type="number" name="impact" min="1" max="5" value="@draft.Impact" class="form-control form-control-sm" aria-label="Impact" /></div>
+                                <div class="col-auto"><select name="ownerId" class="form-select form-select-sm" aria-label="Owner">
+                                    @foreach (var member in Model.Organization?.Members ?? [])
+                                    {
+                                        <option value="@member.Id">@member.Name</option>
+                                    }
+                                </select></div>
+                                <div class="col-auto"><select name="treatment" class="form-select form-select-sm" aria-label="Treatment">
+                                    @foreach (var treatment in Enum.GetValues<RiskTreatment>().Where(t => t != RiskTreatment.Accept))
+                                    {
+                                        <option value="@treatment">@treatment</option>
+                                    }
+                                </select></div>
+                                <div class="col-auto"><button type="submit" class="btn btn-sm btn-success">Accept as a risk</button></div>
+                            </form>
+                            <form asp-controller="Risks" asp-action="DiscardDraft" method="post" class="d-flex gap-1 mt-1 discard-risk-draft">
+                                <input type="hidden" name="projectId" value="@project.Id" />
+                                <input type="hidden" name="draftId" value="@draft.Id" />
+                                <input name="reason" maxlength="1000" class="form-control form-control-sm" placeholder="Why it does not apply" aria-label="Reason for discarding" required />
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">Discard</button>
+                            </form>
+                        }
+                    </details>
+                }
+            </div>
+        </div>
+    }
 
     <div class="row g-4">
         <div class="col-lg-4">

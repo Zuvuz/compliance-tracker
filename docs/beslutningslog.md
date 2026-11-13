@@ -1587,6 +1587,25 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At hente siderne bag links.
   - OCR af scannede PDF'er.
 
+### B102 – En AI-agent laver kun udkast til risici (US-112)
+
+- **Beslutning:**
+  - **Knappen:** "Draft risks with AI" på Risks-fanen sender projektets fakta til den lokale AI med opgavens model (`RiskDrafts`, US-117) og beder om højst 10 risici med begrundelse. Faktaene er:
+    - formål og scope
+    - klassifikation
+    - op til 15 ikke-dækkede krav
+    - åbne sikkerhedshændelser
+    - åbne high/critical-fund
+    - registrets risici
+  - **Agenten må kun lave udkast.** Et udkast bliver aldrig til en risiko, før en person med ManageRisks accepterer det. Personen kan rette titel, beskrivelse, skala, ejer og behandling først. Risikoen mærkes "AI-drafted".
+  - **Dubletter:** et udkast, som en eksisterende risiko, et åbent udkast eller et kasseret udkast allerede dækker, kommer ikke med. Siden siger, hvilket der dækker det. To titler regnes for den samme risiko, når den ene indeholder den anden, eller når mindst halvdelen af ordene er fælles.
+  - **Kassering:** et udkast kasseres med en begrundelse og foreslås ikke igen.
+  - **Uden AI:** siden siger det, og intet gemmes.
+- **Begrundelse:** Teamet starter fra en begrundet liste i stedet for en tom side, mens hver risiko stadig er en persons beslutning (AI Act Art. 14).
+- **Fravalgt:**
+  - Agenter, der handler af sig selv efter en tidsplan.
+  - Udkast til handlinger (US-111).
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

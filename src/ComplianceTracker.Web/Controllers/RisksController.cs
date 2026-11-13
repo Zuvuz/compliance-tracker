@@ -62,6 +62,42 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction("Details", "Projects", new { id = model.ProjectId, tab = ProjectTabs.Risks });
         }
 
+        // ---------------------------------------------------------- The AI agent's drafts (US-112)
+
+        // POST /Risks/Draft: R1–R3, R6
+        [AiRateLimit] // US-097 R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError("Details", Controller = "Projects", IdFrom = "projectId", Tab = ProjectTabs.Risks)]
+        public async Task<IActionResult> Draft(Guid projectId, [FromServices] RiskDraftService drafts, CancellationToken cancellationToken)
+        {
+            var run = await drafts.DraftAsync(projectId, cancellationToken);
+            TempData["RisksDrafted"] = $"The AI drafted {run.Made.Count} {(run.Made.Count == 1 ? "risk" : "risks")}"
+                + (run.LeftOut.Count > 0 ? ". Left out: " + string.Join("; ", run.LeftOut.Select(l => $"\"{l.Draft}\" ({l.CoveredBy} covers it)")) : "");
+            return RedirectToAction("Details", "Projects", new { id = projectId, tab = ProjectTabs.Risks });
+        }
+
+        // POST /Risks/AcceptDraft: R4, with the fields as the person left them
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError("Details", Controller = "Projects", IdFrom = "projectId", Tab = ProjectTabs.Risks)]
+        public async Task<IActionResult> AcceptDraft(Guid projectId, Guid draftId, string? title, string? description, int likelihood, int impact,
+            Guid ownerId, Domain.Risks.RiskTreatment treatment, [FromServices] RiskDraftService drafts, CancellationToken cancellationToken)
+        {
+            var risk = await drafts.AcceptAsync(projectId, draftId, new RiskInput(title ?? "", description, likelihood, impact, ownerId, treatment), cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = risk.Id });
+        }
+
+        // POST /Risks/DiscardDraft: R5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError("Details", Controller = "Projects", IdFrom = "projectId", Tab = ProjectTabs.Risks)]
+        public async Task<IActionResult> DiscardDraft(Guid projectId, Guid draftId, string? reason, [FromServices] RiskDraftService drafts, CancellationToken cancellationToken)
+        {
+            await drafts.DiscardAsync(projectId, draftId, reason, cancellationToken);
+            return RedirectToAction("Details", "Projects", new { id = projectId, tab = ProjectTabs.Risks });
+        }
+
         // ---------------------------------------------------------- Import (US-049)
 
         // GET /Risks/Import?projectId=...&importId=...: the upload, and the preview of an uploaded file (R3)

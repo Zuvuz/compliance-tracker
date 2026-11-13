@@ -192,6 +192,11 @@ namespace ComplianceTracker.Domain.ActivityLog
         EvidenceChecked,
         EvidenceCheckDecided,
 
+        // US-112: the AI agent drafted risks for a project, or a person discarded a draft (accepting logs RiskAdded).
+        // SubjectId points at the project; Details holds e.g. "4 drafts (qwen2.5:7b, risk-drafts-v1)".
+        RisksDrafted,
+        RiskDraftDiscarded,
+
         // US-130 R4: a project was left out of (or taken back into) AI improvement. SubjectId points at the project.
         ProjectAiSharingChanged,
 
