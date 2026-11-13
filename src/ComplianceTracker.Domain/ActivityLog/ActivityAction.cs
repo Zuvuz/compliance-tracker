@@ -173,6 +173,12 @@ namespace ComplianceTracker.Domain.ActivityLog
         // "CSV, 14-08-2026 – 12-11-2026, all projects (312 entries)".
         ActivityLogExported,
 
+        // US-134 R5: an audit was recorded, or one of its findings closed. SubjectId points at the project (or the
+        // organisation area); Details holds e.g. "External audit of ISO/IEC 27001:2022 by Bureau Veritas on 12-10-2026:
+        // Passed; certificate DK-1234 to 30-06-2027" or "Access reviews not documented: reviews now monthly".
+        AuditRecorded,
+        AuditFindingClosed,
+
         // US-130 R4: a project was left out of (or taken back into) AI improvement. SubjectId points at the project.
         ProjectAiSharingChanged,
 

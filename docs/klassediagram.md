@@ -1685,6 +1685,45 @@ classDiagram
   StatementOfApplicability ..> SoaControl
   StatementOfApplicabilityQueries ..> ComplianceQueries : per project (US-053)
   ReportFiles ..> StatementOfApplicability
+  class Audit {
+    -id: Guid
+    -projectId: Guid
+    -kind: AuditKind
+    -scope: string
+    -heldOn: DateOnly
+    -auditorName: string
+    -auditorCompany: string?
+    -result: AuditResult
+    -reportFileName: string
+    -reportSha256: string
+    -certificateNumber: string?
+    -certificateValidTo: DateOnly?
+    -correctsAuditId: Guid?
+    +Record(...)$ Audit
+    +GiveCertificate(number, issuer, validFrom, validTo)
+    +AddFinding(title, ownerId, dueOn) AuditFinding
+    +CertificateOn(day) CertificateState?
+  }
+  class AuditFinding {
+    -id: Guid
+    -title: string
+    -ownerId: Guid
+    -dueOn: DateOnly
+    -closedAt: DateTime?
+    -closeReason: string?
+    -evidenceId: Guid?
+    +Close(reason, evidenceId, userId, at)
+    +IsOverdue(today) bool
+  }
+  class AuditService {
+    +RecordAsync(projectId, input, fileName, content) Audit
+    +CloseFindingAsync(projectId, findingId, reason, evidenceId)
+    +ForProjectAsync(projectId) AuditOverview?
+  }
+  Audit "1" *-- "0..*" AuditFinding
+  Audit --> Project
+  Audit --> Audit : corrects (US-134 R4)
+  AuditService ..> Audit
   PhaseGate "1" *-- "1..*" GateCheck
   PhaseGates ..> PhaseGate : works out (US-071)
   ProjectService --> PhaseGates : before a phase change
