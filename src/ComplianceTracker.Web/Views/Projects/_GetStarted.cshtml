@@ -53,6 +53,7 @@
         string? Tab(string tab) => project is { } id ? Url.Action("Details", "Projects", new { id, tab }) : null;
         return step switch
         {
+            GetStartedStep.ChooseIndustry => Url.Action("Index", "Settings") + "#industry-profile", // US-080
             GetStartedStep.SwitchOnRegulation => Url.Action("BuiltIn", "Frameworks"),
             GetStartedStep.CreateProject => Url.Action("Create", "Projects"),
             GetStartedStep.AddFrameworks => Tab(ProjectTabs.Frameworks),
@@ -64,6 +65,7 @@
 
     private static string LinkText(GetStartedStep step) => step switch
     {
+        GetStartedStep.ChooseIndustry => "Choose industry",
         GetStartedStep.SwitchOnRegulation => "Switch on",
         GetStartedStep.CreateProject => "Create project",
         GetStartedStep.AddFrameworks => "Add frameworks",

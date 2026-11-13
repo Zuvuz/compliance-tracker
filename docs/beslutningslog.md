@@ -1637,6 +1637,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Reranking i gap-finderen (US-119 kan bruge den senere).
   - Forslag til cross-mapping (US-037). Her er der hundredvis af par, og godkendelsen er alligevel en persons.
 
+### B105 – Industriprofilen foreslår, en branche ad gangen (US-080)
+
+- **Beslutning:**
+  - **Valget:** en Admin vælger på Settings, hvilken branche organisationen laver produkter til: Software, Medtech, Fintech eller Other. Det er også et trin i "Get started".
+  - **Profilen foreslår kun.** Hvert forslag siger hvorfor. Et indbygget framework slås til med en knap, NIS2 går til scope-tjekket (US-142), og ISO/IEC 27001 er organisationens egen kopi (US-143). Intet slås til eller fra af sig selv, heller ikke når branchen skiftes.
+  - **AI Act** foreslås kun, når "Our products use AI" er krydset af.
+  - **Profilen viser også** de scanninger og rapporter, branchen forventes at have.
+  - **En branche ad gangen:** Software først. Medtech (software og hardware) og Fintech kan vælges, men siger, at deres egne forslag kommer, og viser indtil da software-forslagene.
+  - **Én klasse pr. branche** (`IIndustryProfile`), valgt gennem `IndustryProfiles`, så en ny branche er en ny klasse.
+- **Begrundelse:** En ny organisation starter med det, der typisk gælder for den, i stedet for at læse alle regler selv, mens beslutningen stadig er Adminens (ISO/IEC 27001 4.2, A.5.31).
+- **Fravalgt:**
+  - At slå frameworks til automatisk ud fra branchen.
+  - At bygge alle tre brancher på én gang.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

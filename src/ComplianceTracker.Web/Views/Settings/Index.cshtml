@@ -10,6 +10,100 @@
 
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
 
+@* US-080: the industry and what it suggests. Ids used by the tests: form#choose-industry (industry, productsUseAi),
+   #industry-suggestions li.industry-suggestion[data-name] with .suggestion-reason, .suggestion-state and
+   form.switch-on-suggestion, #industry-coming, #industry-scan-kinds li, #industry-reports li. *@
+@{
+    var industryView = ViewData["Industry"] as ComplianceTracker.Application.Organizations.IndustryView;
+}
+<section id="industry-profile" class="mb-4">
+    <h2 class="h4">Industry</h2>
+    <p class="small text-muted mb-2">Choose the industry you make products for. The tracker suggests the regulations, scans and reports that usually fit; it never switches anything on by itself.</p>
+    <form asp-action="ChooseIndustry" method="post" class="d-flex flex-wrap gap-3 align-items-center mb-3" id="choose-industry">
+        <select name="industry" class="form-select form-select-sm w-auto" aria-label="Industry">
+            <option value="">Choose…</option>
+            @foreach (var industry in Enum.GetValues<Industry>())
+            {
+                <option value="@industry" selected="@(industryView?.Industry == industry)">@industry</option>
+            }
+        </select>
+        <div class="form-check m-0">
+            <input class="form-check-input" type="checkbox" name="productsUseAi" value="true" id="products-use-ai" checked="@(industryView?.ProductsUseAi == true)" />
+            <label class="form-check-label small" for="products-use-ai">Our products use AI</label>
+        </div>
+        <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+    </form>
+
+    @if (industryView?.Profile is { } profile)
+    {
+        @if (profile.ComingSoon is { } coming)
+        {
+            <div class="alert alert-info py-2 small" id="industry-coming">Suggestions for @profile.Industry are coming: @coming. Until then you see the suggestions that fit software products.</div>
+        }
+
+        @if (profile.Frameworks.Count == 0)
+        {
+            <p class="small text-muted" id="industry-no-suggestions">No suggestions for this industry.</p>
+        }
+        else
+        {
+            <ul class="list-group mb-3" id="industry-suggestions">
+                @foreach (var suggestion in profile.Frameworks)
+                {
+                    var on = suggestion.FrameworkId is { } id && industryView.SwitchedOn.Contains(id);
+                    <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2 industry-suggestion" data-name="@suggestion.Name">
+                        <div>
+                            <strong>@suggestion.Name</strong>
+                            <div class="small text-muted suggestion-reason">@suggestion.Reason</div>
+                        </div>
+                        @switch (suggestion.Action)
+                        {
+                            case ComplianceTracker.Application.Organizations.SuggestionAction.SwitchOn when on:
+                                <span class="badge text-bg-success suggestion-state">On</span>
+                                break;
+                            case ComplianceTracker.Application.Organizations.SuggestionAction.SwitchOn:
+                                <span class="d-flex gap-2 align-items-center">
+                                    <span class="badge text-bg-light border suggestion-state">Off</span>
+                                    <form asp-controller="Frameworks" asp-action="Enable" method="post" class="switch-on-suggestion">
+                                        <input type="hidden" name="frameworkId" value="@suggestion.FrameworkId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">Switch on</button>
+                                    </form>
+                                </span>
+                                break;
+                            case ComplianceTracker.Application.Organizations.SuggestionAction.ScopeCheck:
+                                <a class="btn btn-sm btn-outline-secondary" asp-controller="Organisation" asp-action="Index" asp-route-tab="nis2-scope">Do the scope check</a>
+                                break;
+                            default:
+                                <a class="btn btn-sm btn-outline-secondary" asp-controller="Frameworks" asp-action="Index">Add your own copy</a>
+                                break;
+                        }
+                    </li>
+                }
+            </ul>
+            <div class="row small">
+                <div class="col-md-6">
+                    <h3 class="h6">Scans you are expected to have</h3>
+                    <ul id="industry-scan-kinds">
+                        @foreach (var kind in profile.ScanKinds)
+                        {
+                            <li>@kind</li>
+                        }
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h3 class="h6">Reports you are expected to have</h3>
+                    <ul id="industry-reports">
+                        @foreach (var report in profile.Reports)
+                        {
+                            <li>@report</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        }
+    }
+</section>
+
 <section id="ai-feedback">
     <h2 class="h4">AI feedback</h2>
     <p class="small text-muted mb-2">

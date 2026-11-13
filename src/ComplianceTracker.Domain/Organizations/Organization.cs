@@ -122,6 +122,33 @@ namespace ComplianceTracker.Domain.Organizations
             return true;
         }
 
+        // US-080: the industry (null until an Admin has chosen one) and whether the products use AI (R2)
+        public Industry? Industry { get; private set; }
+        public bool ProductsUseAi { get; private set; }
+
+        // US-080 R1, R6: only an Admin may choose; changing it switches nothing off. Returns false when nothing changed.
+        public bool SetIndustry(Industry? industry, bool productsUseAi, Guid userId)
+        {
+            if (_users.FirstOrDefault(u => u.Id == userId && u.IsActive)?.Role != UserRole.Admin)
+            {
+                throw new DomainException("Only an Admin can choose the industry");
+            }
+
+            if (industry is null || !Enum.IsDefined(industry.Value))
+            {
+                throw new DomainException("Choose an industry");
+            }
+
+            if (Industry == industry && ProductsUseAi == productsUseAi)
+            {
+                return false;
+            }
+
+            Industry = industry;
+            ProductsUseAi = productsUseAi;
+            return true;
+        }
+
         // US-142 R6: only an Admin may change it. Returns false when nothing changed.
         public bool SetCountry(string? country, Guid userId)
         {

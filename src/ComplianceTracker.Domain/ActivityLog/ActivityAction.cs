@@ -256,6 +256,9 @@ namespace ComplianceTracker.Domain.ActivityLog
         Nis2ScopeChecked,
         OrganisationCountryChanged,
 
+        // US-080: the Admin chose the organisation's industry (Details: the industry and whether the products use AI)
+        IndustryProfileChosen,
+
         // US-136 R2: the AI suggested requirements for one of the organisation's documents, and a person approved or
         // rejected a suggestion. SubjectId points at the organisation.
         DocumentLinkSuggested,
