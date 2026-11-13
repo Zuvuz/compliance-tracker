@@ -142,7 +142,7 @@ namespace ComplianceTracker.Infrastructure.Ai
     // ---------------------------------------------------------- Shared
 
     // US-118: a reranker on the organisation's own AI server, in the /v1/rerank format of TEI, vLLM and Jina:
-    // { model, query, documents } → { results: [{ index, relevance_score }] }. The AI-governance gateway is not involved.
+    // { model, query, documents } → { results: [{ index, relevance_score }] }.
     public class OpenAiCompatibleReranker : IReranker
     {
         private readonly HttpClient _http;

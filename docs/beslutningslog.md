@@ -1567,7 +1567,7 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - En betalt cloud-lasttest.
   - En fast kørsel hver uge.
-  - Test af AI-gatewayen og Keycloak selv.
+  - Test af den lokale AI-server og Keycloak selv.
   - Soak-tests over mange timer.
 
 ### B101 – AI-tjek af evidens, og en afvist evidens tæller ikke (US-038)
@@ -1629,7 +1629,7 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
     - en reranker læser kravet og hver kandidat sammen og giver en ny score
     - US-105's grænse gælder for rerank-scoren, og kun de beholdte får skrevet en begrundelse
   - **Begge scorer gemmes** sammen med rerank-modellen, og forslaget viser "score 0.82 (search 0.61)".
-  - **Rerankeren kaldes som en ny klient** mod organisationens egen AI-server i formatet `/v1/rerank` (TEI, vLLM, Jina). AI-governance-gatewayen ændres ikke. Modellen sættes med `Ai:Tasks:Ranking:Model`, og `Ai:Tasks:Ranking:BaseUrl`, når den kører på en anden server.
+  - **Rerankeren kaldes som en ny klient** mod organisationens egen AI-server i formatet `/v1/rerank` (TEI, vLLM, Jina). Modellen sættes med `Ai:Tasks:Ranking:Model`, og `Ai:Tasks:Ranking:BaseUrl`, når den kører på en anden server.
   - **Uden en model til Ranking-opgaven** bevares dagens opførsel, og AI-oversigten viser "Off (search score only)".
   - **Svar:** et svar uden præcis én score pr. kandidat afvises. Kan rerankeren ikke nås, gemmes intet, og siden siger det.
 - **Begrundelse:** En cross-encoder læser teksterne sammen og rammer derfor oftere rigtigt end to vektorer (AI Act Art. 15). Begge scorer vises, så man kan se, hvad rerankeren ændrede (Art. 13).
