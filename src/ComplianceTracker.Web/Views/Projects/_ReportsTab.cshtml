@@ -14,7 +14,9 @@
 <section id="project-reports-tab">
     <p class="text-muted small">Each report is made from the project's data when you download it, and the download is logged.</p>
     <div class="row row-cols-1 row-cols-md-2 g-3">
-        @foreach (var report in ComplianceTracker.Application.Reports.ProjectReports.For(Model.Compliance))
+        @foreach (var report in project.IsOrganisationArea
+                      ? ComplianceTracker.Application.Reports.ProjectReports.ForOrganisation(Model.Compliance, Model.HasIso27001)
+                      : ComplianceTracker.Application.Reports.ProjectReports.For(Model.Compliance))
         {
             <div class="col">
                 <div class="card h-100 report" data-report="@report.Key" data-title="@report.Title">
@@ -84,6 +86,22 @@
                             {
                                 <form asp-action="LockReport" method="post" class="d-inline lock-report" data-report="@report.Key"
                                       data-confirm="The draft is made now as PDF and kept with its fingerprint. A locked report can never be changed or deleted.">
+                                    <input type="hidden" name="projectId" value="@project.Id" />
+                                    <input type="hidden" name="report" value="@report.Key" />
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Lock as PDF</button>
+                                </form>
+                            }
+                        }
+                        else if (report.Key == ComplianceTracker.Application.Reports.ProjectReports.StatementOfApplicability)
+                        {
+                            @* US-053 *@
+                            <a asp-action="StatementOfApplicability" asp-route-id="@project.Id" class="btn btn-sm btn-outline-secondary" id="reports-soa">Excel</a>
+                            <a asp-action="StatementOfApplicability" asp-route-id="@project.Id" asp-route-format="csv" class="btn btn-sm btn-outline-secondary" id="reports-soa-csv">CSV</a>
+                            <a asp-action="StatementOfApplicability" asp-route-id="@project.Id" asp-route-format="pdf" class="btn btn-sm btn-outline-secondary" id="reports-soa-pdf">PDF</a>
+                            @if (canLock)
+                            {
+                                <form asp-action="LockReport" method="post" class="d-inline lock-report" data-report="@report.Key"
+                                      data-confirm="The Statement of Applicability is made now as PDF and kept with its fingerprint. A locked report can never be changed or deleted.">
                                     <input type="hidden" name="projectId" value="@project.Id" />
                                     <input type="hidden" name="report" value="@report.Key" />
                                     <button type="submit" class="btn btn-sm btn-outline-primary">Lock as PDF</button>

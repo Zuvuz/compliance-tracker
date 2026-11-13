@@ -1412,6 +1412,24 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Trusselsmodellering.
   - Et indlejret font, så alle tegn kan vises. Det er større og kan komme senere.
 
+### B93 – Statement of Applicability fra projekternes data (US-053)
+
+- **Beslutning:**
+  - **Katalog:** ISO/IEC 27001's tekst er ISO's og bygges ikke ind. SoA'en bruger det ISO/IEC 27001, som organisationen selv har uploadet: et framework, hvis navn starter med "ISO/IEC 27001" eller "ISO 27001".
+  - **Kontroller:** kun Annex A-kontrollerne (koder, der starter med "A."), når de findes, ellers alle krav. De står i standardens rækkefølge fra den nyeste version, projekterne bruger.
+  - **Hvor:** på organisationsområdets Reports-fane som Excel, CSV og PDF. Den kan låses (US-050).
+  - **Gælder / gælder ikke:** en kontrol er "Not applicable", kun når alle projekter, der følger standarden, har markeret den sådan (US-043). Organisationsområdet tæller som et projekt. Begrundelserne vises pr. projekt.
+  - **Implementering beregnes, sættes ikke i hånden:**
+    - **Implemented:** dækket med gyldig evidens i alle projekter, hvor kontrollen gælder.
+    - **Partly implemented:** dækket et sted.
+    - **Not implemented:** dækket intet sted.
+  - **"How it is met"** viser pr. projekt de stories og den gyldige evidens, der dækker kontrollen.
+  - Uden ISO/IEC 27001 siger rapportkortet, hvad der mangler.
+- **Begrundelse:** SoA'en skal passe med det, projekterne faktisk gør. En status sat i hånden ville kunne afvige fra dækningen og evidensen.
+- **Fravalgt:**
+  - At organisationen sætter "not applicable" for hele organisationen et sted for sig. Organisationsområdet kan allerede markere sine egne kontroller.
+  - En manuel implementeringsstatus.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

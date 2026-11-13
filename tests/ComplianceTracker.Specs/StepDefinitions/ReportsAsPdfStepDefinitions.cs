@@ -47,6 +47,16 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await DownloadAsync(href);
         }
 
+        // US-053: from the organisation's Reports tab
+        [When("I download the Statement of Applicability as PDF")]
+        public async Task WhenIDownloadTheSoaAsPdf()
+        {
+            await StatementOfApplicabilityStepDefinitions.OpenOrganisationReportsAsync(_web);
+            var href = _web.Page!.QuerySelector("a#reports-soa-pdf")?.GetAttribute("href")
+                ?? throw new Xunit.Sdk.XunitException("The Reports tab has no PDF of the Statement of Applicability.");
+            await DownloadAsync(href);
+        }
+
         // US-054
         [When("I download the risk assessment of {string} as PDF from the Reports tab")]
         public async Task WhenIDownloadTheRiskAssessmentAsPdf(string project)

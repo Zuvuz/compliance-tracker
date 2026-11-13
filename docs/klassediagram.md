@@ -1664,6 +1664,27 @@ classDiagram
     +NextReview(risk)$ DateTime
   }
   ReportFiles ..> RiskAssessmentReport : US-054
+  class StatementOfApplicability {
+    <<static>>
+    +IsIso27001(framework)$ bool
+    +Controls(projects: SoaProject[])$ SoaControl[]
+    +Build(organization, framework, projects, madeBy, now)$ ReportDocument
+  }
+  class SoaControl {
+    <<record>>
+    +Code: string
+    +Title: string
+    +Applicable: bool
+    +NotApplicable: string[]
+    +Implementation: string
+    +HowMet: string[]
+  }
+  class StatementOfApplicabilityQueries {
+    +ForOrganizationAsync() (Organization, Framework, SoaProject[])?
+  }
+  StatementOfApplicability ..> SoaControl
+  StatementOfApplicabilityQueries ..> ComplianceQueries : per project (US-053)
+  ReportFiles ..> StatementOfApplicability
   PhaseGate "1" *-- "1..*" GateCheck
   PhaseGates ..> PhaseGate : works out (US-071)
   ProjectService --> PhaseGates : before a phase change

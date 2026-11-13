@@ -14,6 +14,7 @@ namespace ComplianceTracker.Application.Reports
         public const string Traceability = "traceability";
         public const string TechnicalDocumentation = "technical-documentation";
         public const string RiskAssessment = "risk-assessment"; // US-054
+        public const string StatementOfApplicability = "statement-of-applicability"; // US-053
 
         public static IReadOnlyList<ProjectReport> For(int frameworkCount, bool followsCra) =>
         [
@@ -33,5 +34,15 @@ namespace ComplianceTracker.Application.Reports
 
         public static IReadOnlyList<ProjectReport> For(ProjectCompliance? compliance)
             => For(compliance?.Frameworks.Count ?? 0, compliance is not null && TechnicalDocumentationQueries.CraOf(compliance) is not null);
+
+        // US-053: the organisation area also has the Statement of Applicability, across the organisation's projects
+        public static IReadOnlyList<ProjectReport> ForOrganisation(ProjectCompliance? compliance, bool hasIso27001) =>
+        [
+            .. For(compliance),
+            new(StatementOfApplicability, "Statement of Applicability", "The certification auditor (ISO/IEC 27001)",
+                "Every Annex A control: whether it applies and why not, how it is implemented, and the projects and stories that meet it.",
+                "Excel, CSV or PDF",
+                hasIso27001 ? null : "Upload ISO/IEC 27001 as a framework and follow it to make the Statement of Applicability")
+        ];
     }
 }
