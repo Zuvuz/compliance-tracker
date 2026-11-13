@@ -29,6 +29,7 @@ namespace ComplianceTracker.Application.Compliance
         private readonly IApplicabilitySuggestionRepository _applicabilitySuggestions;
         private readonly Risks.IRiskRepository _risks;
         private readonly IClassificationRepository _classifications;
+        private readonly IEvidenceCheckRepository _checks; // US-038
 
         public ComplianceQueries(
             IProjectRepository projects,
@@ -46,11 +47,13 @@ namespace ComplianceTracker.Application.Compliance
             TimeProvider clock,
             IApplicabilitySuggestionRepository applicabilitySuggestions,
             Risks.IRiskRepository risks,
-            IClassificationRepository classifications)
+            IClassificationRepository classifications,
+            IEvidenceCheckRepository checks)
         {
             _applicabilitySuggestions = applicabilitySuggestions;
             _risks = risks;
             _classifications = classifications;
+            _checks = checks;
             _evidenceSuggestions = evidenceSuggestions;
             _evidenceStories = evidenceStories;
             _evidenceLinkSuggestions = evidenceLinkSuggestions;
@@ -97,6 +100,11 @@ namespace ComplianceTracker.Application.Compliance
                 .ToDictionary(a => a.RequirementId);
 
             // US-020, US-044 R4: the pending AI suggestions, for stories that still exist
+            // US-038: the newest check of each piece of evidence on each requirement
+            var checks = (await _checks.ListAsync(project.Id, cancellationToken))
+                .GroupBy(c => (c.EvidenceId, c.RequirementId))
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(c => c.CheckedAt).First());
+
             var allSuggestions = await _suggestions.ListAsync(project.Id, cancellationToken);
             var pendingSuggestions = allSuggestions.Where(s => s.IsPending && workItems.ContainsKey(s.WorkItemId)).ToList();
 
@@ -197,6 +205,7 @@ namespace ComplianceTracker.Application.Compliance
                         Evidence = evidence.Where(e => evidenceLinks[requirement.Id].Any(l => l.EvidenceId == e.Id))
                             .Select(e => new EvidenceItem(e, e.IsExpiredOn(today))
                             {
+                                Check = checks.GetValueOrDefault((e.Id, requirement.Id)), // US-038
                                 NeedsReview = evidenceLinks[requirement.Id].Any(l => l.EvidenceId == e.Id && l.NeedsReview),
                                 AcceptedFrom = acceptedFrom.TryGetValue(e.Id, out var kind) ? kind : null
                             })
@@ -403,7 +412,8 @@ namespace ComplianceTracker.Application.Compliance
         // US-057: the evidence on this requirement, newest first. R3, R8: expired or not applicable does not count.
         public IReadOnlyList<EvidenceItem> Evidence { get; init; } = [];
 
-        public bool HasEvidence => IsApplicable && Evidence.Any(e => !e.IsExpired && !e.NeedsReview);
+        // US-038 R3: evidence a person agreed does not cover the requirement no longer counts
+        public bool HasEvidence => IsApplicable && Evidence.Any(e => !e.IsExpired && !e.NeedsReview && e.Check?.RefutesEvidence != true);
 
         // US-058 R6: pending suggestions from tests and pull requests, and blocked ones (failing tests); none when not applicable
         public IReadOnlyList<Domain.Mappings.EvidenceSuggestion> EvidenceSuggestions { get; init; } = [];
@@ -423,6 +433,9 @@ namespace ComplianceTracker.Application.Compliance
 
         // US-144 R2: the evidence was accepted from a suggestion of a test run or a pull request (US-058); null otherwise
         public Domain.Mappings.EvidenceSourceKind? AcceptedFrom { get; init; }
+
+        // US-038: the AI's newest check of this evidence on this requirement, and the person's decision; null when never checked
+        public Domain.Mappings.EvidenceCheck? Check { get; init; }
     }
 
     public record SuggestedWorkItem(Domain.Mappings.MappingSuggestion Suggestion, WorkItem WorkItem);

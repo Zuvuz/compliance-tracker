@@ -110,6 +110,7 @@ namespace ComplianceTracker.Specs.Support
                 DELETE FROM "AuditFindings";
                 DELETE FROM "AuditReportFiles";
                 DELETE FROM "Audits";
+                DELETE FROM "EvidenceChecks";
                 DELETE FROM "Evidence";
                 DELETE FROM "OrganisationDocuments";
                 DELETE FROM "RequirementLinks";

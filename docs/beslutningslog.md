@@ -1570,6 +1570,23 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Test af AI-gatewayen og Keycloak selv.
   - Soak-tests over mange timer.
 
+### B101 – AI-tjek af evidens, og en afvist evidens tæller ikke (US-038)
+
+- **Beslutning:**
+  - **Tjekket:** "Check with AI" ved en evidens på en kravrække sender kravets tekst og evidensens tekst til den lokale AI med opgavens model (`EvidenceCheck`, US-117). For en PDF eller tekstfil er det de første sider, og for et link kun titlen.
+  - **Svaret:** AI'en svarer med en vurdering (Covers, Partly covers, Does not cover), hvad der mangler, og citater.
+  - **Kun på klik,** aldrig af sig selv.
+  - **Beslutning:** vurderingen er "AI-generated", indtil en person med DecideCompliance bekræfter den eller tilsidesætter den med en anden vurdering og en begrundelse.
+  - **Afvist evidens:** en bekræftet eller tilsidesat "Does not cover" gør, at evidensen ikke længere tæller for kravet. Det ser også gaten før Released (US-072) og SoA'en (US-053). Issuet foreslog det modsatte; det er valgt den 13-11-2026.
+  - **Historik:** tjekket hører til evidensens fingeraftryk. Et nyt tjek af samme par vises i stedet for det gamle, og begge gemmes.
+  - **Uden AI:** siden siger det, og intet gemmes.
+  - Tjek og beslutninger logges.
+- **Begrundelse:** Mangler skal findes, før en auditor finder dem, men det er stadig en person, der beslutter. Evidens, som en person har afvist, kan ikke stå som bevis.
+- **Fravalgt:**
+  - Automatisk tjek ved upload.
+  - At hente siderne bag links.
+  - OCR af scannede PDF'er.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

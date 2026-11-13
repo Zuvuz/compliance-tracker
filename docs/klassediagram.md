@@ -1732,6 +1732,23 @@ classDiagram
   }
   AuditPackageService ..> ReportFiles : the reports (US-076)
   AuditPackageService ..> ReportSnapshot : kept as a locked report
+  class EvidenceCheck {
+    -id: Guid
+    -evidenceId: Guid
+    -requirementId: Guid
+    -aiVerdict: EvidenceVerdict
+    -missing: string
+    -quotes: string
+    -evidenceFingerprint: string
+    -status: EvidenceCheckStatus
+    -decidedVerdict: EvidenceVerdict?
+    -decisionReason: string?
+    +Confirm(userId, role, at)
+    +Overrule(verdict, reason, userId, role, at)
+    +RefutesEvidence: bool
+  }
+  EvidenceCheck --> Evidence : US-038
+  EvidenceCheckService ..> EvidenceCheck
   PhaseGate "1" *-- "1..*" GateCheck
   PhaseGates ..> PhaseGate : works out (US-071)
   ProjectService --> PhaseGates : before a phase change

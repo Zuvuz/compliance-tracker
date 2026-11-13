@@ -722,6 +722,37 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
         }
 
+        // POST /Projects/CheckEvidence: US-038 R1, R8. ConfirmEvidenceCheck, OverruleEvidenceCheck: R2.
+        [AiRateLimit] // US-097 R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> CheckEvidence(Guid projectId, Guid evidenceId, Guid requirementId, string? sub,
+            [FromServices] EvidenceCheckService checks, CancellationToken cancellationToken)
+        {
+            await checks.CheckAsync(projectId, evidenceId, requirementId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> ConfirmEvidenceCheck(Guid projectId, Guid checkId, string? sub, [FromServices] EvidenceCheckService checks, CancellationToken cancellationToken)
+        {
+            await checks.ConfirmAsync(projectId, checkId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> OverruleEvidenceCheck(Guid projectId, Guid checkId, Domain.Mappings.EvidenceVerdict? verdict, string? reason, string? sub,
+            [FromServices] EvidenceCheckService checks, CancellationToken cancellationToken)
+        {
+            await checks.OverruleAsync(projectId, checkId, verdict, reason, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+        }
+
         // POST /Projects/AskTheAi: US-106 R1–R3, about one requirement
         [AiRateLimit] // US-097 R1
         [HttpPost]

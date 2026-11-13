@@ -187,6 +187,11 @@ namespace ComplianceTracker.Domain.ActivityLog
         PersonalDataExported,
         PersonalDataErased,
 
+        // US-038 R9: the AI checked a piece of evidence against a requirement, or a person confirmed or overruled it.
+        // SubjectId points at the project; Details holds e.g. "I.2(d): MFA config – Partly covers (AI, qwen2.5:3b)".
+        EvidenceChecked,
+        EvidenceCheckDecided,
+
         // US-130 R4: a project was left out of (or taken back into) AI improvement. SubjectId points at the project.
         ProjectAiSharingChanged,
 
