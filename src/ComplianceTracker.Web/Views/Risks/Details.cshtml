@@ -12,6 +12,7 @@
     var project = Model.Project;
     var editable = !project.IsClosed && risk.Status != RiskStatus.Closed && await Permissions.CanAsync(Permission.ManageRisks);
     var canDecide = !project.IsClosed && risk.Status != RiskStatus.Closed && await Permissions.CanAsync(Permission.DecideCompliance);
+    var canLinkWork = !project.IsClosed && await Permissions.CanAsync(Permission.LinkWork); // US-158 R5
     ViewData["Title"] = risk.Title;
 }
 
@@ -80,6 +81,12 @@
         {
             <li class="risk-measure d-flex gap-2 align-items-center">
                 <span>@Model.MeasureName(measure)</span>
+                @if (canLinkWork && Model.MissingEvidence(measure) is { } missing)
+                {
+                    @* US-158 R4: the requirement's page, where the evidence is added *@
+                    <a class="btn btn-sm btn-link py-0 measure-add-evidence"
+                       href="@Url.Action("Details", "Projects", new { id = project.Id, tab = ProjectTabs.Compliance, sub = missing.Sub, req = missing.Code })">Add evidence</a>
+                }
                 @if (editable)
                 {
                     <form asp-action="RemoveMeasure" method="post">
@@ -139,10 +146,27 @@
                     @if (editable)
                     {
                         <div class="d-flex flex-wrap gap-1 mt-1">
-                            <form asp-action="ApproveMeasure" method="post" class="approve-measure">
+                            <form asp-action="ApproveMeasure" method="post" enctype="multipart/form-data" class="approve-measure d-flex flex-wrap align-items-start gap-1">
                                 <input type="hidden" name="id" value="@risk.Id" />
                                 <input type="hidden" name="suggestionId" value="@suggestion.Id" />
                                 <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
+                                @if (canLinkWork)
+                                {
+                                    @* US-158 R1: optional evidence, approved and proven in one step *@
+                                    <details class="approve-with-evidence">
+                                        <summary class="btn btn-sm btn-link py-0">+ Evidence</summary>
+                                        <div class="d-flex flex-column gap-1 mt-1">
+                                            <input name="evidenceTitle" class="form-control form-control-sm" maxlength="200" placeholder="Title, e.g. MFA policy" aria-label="Evidence title" />
+                                            <input name="evidenceUrl" type="url" class="form-control form-control-sm" placeholder="Link (https://…)" aria-label="Evidence link" />
+                                            <input name="evidenceFile" type="file" class="form-control form-control-sm" aria-label="Or a file (max 10 MB)" />
+                                            <div class="d-flex gap-1 align-items-center">
+                                                <label class="small text-muted text-nowrap" for="valid-until-@suggestion.Id">Valid until</label>
+                                                <input name="evidenceValidUntil" id="valid-until-@suggestion.Id" type="date" class="form-control form-control-sm" />
+                                            </div>
+                                            <button type="submit" class="btn btn-sm btn-success align-self-start">Approve with evidence</button>
+                                        </div>
+                                    </details>
+                                }
                             </form>
                             <form asp-action="RejectMeasure" method="post" class="d-flex gap-1 reject-measure">
                                 <input type="hidden" name="id" value="@risk.Id" />

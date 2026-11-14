@@ -394,6 +394,14 @@ namespace ComplianceTracker.Application.Ai
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        // US-158: a suggested measure that still waits for a decision, before evidence is added for it
+        public async Task<RiskMeasureSuggestion> PendingMeasureAsync(Guid projectId, Guid suggestionId, CancellationToken cancellationToken = default)
+        {
+            var (_, _, project) = await OpenAsync(projectId, Permission.ManageRisks, cancellationToken);
+            var suggestion = await MeasureOfAsync(project, suggestionId, cancellationToken);
+            return suggestion.IsPending ? suggestion : throw new DomainException("The suggestion has already been decided");
+        }
+
         private async Task<RiskMeasureSuggestion> MeasureOfAsync(Project project, Guid suggestionId, CancellationToken cancellationToken)
             => (await _measures.ListAsync(project.Id, cancellationToken)).FirstOrDefault(s => s.Id == suggestionId)
                ?? throw new DomainException("The suggestion was not found");

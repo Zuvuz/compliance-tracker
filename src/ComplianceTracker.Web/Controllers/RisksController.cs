@@ -250,11 +250,28 @@ namespace ComplianceTracker.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "id")]
-        public async Task<IActionResult> ApproveMeasure(Guid id, Guid suggestionId, [FromServices] Application.Ai.AskTheAiService ai, CancellationToken cancellationToken)
+        // US-158: with optional evidence (a link or a file) that goes on the measure's requirement or story
+        [RequestSizeLimit(MaxEvidenceRequestSize)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaxEvidenceRequestSize)]
+        public async Task<IActionResult> ApproveMeasure(
+            Guid id, Guid suggestionId, string? evidenceTitle, string? evidenceUrl, IFormFile? evidenceFile, DateOnly? evidenceValidUntil,
+            [FromServices] MeasureEvidenceService measures, CancellationToken cancellationToken)
         {
-            await ai.ApproveMeasureAsync(await ProjectOfAsync(id, cancellationToken), suggestionId, cancellationToken);
+            byte[]? content = null;
+            if (evidenceFile is { Length: > 0 })
+            {
+                using var buffer = new MemoryStream();
+                await evidenceFile.CopyToAsync(buffer, cancellationToken);
+                content = buffer.ToArray();
+            }
+
+            await measures.ApproveAsync(await ProjectOfAsync(id, cancellationToken), suggestionId,
+                new MeasureEvidence(evidenceTitle, evidenceUrl, evidenceFile?.FileName, content, evidenceValidUntil), cancellationToken);
             return RedirectToAction(nameof(Details), new { id });
         }
+
+        // Room for a 10 MB file and the form (EvidenceFile refuses anything larger with a clear message)
+        private const long MaxEvidenceRequestSize = 25 * 1024 * 1024;
 
         [HttpPost]
         [ValidateAntiForgeryToken]
