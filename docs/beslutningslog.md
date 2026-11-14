@@ -1702,6 +1702,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At oprette issues i GitHub direkte. Det kræver skriverettigheder; linket til GitHubs "new issue" bruges som i US-106.
   - Automatisk genvurdering ved ændringer, som kommer i US-156.
 
+### B109 – Risikoagenten spørger én runde pr. trusselsområde (US-157)
+
+- **Beslutning:**
+  - **Runder:** agenten spørger i én runde pr. tema i stedet for én stor prompt. De faste temaer er adgang og login, data og privatliv, opdateringer og forsyningskæde samt tilgængelighed. "Requirements not met" kommer med, når der er ikke-dækkede krav, og "Events and findings", når der er åbne hændelser eller alvorlige fund.
+  - **Antal:** højst 3 forslag pr. tema og 15 i alt.
+  - **Dubletter:** de sorteres fra på tværs af temaerne med samme regel som før (US-112). Det første tema vinder.
+  - **Fejl:** en runde, der fejler eller ikke giver noget brugbart, stopper ikke de andre. Beskeden siger, hvilket tema der intet gav. Først når ingen runde svarer, er AI'en "ikke tilgængelig".
+  - **Visning:** hvert udkast gemmer sit tema (`RiskDrafts.Theme`), og fanen Risici viser udkastene grupperet efter tema. Promptversionen er `risk-drafts-v2`.
+- **Begrundelse:** En lille lokal model skriver typisk kun én eller to risici, når den bliver bedt om op til 10 på én gang. Små, fokuserede spørgsmål giver flere og bredere forslag, og temaerne gør det lettere at se, hvad der mangler (CRA art. 13, ISO/IEC 27001 6.1.2).
+- **Fravalgt:**
+  - At spørge den samme prompt igen, til der er nok forslag. Det giver gentagelser.
+  - Temaer pr. branche, som kommer senere med brancheprofilerne.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

@@ -73,7 +73,8 @@ namespace ComplianceTracker.Web.Controllers
         {
             var run = await drafts.DraftAsync(projectId, cancellationToken);
             TempData["RisksDrafted"] = $"The AI drafted {run.Made.Count} {(run.Made.Count == 1 ? "risk" : "risks")}"
-                + (run.LeftOut.Count > 0 ? ". Left out: " + string.Join("; ", run.LeftOut.Select(l => $"\"{l.Draft}\" ({l.CoveredBy} covers it)")) : "");
+                + (run.LeftOut.Count > 0 ? ". Left out: " + string.Join("; ", run.LeftOut.Select(l => $"\"{l.Draft}\" ({l.CoveredBy} covers it)")) : "")
+                + (run.Silent.Count > 0 ? ". Nothing from " + string.Join("; ", run.Silent) : ""); // US-157 R4
             return RedirectToAction("Details", "Projects", new { id = projectId, tab = ProjectTabs.Risks });
         }
 
