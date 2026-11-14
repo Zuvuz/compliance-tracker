@@ -1715,6 +1715,23 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At spørge den samme prompt igen, til der er nok forslag. Det giver gentagelser.
   - Temaer pr. branche, som kommer senere med brancheprofilerne.
 
+### B110 – Risikoregistret viser, hvad der står bag hver risiko (US-159)
+
+- **Beslutning:**
+  - **Kolonnen "Linked":** hver risiko i registret viser "2 measures · 1 story · 3 evidence". Tallene tælles ud fra risikoens spor (US-124):
+    - stories, der er linket til et krav, som er et tiltag;
+    - en story, der selv er et tiltag;
+    - stories og evidens på risikoens handlinger.
+  - **Optælling:** hver story og hver evidens tælles én gang. Udløbet evidens og fjernede stories tæller ikke.
+  - **"Nothing behind it"** markerer en åben høj eller kritisk risiko, der skal reduceres, og som ikke har tiltag, eller hvis tiltag hverken har en story eller evidens. Accepterede, overførte, undgåede og lukkede risici markeres aldrig.
+  - **Filter og overblik:** fanen Risici har et filter "Nothing behind it", og overblikkets "Needs attention" tæller disse risici i stedet for "uden tiltag".
+  - **Forespørgsler:** fanen Risici henter koblingerne med et fast antal forespørgsler (krav-links, evidens, evidens-links, story-evidens og stories). Overblikket regner det ud fra de compliance-data, det allerede har.
+  - **Mærket "No measures yet"** fra US-042 bliver stående ved siden af.
+- **Begrundelse:** Med flere AI-foreslåede risici (US-157) skal man kunne se, hvor behandlingen mangler, uden at åbne hver risiko (ISO/IEC 27001 6.1.3 og 8.3, CRA art. 13).
+- **Fravalgt:**
+  - At hente hele compliance-oversigten på fanen Risici. Det er mange flere forespørgsler.
+  - At ændre risikoens egen side, som allerede viser sporet.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

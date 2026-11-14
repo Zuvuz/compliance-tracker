@@ -27,7 +27,8 @@
     var suggestions = frameworks.Sum(f => f.SuggestionCount);
     var withoutEvidence = frameworks.Sum(f => f.Requirements.Count(r => r.IsApplicable && r.IsCovered && !r.HasEvidence));
     var reviewDue = openRisks.Count(r => r.IsReviewDue(Model.Now));
-    var seriousWithoutMeasures = openRisks.Count(r => r.Level >= RiskLevel.High && r.HasNoMeasures);
+    // US-159 R4: serious risks with nothing behind them (no measures, or measures without a story or evidence)
+    var seriousWithoutMeasures = openRisks.Count(r => Model.RiskBacking.GetValueOrDefault(r.Id)?.NothingBehind == true);
     var linkedStories = frameworks.SelectMany(f => f.Requirements).SelectMany(r => r.Links).Select(l => l.WorkItem.Id).ToHashSet();
     var doneNotLinked = Model.WorkItems.Count(w => w.State == WorkItemState.Closed && !linkedStories.Contains(w.Id));
 
@@ -138,7 +139,8 @@
     }
     if (seriousWithoutMeasures > 0)
     {
-        attention.Add((Plural(seriousWithoutMeasures, "High or Critical risk without measures", "High or Critical risks without measures"), RisksUrl()));
+        attention.Add((Plural(seriousWithoutMeasures, "High or Critical risk with nothing behind it", "High or Critical risks with nothing behind them"),
+            Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks, nothing = "1" })!));
     }
     // US-111 R7
     var overdueActions = openRisks.Sum(r => r.OverdueActions(DateOnly.FromDateTime(Model.Now)));

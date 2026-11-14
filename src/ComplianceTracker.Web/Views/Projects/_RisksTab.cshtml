@@ -157,6 +157,11 @@
                     <input class="form-check-input" type="checkbox" name="due" value="1" id="only-review-due" @(Model.OnlyReviewDue ? "checked" : "") />
                     <label class="form-check-label small" for="only-review-due">Review due</label>
                 </div>
+                <div class="col-auto form-check d-flex align-items-center gap-2 ms-2">
+                    @* US-159 R4 *@
+                    <input class="form-check-input" type="checkbox" name="nothing" value="1" id="only-nothing-behind" @(Model.OnlyNothingBehind ? "checked" : "") />
+                    <label class="form-check-label small" for="only-nothing-behind">Nothing behind it</label>
+                </div>
                 <div class="col-auto">
                     <button type="submit" class="btn btn-sm btn-outline-secondary">Show</button>
                 </div>
@@ -176,6 +181,7 @@
                             <th>L × I</th>
                             <th>Owner</th>
                             <th>Treatment</th>
+                            <th>Linked</th>
                             <th>Status</th>
                             <th>Last reviewed</th>
                         </tr>
@@ -188,6 +194,11 @@
                                 <td>
                                     <a class="risk-link" asp-controller="Risks" asp-action="Details" asp-route-id="@risk.Id">@risk.Title</a>
                                     <div class="risk-flags small">
+                                        @if (Model.RiskBacking.GetValueOrDefault(risk.Id)?.NothingBehind == true)
+                                        {
+                                            @* US-159 R2 *@
+                                            <span class="badge text-bg-danger nothing-behind" title="An open High or Critical risk to reduce without measures, or whose measures have no story or evidence">Nothing behind it</span>
+                                        }
                                         @if (risk.HasNoMeasures)
                                         {
                                             <span class="badge text-bg-warning">No measures yet</span>
@@ -206,6 +217,8 @@
                                 <td class="text-nowrap">@risk.Likelihood × @risk.Impact = @risk.Score</td>
                                 <td class="risk-owner">@RiskPageViewModel.OwnerName(Model.Organization, risk.OwnerId)</td>
                                 <td>@risk.Treatment</td>
+                                @* US-159 R1 *@
+                                <td class="small text-muted text-nowrap risk-linked">@((Model.RiskBacking.GetValueOrDefault(risk.Id) ?? ComplianceTracker.Application.Risks.RiskBacking.None).Text)</td>
                                 <td class="risk-status">@risk.DisplayStatus</td>
                                 <td class="small">@(risk.LastReviewedAt?.ToLocalTime().ToString("dd-MM-yyyy") ?? "never")</td>
                             </tr>
