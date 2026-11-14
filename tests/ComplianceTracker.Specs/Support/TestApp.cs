@@ -47,6 +47,7 @@ namespace ComplianceTracker.Specs.Support
                 ["Database:MigrateOnStartup"] = "false",
                 // The tests run the scheduled GitHub check themselves ("the scheduled check runs"), never on a timer
                 ["WorkItemSync:Enabled"] = "false",
+                ["NeedsActionReassessment:Enabled"] = "false",
                 // US-063: the feedback writer's token, which the pretend GitHub accepts
                 ["Feedback:GitHubToken"] = FakeGitHub.FeedbackToken,
                 // US-137: EUR-Lex imports go to the pretend Publications Office (FakeEurLex)
@@ -130,7 +131,8 @@ namespace ComplianceTracker.Specs.Support
                 ["Authentication:Keycloak:ClientId"] = "compliance-tracker-web",
                 ["Authentication:Keycloak:ClientSecret"] = "not-used-in-tests",
                 ["Database:MigrateOnStartup"] = "false",
-                ["WorkItemSync:Enabled"] = "false"
+                ["WorkItemSync:Enabled"] = "false",
+                ["NeedsActionReassessment:Enabled"] = "false"
             };
             foreach (var (key, value) in overrides ?? new Dictionary<string, string?>())
             {

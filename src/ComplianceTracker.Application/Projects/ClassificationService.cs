@@ -74,14 +74,17 @@ namespace ComplianceTracker.Application.Projects
         private readonly CurrentMember _member;
         private readonly IActivityLogger _log;
         private readonly Ai.IApplicabilitySuggestionRepository _applicabilitySuggestions;
+        private readonly Ai.NeedsActionReassessments _reassessments; // US-156
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
 
         public ClassificationService(
             IProjectRepository projects, IFrameworkRepository frameworks, IClassificationRepository classifications,
             CurrentMember member, IActivityLogger log, IUnitOfWork unitOfWork, TimeProvider clock,
-            Ai.IApplicabilitySuggestionRepository applicabilitySuggestions)
+            Ai.IApplicabilitySuggestionRepository applicabilitySuggestions,
+            Ai.NeedsActionReassessments reassessments)
         {
+            _reassessments = reassessments;
             _applicabilitySuggestions = applicabilitySuggestions;
             _projects = projects;
             _frameworks = frameworks;
@@ -130,6 +133,7 @@ namespace ComplianceTracker.Application.Projects
 
             await _log.LogAsync(ActivityAction.ProjectClassified, project.Id,
                 $"{FrameworkSlugs.Short(framework.Name)}: {regulation.TitleOf(classification.Class)} ({classification.Reason})", cancellationToken);
+            await _reassessments.RequestAsync(project, $"{FrameworkSlugs.Short(framework.Name)} classification changed", cancellationToken); // US-156 R1
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 

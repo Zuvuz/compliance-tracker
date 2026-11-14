@@ -963,6 +963,23 @@ classDiagram
     +CreateStoryAsync(projectId: Guid, markId: Guid) Task~AskResult~
     +DismissAsync(projectId: Guid, markId: Guid, reason: string?, riskId: Guid?) Task
   }
+  class NeedsActionReassessment {
+    -id: Guid
+    -organizationId: Guid
+    -projectId: Guid
+    -reasons: string
+    -requestedAt: DateTime
+    -dueAt: DateTime
+    -doneAt: DateTime?
+    -waitingForAi: bool
+    -result: string?
+    +Request(organizationId, projectId, reason, at)$ NeedsActionReassessment
+    +Again(reason: string, at: DateTime)
+    +IsDue(now: DateTime) bool
+    +WaitForAi()
+    +Finish(result: string, at: DateTime)
+  }
+  NeedsActionService ..> NeedsActionReassessment
   NeedsActionService --> AiContextBuilder
   NeedsActionService ..> NeedsActionSuggestion
   NeedsActionService ..> ApplicabilitySuggestion

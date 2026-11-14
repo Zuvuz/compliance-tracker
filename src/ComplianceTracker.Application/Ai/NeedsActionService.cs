@@ -163,9 +163,79 @@ namespace ComplianceTracker.Application.Ai
                 throw new DomainException("A project at end of support cannot be changed");
             }
 
-            var used = project.Frameworks.FirstOrDefault(f => f.FrameworkId == frameworkId)
-                ?? throw new DomainException("The project does not follow this framework");
-            var framework = (await _frameworks.ListAvailableWithRequirementsAsync(organization.Id, [frameworkId], cancellationToken)).Single();
+            if (project.Frameworks.All(f => f.FrameworkId != frameworkId))
+            {
+                throw new DomainException("The project does not follow this framework");
+            }
+
+            (int, int, int) found;
+            try
+            {
+                found = await AssessAsync(organization.Id, project, frameworkId, cancellationToken);
+            }
+            catch (AiUnavailableException error)
+            {
+                throw new DomainException(error.Message);
+            }
+
+            var (needs, notApplying, checkedCount) = found;
+            await _log.LogAsync(ActivityAction.NeedsActionSuggested, project.Id,
+                $"{needs} need action and {notApplying} do not apply, of {checkedCount} requirements checked ({_writer.Name}, {NeedsActionPrompt.Version})",
+                cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return (needs, notApplying);
+        }
+
+        // US-156 R1–R6: a new assessment in the background, after the product changed. Pending marks and pending "not
+        // applicable" suggestions from before are replaced; decisions a person made are kept, and a dismissed mark is marked
+        // "Based on an earlier description". Throws AiUnavailableException when the model is down (R4); nothing is saved then.
+        public async Task<string> ReassessAsync(Guid organizationId, Guid projectId, string reasons, CancellationToken cancellationToken = default)
+        {
+            var project = await _projects.GetAsync(organizationId, projectId, cancellationToken);
+            if (project is null || project.IsClosed)
+            {
+                return "Not assessed: the project is closed or gone"; // R5
+            }
+
+            var now = Now;
+            foreach (var mark in await _marks.ListAsync(project.Id, cancellationToken))
+            {
+                mark.Replace();
+                mark.MarkContextChanged(now);
+            }
+
+            foreach (var suggestion in (await _applicabilitySuggestions.ListAsync(project.Id, cancellationToken)).Where(s => s.IsPending))
+            {
+                suggestion.Replace();
+            }
+
+            var needs = 0;
+            var notApplying = 0;
+            foreach (var used in project.Frameworks)
+            {
+                var (n, d, _) = await AssessAsync(organizationId, project, used.FrameworkId, cancellationToken);
+                needs += n;
+                notApplying += d;
+            }
+
+            var result = $"{needs} need action, {notApplying} do not apply";
+            await _log.LogSystemAsync(organizationId, ActivityAction.NeedsActionReassessed, project.Id,
+                $"{reasons}: {result} ({_writer.Name}, {NeedsActionPrompt.Version})", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return result;
+        }
+
+        // The AI pass over one framework's applicable, not-covered requirements; adds the marks and suggestions, saves nothing
+        private async Task<(int NeedsAction, int DoesNotApply, int Checked)> AssessAsync(
+            Guid organizationId, Domain.Projects.Project project, Guid frameworkId, CancellationToken cancellationToken)
+        {
+            var used = project.Frameworks.First(f => f.FrameworkId == frameworkId);
+            var framework = (await _frameworks.ListAvailableWithRequirementsAsync(organizationId, [frameworkId], cancellationToken)).SingleOrDefault();
+            if (framework is null)
+            {
+                return (0, 0, 0);
+            }
+
             var version = framework.Versions.Single(v => v.Id == used.FrameworkVersionId);
 
             var linked = (await _links.ListActiveAsync(project.Id, cancellationToken)).Select(l => l.RequirementId).ToHashSet();
@@ -185,16 +255,8 @@ namespace ComplianceTracker.Application.Ai
             foreach (var requirement in targets)
             {
                 var context = await _context.ForAsync(project, requirement, cancellationToken);
-                string answer;
-                try
-                {
-                    answer = await _writer.WriteAsync(
-                        NeedsActionPrompt.For(requirement.Code, MappingSuggestionService.RequirementText(requirement), context), cancellationToken);
-                }
-                catch (AiUnavailableException error)
-                {
-                    throw new DomainException(error.Message);
-                }
+                var answer = await _writer.WriteAsync(
+                    NeedsActionPrompt.For(requirement.Code, MappingSuggestionService.RequirementText(requirement), context), cancellationToken);
 
                 switch (NeedsActionPrompt.Read(answer))
                 {
@@ -212,11 +274,7 @@ namespace ComplianceTracker.Application.Ai
 
             await _marks.AddRangeAsync(marks, cancellationToken);
             await _applicabilitySuggestions.AddRangeAsync(notApplying, cancellationToken);
-            await _log.LogAsync(ActivityAction.NeedsActionSuggested, project.Id,
-                $"{marks.Count} need action and {notApplying.Count} do not apply, of {targets.Count} requirements checked ({_writer.Name}, {NeedsActionPrompt.Version})",
-                cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-            return (marks.Count, notApplying.Count);
+            return (marks.Count, notApplying.Count, targets.Count);
         }
 
         // R5: "Create story" — the person agrees, and the AI drafts a story for the requirement (US-106)

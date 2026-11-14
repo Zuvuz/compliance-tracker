@@ -60,6 +60,11 @@
             {
                 @* US-043 R5, R6 *@
                 <span class="requirement-status badge text-bg-secondary">Not applicable</span>
+                @if (row.DismissedBeforeChange)
+                {
+                    @* US-156 R3 *@
+                    <div class="small text-warning-emphasis earlier-description">Based on an earlier description</div>
+                }
                 <div class="small not-applicable-reason text-wrap">@row.NotApplicableReason</div>
                 @if (row.NotApplicableRisk is { } justifying)
                 {

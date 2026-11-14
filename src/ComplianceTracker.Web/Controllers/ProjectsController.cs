@@ -168,6 +168,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] Application.Audits.AuditService audits,
             [FromServices] Application.Risks.RiskDraftService riskDrafts,
             [FromServices] Application.Risks.RiskBackingQueries riskBacking,
+            [FromServices] Application.Ai.INeedsActionReassessmentRepository reassessments,
             [FromServices] Application.Security.SecurityEventSuggestionService suggestionService,
             [FromServices] Application.Approvals.ApprovalService approvalService,
             [FromServices] Application.Organizations.OrganisationDocumentService documentService,
@@ -303,6 +304,8 @@ namespace ComplianceTracker.Web.Controllers
                 EvidenceTab = evidenceTab,
                 Sub = sub,
                 OpenRequirement = activeTab == ProjectTabs.Compliance ? req : null,
+                // US-156: the newest assessment asked for after a change
+                Reassessment = activeTab == ProjectTabs.Compliance ? await reassessments.LatestAsync(id, cancellationToken) : null,
                 Gaps = activeTab == ProjectTabs.Suggestions ? await gapFinder.ForProjectAsync(id, cancellationToken) : null,
                 Search = q,
                 ComplianceFilter = ComplianceFilters.Find(show),

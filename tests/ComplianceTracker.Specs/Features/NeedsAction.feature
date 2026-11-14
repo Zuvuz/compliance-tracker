@@ -72,5 +72,5 @@ Feature: Requirements that need action
   Scenario: Without an AI nothing is marked
     Given the local AI is not available
     When I click "Find what needs action" on the "CRA" sub-tab of "Acme Portal"
-    Then the overview row "I.2(d)" is "Not covered"
-    And the page shows an error
+    Then the page shows an error
+    And the overview row "I.2(d)" is "Not covered"

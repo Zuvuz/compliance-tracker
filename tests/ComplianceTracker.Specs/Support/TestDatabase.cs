@@ -93,6 +93,7 @@ namespace ComplianceTracker.Specs.Support
                 DELETE FROM "MappingSuggestions";
                 DELETE FROM "ApplicabilitySuggestions";
                 DELETE FROM "NeedsActionSuggestions";
+                DELETE FROM "NeedsActionReassessments";
                 DELETE FROM "AiEvaluations";
                 DELETE FROM "Findings";
                 DELETE FROM "SbomFiles";

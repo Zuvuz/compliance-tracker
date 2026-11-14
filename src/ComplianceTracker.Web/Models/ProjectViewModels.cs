@@ -272,6 +272,9 @@ namespace ComplianceTracker.Web.Models
         // US-144 R12: the requirement code in the address, e.g. ".../compliance/cra/I.2(d)"; that row is shown open
         public string? OpenRequirement { get; init; }
 
+        // US-156: the newest assessment of what needs action asked for after a change; null when none was
+        public Domain.Mappings.NeedsActionReassessment? Reassessment { get; init; }
+
         // US-119: the gaps on the Suggestions tab
         public Application.Projects.GapsView? Gaps { get; init; }
         public string? Search { get; init; }

@@ -71,6 +71,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await _web.PostFormAsync(draft.GetAttribute("action")!, fields);
         }
 
+        [Given("I say {string} is not needed because {string}")]
         [When("I say {string} is not needed because {string}")]
         public async Task WhenISayNotNeeded(string code, string reason)
         {
@@ -136,13 +137,10 @@ namespace ComplianceTracker.Specs.StepDefinitions
         private IElement Box(string code)
             => Page(code).QuerySelector(".needs-action-box") ?? throw new Xunit.Sdk.XunitException($"'{code}' is not marked as needing action.");
 
+        // The overview as it is now (opened again, so a change made in the background shows)
         private async Task<IElement> ListRowAsync(string code)
         {
-            await RequirementRowLookup.OverviewAsync(_web);
-            if (RequirementRowLookup.ListRow(_web, code) is null)
-            {
-                await _compliance.WhenIOpenTheSubTab("CRA", Project);
-            }
+            await _compliance.WhenIOpenTheSubTab("CRA", Project);
 
             return RequirementRowLookup.ListRow(_web, code) ?? throw new Xunit.Sdk.XunitException($"The overview has no row '{code}'.");
         }

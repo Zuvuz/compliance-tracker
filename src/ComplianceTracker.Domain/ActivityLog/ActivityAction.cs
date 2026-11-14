@@ -300,6 +300,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         // of 20 requirements checked (model, needs-action-v1)" or "I.2(d): …".
         NeedsActionSuggested,
         NeedsActionConfirmed,
-        NeedsActionDismissed
+        NeedsActionDismissed,
+
+        // US-156: the tracker assessed again what needs action after the product changed (by the system). Details holds
+        // what started it and the result, e.g. "intended purpose changed: 2 need action, 0 do not apply (model, version)".
+        NeedsActionReassessed
     }
 }
