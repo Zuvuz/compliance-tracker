@@ -20,6 +20,7 @@ Feature: Each page has a limit on database queries
     And the organisation gets 15 more projects that use the same framework
     # The limits are just above what the pages made on 12-11-2026 (B96).
     # US-155: the traceability download reads the "needs action" marks too (one query): 50 -> 53.
+    # US-159: the Risks tab reads the links behind each risk in five fixed queries: 13 -> 18.
     Then each page stays within its limit and does not grow with the data:
       | Page                  | Limit |
       | Dashboard             | 12    |
@@ -27,7 +28,7 @@ Feature: Each page has a limit on database queries
       | Overview              | 52    |
       | Compliance            | 54    |
       | Evidence              | 35    |
-      | Risks                 | 13    |
+      | Risks                 | 18    |
       | Work items            | 30    |
       | Reports               | 30    |
       | Project activity      | 14    |

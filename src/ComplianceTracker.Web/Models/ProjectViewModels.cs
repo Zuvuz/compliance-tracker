@@ -327,6 +327,10 @@ namespace ComplianceTracker.Web.Models
         public string? RiskStatusFilter { get; init; }
         public string? RiskLevelFilter { get; init; }
         public bool OnlyReviewDue { get; init; }
+
+        // US-159: what stands behind each risk (Risks tab and Overview), and the filter for those with nothing behind them
+        public IReadOnlyDictionary<Guid, Application.Risks.RiskBacking> RiskBacking { get; init; } = new Dictionary<Guid, Application.Risks.RiskBacking>();
+        public bool OnlyNothingBehind { get; init; }
         public DateTime Now { get; init; }
 
         // The framework of the chosen sub-tab, or the first one (R3)

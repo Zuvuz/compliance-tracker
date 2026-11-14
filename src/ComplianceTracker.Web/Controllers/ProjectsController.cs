@@ -151,6 +151,8 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> Details(
             Guid id, string? tab, string? sub, string? q, string? show, string? req,
             string? status, string? level, string? due,
+            // US-159 R4: nothing=1 shows only the risks with nothing behind them
+            string? nothing,
             // US-101: the Activity tab's filters (q is the search there too)
             string? from, string? to, string? group, string? user, string? sort, string? page,
             // US-079: the SBOM version shown on the Scans tab
@@ -165,6 +167,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] Application.Reports.StatementOfApplicabilityQueries soa,
             [FromServices] Application.Audits.AuditService audits,
             [FromServices] Application.Risks.RiskDraftService riskDrafts,
+            [FromServices] Application.Risks.RiskBackingQueries riskBacking,
             [FromServices] Application.Security.SecurityEventSuggestionService suggestionService,
             [FromServices] Application.Approvals.ApprovalService approvalService,
             [FromServices] Application.Organizations.OrganisationDocumentService documentService,
@@ -245,8 +248,16 @@ namespace ComplianceTracker.Web.Controllers
                 ? (await signingService.WaitingForMeAsync(cancellationToken)).Where(w => w.ProjectId == id).Select(w => w.Title).ToList()
                 : [];
             var now = _clock.GetUtcNow().UtcDateTime;
+            // US-159: what stands behind each risk. The Overview counts it from the Compliance data it has; the Risks tab
+            // asks for the links in a fixed number of queries (R5).
+            var backing = activeTab is ProjectTabs.Risks
+                ? Application.Risks.RiskBackings.For(allRisks, await riskBacking.LinksAsync(id, cancellationToken))
+                : activeTab is ProjectTabs.Overview && compliance is not null
+                    ? Application.Risks.RiskBackings.For(allRisks, Application.Risks.ProjectLinks.From(compliance))
+                    : new Dictionary<Guid, Application.Risks.RiskBacking>();
             var risks = allRisks
                 .Where(r => string.IsNullOrEmpty(status) ? r.Status != RiskStatus.Closed : r.DisplayStatus.Equals(status, StringComparison.OrdinalIgnoreCase))
+                .Where(r => nothing != "1" || (backing.TryGetValue(r.Id, out var b) && b.NothingBehind))
                 .Where(r => string.IsNullOrEmpty(level) || r.Level.ToString().Equals(level, StringComparison.OrdinalIgnoreCase))
                 .Where(r => due != "1" || r.IsReviewDue(now))
                 .ToList();
@@ -319,6 +330,8 @@ namespace ComplianceTracker.Web.Controllers
                 RiskStatusFilter = status,
                 RiskLevelFilter = level,
                 OnlyReviewDue = due == "1",
+                OnlyNothingBehind = nothing == "1",
+                RiskBacking = backing,
                 Now = now
             });
         }
