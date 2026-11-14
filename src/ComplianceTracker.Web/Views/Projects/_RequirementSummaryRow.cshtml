@@ -2,7 +2,8 @@
    No forms: a click opens the requirement's own page (_RequirementPage.cshtml), where the actions are.
    Ids and classes used by the tests: tr.requirement-row[data-code] (no data-detail), a.requirement-open, .requirement-code,
    .requirement-title, .row-summary ("1 story · 2 evidence"), .row-waiting, .requirement-status, .not-applicable-reason,
-   .covered-through, .evidence-status, .high-risk, .failing-tests, .needs-review-mark; US-143: .tree-toggle, data-parent. *@
+   .covered-through, .evidence-status, .high-risk, .failing-tests, .needs-review-mark; US-143: .tree-toggle, data-parent.
+   US-155: .needs-action-priority (data-priority) under the status "Needs action". *@
 @model RequirementRowModel
 @using ComplianceTracker.Application.Compliance
 @using ComplianceTracker.Web.Models
@@ -57,6 +58,11 @@
     </td>
     <td class="text-nowrap">
         <span class="requirement-status badge @RequirementPages.StatusClass(row)">@RequirementPages.Status(row)</span>
+        @if (row.NeedsAction is { } mark)
+        {
+            @* US-155 R3 *@
+            <div class="small needs-action-priority" data-priority="@mark.Priority">@mark.Priority priority · <span class="text-muted">AI-generated</span></div>
+        }
         @if (!row.IsApplicable)
         {
             <div class="small not-applicable-reason text-wrap">@row.NotApplicableReason</div>

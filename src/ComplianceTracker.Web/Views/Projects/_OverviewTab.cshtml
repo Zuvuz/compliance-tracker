@@ -32,6 +32,13 @@
     var doneNotLinked = Model.WorkItems.Count(w => w.State == WorkItemState.Closed && !linkedStories.Contains(w.Id));
 
     var attention = new List<(string Text, string Url)>();
+    // US-155: what the AI marked as needing action comes first
+    var needsAction = frameworks.Sum(f => f.NeedsActionCount);
+    if (needsAction > 0)
+    {
+        attention.Add((Plural(needsAction, "requirement needs action", "requirements need action"),
+            ComplianceUrl(SubWhere(f => f.NeedsActionCount > 0), ComplianceFilters.NeedsAction)));
+    }
     if (notCovered > 0)
     {
         attention.Add((Plural(notCovered, "requirement not covered", "requirements not covered"),

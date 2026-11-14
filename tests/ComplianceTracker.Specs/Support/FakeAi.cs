@@ -28,6 +28,9 @@ namespace ComplianceTracker.Specs.Support
         // US-060: the requirements the AI answers "does not apply" for, with the reason; every other answer is "APPLIES"
         public Dictionary<string, string> NotApplicable { get; } = new(StringComparer.Ordinal);
 
+        // US-155: requirement code -> (priority, reason) for "applies and needs action"; any other code is "UNSURE"
+        public Dictionary<string, (string Priority, string Reason)> NeedsAction { get; } = new(StringComparer.Ordinal);
+
         // US-038: the answer to "Check whether the evidence …" per requirement code; "Covers" when none is set
         public Dictionary<string, string> EvidenceAnswers { get; } = new(StringComparer.Ordinal);
 
@@ -105,6 +108,14 @@ namespace ComplianceTracker.Specs.Support
             lock (this)
             {
                 Prompts.Add(prompt);
+                // US-155: "needs action", "not applicable" (US-060) or unsure
+                if (prompt.Contains(NeedsActionPrompt.Marker, StringComparison.Ordinal))
+                {
+                    return Task.FromResult(NotApplicable.TryGetValue(code, out var no) ? $"NOT APPLICABLE: {no}"
+                        : NeedsAction.TryGetValue(code, out var needs) ? $"NEEDS ACTION {needs.Priority.ToUpperInvariant()}: {needs.Reason}"
+                        : "UNSURE");
+                }
+
                 if (prompt.Contains(ApplicabilityPrompt.Marker, StringComparison.Ordinal))
                 {
                     return Task.FromResult(NotApplicable.TryGetValue(code, out var reason) ? $"NOT APPLICABLE: {reason}" : "APPLIES");

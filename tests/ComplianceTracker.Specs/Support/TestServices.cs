@@ -79,6 +79,7 @@ namespace ComplianceTracker.Specs.Support
                 // US-020: not used by these tests, but the use cases must be creatable
                 services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();
                 services.AddScoped<IApplicabilitySuggestionRepository, ApplicabilitySuggestionRepository>(); // US-060
+                services.AddScoped<INeedsActionSuggestionRepository, NeedsActionSuggestionRepository>(); // US-155
                 services.AddScoped<IAiEvaluationRepository, AiEvaluationRepository>(); // US-116
                 services.AddScoped<ComplianceTracker.Application.Scanning.IScanRepository, ScanRepository>(); // US-078
                 services.AddScoped<ComplianceTracker.Application.Scanning.IScanUploadTokenRepository, ScanUploadTokenRepository>(); // US-122

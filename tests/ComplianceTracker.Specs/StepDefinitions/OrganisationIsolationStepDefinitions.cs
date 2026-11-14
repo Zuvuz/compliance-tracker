@@ -38,6 +38,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             ["suggestionId"] = "The fixture has no AI suggestion (that needs the pretend AI's ranking)",
             ["draftId"] = "The fixture has no story draft (that needs the pretend AI's writing); AskTheAi.feature tests it (US-106)",
             ["mappingId"] = "The fixture has no cross-mapping (that needs the pretend AI's vectors and two frameworks); CrossMapping.feature tests it (US-037)",
+            ["markId"] = "The fixture has no \"needs action\" mark (that needs the pretend AI's answer); NeedsAction.feature tests it (US-155)",
             ["checkId"] = "The fixture has no evidence check (that needs the pretend AI's answer); EvidenceCheck.feature tests it (US-038)",
             ["requestId"] = "The fixture has no framework activation waiting for approval (that needs an import from EUR-Lex); CompleteRequirements.feature tests it (US-137)"
         };

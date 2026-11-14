@@ -52,7 +52,8 @@ namespace ComplianceTracker.Application.Compliance
         public static int Waiting(RequirementCoverage row)
             => (row.IsApplicable ? row.Suggestions.Count + row.SuggestedEvidence.Count + (row.Draft is null ? 0 : 1) : 0)
                + row.PendingEvidenceSuggestions.Count()
-               + (row.IsApplicable && row.ApplicabilitySuggestion is not null ? 1 : 0);
+               + (row.IsApplicable && row.ApplicabilitySuggestion is not null ? 1 : 0)
+               + (row.NeedsAction is { IsPending: true } ? 1 : 0); // US-155
 
         // R6, R9: "2 stories · 1 evidence" (the waiting count is shown as its own tag)
         public static string Summary(RequirementCoverage row)

@@ -161,6 +161,11 @@
                     <div class="small text-muted">Not covered</div>
                 </div>
                 <div class="col-6 col-md">
+                    @* US-155 *@
+                    <div class="fs-4 fw-semibold text-warning-emphasis" id="summary-needs-action">@shownFrameworks.Sum(f => f.NeedsActionCount)</div>
+                    <div class="small text-muted">Needs action</div>
+                </div>
+                <div class="col-6 col-md">
                     <div class="fs-4 fw-semibold text-info" id="summary-suggestions">@shownFrameworks.Sum(f => f.SuggestionCount)</div>
                     <div class="small text-muted">AI suggestions</div>
                 </div>
@@ -229,6 +234,16 @@
                 <input type="hidden" name="frameworkId" value="@active.Framework.Id" />
                 <input type="hidden" name="sub" value="@activeSlug" />
                 <button type="submit" class="btn btn-sm btn-outline-primary" title="The local AI suggests user stories for each requirement that is not covered. You approve or reject each suggestion.">Suggest for not covered</button>
+            </form>
+        }
+        @if (!all && !project.IsClosed && canDecide && active!.NotCovered > 0)
+        {
+            @* US-155 R1, R2: the AI marks what applies and has no work yet; a person decides on each mark *@
+            <form asp-action="FindNeedsAction" method="post" id="find-needs-action">
+                <input type="hidden" name="projectId" value="@project.Id" />
+                <input type="hidden" name="frameworkId" value="@active.Framework.Id" />
+                <input type="hidden" name="sub" value="@activeSlug" />
+                <button type="submit" class="btn btn-sm btn-outline-primary" title="The local AI checks the requirements that are not covered against the product's description, purpose, scope, classification and risks, and marks the ones that apply and still need work.">Find what needs action</button>
             </form>
         }
         @if (!all && !project.IsClosed && canDecide && active!.NotCovered > 0)

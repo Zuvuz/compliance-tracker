@@ -136,6 +136,7 @@ namespace ComplianceTracker.Web.Models
         public const string HasSuggestions = "has-suggestions";
         public const string NotApplicable = "not-applicable";
         public const string NeedsReview = "needs-review";
+        public const string NeedsAction = "needs-action"; // US-155
 
         // US-144 R13: the sub-tab with every framework's requirements
         public const string AllSub = "all";
@@ -146,6 +147,7 @@ namespace ComplianceTracker.Web.Models
         [
             (All, "All"),
             (NotCovered, "Not covered"),
+            (NeedsAction, "Needs action"),
             (HasSuggestions, "Has suggestions"),
             (NotApplicable, "Not applicable"),
             (NeedsReview, "Needs review"),
@@ -164,6 +166,7 @@ namespace ComplianceTracker.Web.Models
             HasSuggestions => row.HasSuggestions,
             NotApplicable => !row.IsApplicable,
             NeedsReview => row.NeedsReview,
+            NeedsAction => row.NeedsAction is not null,
             _ => true
         };
     }

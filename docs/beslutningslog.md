@@ -1683,6 +1683,25 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Et sidepanel ved siden af listen: det kræver mere JavaScript og har ingen egen adresse.
   - At beholde formularerne skjult i rækkerne, fordi siden så stadig ville være lige så tung.
 
+### B108 – AI'en markerer krav, der kræver handling (US-155)
+
+- **Beslutning:**
+  - **Én gennemgang:** "Find what needs action" spørger den lokale model om hvert gældende, ikke-dækket krav i ét framework, højst 20 pr. tryk. Svaret er enten "needs action" med prioritet (High, Medium, Low) og begrundelse, "not applicable" (bliver det sædvanlige forslag fra US-060) eller "unsure", som ikke markerer noget.
+  - **Grundlaget** er det samme som i US-060: produktets beskrivelse, formål, scope, klassifikation, branche og risici.
+  - **Risici:** en åben høj eller kritisk risiko, hvis tiltag peger på kravet, gør altid markeringen High, og siden siger det. Et krav, en åben risiko peger på, foreslås aldrig som "not applicable".
+  - **Markeringen** er et forslag med mærket "AI-generated". Kravet vises som "Needs action" i oversigten, i et eget filter og under "Needs attention" på overblikket.
+  - **En person beslutter:**
+    - "Create story" bekræfter markeringen og beder AI'en om et udkast til en story (US-106).
+    - "Not needed" kræver en begrundelse og gør kravet "not applicable", eventuelt med en risiko som begrundelse.
+    - Kun de, der må træffe compliance-beslutninger, kan gøre det.
+  - **Når kravet bliver dækket**, vises markeringen ikke længere, uanset dens status.
+  - **Egen tabel:** markeringen gemmes i `NeedsActionSuggestions` med model, promptversion og beslutning, ligesom de andre AI-forslag, og alt logges.
+- **Begrundelse:** "Not covered" siger ikke, om kravet overhovedet gælder produktet. Med markeringen ser man, hvad der faktisk mangler, og hvad der haster, mens beslutningen stadig er en persons (AI Act art. 14, CRA art. 13).
+- **Fravalgt:**
+  - At udvide `ApplicabilitySuggestion`. "Gælder ikke" og "mangler arbejde" har forskellige beslutninger og følger.
+  - At oprette issues i GitHub direkte. Det kræver skriverettigheder; linket til GitHubs "new issue" bruges som i US-106.
+  - Automatisk genvurdering ved ændringer, som kommer i US-156.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

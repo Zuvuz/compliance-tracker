@@ -8,7 +8,9 @@
    were on the row: requirement-code, requirement-title, linked-story, unlink-requirement, evidence, evidence-title,
    evidence-sha256, remove-evidence, ai-suggestion, approve-suggestion, reject-suggestion, suggested-evidence,
    applicability-suggestion, add-evidence, pick-evidence, link-requirement, mark-not-applicable, requirement-status,
-   .row-group[data-group=stories|evidence|waiting] with .row-group-count, .item-source, .story-state, .not-applicable-risk. *@
+   .row-group[data-group=stories|evidence|waiting] with .row-group-count, .item-source, .story-state, .not-applicable-risk.
+   US-155: .needs-action-box (data-priority, data-status) with .needs-action-reason, .needs-action-context, .ai-generated,
+   forms .create-story-for-needs-action and .dismiss-needs-action (reason, riskId). *@
 @model RequirementRowModel
 @using ComplianceTracker.Application.Compliance
 @{
@@ -113,7 +115,8 @@
             }
             else
             {
-                <span class="requirement-status badge text-bg-danger">Not covered</span>
+                @* US-155: "Not covered" or "Needs action" *@
+                <span class="requirement-status badge @RequirementPages.StatusClass(row)">@RequirementPages.Status(row)</span>
             }
             </div>
         </div>
@@ -179,6 +182,61 @@
     @if (TempData["ApplicabilityMessage"] is string applicabilityMessage)
     {
         <p class="small text-muted" id="applicability-message" role="status">@applicabilityMessage</p>
+    }
+
+    @if (row.NeedsAction is { } mark)
+    {
+        @* US-155 R3, R5, R6: the AI's mark, with "Create story" and "Not needed" for those who decide (R7) *@
+        <section class="alert alert-warning needs-action-box" data-priority="@mark.Priority" data-status="@mark.Status" aria-label="Needs action">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                <strong>Needs action</strong>
+                <span class="badge @NeedsActionTexts.PriorityClass(mark.Priority) needs-action-priority">@mark.Priority priority</span>
+                <span class="badge text-bg-info ai-generated">AI-generated</span>
+                @if (mark.RaisedByRisk)
+                {
+                    <span class="small needs-action-raised">Raised to High by an open High or Critical risk</span>
+                }
+                @if (mark.Status == ComplianceTracker.Domain.Mappings.NeedsActionStatus.Confirmed)
+                {
+                    <span class="small needs-action-confirmed">Confirmed: a story is on its way</span>
+                }
+            </div>
+            <div class="needs-action-reason">@mark.Reason</div>
+            <div class="small text-muted needs-action-context">Context used: @(string.IsNullOrEmpty(mark.ContextUsed) ? "none" : mark.ContextUsed) · @mark.Model</div>
+            @if (!project.IsClosed && Model.CanDecide)
+            {
+                <div class="d-flex flex-wrap align-items-start gap-2 mt-2">
+                    <form asp-action="CreateStoryForNeedsAction" method="post" class="create-story-for-needs-action">
+                        <input type="hidden" name="projectId" value="@project.Id" />
+                        <input type="hidden" name="markId" value="@mark.Id" />
+                        <input type="hidden" name="sub" value="@sub" />
+                        <input type="hidden" name="req" value="@requirement.Code" />
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Create story</button>
+                    </form>
+                    <details class="dismiss-needs-action-menu">
+                        <summary class="btn btn-sm btn-outline-secondary">Not needed</summary>
+                        <form asp-action="DismissNeedsAction" method="post" class="d-flex flex-column gap-1 mt-1 dismiss-needs-action">
+                            <input type="hidden" name="projectId" value="@project.Id" />
+                            <input type="hidden" name="markId" value="@mark.Id" />
+                            <input type="hidden" name="sub" value="@sub" />
+                            <input type="hidden" name="req" value="@requirement.Code" />
+                            <input name="reason" class="form-control form-control-sm" maxlength="1000" required placeholder="Why it is not needed" aria-label="Why @requirement.Code is not needed" />
+                            @if (Model.ProjectRisks.Count > 0)
+                            {
+                                <select name="riskId" class="form-select form-select-sm" aria-label="Risk that justifies it">
+                                    <option value="">No risk named</option>
+                                    @foreach (var risk in Model.ProjectRisks)
+                                    {
+                                        <option value="@risk.Id">@risk.Title (@risk.Level)</option>
+                                    }
+                                </select>
+                            }
+                            <button type="submit" class="btn btn-sm btn-outline-secondary align-self-start">Not applicable</button>
+                        </form>
+                    </details>
+                </div>
+            }
+        </section>
     }
 
     <section class="requirement-text mb-3">

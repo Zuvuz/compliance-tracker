@@ -49,6 +49,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<EvidenceSuggestion> EvidenceSuggestions => Set<EvidenceSuggestion>(); // US-058
         public DbSet<MappingSuggestion> MappingSuggestions => Set<MappingSuggestion>();
         public DbSet<ApplicabilitySuggestion> ApplicabilitySuggestions => Set<ApplicabilitySuggestion>(); // US-060
+        public DbSet<NeedsActionSuggestion> NeedsActionSuggestions => Set<NeedsActionSuggestion>(); // US-155
         public DbSet<Domain.Ai.AiEvaluation> AiEvaluations => Set<Domain.Ai.AiEvaluation>(); // US-116
 
         // US-078
