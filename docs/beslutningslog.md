@@ -1731,6 +1731,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - At hente hele compliance-oversigten på fanen Risici. Det er mange flere forespørgsler.
   - At ændre risikoens egen side, som allerede viser sporet.
+### B111 – Et AI-foreslået tiltag kan godkendes med evidens i ét trin (US-158)
+
+- **Beslutning:**
+  - **Valgfri evidens:** godkendelsesformularen for et foreslået tiltag har en sektion "+ Evidence" med titel, link eller fil og "Valid until". Uden evidens virker godkendelsen som før.
+  - **Hvor evidensen havner:**
+    - Er tiltaget et krav, lægges evidensen på kravet med de sædvanlige regler (US-057).
+    - Er tiltaget en story, lægges evidensen på storyen (US-146).
+  - **Rækkefølge:** forslaget og evidensen tjekkes først, og evidensen gemmes, før tiltaget godkendes. Bliver evidensen afvist, fx fordi der både er link og fil, godkendes intet, og fejlen vises på risikoens side.
+  - **Rettigheder:** evidens kræver `LinkWork`.
+  - **Mangler evidens:** et godkendt tiltag, hvis krav ikke har gyldig evidens, får linket "Add evidence" til kravets side (US-153).
+- **Begrundelse:** Tiltaget og beviset for, at det er udført, hører sammen (ISO/IEC 27001 6.1.3 og 8.3). Ét trin sparer en tur rundt om kravet.
+- **Fravalgt:**
+  - Evidens direkte på risikoen. Evidens hører til krav og stories, så sporet (US-124) bliver ved med at være ét.
+  - At beholde de indtastede værdier efter en fejl. Formularen er kort, og fejlen vises tydeligt.
 
 ## Åbne spørgsmål til klassediagrammet
 

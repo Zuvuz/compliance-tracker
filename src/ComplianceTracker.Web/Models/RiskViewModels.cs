@@ -94,6 +94,26 @@ namespace ComplianceTracker.Web.Models
         public DateOnly Today => DateOnly.FromDateTime(Now);
 
         // US-124 R1: the thread from this risk to requirements and evidence
+        // US-158 R4: a measure that is a requirement without valid evidence: the sub-tab and code of its page; null otherwise
+        public (string Sub, string Code)? MissingEvidence(RiskMeasure measure)
+        {
+            if (measure.RequirementId is not { } id || Compliance is null)
+            {
+                return null;
+            }
+
+            foreach (var framework in Compliance.Frameworks)
+            {
+                var row = framework.Requirements.FirstOrDefault(r => r.Requirement.Id == id);
+                if (row is not null)
+                {
+                    return row.Evidence.Any(e => !e.IsExpired) ? null : (FrameworkNames.Slug(framework.Framework.Name), row.Requirement.Code);
+                }
+            }
+
+            return null;
+        }
+
         public Application.Risks.RiskTrace? Trace => Compliance is null ? null : Application.Risks.RiskTraces.For(Risk, Compliance);
 
         public Domain.WorkItems.WorkItem? WorkItemOf(Guid? workItemId)
