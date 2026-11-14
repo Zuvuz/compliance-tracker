@@ -60,6 +60,9 @@ namespace ComplianceTracker.Domain.Mappings
         // R6: why it is not needed
         public string? DecisionReason { get; private set; }
 
+        // US-156 R3: the product changed after a person said "not needed"; the decision is kept, to be looked at again
+        public DateTime? ContextChangedAt { get; private set; }
+
         public bool IsPending => Status == NeedsActionStatus.Pending;
 
         // Shown as "Needs action" while nobody dismissed it and no newer assessment replaced it
@@ -114,6 +117,15 @@ namespace ComplianceTracker.Domain.Mappings
 
             // Also after "Create story", when the draft showed it is not needed after all
             Decide(NeedsActionStatus.Dismissed, userId, at, role, text.Length <= MaxReasonLength ? text : text[..MaxReasonLength], IsOpen);
+        }
+
+        // US-156 R3: a dismissed mark is never changed by a new assessment, only marked "Based on an earlier description"
+        public void MarkContextChanged(DateTime at)
+        {
+            if (Status == NeedsActionStatus.Dismissed)
+            {
+                ContextChangedAt = at;
+            }
         }
 
         // US-156: a newer assessment replaces a mark nobody has decided on

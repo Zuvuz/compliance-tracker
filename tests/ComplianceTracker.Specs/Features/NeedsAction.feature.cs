@@ -531,10 +531,10 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I click \"Find what needs action\" on the \"CRA\" sub-tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 75
-    await testRunner.ThenAsync("the overview row \"I.2(d)\" is \"Not covered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the page shows an error", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 76
-    await testRunner.AndAsync("the page shows an error", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the overview row \"I.2(d)\" is \"Not covered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

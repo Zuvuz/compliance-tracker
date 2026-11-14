@@ -99,6 +99,7 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();
             services.AddScoped<IApplicabilitySuggestionRepository, ApplicabilitySuggestionRepository>(); // US-060
             services.AddScoped<INeedsActionSuggestionRepository, NeedsActionSuggestionRepository>(); // US-155
+            services.AddScoped<INeedsActionReassessmentRepository, NeedsActionReassessmentRepository>(); // US-156
             services.AddScoped<IAiEvaluationRepository, AiEvaluationRepository>(); // US-116
             services.AddScoped<Application.Scanning.IScanRepository, ScanRepository>(); // US-078
             services.AddScoped<Application.Scanning.IScanUploadTokenRepository, ScanUploadTokenRepository>(); // US-122

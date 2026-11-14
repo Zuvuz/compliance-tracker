@@ -163,8 +163,11 @@ namespace ComplianceTracker.Application.Compliance
             var applicabilitySuggestions = await _applicabilitySuggestions.ListAsync(project.Id, cancellationToken);
             var pendingApplicability = applicabilitySuggestions.Where(s => s.IsPending).ToLookup(s => s.RequirementId);
             // US-155: the open "needs action" marks, newest first
-            var needsAction = (await _needsAction.ListAsync(project.Id, cancellationToken))
-                .Where(m => m.IsOpen).OrderByDescending(m => m.CreatedAt).ToLookup(m => m.RequirementId);
+            var marks = await _needsAction.ListAsync(project.Id, cancellationToken);
+            var needsAction = marks.Where(m => m.IsOpen).OrderByDescending(m => m.CreatedAt).ToLookup(m => m.RequirementId);
+            // US-156 R3: "not needed" decided before the product changed
+            var dismissedBefore = marks.Where(m => m.Status == Domain.Mappings.NeedsActionStatus.Dismissed && m.ContextChangedAt is not null)
+                .Select(m => m.RequirementId).ToHashSet();
             var currentClassification = (await _classifications.ListAsync(project.Id, cancellationToken))
                 .GroupBy(c => c.FrameworkId).ToDictionary(g => g.Key, g => g.Max(c => c.ClassifiedAt));
             var activeDecisions = (await _applicability.ListActiveAsync(project.Id, cancellationToken)).ToDictionary(a => a.RequirementId);
@@ -231,6 +234,7 @@ namespace ComplianceTracker.Application.Compliance
                         Risks = risksByRequirement.GetValueOrDefault(requirement.Id) ?? [],
                         ApplicabilitySuggestion = pendingApplicability[requirement.Id].OrderByDescending(s => s.CreatedAt).FirstOrDefault(),
                         NeedsActionMark = needsAction[requirement.Id].FirstOrDefault(),
+                        DismissedBeforeChange = dismissedBefore.Contains(requirement.Id),
                         NotApplicableFromOldClassification = fromOldClassification.Contains(requirement.Id)
                     })
                     .ToList();
@@ -416,6 +420,9 @@ namespace ComplianceTracker.Application.Compliance
 
         // US-060 R6: the AI suggests that the requirement does not apply; a person decides
         public Domain.Mappings.ApplicabilitySuggestion? ApplicabilitySuggestion { get; init; }
+
+        // US-156 R3: a person said "not needed" before the product changed; the decision stands, to be looked at again
+        public bool DismissedBeforeChange { get; init; }
 
         // US-155: the AI's open "needs action" mark, if any
         public Domain.Mappings.NeedsActionSuggestion? NeedsActionMark { get; init; }

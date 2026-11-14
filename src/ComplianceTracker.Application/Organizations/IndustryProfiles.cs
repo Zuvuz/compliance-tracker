@@ -126,9 +126,14 @@ namespace ComplianceTracker.Application.Organizations
         private readonly IFrameworkRepository _frameworks;
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly Projects.IProjectRepository _projects;
+        private readonly Ai.NeedsActionReassessments _reassessments; // US-156
 
-        public IndustryProfileService(CurrentMember member, IndustryProfiles profiles, IFrameworkRepository frameworks, IActivityLogger log, IUnitOfWork unitOfWork)
+        public IndustryProfileService(CurrentMember member, IndustryProfiles profiles, IFrameworkRepository frameworks, IActivityLogger log, IUnitOfWork unitOfWork,
+            Projects.IProjectRepository projects, Ai.NeedsActionReassessments reassessments)
         {
+            _projects = projects;
+            _reassessments = reassessments;
             _member = member;
             _profiles = profiles;
             _frameworks = frameworks;
@@ -168,6 +173,13 @@ namespace ComplianceTracker.Application.Organizations
             {
                 await _log.LogAsync(ActivityAction.IndustryProfileChosen, organization.Id,
                     $"{organization.Industry}{(productsUseAi ? ", products use AI" : "")}", cancellationToken);
+
+                // US-156 R1: the industry is part of what the AI reads about every product
+                foreach (var project in await _projects.ListAsync(organization.Id, cancellationToken))
+                {
+                    await _reassessments.RequestAsync(project, "industry profile changed", cancellationToken);
+                }
+
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }
         }

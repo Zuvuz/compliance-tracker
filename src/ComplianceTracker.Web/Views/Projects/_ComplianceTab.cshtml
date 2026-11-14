@@ -256,6 +256,24 @@
                 <button type="submit" class="btn btn-sm btn-outline-secondary" title="The local AI checks the requirements that are not covered against the product's purpose, scope and classification, and suggests the ones that clearly do not apply.">Suggest not applicable</button>
             </form>
         }
+        @if (Model.Reassessment is { } reassessment)
+        {
+            @* US-156 R2, R4, R6: what the newest assessment after a change is doing *@
+            <span class="small text-muted w-100" id="reassessment-status" data-state="@(reassessment.IsDone ? "done" : reassessment.WaitingForAi ? "waiting-for-ai" : "pending")">
+                @if (reassessment.IsDone)
+                {
+                    <text>Assessed again after the change on @reassessment.RequestedAt.ToLocalTime().ToString("dd-MM-yyyy") (@reassessment.Reasons): @reassessment.Result</text>
+                }
+                else if (reassessment.WaitingForAi)
+                {
+                    <text>Assessing again after the change on @reassessment.RequestedAt.ToLocalTime().ToString("dd-MM-yyyy") is waiting for the AI</text>
+                }
+                else
+                {
+                    <text>Assessing again after the change on @reassessment.RequestedAt.ToLocalTime().ToString("dd-MM-yyyy") (@reassessment.Reasons)</text>
+                }
+            </span>
+        }
         @if (TempData["ApplicabilityMessage"] is string applicabilityMessage)
         {
             <span class="small text-muted w-100" id="applicability-message" role="status">@applicabilityMessage</span>

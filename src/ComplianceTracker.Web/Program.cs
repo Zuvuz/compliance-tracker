@@ -84,6 +84,10 @@ builder.Services.AddHostedService<ScheduledWorkItemSync>();
 // US-128: the exploited-vulnerability lists, fetched once a day when the operator switches them on
 builder.Services.AddHostedService<ScheduledExploitedListRefresh>();
 
+// US-156: assesses again what needs action after the product changed
+builder.Services.AddSingleton<ComplianceTracker.Application.Ai.IReassessmentScopes, ReassessmentScopes>();
+builder.Services.AddHostedService<NeedsActionReassessmentWorker>();
+
 // US-020: writes the AI suggestions' rationales in the background
 builder.Services.AddSingleton<RationaleWorker>();
 builder.Services.AddSingleton<IRationaleQueue>(provider => provider.GetRequiredService<RationaleWorker>());

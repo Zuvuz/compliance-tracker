@@ -36,6 +36,8 @@ namespace ComplianceTracker.Application.Projects
         private readonly ApprovalGate _approvals;
         private readonly Organizations.OrganisationDocumentService _documents;
 
+        private readonly Ai.NeedsActionReassessments _reassessments; // US-156
+
         public ProjectService(
             IProjectRepository projects,
             IFrameworkRepository frameworks,
@@ -47,8 +49,10 @@ namespace ComplianceTracker.Application.Projects
             Security.ISecurityEventRepository securityEvents,
             ApprovalGate approvals,
             Organizations.OrganisationDocumentService documents,
-            PhaseGates gates)
+            PhaseGates gates,
+            Ai.NeedsActionReassessments reassessments)
         {
+            _reassessments = reassessments;
             _gates = gates;
             _approvals = approvals;
             _documents = documents;
@@ -130,6 +134,14 @@ namespace ComplianceTracker.Application.Projects
             }
 
             await _log.LogAsync(ActivityAction.ProjectUpdated, project.Id, string.Join("; ", changes), cancellationToken);
+
+            // US-156 R1: what the AI reads about the product changed
+            var context = changes.Where(c => c.Field is "Description" or "Intended purpose" or "Scope").Select(c => $"{c.Field.ToLowerInvariant()} changed").ToList();
+            if (context.Count > 0)
+            {
+                await _reassessments.RequestAsync(project, string.Join("; ", context), cancellationToken);
+            }
+
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
@@ -321,6 +333,7 @@ namespace ComplianceTracker.Application.Projects
 
             project.UseFramework(framework, version, userId, Now);
             await _log.LogAsync(ActivityAction.ProjectFrameworkAdded, project.Id, cancellationToken);
+            await _reassessments.RequestAsync(project, $"{Frameworks.FrameworkSlugs.Short(framework.Name)} added", cancellationToken); // US-156 R1
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             await SyncDocumentsAsync(project, cancellationToken); // US-136 R1
         }

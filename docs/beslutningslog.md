@@ -1745,6 +1745,24 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - Evidens direkte på risikoen. Evidens hører til krav og stories, så sporet (US-124) bliver ved med at være ét.
   - At beholde de indtastede værdier efter en fejl. Formularen er kort, og fejlen vises tydeligt.
+### B112 – "Needs action" vurderes igen, når produktet ændres (US-156)
+
+- **Beslutning:**
+  - **Hvad starter det:** en ændring af beskrivelse, formål eller scope, en ny klassifikation, en ny branche (for alle organisationens projekter) eller et nyt framework. Ændringen gemmer en `NeedsActionReassessment` sammen med sig selv.
+  - **Én vurdering:** ændringer inden for 5 minutter giver én vurdering med alle årsagerne, fx "intended purpose changed; scope changed".
+  - **Baggrundsjob:** et job kører hvert halve minut og vurderer de forfaldne projekter, hvert i sit eget scope. Det sker aldrig under en request.
+  - **Hvad ændres:**
+    - Ventende markeringer og ventende "not applicable"-forslag erstattes.
+    - En persons beslutning beholdes. "Not needed" markeres "Based on an earlier description".
+  - **Uden AI:** intet af vurderingen gemmes. Den venter og prøves igen, og Compliance-fanen siger, at den venter på AI'en.
+  - **Lukkede projekter** vurderes ikke.
+  - **Log og visning:** aktivitetsloggen får `NeedsActionReassessed` (af systemet) med årsag og resultat, og Compliance-fanen viser status for den seneste vurdering.
+  - **Test:** jobbet slås fra med `NeedsActionReassessment:Enabled`. Testene kører det selv efter at have flyttet uret.
+- **Begrundelse:** Risikovurderingen skal følge produktet (CRA art. 13, ISO/IEC 27001 8.2), uden at nogen skal huske at trykke på knappen. Forsinkelsen undgår, at fem små ændringer giver fem langsomme AI-kørsler.
+- **Fravalgt:**
+  - At vurdere i requesten, fordi det er for langsomt med en lokal model.
+  - At vurdere ved hver sidevisning.
+  - At ændre en persons beslutning.
 
 ## Åbne spørgsmål til klassediagrammet
 
