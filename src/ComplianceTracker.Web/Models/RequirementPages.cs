@@ -46,6 +46,7 @@ namespace ComplianceTracker.Web.Models
             => !row.IsApplicable ? "Not applicable"
                 : row.IsCoveredNeedingReview ? "Covered, needs review"
                 : row.IsCovered ? "Covered"
+                : row.NeedsAction is not null ? "Needs action" // US-155
                 : "Not covered";
 
         // R1: the badge colour of that status
@@ -53,6 +54,41 @@ namespace ComplianceTracker.Web.Models
             => !row.IsApplicable ? "text-bg-secondary"
                 : row.IsCoveredNeedingReview ? "text-bg-warning"
                 : row.IsCovered ? "text-bg-success"
+                : row.NeedsAction is not null ? "text-bg-warning needs-action"
                 : "text-bg-danger";
+    }
+
+    // US-155: the texts of "needs action"
+    public static class NeedsActionTexts
+    {
+        // R2: what one press of "Find what needs action" found
+        public static string Found(int needsAction, int doesNotApply)
+        {
+            if (needsAction == 0 && doesNotApply == 0)
+            {
+                return "The AI found nothing new that needs action";
+            }
+
+            var parts = new List<string>();
+            if (needsAction > 0)
+            {
+                parts.Add($"{needsAction} {(needsAction == 1 ? "requirement needs" : "requirements need")} action");
+            }
+
+            if (doesNotApply > 0)
+            {
+                parts.Add($"{doesNotApply} {(doesNotApply == 1 ? "does" : "do")} not seem to apply");
+            }
+
+            return string.Join(" and ", parts) + ". Decide on each one.";
+        }
+
+        // R3: the priority's badge colour
+        public static string PriorityClass(Domain.Mappings.NeedsActionPriority priority) => priority switch
+        {
+            Domain.Mappings.NeedsActionPriority.High => "text-bg-danger",
+            Domain.Mappings.NeedsActionPriority.Medium => "text-bg-warning",
+            _ => "text-bg-secondary"
+        };
     }
 }

@@ -1528,6 +1528,46 @@ namespace ComplianceTracker.Web.Controllers
             return BackToCompliance(projectId, sub);
         }
 
+        // ---------------------------------------------------------- Requirements that need action (US-155)
+
+        // POST /Projects/FindNeedsAction: R1, R2. The open framework's applicable, not-covered requirements.
+        [AiRateLimit] // US-097 R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> FindNeedsAction(
+            Guid projectId, Guid frameworkId, string? sub, [FromServices] Application.Ai.NeedsActionService needsAction, CancellationToken cancellationToken)
+        {
+            var (needs, notApplying) = await needsAction.FindAsync(projectId, frameworkId, cancellationToken);
+            TempData["ApplicabilityMessage"] = NeedsActionTexts.Found(needs, notApplying);
+            return BackToCompliance(projectId, sub);
+        }
+
+        // POST /Projects/CreateStoryForNeedsAction: R5. The person agrees; the AI drafts a story (US-106).
+        [AiRateLimit] // US-097 R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> CreateStoryForNeedsAction(
+            Guid projectId, Guid markId, string? sub, [FromServices] Application.Ai.NeedsActionService needsAction, CancellationToken cancellationToken)
+        {
+            var result = await needsAction.CreateStoryAsync(projectId, markId, cancellationToken);
+            TempData["ApplicabilityMessage"] = result.Summary;
+            return BackToCompliance(projectId, sub);
+        }
+
+        // POST /Projects/DismissNeedsAction: R6. Not needed: the requirement becomes not applicable with the reason.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> DismissNeedsAction(
+            Guid projectId, Guid markId, string? reason, Guid? riskId, string? sub, [FromServices] Application.Ai.NeedsActionService needsAction,
+            CancellationToken cancellationToken)
+        {
+            await needsAction.DismissAsync(projectId, markId, reason, riskId, cancellationToken);
+            return BackToCompliance(projectId, sub);
+        }
+
         // ---------------------------------------------------------- Not applicable, suggested by the AI (US-060, US-061)
 
         // POST /Projects/SuggestNotApplicable: US-060 R6. Only the open framework's not covered requirements.

@@ -27,6 +27,7 @@ namespace ComplianceTracker.Application.Compliance
         private readonly CurrentMember _member;
         private readonly TimeProvider _clock;
         private readonly IApplicabilitySuggestionRepository _applicabilitySuggestions;
+        private readonly Ai.INeedsActionSuggestionRepository _needsAction;
         private readonly Risks.IRiskRepository _risks;
         private readonly IClassificationRepository _classifications;
         private readonly IEvidenceCheckRepository _checks; // US-038
@@ -50,8 +51,10 @@ namespace ComplianceTracker.Application.Compliance
             Risks.IRiskRepository risks,
             IClassificationRepository classifications,
             IEvidenceCheckRepository checks,
-            Ai.IRequirementMappingRepository crossMappings)
+            Ai.IRequirementMappingRepository crossMappings,
+            Ai.INeedsActionSuggestionRepository needsAction)
         {
+            _needsAction = needsAction;
             _applicabilitySuggestions = applicabilitySuggestions;
             _risks = risks;
             _classifications = classifications;
@@ -159,6 +162,9 @@ namespace ComplianceTracker.Application.Compliance
             // on an earlier classification than the current one, and not decided again since.
             var applicabilitySuggestions = await _applicabilitySuggestions.ListAsync(project.Id, cancellationToken);
             var pendingApplicability = applicabilitySuggestions.Where(s => s.IsPending).ToLookup(s => s.RequirementId);
+            // US-155: the open "needs action" marks, newest first
+            var needsAction = (await _needsAction.ListAsync(project.Id, cancellationToken))
+                .Where(m => m.IsOpen).OrderByDescending(m => m.CreatedAt).ToLookup(m => m.RequirementId);
             var currentClassification = (await _classifications.ListAsync(project.Id, cancellationToken))
                 .GroupBy(c => c.FrameworkId).ToDictionary(g => g.Key, g => g.Max(c => c.ClassifiedAt));
             var activeDecisions = (await _applicability.ListActiveAsync(project.Id, cancellationToken)).ToDictionary(a => a.RequirementId);
@@ -224,6 +230,7 @@ namespace ComplianceTracker.Application.Compliance
                         EvidenceCovers = project.IsOrganisationArea,
                         Risks = risksByRequirement.GetValueOrDefault(requirement.Id) ?? [],
                         ApplicabilitySuggestion = pendingApplicability[requirement.Id].OrderByDescending(s => s.CreatedAt).FirstOrDefault(),
+                        NeedsActionMark = needsAction[requirement.Id].FirstOrDefault(),
                         NotApplicableFromOldClassification = fromOldClassification.Contains(requirement.Id)
                     })
                     .ToList();
@@ -340,6 +347,9 @@ namespace ComplianceTracker.Application.Compliance
 
         // US-060 R6: pending "not applicable" suggestions. US-061 R3: decisions to look at after a new classification.
         public int ApplicabilitySuggestionCount => Requirements.Count(r => r.ApplicabilitySuggestion is not null);
+
+        // US-155: the requirements marked as needing action
+        public int NeedsActionCount => Requirements.Count(r => r.NeedsAction is not null);
         public int OldClassificationDecisions => Requirements.Count(r => r.NotApplicableFromOldClassification);
 
         // US-057 R4: applicable requirements with at least one evidence that has not expired
@@ -406,6 +416,12 @@ namespace ComplianceTracker.Application.Compliance
 
         // US-060 R6: the AI suggests that the requirement does not apply; a person decides
         public Domain.Mappings.ApplicabilitySuggestion? ApplicabilitySuggestion { get; init; }
+
+        // US-155: the AI's open "needs action" mark, if any
+        public Domain.Mappings.NeedsActionSuggestion? NeedsActionMark { get; init; }
+
+        // US-155 R5: shown as "Needs action" only while the requirement applies and nothing covers it
+        public Domain.Mappings.NeedsActionSuggestion? NeedsAction => IsApplicable && !IsCovered && !IsCoveredNeedingReview ? NeedsActionMark : null;
 
         // US-061 R3: not applicable from a suggestion that relied on an earlier classification
         public bool NotApplicableFromOldClassification { get; init; }

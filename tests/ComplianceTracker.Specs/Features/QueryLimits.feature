@@ -18,7 +18,8 @@ Feature: Each page has a limit on database queries
     And I count the queries of the important pages
     When "Acme Portal" gets 200 user stories, 60 risks and 100 pieces of evidence on its requirements
     And the organisation gets 15 more projects that use the same framework
-    # The limits are just above what the pages made on 12-11-2026 (B96)
+    # The limits are just above what the pages made on 12-11-2026 (B96).
+    # US-155: the traceability download reads the "needs action" marks too (one query): 50 -> 53.
     Then each page stays within its limit and does not grow with the data:
       | Page                  | Limit |
       | Dashboard             | 12    |
@@ -32,4 +33,4 @@ Feature: Each page has a limit on database queries
       | Project activity      | 14    |
       | Frameworks            | 5     |
       | Organisation activity | 8     |
-      | Traceability download | 50    |
+      | Traceability download | 53    |

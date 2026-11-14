@@ -293,6 +293,13 @@ namespace ComplianceTracker.Domain.ActivityLog
         GapDismissed,
 
         // US-145 R6: a person took back a rejection of an AI suggestion; the pair can be suggested again
-        SuggestionRejectionUndone
+        SuggestionRejectionUndone,
+
+        // US-155: the AI marked requirements as needing action, and a person confirmed ("Create story") or dismissed
+        // ("Not needed") a mark. SubjectId points at the project; Details holds e.g. "3 need action and 1 do not apply,
+        // of 20 requirements checked (model, needs-action-v1)" or "I.2(d): …".
+        NeedsActionSuggested,
+        NeedsActionConfirmed,
+        NeedsActionDismissed
     }
 }

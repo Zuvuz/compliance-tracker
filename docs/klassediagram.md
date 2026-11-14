@@ -936,6 +936,36 @@ classDiagram
   }
   ApplicabilitySuggestionService --> AiContextBuilder
   ApplicabilitySuggestionService ..> ApplicabilitySuggestion
+  class NeedsActionSuggestion {
+    -id: Guid
+    -projectId: Guid
+    -frameworkId: Guid
+    -requirementId: Guid
+    -reason: string
+    -priority: NeedsActionPriority
+    -raisedByRisk: bool
+    -contextUsed: string
+    -model: string
+    -promptVersion: string
+    -createdAt: DateTime
+    -status: NeedsActionStatus
+    -decidedById: Guid?
+    -decidedRole: UserRole?
+    -decidedAt: DateTime?
+    -decisionReason: string?
+    +Create(projectId, frameworkId, requirementId, reason, priority, highRisk, contextUsed, model, promptVersion, at)$ NeedsActionSuggestion
+    +Confirm(userId: Guid, at: DateTime, role: UserRole?)
+    +Dismiss(reason: string, userId: Guid, at: DateTime, role: UserRole?)
+    +Replace()
+  }
+  class NeedsActionService {
+    +FindAsync(projectId: Guid, frameworkId: Guid) Task
+    +CreateStoryAsync(projectId: Guid, markId: Guid) Task~AskResult~
+    +DismissAsync(projectId: Guid, markId: Guid, reason: string?, riskId: Guid?) Task
+  }
+  NeedsActionService --> AiContextBuilder
+  NeedsActionService ..> NeedsActionSuggestion
+  NeedsActionService ..> ApplicabilitySuggestion
   RationaleService --> AiContextBuilder
   class MappingSuggestion {
     -id: Guid
