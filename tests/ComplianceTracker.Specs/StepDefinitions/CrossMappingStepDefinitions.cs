@@ -122,7 +122,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         private async Task<IElement> RowAsync(string code, string project)
         {
             await _compliance.OpenSubTabWithAsync(project, code);
-            return _web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']")!;
+            return RequirementRowLookup.Find(_web, code)!;
         }
     }
 }

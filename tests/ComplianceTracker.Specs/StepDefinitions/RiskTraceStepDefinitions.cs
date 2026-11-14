@@ -48,7 +48,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         private IEnumerable<IElement> Nodes() => _web.Page!.QuerySelectorAll("#risk-trace li.trace-node");
 
         private IElement Row(string code)
-            => _web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']")
+            => RequirementRowLookup.Find(_web, code)
                ?? throw new Xunit.Sdk.XunitException($"The page {_web.CurrentPath} has no requirement '{code}'.");
 
         private async Task OpenAsync(string risk)

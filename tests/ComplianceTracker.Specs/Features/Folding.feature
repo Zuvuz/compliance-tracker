@@ -1,7 +1,7 @@
-Feature: Fold evidence cards and requirement rows
+Feature: Fold evidence cards
 
-  # Issue #52: an evidence card on the Evidence tab and a requirement row on the Compliance tab can be folded and
-  # opened again. The choice is remembered in the browser (site.js); these scenarios check what the page gives the script:
+  # Issue #52: an evidence card on the Evidence tab can be folded and opened again. (A requirement row no longer folds:
+  # the Compliance tab is a light overview since US-153, see RequirementPage.feature.) The choice is remembered in the browser (site.js); these scenarios check what the page gives the script:
   # the button, the part that folds, a short summary, and whether the part needs attention (then it is never folded).
 
   Background:
@@ -23,17 +23,3 @@ Feature: Fold evidence cards and requirement rows
     Given "Access policy 2026" has the suggestion "I.2(d)"
     When I open the Evidence tab of "Acme Portal"
     Then the evidence card "Access policy 2026" needs attention
-
-  @integration
-  Scenario: A requirement row can be folded and says what it has
-    Given the project "Acme Portal" has the user story "[US-004] Sign in"
-    And the user story "[US-004] Sign in" is linked to the requirement "I.2(d)"
-    When I open the "CRA" sub-tab of "Acme Portal"
-    Then the row "I.2(d)" can be folded, with the summary "1 story · 0 evidence"
-    And the row "I.2(d)" does not need attention
-
-  @integration
-  Scenario: A requirement row with failing tests is never folded by itself
-    When I upload test results where 2 scenarios tagged "@cra-I.2(d)" passed and 1 failed
-    And I open the "CRA" sub-tab of "Acme Portal"
-    Then the row "I.2(d)" needs attention

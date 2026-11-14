@@ -112,7 +112,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Then("the requirement {string} shows {string}")]
         public void ThenTheRequirementShows(string code, string badge)
         {
-            var row = _web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']")
+            var row = RequirementRowLookup.Find(_web, code)
                 ?? throw new Xunit.Sdk.XunitException($"The Compliance tab has no row '{code}'.");
             Assert.Equal(badge, row.QuerySelector(".recommended")?.TextContent.Trim());
         }

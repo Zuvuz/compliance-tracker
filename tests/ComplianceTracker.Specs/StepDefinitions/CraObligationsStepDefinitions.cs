@@ -19,7 +19,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Then("the requirement {string} says {string}")]
         public void ThenTheRequirementSays(string code, string title)
         {
-            var row = _web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']")
+            var row = RequirementRowLookup.Find(_web, code)
                 ?? throw new Xunit.Sdk.XunitException($"The page has no requirement '{code}'.");
             Assert.Contains(title, row.TextContent);
         }

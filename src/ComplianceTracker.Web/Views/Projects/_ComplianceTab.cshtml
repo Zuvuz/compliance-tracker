@@ -18,8 +18,10 @@
    under a rationale; .old-classification with the form .keep-not-applicable.
    US-110: per row .needs-review with .previous-text and the form .confirm-review; links and evidence that wait for
    review have .review-pending.
-   US-144: the rows are Views/Projects/_RequirementRow.cshtml; the "All" sub-tab (data-sub="all") groups every framework
-   (.framework-group rows); #fold-all and #open-all; #unused-frameworks with forms .add-unused-framework. *@
+   US-144: the "All" sub-tab (data-sub="all") groups every framework (.framework-group rows); #unused-frameworks with
+   forms .add-unused-framework.
+   US-153: the rows are light (_RequirementSummaryRow.cshtml, no forms); a requirement's own address shows its page
+   (_RequirementPage.cshtml) with every action. The forms named above for a row are on that page. *@
 @model ProjectDetailsViewModel
 @using ComplianceTracker.Application.Compliance
 @{
@@ -53,17 +55,36 @@
             var slug = FrameworkNames.Slug(tab.Framework.Name);
             <li class="nav-item">
                 <a class="nav-link @(slug == activeSlug ? "active" : "")" data-sub="@slug"
-                   asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Compliance" asp-route-sub="@slug">@FrameworkNames.Short(tab.Framework.Name)</a>
+                   asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Compliance" asp-route-sub="@slug" asp-route-req="">@FrameworkNames.Short(tab.Framework.Name)</a>
             </li>
         }
         @if (compliance.Frameworks.Count > 1)
         {
             <li class="nav-item">
                 <a class="nav-link @(all ? "active" : "")" data-sub="@ComplianceFilters.AllSub"
-                   asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Compliance" asp-route-sub="@ComplianceFilters.AllSub">All</a>
+                   asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Compliance" asp-route-sub="@ComplianceFilters.AllSub" asp-route-req="">All</a>
             </li>
         }
     </ul>
+
+    @if (Model.OpenRequirement is not null && RequirementPages.Find(compliance, Model.Sub, Model.OpenRequirement) is { } found)
+    {
+        @* US-153 R3: the requirement's own page, with its actions *@
+        var (pageFramework, pageRow) = found;
+        var pageStories = compliance.WorkItems
+            .Where(w => w.State != ComplianceTracker.Domain.WorkItems.WorkItemState.Removed)
+            .OrderBy(w => w.Title, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var pageTranslations = Model.Language == ComplianceTracker.Domain.Frameworks.Requirement.DefaultLanguage
+            || pageRow.Requirement.TextIn(Model.Language) is not null;
+        var pageImplements = pageFramework.Framework.ImplementsFrameworkId is { } pageImplementsId
+            ? compliance.Frameworks.FirstOrDefault(f => f.Framework.Id == pageImplementsId)?.Framework.ShortName ?? "the directive"
+            : null;
+        <partial name="_RequirementPage" model="new RequirementRowModel(project, pageFramework, pageRow, Model.Sub, null, canLink, canDecide,
+            pageStories, Model.EvidenceTab?.Evidence ?? [], Model.AllRisks.Where(r => r.Status != ComplianceTracker.Domain.Risks.RiskStatus.Closed).ToList(),
+            NameOf, Model.Language, pageTranslations, 0, false, true, pageImplements)" />
+        return;
+    }
 
     @{
         var shownFrameworks = all ? compliance.Frameworks.ToList() : [active!];
@@ -71,7 +92,6 @@
             .Where(w => w.State != ComplianceTracker.Domain.WorkItems.WorkItemState.Removed)
             .OrderBy(w => w.Title, StringComparer.OrdinalIgnoreCase)
             .ToList();
-        var projectRisks = Model.AllRisks.Where(r => r.Status != ComplianceTracker.Domain.Risks.RiskStatus.Closed).ToList();
         IEnumerable<RequirementCoverage> Shown(FrameworkCompliance f)
         {
             var rows = f.Requirements.AsEnumerable();
@@ -243,17 +263,12 @@
     }
     else
     {
-        @* US-144 R10: fold or open every row; a row that waits for a decision stays open (site.js) *@
-        <div class="d-flex justify-content-end gap-2 mb-1 small">
-            <button type="button" class="btn btn-sm btn-link p-0" id="fold-all" hidden>Fold all</button>
-            <button type="button" class="btn btn-sm btn-link p-0" id="open-all" hidden>Open all</button>
-        </div>
-        <table class="table align-middle" id="requirements-table">
+        <table class="table table-hover align-middle requirements-overview" id="requirements-table">
             <thead>
                 <tr>
                     <th>Code</th>
                     <th>Requirement</th>
-                    <th>Covered by</th>
+                    <th>Linked</th>
                     <th>Status</th>
                 </tr>
             </thead>
@@ -299,11 +314,9 @@
                             <tr class="requirement-group table-light"><th colspan="4">@group</th></tr>
                         }
 
-                        var open = Model.OpenRequirement is { } target && !all
-                            && string.Equals(target, row.Requirement.Code, StringComparison.OrdinalIgnoreCase);
-                        <partial name="_RequirementRow" model="new RequirementRowModel(project, framework, row, activeSlug, showFilter, canLink, canDecide,
-                            openStories, Model.EvidenceTab?.Evidence ?? [], projectRisks, NameOf, Model.Language, hasTranslations,
-                            Depth(row.Requirement.Id), withChildren.Contains(row.Requirement.Id), open, implementsName)" />
+                        <partial name="_RequirementSummaryRow" model="new RequirementRowModel(project, framework, row, activeSlug, showFilter, canLink, canDecide,
+                            [], [], [], NameOf, Model.Language, hasTranslations,
+                            Depth(row.Requirement.Id), withChildren.Contains(row.Requirement.Id), false, implementsName)" />
                     }
                 }
             </tbody>

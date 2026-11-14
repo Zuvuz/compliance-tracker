@@ -60,7 +60,7 @@ else
         <li class="nav-item">
             <a class="nav-link @(Model.Tab == slug ? "active" : "")" data-tab="@slug"
                aria-current="@(Model.Tab == slug ? "page" : null)"
-               asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@(slug == ProjectTabs.Overview ? null : slug)">@title</a>
+               asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@(slug == ProjectTabs.Overview ? null : slug)" asp-route-sub="" asp-route-req="">@title</a>
         </li>
     }
 </ul>

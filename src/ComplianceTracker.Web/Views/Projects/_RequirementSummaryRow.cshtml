@@ -1,0 +1,80 @@
+@* US-153 R1: one light row of the Compliance tab's overview: code, title, what is linked, what waits and the status.
+   No forms: a click opens the requirement's own page (_RequirementPage.cshtml), where the actions are.
+   Ids and classes used by the tests: tr.requirement-row[data-code] (no data-detail), a.requirement-open, .requirement-code,
+   .requirement-title, .row-summary ("1 story · 2 evidence"), .row-waiting, .requirement-status, .not-applicable-reason,
+   .covered-through, .evidence-status, .high-risk, .failing-tests, .needs-review-mark; US-143: .tree-toggle, data-parent. *@
+@model RequirementRowModel
+@using ComplianceTracker.Application.Compliance
+@using ComplianceTracker.Web.Models
+@{
+    var row = Model.Row;
+    var requirement = row.Requirement;
+    var text = requirement.Show(Model.Language); // US-142 R8
+    var waiting = RequirementRows.Waiting(row);
+    var address = Model.Address(Url);
+}
+<tr class="requirement-row @(row.IsApplicable ? "" : "text-muted")" id="req-@requirement.Id"
+    data-code="@requirement.Code" data-group="@requirement.Group" data-id="@requirement.Id" data-parent="@requirement.ParentId" data-kind="@requirement.Kind">
+    <td class="requirement-code text-nowrap tree-depth-@(Math.Min(Model.Depth, 6))">
+        @if (Model.HasChildren)
+        {
+            @* US-143 R4: folds what sits under this requirement (site.js) *@
+            <button type="button" class="btn btn-link btn-sm p-0 me-1 text-decoration-none tree-toggle" data-tree-toggle="@requirement.Id"
+                    aria-expanded="true" aria-label="Fold the requirements under @requirement.Code">▾</button>
+        }
+        <a class="requirement-open text-reset" href="@address">@requirement.Code</a>
+    </td>
+    <td class="requirement-title">
+        <a class="requirement-open text-reset text-decoration-none" href="@address">@text.Title</a>
+        @if (requirement.IsRecommendation)
+        {
+            <span class="badge text-bg-secondary recommended" title="A recommendation (&quot;should&quot;). It does not count in the coverage.">Recommended</span>
+        }
+        else if (requirement.Kind == ComplianceTracker.Domain.Frameworks.RequirementKind.Characteristic)
+        {
+            <span class="badge text-bg-light border characteristic" title="A characteristic of a quality model">Characteristic</span>
+        }
+        @if (row.HighRisk)
+        {
+            <span class="badge text-bg-danger high-risk" title="Named by a measure of an open High or Critical risk">High risk</span>
+        }
+        @if (requirement.Reference is not null)
+        {
+            @* US-043 R7 *@
+            <a class="official-text small text-muted ms-1" href="@requirement.Reference" target="_blank" rel="noopener noreferrer" title="Official text of @requirement.Code">Official text</a>
+        }
+    </td>
+    <td class="small text-nowrap">
+        <span class="text-muted row-summary">@RequirementRows.Summary(row)</span>
+        @if (waiting > 0)
+        {
+            <a class="badge text-bg-warning text-decoration-none ms-1 row-waiting" href="@address">@waiting waiting</a>
+        }
+        @if (row.FailingTests > 0)
+        {
+            <span class="badge text-bg-danger ms-1 failing-tests">@(row.FailingTests == 1 ? "1 failing test" : $"{row.FailingTests} failing tests")</span>
+        }
+    </td>
+    <td class="text-nowrap">
+        <span class="requirement-status badge @RequirementPages.StatusClass(row)">@RequirementPages.Status(row)</span>
+        @if (!row.IsApplicable)
+        {
+            <div class="small not-applicable-reason text-wrap">@row.NotApplicableReason</div>
+        }
+        else if (row.IsCovered && !row.IsCoveredNeedingReview)
+        {
+            @if (row.CoveredThrough is { } through)
+            {
+                <div class="small text-muted covered-through">through @through</div>
+            }
+            @if (!row.HasEvidence)
+            {
+                <div><span class="evidence-status badge text-bg-warning mt-1">No evidence</span></div>
+            }
+        }
+        @if (row.NeedsReview)
+        {
+            <div class="small text-warning-emphasis needs-review-mark">Text changed</div>
+        }
+    </td>
+</tr>

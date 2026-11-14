@@ -28,8 +28,8 @@ Feature: A clear requirement row on the Compliance tab
   @US-144 @integration
   Scenario: One requirement has its own address
     When I open the address of "I.2(d)" in "Acme Portal"
-    Then the "CRA" sub-tab is shown with the row "I.2(d)" open
-    And the row "I.2(d)" links to its own address
+    Then the requirement page of "I.2(d)" is shown under the "CRA" sub-tab
+    And the overview row "I.2(d)" links to its own address
 
   @US-144 @iso27001-9.1 @integration
   Scenario: The All tab lists every framework's requirements

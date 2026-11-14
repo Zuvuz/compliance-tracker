@@ -88,7 +88,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         private async Task<IElement> RowAsync(string code)
         {
             await _compliance.OpenSubTabWithAsync(Project, code);
-            return _web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']")!;
+            return RequirementRowLookup.Find(_web, code)!;
         }
 
         private async Task<IElement> SuggestionAsync(string story, string code)

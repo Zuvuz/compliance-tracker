@@ -73,7 +73,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("{string} opens the {string} sub-tab of {string}")]
         public async Task WhenOpensTheSubTab(string userName, string subTab, string projectName)
         {
-            using var client = _web.CreateClient(signedInAs: userName);
+            // US-153: the member goes on to the requirement's page with the same client
+            var client = _web.Viewer = _web.CreateClient(signedInAs: userName);
             await using var db = _web.CreateDbContext();
             var id = await db.Projects.Where(p => p.Name == projectName).Select(p => p.Id).SingleAsync();
 
@@ -89,6 +90,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Then("the summary shows {int} covered of {int}, {int} not covered and {int} not applicable")]
         public void ThenTheSummaryShows(int covered, int total, int notCovered, int notApplicable)
         {
+            RequirementRowLookup.Overview(_web);
             Assert.Equal(covered.ToString(), Text("#summary-covered"));
             Assert.Equal(total.ToString(), Text("#summary-total"));
             Assert.Equal(notCovered.ToString(), Text("#summary-not-covered"));
@@ -97,11 +99,17 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         [Then("the summary shows AI suggestions")]
         public void ThenTheSummaryShowsAiSuggestions()
-            => Assert.True(int.Parse(Text("#summary-suggestions")) > 0, "The summary counts no AI suggestions.");
+        {
+            RequirementRowLookup.Overview(_web);
+            Assert.True(int.Parse(Text("#summary-suggestions")) > 0, "The summary counts no AI suggestions.");
+        }
 
         [Then("the row {string} is not listed")]
         public void ThenTheRowIsNotListed(string code)
-            => Assert.Null(_web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']"));
+        {
+            RequirementRowLookup.Overview(_web);
+            Assert.Null(_web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']"));
+        }
 
         [Then("the row {string} is listed")]
         public void ThenTheRowIsListed(string code)
@@ -143,7 +151,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await _web.OpenAsync(badge.GetAttribute("href")!);
             Assert.Equal([subTab], _web.Page!.QuerySelectorAll("#compliance-tabs a.active").Select(a => a.TextContent.Trim()));
             Assert.Equal("Has suggestions", _web.Page!.QuerySelector("#compliance-filters a[aria-current='true']")?.TextContent.Trim());
-            Assert.Contains(story, _web.Page!.QuerySelectorAll(".ai-suggestion").Select(s => s.GetAttribute("data-story")));
+            Assert.Contains(story, (await RequirementRowLookup.SuggestionsAsync(_web)).Select(s => s.GetAttribute("data-story")));
         }
 
         // ---------------------------------------------------------- Helpers
@@ -153,7 +161,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                ?? throw new Xunit.Sdk.XunitException($"The page {_web.CurrentPath} has no {selector}.");
 
         private IElement Row(string code)
-            => _web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']")
+            => RequirementRowLookup.Find(_web, code)
                ?? throw new Xunit.Sdk.XunitException($"The page {_web.CurrentPath} lists no requirement '{code}'.");
 
         private static Dictionary<string, string> HiddenFields(IElement form)

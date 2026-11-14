@@ -213,12 +213,14 @@ namespace ComplianceTracker.Web.Controllers
                 : null;
 
             // US-059: the Evidence tab, and the evidence that can be picked on the Compliance tab
-            var evidenceTab = activeTab is ProjectTabs.Evidence or ProjectTabs.Compliance
+            // US-153: on the Compliance tab only a requirement's page has the evidence picker
+            var requirementPage = activeTab is ProjectTabs.Compliance && req is not null;
+            var evidenceTab = activeTab is ProjectTabs.Evidence || requirementPage
                 ? await evidenceQueries.ForProjectAsync(id, cancellationToken)
                 : null;
 
             // US-042: the register, sorted by level; closed risks only when asked for (R7). US-048 R3: the overview counts them.
-            var allRisks = activeTab is ProjectTabs.Risks or ProjectTabs.Overview or ProjectTabs.Compliance ? await _risks.ForProjectAsync(id, cancellationToken) ?? [] : [];
+            var allRisks = activeTab is ProjectTabs.Risks or ProjectTabs.Overview || requirementPage ? await _risks.ForProjectAsync(id, cancellationToken) ?? [] : [];
             var classified = activeTab is ProjectTabs.Overview ? await classifications.ForProjectAsync(id, cancellationToken) ?? [] : [];
             var securityEvents = activeTab is ProjectTabs.SecurityEvents or ProjectTabs.Overview
                 ? await securityEventQueries.ForProjectAsync(id, cancellationToken) ?? []
@@ -253,6 +255,12 @@ namespace ComplianceTracker.Web.Controllers
             if (activeTab == ProjectTabs.Compliance && sub is not null
                 && !(sub == ComplianceFilters.AllSub && compliance?.Frameworks.Count > 1)
                 && compliance?.Frameworks.Any(f => FrameworkNames.Slug(f.Framework.Name) == sub) != true)
+            {
+                return NotFound();
+            }
+
+            // US-153 R3: a requirement's page; an unknown code is "not found"
+            if (requirementPage && RequirementPages.Find(compliance, sub, req) is null)
             {
                 return NotFound();
             }
@@ -312,6 +320,21 @@ namespace ComplianceTracker.Web.Controllers
                 RiskLevelFilter = level,
                 OnlyReviewDue = due == "1",
                 Now = now
+            });
+        }
+
+        // US-153 R4: after an action on a requirement's page, the same page; from the overview, the overview.
+        // The page's forms send the requirement's code as "req".
+        private RedirectToActionResult BackToCompliance(Guid projectId, string? sub, string? show = null)
+        {
+            var req = Request.HasFormContentType ? RequirementPages.Clean(Request.Form["req"]) : null;
+            return RedirectToAction(nameof(Details), new
+            {
+                id = projectId,
+                tab = ProjectTabs.Compliance,
+                sub = req is not null && sub is null ? ComplianceFilters.AllSub : sub,
+                req,
+                show = string.IsNullOrEmpty(show) || req is not null ? null : show
             });
         }
 
@@ -461,7 +484,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> LinkRequirement(Guid projectId, Guid requirementId, Guid workItemId, string? sub, CancellationToken cancellationToken)
         {
             await _compliance.LinkAsync(projectId, requirementId, workItemId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // POST /Projects/UnlinkRequirement: the link is kept as history
@@ -471,7 +494,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> UnlinkRequirement(Guid projectId, Guid linkId, string? sub, CancellationToken cancellationToken)
         {
             await _compliance.UnlinkAsync(projectId, linkId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // POST /Projects/MarkNotApplicable: US-043 R5. The reason is required.
@@ -482,7 +505,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> MarkNotApplicable(Guid projectId, Guid requirementId, string? reason, string? sub, Guid? riskId, CancellationToken cancellationToken)
         {
             await _compliance.MarkNotApplicableAsync(projectId, requirementId, reason ?? "", cancellationToken, riskId);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // POST /Projects/MarkApplicable: US-043 R5
@@ -492,7 +515,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> MarkApplicable(Guid projectId, Guid requirementId, string? sub, CancellationToken cancellationToken)
         {
             await _compliance.MarkApplicableAsync(projectId, requirementId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // POST /Projects/ConfirmReview: US-110 R5
@@ -502,7 +525,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> ConfirmReview(Guid projectId, Guid requirementId, string? sub, string? show, CancellationToken cancellationToken)
         {
             await _compliance.ConfirmReviewAsync(projectId, requirementId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub, show });
+            return BackToCompliance(projectId, sub, show);
         }
 
         // ---------------------------------------------------------- Evidence (US-057)
@@ -536,7 +559,7 @@ namespace ComplianceTracker.Web.Controllers
                 await _compliance.AddEvidenceLinkAsync(projectId, requirementId, title ?? "", url ?? "", validUntil, cancellationToken);
             }
 
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // POST /Projects/RemoveEvidence: R5, kept as history. US-059: off this requirement; removed when it proved nothing else.
@@ -546,7 +569,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> RemoveEvidence(Guid projectId, Guid evidenceId, Guid requirementId, string? sub, CancellationToken cancellationToken)
         {
             await _compliance.RemoveEvidenceAsync(projectId, evidenceId, requirementId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // POST /Projects/LinkExistingEvidence: US-059, "Pick existing evidence" on a Compliance tab row
@@ -556,7 +579,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> LinkExistingEvidence(Guid projectId, Guid requirementId, Guid evidenceId, string? sub, CancellationToken cancellationToken)
         {
             await _compliance.LinkExistingEvidenceAsync(projectId, requirementId, evidenceId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // ---------------------------------------------------------- Evidence suggestions (US-058)
@@ -591,7 +614,7 @@ namespace ComplianceTracker.Web.Controllers
             Guid projectId, Guid suggestionId, string? sub, [FromServices] EvidenceSuggestionService suggestions, CancellationToken cancellationToken)
         {
             await suggestions.AcceptAsync(projectId, suggestionId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // POST /Projects/RejectSuggestedEvidence: R5, with a reason
@@ -602,7 +625,7 @@ namespace ComplianceTracker.Web.Controllers
             Guid projectId, Guid suggestionId, string? reason, string? sub, [FromServices] EvidenceSuggestionService suggestions, CancellationToken cancellationToken)
         {
             await suggestions.RejectAsync(projectId, suggestionId, reason, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // ---------------------------------------------------------- Evidence tab (US-059)
@@ -703,7 +726,7 @@ namespace ComplianceTracker.Web.Controllers
         private RedirectToActionResult BackFromSuggestion(Guid projectId, string? sub)
             => sub is null
                 ? RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence })
-                : RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+                : BackToCompliance(projectId, sub);
 
         // POST /Projects/UndoEvidenceRejection, UndoStoryRejection: US-145 R6, the pair can be suggested again
         [HttpPost]
@@ -721,7 +744,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> UndoStoryRejection(Guid projectId, Guid suggestionId, string? sub, [FromServices] Application.Ai.MappingSuggestionService mappings, CancellationToken cancellationToken)
         {
             await mappings.UndoRejectionAsync(projectId, suggestionId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // POST /Projects/CheckEvidence: US-038 R1, R8. ConfirmEvidenceCheck, OverruleEvidenceCheck: R2.
@@ -733,7 +756,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] EvidenceCheckService checks, CancellationToken cancellationToken)
         {
             await checks.CheckAsync(projectId, evidenceId, requirementId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         [HttpPost]
@@ -742,7 +765,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> ConfirmEvidenceCheck(Guid projectId, Guid checkId, string? sub, [FromServices] EvidenceCheckService checks, CancellationToken cancellationToken)
         {
             await checks.ConfirmAsync(projectId, checkId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         [HttpPost]
@@ -752,7 +775,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] EvidenceCheckService checks, CancellationToken cancellationToken)
         {
             await checks.OverruleAsync(projectId, checkId, verdict, reason, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // POST /Projects/AskTheAi: US-106 R1–R3, about one requirement
@@ -764,7 +787,7 @@ namespace ComplianceTracker.Web.Controllers
         {
             var result = await ai.AskAboutRequirementAsync(projectId, requirementId, cancellationToken);
             TempData["ApplicabilityMessage"] = result.Summary;
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // POST /Projects/AcceptStoryDraft: US-106 R4, with the person's changes
@@ -780,7 +803,7 @@ namespace ComplianceTracker.Web.Controllers
                 ? $"\"{draft.Title}\" is accepted. Add it to the project's requirements; it is linked when it comes in."
                 : $"\"{draft.Title}\" is accepted. Create the issue in GitHub; it is linked to the requirement at the next sync.";
             TempData["NewIssueAddress"] = address;
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // POST /Projects/DiscardStoryDraft: US-106 R6
@@ -790,7 +813,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> DiscardStoryDraft(Guid projectId, Guid draftId, string? reason, string? sub, [FromServices] Application.Ai.AskTheAiService ai, CancellationToken cancellationToken)
         {
             await ai.DiscardDraftAsync(projectId, draftId, reason, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // POST /Projects/RejectEvidenceSuggestion: R4, with a reason
@@ -1502,7 +1525,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> SuggestForNotCovered(Guid projectId, Guid frameworkId, string? sub, CancellationToken cancellationToken)
         {
             await _suggestions.SuggestForNotCoveredAsync(projectId, frameworkId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // ---------------------------------------------------------- Not applicable, suggested by the AI (US-060, US-061)
@@ -1519,7 +1542,7 @@ namespace ComplianceTracker.Web.Controllers
             TempData["ApplicabilityMessage"] = made == 0
                 ? "The AI found no requirement that clearly does not apply"
                 : $"The AI suggests {made} {(made == 1 ? "requirement" : "requirements")} as not applicable. Accept or reject each one.";
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // POST /Projects/AcceptApplicability: US-060 R6, R8. The reason can be edited before it is accepted.
@@ -1531,7 +1554,7 @@ namespace ComplianceTracker.Web.Controllers
             CancellationToken cancellationToken)
         {
             await applicability.AcceptAsync(projectId, suggestionId, reason, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // POST /Projects/RejectApplicability: US-060 R8
@@ -1542,7 +1565,7 @@ namespace ComplianceTracker.Web.Controllers
             Guid projectId, Guid suggestionId, string? sub, [FromServices] ApplicabilitySuggestionService applicability, CancellationToken cancellationToken)
         {
             await applicability.RejectAsync(projectId, suggestionId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // POST /Projects/KeepNotApplicable: US-061 R3
@@ -1552,7 +1575,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> KeepNotApplicable(Guid projectId, Guid requirementId, string? sub, CancellationToken cancellationToken)
         {
             await _compliance.KeepNotApplicableAsync(projectId, requirementId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub });
+            return BackToCompliance(projectId, sub);
         }
 
         // POST /Projects/ApproveSuggestion: US-020 R6. US-044 R5: decided on the Compliance tab, back to the same view.
@@ -1562,7 +1585,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> ApproveSuggestion(Guid projectId, Guid suggestionId, string? sub, string? show, CancellationToken cancellationToken)
         {
             await _suggestions.ApproveAsync(projectId, suggestionId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub, show = string.IsNullOrEmpty(show) ? null : show });
+            return BackToCompliance(projectId, sub, show);
         }
 
         // POST /Projects/RejectSuggestion: US-020 R7. An unknown reason binds as null and is refused by the domain.
@@ -1573,7 +1596,7 @@ namespace ComplianceTracker.Web.Controllers
             Guid projectId, Guid suggestionId, RejectionReason? reason, string? comment, string? sub, string? show, CancellationToken cancellationToken)
         {
             await _suggestions.RejectAsync(projectId, suggestionId, reason, comment, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Compliance, sub, show = string.IsNullOrEmpty(show) ? null : show });
+            return BackToCompliance(projectId, sub, show);
         }
 
         // ---------------------------------------------------------- Editing (US-024)

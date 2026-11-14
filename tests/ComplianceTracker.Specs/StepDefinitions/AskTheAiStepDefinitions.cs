@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ComplianceTracker.Specs.StepDefinitions
 {
     // US-106: "Ask the AI" on a requirement row, the story draft, and "Suggest measures" on a risk, through the pages like a
-    // user. UI contract: Views/Projects/_RequirementRow.cshtml (form.ask-the-ai, .ai-suggestion[data-story],
+    // user. UI contract: Views/Projects/_RequirementPage.cshtml (form.ask-the-ai, .ai-suggestion[data-story],
     // .ai-evidence-suggestion[data-evidence] with form.approve-row-evidence-suggestion, .story-draft[data-title] with
     // form.accept-story-draft and form.discard-story-draft), _ComplianceTab.cshtml (#new-issue-address) and
     // Views/Risks/Details.cshtml (form#suggest-measures, .measure-suggestion[data-measure] with form.approve-measure).
@@ -146,7 +146,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // ---------------------------------------------------------- Helpers
 
         private IElement Row(string code)
-            => _web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']")
+            => RequirementRowLookup.Find(_web, code)
                ?? throw new Xunit.Sdk.XunitException($"The Compliance tab has no row '{code}'.");
 
         private IElement Draft() => Row(_code!).QuerySelector(".story-draft") ?? throw new Xunit.Sdk.XunitException("No draft.");

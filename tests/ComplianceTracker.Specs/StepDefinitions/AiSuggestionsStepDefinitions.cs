@@ -250,7 +250,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
             foreach (var href in _web.Page!.QuerySelectorAll("#compliance-tabs a[data-sub]:not([data-sub='all'])").Select(a => a.GetAttribute("href")!).ToList())
             {
                 await _web.OpenAsync(href);
-                found.AddRange(_web.Page!.QuerySelectorAll(".ai-suggestion").Where(s => s.GetAttribute("data-story") == story));
+                // US-153: the suggestions are on each requirement's page
+                found.AddRange((await RequirementRowLookup.SuggestionsAsync(_web)).Where(s => s.GetAttribute("data-story") == story));
             }
 
             return found;

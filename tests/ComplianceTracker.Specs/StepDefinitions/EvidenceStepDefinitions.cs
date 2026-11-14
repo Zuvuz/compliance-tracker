@@ -186,7 +186,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         private IElement Row(string code)
-            => _web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']")
+            => RequirementRowLookup.Find(_web, code)
                ?? throw new Xunit.Sdk.XunitException($"The page {_web.CurrentPath} lists no requirement '{code}'.");
 
         private IElement Evidence(string code, string title)

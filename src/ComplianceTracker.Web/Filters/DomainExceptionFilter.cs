@@ -75,7 +75,11 @@ namespace ComplianceTracker.Web.Filters
                 {
                     id,
                     tab = target.Tab,
-                    sub = target.SubFrom is not null && context.ActionArguments.TryGetValue(target.SubFrom, out var sub) ? sub : null
+                    sub = target.SubFrom is not null && context.ActionArguments.TryGetValue(target.SubFrom, out var sub) ? sub : null,
+                    // US-153 R6: the requirement's page the form came from
+                    req = target.Tab == Models.ProjectTabs.Compliance && context.HttpContext.Request.HasFormContentType
+                        ? Models.RequirementPages.Clean(context.HttpContext.Request.Form["req"])
+                        : null
                 }
                 : null;
             executed.Result = controller.RedirectToAction(target.Action, target.Controller, routeValues);

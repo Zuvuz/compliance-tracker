@@ -17,21 +17,21 @@ namespace ComplianceTracker.Specs.Features
     
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "3.0.0.0")]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public partial class FoldEvidenceCardsAndRequirementRowsFeature : object, global::Xunit.IClassFixture<FoldEvidenceCardsAndRequirementRowsFeature.FixtureData>, global::Xunit.IAsyncLifetime
+    public partial class FoldEvidenceCardsFeature : object, global::Xunit.IClassFixture<FoldEvidenceCardsFeature.FixtureData>, global::Xunit.IAsyncLifetime
     {
         
         private global::Reqnroll.ITestRunner testRunner;
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Fold evidence cards and requirement rows", "", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Fold evidence cards", "", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
         private global::Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
 #line 1 "Folding.feature"
 #line hidden
         
-        public FoldEvidenceCardsAndRequirementRowsFeature(FoldEvidenceCardsAndRequirementRowsFeature.FixtureData fixtureData, global::Xunit.Abstractions.ITestOutputHelper testOutputHelper)
+        public FoldEvidenceCardsFeature(FoldEvidenceCardsFeature.FixtureData fixtureData, global::Xunit.Abstractions.ITestOutputHelper testOutputHelper)
         {
             this._testOutputHelper = testOutputHelper;
         }
@@ -129,7 +129,7 @@ namespace ComplianceTracker.Specs.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Folding.feature.ndjson", 6);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Folding.feature.ndjson", 4);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -158,7 +158,7 @@ namespace ComplianceTracker.Specs.Features
         }
         
         [global::Xunit.SkippableFactAttribute(DisplayName="An evidence card can be folded and says what it proves")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Fold evidence cards and requirement rows")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Fold evidence cards")]
         [global::Xunit.TraitAttribute("Description", "An evidence card can be folded and says what it proves")]
         [global::Xunit.TraitAttribute("Category", "integration")]
         public async global::System.Threading.Tasks.Task AnEvidenceCardCanBeFoldedAndSaysWhatItProves()
@@ -198,7 +198,7 @@ namespace ComplianceTracker.Specs.Features
         }
         
         [global::Xunit.SkippableFactAttribute(DisplayName="An evidence card with AI suggestions waiting is never folded by itself")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Fold evidence cards and requirement rows")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Fold evidence cards")]
         [global::Xunit.TraitAttribute("Description", "An evidence card with AI suggestions waiting is never folded by itself")]
         [global::Xunit.TraitAttribute("Category", "integration")]
         public async global::System.Threading.Tasks.Task AnEvidenceCardWithAISuggestionsWaitingIsNeverFoldedByItself()
@@ -236,90 +236,6 @@ namespace ComplianceTracker.Specs.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="A requirement row can be folded and says what it has")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Fold evidence cards and requirement rows")]
-        [global::Xunit.TraitAttribute("Description", "A requirement row can be folded and says what it has")]
-        [global::Xunit.TraitAttribute("Category", "integration")]
-        public async global::System.Threading.Tasks.Task ARequirementRowCanBeFoldedAndSaysWhatItHas()
-        {
-            string[] tagsOfScenario = new string[] {
-                    "integration"};
-            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "2";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A requirement row can be folded and says what it has", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
-            string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 28
-  this.ScenarioInitialize(scenarioInfo, ruleInfo);
-#line hidden
-            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
-            {
-                await testRunner.SkipScenarioAsync();
-            }
-            else
-            {
-                await this.ScenarioStartAsync();
-#line 7
-  await this.FeatureBackgroundAsync();
-#line hidden
-#line 29
-    await testRunner.GivenAsync("the project \"Acme Portal\" has the user story \"[US-004] Sign in\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-#line hidden
-#line 30
-    await testRunner.AndAsync("the user story \"[US-004] Sign in\" is linked to the requirement \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-#line 31
-    await testRunner.WhenAsync("I open the \"CRA\" sub-tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
-#line 32
-    await testRunner.ThenAsync("the row \"I.2(d)\" can be folded, with the summary \"1 story · 0 evidence\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-#line hidden
-#line 33
-    await testRunner.AndAsync("the row \"I.2(d)\" does not need attention", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-            }
-            await this.ScenarioCleanupAsync();
-        }
-        
-        [global::Xunit.SkippableFactAttribute(DisplayName="A requirement row with failing tests is never folded by itself")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Fold evidence cards and requirement rows")]
-        [global::Xunit.TraitAttribute("Description", "A requirement row with failing tests is never folded by itself")]
-        [global::Xunit.TraitAttribute("Category", "integration")]
-        public async global::System.Threading.Tasks.Task ARequirementRowWithFailingTestsIsNeverFoldedByItself()
-        {
-            string[] tagsOfScenario = new string[] {
-                    "integration"};
-            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "3";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A requirement row with failing tests is never folded by itself", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
-            string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 36
-  this.ScenarioInitialize(scenarioInfo, ruleInfo);
-#line hidden
-            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
-            {
-                await testRunner.SkipScenarioAsync();
-            }
-            else
-            {
-                await this.ScenarioStartAsync();
-#line 7
-  await this.FeatureBackgroundAsync();
-#line hidden
-#line 37
-    await testRunner.WhenAsync("I upload test results where 2 scenarios tagged \"@cra-I.2(d)\" passed and 1 failed", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
-#line 38
-    await testRunner.AndAsync("I open the \"CRA\" sub-tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-#line 39
-    await testRunner.ThenAsync("the row \"I.2(d)\" needs attention", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-#line hidden
-            }
-            await this.ScenarioCleanupAsync();
-        }
-        
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "3.0.0.0")]
         [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
         public class FixtureData : object, global::Xunit.IAsyncLifetime
@@ -327,12 +243,12 @@ namespace ComplianceTracker.Specs.Features
             
             async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
             {
-                await FoldEvidenceCardsAndRequirementRowsFeature.FeatureSetupAsync();
+                await FoldEvidenceCardsFeature.FeatureSetupAsync();
             }
             
             async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.DisposeAsync()
             {
-                await FoldEvidenceCardsAndRequirementRowsFeature.FeatureTearDownAsync();
+                await FoldEvidenceCardsFeature.FeatureTearDownAsync();
             }
         }
     }
