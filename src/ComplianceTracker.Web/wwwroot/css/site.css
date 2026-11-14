@@ -257,13 +257,13 @@ main {
 .tree-depth-6 { padding-left: 8rem !important; }
 
 /* US-144: a requirement row. Folded, it is one short line (R9); the groups and the box for decisions when open (R1, R3). */
-tr.requirement-row.row-folded .row-detail,
-tr.requirement-row.row-folded .requirement-description { display: none !important; }
-tr.requirement-row .row-folded-only { display: none; }
-tr.requirement-row.row-folded .row-folded-only { display: inline-block; }
-tr.requirement-row.row-folded > td { padding-top: .35rem; padding-bottom: .35rem; }
-tr.requirement-row.row-folded .requirement-title .fw-semibold { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 32rem; }
-tr.requirement-row.row-target > td { background-color: var(--bs-warning-bg-subtle); }
+/* US-153: the Compliance tab's light overview; the whole title is the link to the requirement's page */
+.requirements-overview a.requirement-open:hover { text-decoration: underline !important; }
+/* US-153: the requirement's own page; "More" opens a small menu of the other actions */
+.requirement-more > summary { list-style: none; }
+.requirement-more > summary::-webkit-details-marker { display: none; }
+.requirement-more[open] > .requirement-more-menu { min-width: 16rem; background-color: var(--bs-body-bg); }
+.requirement-page .requirement-text { max-width: 60rem; }
 .row-group-title { margin-bottom: .15rem; }
 .row-item { padding: .15rem 0; }
 .item-source { font-size: .78rem; }

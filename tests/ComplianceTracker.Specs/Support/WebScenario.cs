@@ -43,6 +43,9 @@ namespace ComplianceTracker.Specs.Support
         // Started the first time it is used, after "Given an empty database" has set the connection string
         public TestApp App => _app ??= TestApp.WithTestSignIn(_database.ConnectionString, _clock, github: _github, ai: _ai, race: _race, exploited: _exploited);
 
+        // US-153: another member who browses on from the page they opened (e.g. an auditor who opens a requirement)
+        public HttpClient? Viewer { get; set; }
+
         // The client follows redirects and remembers cookies, like a browser
         public HttpClient Client => _client ??= App.Factory.CreateClient();
 
@@ -82,7 +85,7 @@ namespace ComplianceTracker.Specs.Support
         // Opens a page, like typing the address in the browser
         public async Task OpenAsync(string path)
         {
-            Response = await Client.GetAsync(path);
+            Response = await (Viewer ?? Client).GetAsync(path);
             Page = await ParseAsync(Response);
         }
 

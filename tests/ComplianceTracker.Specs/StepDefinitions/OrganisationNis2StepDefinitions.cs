@@ -193,7 +193,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Then("the requirement {string} is titled {string}")]
         public void ThenTheRequirementIsTitled(string code, string title)
         {
-            var cell = Row(code).QuerySelector(".requirement-title")!;
+            // US-153: the title as the overview shows it, in the page's language
+            var cell = (RequirementRowLookup.ListRow(_web, code) ?? Row(code)).QuerySelector(".requirement-title")!;
             Assert.StartsWith(title, cell.TextContent.Trim(), StringComparison.Ordinal);
             Assert.Null(cell.QuerySelector(".not-translated"));
         }
@@ -232,7 +233,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         private AngleSharp.Dom.IElement Row(string code)
-            => _web.Page!.QuerySelectorAll("tr.requirement-row").FirstOrDefault(r => r.GetAttribute("data-code") == code)
+            => RequirementRowLookup.Find(_web, code)
                ?? throw new Xunit.Sdk.XunitException($"No requirement '{code}' on {_web.CurrentPath}.");
 
         private async Task<Guid> AreaIdAsync()

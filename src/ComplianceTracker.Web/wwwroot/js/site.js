@@ -10,15 +10,12 @@ document.querySelectorAll("[data-percent]").forEach(bar => {
     bar.style.width = `${Number.isFinite(percent) ? Math.min(Math.max(percent, 0), 100) : 0}%`;
 });
 
-// #52: evidence cards and requirement rows can be folded and opened again. The choice is remembered in this browser only
+// #52: evidence cards can be folded and opened again (requirement rows no longer fold since US-153). The choice is remembered in this browser only
 // (nothing in the database). A part that needs attention (data-attention="true") is never folded by a remembered choice.
 // Without JavaScript the buttons stay hidden and everything is open.
 (() => {
     const read = key => { try { return localStorage.getItem(key); } catch { return null; } };
     const write = (key, folded) => { try { folded ? localStorage.setItem(key, "1") : localStorage.removeItem(key); } catch { /* private window */ } };
-
-    // US-144 R10: every requirement row, so "Fold all" and "Open all" can reach them
-    const rows = [];
 
     document.querySelectorAll("[data-fold-key]").forEach(part => {
         const name = part.dataset.foldKey;
@@ -26,13 +23,10 @@ document.querySelectorAll("[data-percent]").forEach(bar => {
         const toggle = [...document.querySelectorAll("[data-fold-target]")].find(t => t.dataset.foldTarget === name);
         const summary = [...document.querySelectorAll("[data-fold-summary]")].find(s => s.dataset.foldSummary === name);
         const attention = part.closest("[data-attention='true']") !== null;
-        // US-144 R9: a folded requirement row becomes one short line (site.css hides .row-detail)
-        const row = part.closest("tr.requirement-row");
 
         const show = folded => {
             part.hidden = folded;
             if (summary) summary.hidden = !folded;
-            if (row) row.classList.toggle("row-folded", folded);
             if (toggle) {
                 toggle.textContent = folded ? "Open" : "Fold";
                 toggle.setAttribute("aria-expanded", String(!folded));
@@ -48,22 +42,7 @@ document.querySelectorAll("[data-percent]").forEach(bar => {
                 write(key, folded);
             });
         }
-
-        if (row) rows.push({ show, key, attention });
     });
-
-    // US-144 R10: a row that waits for a decision (or that the address points at) is not folded by "Fold all"
-    const foldAll = document.getElementById("fold-all");
-    const openAll = document.getElementById("open-all");
-    if (rows.length > 0 && foldAll && openAll) {
-        foldAll.hidden = openAll.hidden = false;
-        foldAll.addEventListener("click", () => rows.filter(r => !r.attention).forEach(r => { r.show(true); write(r.key, true); }));
-        openAll.addEventListener("click", () => rows.forEach(r => { r.show(false); write(r.key, false); }));
-    }
-
-    // US-144 R12: the requirement in the address is scrolled to
-    const target = document.querySelector("tr.requirement-row[data-open='true']");
-    if (target) target.scrollIntoView({ block: "center" });
 })();
 
 

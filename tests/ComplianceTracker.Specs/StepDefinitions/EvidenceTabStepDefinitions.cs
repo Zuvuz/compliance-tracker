@@ -272,7 +272,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             => Item(title).QuerySelectorAll(".evidence-suggestion").FirstOrDefault(s => s.GetAttribute("data-code") == code);
 
         private IElement Row(string code)
-            => _web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']")
+            => RequirementRowLookup.Find(_web, code)
                ?? throw new Xunit.Sdk.XunitException($"The page lists no requirement '{code}'.");
 
         private static Dictionary<string, string> HiddenFields(IElement form)

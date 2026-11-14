@@ -1,0 +1,730 @@
+@* US-153: one requirement's own page (its address is US-144 R12, e.g. /Projects/Details/{id}/compliance/cra/I.2(d)).
+   The Compliance tab is a light overview (_RequirementSummaryRow.cshtml); every action on a requirement is here, and
+   after it this page is shown again (the forms send "req"). Layout: back link, a header with code, title, status and
+   one primary action ("Add evidence"), the requirement's text, then user stories, evidence, and what waits for a
+   decision. "More" holds Ask the AI and Not applicable.
+   Ids and classes used by the tests: article.requirement-row.requirement-page[data-code] (data-detail="true"),
+   #back-to-requirements, #primary-action, #requirement-more, and the classes of the earlier stories, kept as they
+   were on the row: requirement-code, requirement-title, linked-story, unlink-requirement, evidence, evidence-title,
+   evidence-sha256, remove-evidence, ai-suggestion, approve-suggestion, reject-suggestion, suggested-evidence,
+   applicability-suggestion, add-evidence, pick-evidence, link-requirement, mark-not-applicable, requirement-status,
+   .row-group[data-group=stories|evidence|waiting] with .row-group-count, .item-source, .story-state, .not-applicable-risk. *@
+@model RequirementRowModel
+@using ComplianceTracker.Application.Compliance
+@{
+    var project = Model.Project;
+    var row = Model.Row;
+    var requirement = row.Requirement;
+    var framework = Model.Framework;
+    // The forms go back to this requirement's framework; "req" brings them back to this page (R4)
+    var sub = FrameworkNames.Slug(framework.Framework.Name);
+    var text = requirement.Show(Model.Language); // US-142 R8
+    var linkable = Model.OpenStories.Where(w => row.Links.All(l => l.WorkItem.Id != w.Id)).ToList();
+    var canLinkHere = !project.IsClosed && Model.CanLink && linkable.Count > 0 && row.IsApplicable;
+    var canAddEvidence = !project.IsClosed && Model.CanLink && row.IsApplicable;
+    var canMarkHere = !project.IsClosed && Model.CanDecide && row.IsApplicable;
+    var waiting = RequirementRows.Waiting(row);
+    // The page has room for the text; only a very long one is behind "more"
+    const int ShortDescription = 1200;
+}
+<article class="requirement-row requirement-page @(row.IsApplicable ? "" : "not-applicable")" id="req-@requirement.Id" data-detail="true"
+         data-code="@requirement.Code" data-group="@requirement.Group" data-id="@requirement.Id" data-kind="@requirement.Kind">
+    <nav class="small mb-2" aria-label="Back">
+        @* req = "" so the link does not keep this page's code from the current address *@
+        <a id="back-to-requirements" href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Compliance, sub = Model.Sub ?? sub, req = "" })">‹ All @FrameworkNames.Short(framework.Framework.Name) requirements</a>
+        @if (requirement.Group is not null)
+        {
+            <span class="text-muted"> · @requirement.Group</span>
+        }
+    </nav>
+
+    <header class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3 requirement-header">
+        <div class="flex-grow-1">
+            <div class="requirement-code text-muted">@requirement.Code</div>
+            <h2 class="h4 mb-2 requirement-title">
+                @text.Title
+                @if (requirement.IsRecommendation)
+                {
+                    @* US-143 R6 *@
+                    <span class="badge text-bg-secondary recommended" title="A recommendation (&quot;should&quot;). It does not count in the coverage.">Recommended</span>
+                }
+                else if (requirement.Kind == ComplianceTracker.Domain.Frameworks.RequirementKind.Characteristic)
+                {
+                    <span class="badge text-bg-light border characteristic" title="A characteristic of a quality model">Characteristic</span>
+                }
+            </h2>
+            <div class="requirement-state">
+            @if (!row.IsApplicable)
+            {
+                @* US-043 R5, R6 *@
+                <span class="requirement-status badge text-bg-secondary">Not applicable</span>
+                <div class="small not-applicable-reason text-wrap">@row.NotApplicableReason</div>
+                @if (row.NotApplicableRisk is { } justifying)
+                {
+                    @* R14 *@
+                    <div class="small not-applicable-risk text-wrap">Risk: <a asp-controller="Risks" asp-action="Details" asp-route-id="@justifying.Id">@justifying.Title</a> (@justifying.Level)</div>
+                }
+                <div class="row-detail">
+                    @if (row.NotApplicableFromOldClassification)
+                    {
+                        @* US-061 R3 *@
+                        <div class="small text-warning-emphasis old-classification">Based on an earlier classification</div>
+                        @if (!project.IsClosed && Model.CanDecide)
+                        {
+                            <form asp-action="KeepNotApplicable" method="post" class="keep-not-applicable">
+                                <input type="hidden" name="projectId" value="@project.Id" />
+                                <input type="hidden" name="requirementId" value="@requirement.Id" />
+                                <input type="hidden" name="sub" value="@sub" />
+                                <input type="hidden" name="req" value="@requirement.Code" />
+                                <button type="submit" class="btn btn-sm btn-link p-0">Still not applicable</button>
+                            </form>
+                        }
+                    }
+                    @if (!project.IsClosed && Model.CanDecide)
+                    {
+                        <form asp-action="MarkApplicable" method="post" class="mark-applicable">
+                            <input type="hidden" name="projectId" value="@project.Id" />
+                            <input type="hidden" name="requirementId" value="@requirement.Id" />
+                            <input type="hidden" name="sub" value="@sub" />
+                            <input type="hidden" name="req" value="@requirement.Code" />
+                            <button type="submit" class="btn btn-sm btn-link p-0">Make applicable</button>
+                        </form>
+                    }
+                </div>
+            }
+            else if (row.IsCoveredNeedingReview)
+            {
+                @* US-110 R3 *@
+                <span class="requirement-status badge text-bg-warning">Covered, needs review</span>
+            }
+            else if (row.IsCovered)
+            {
+                <span class="requirement-status badge text-bg-success">Covered</span>
+                @if (row.CoveredThrough is { } through)
+                {
+                    @* US-142 R6 *@
+                    <div class="small text-muted covered-through">through @through</div>
+                }
+                @if (!row.HasEvidence)
+                {
+                    @* US-057 R4 *@
+                    <div><span class="evidence-status badge text-bg-warning mt-1">No evidence</span></div>
+                }
+            }
+            else
+            {
+                <span class="requirement-status badge text-bg-danger">Not covered</span>
+            }
+            </div>
+        </div>
+        <div class="d-flex flex-wrap align-items-start gap-2">
+            @if (canAddEvidence || canMarkHere)
+            {
+                @* R5: the other actions under "More" *@
+                <details class="requirement-more" id="requirement-more">
+                    <summary class="btn btn-outline-secondary">More</summary>
+                    <div class="requirement-more-menu border rounded p-2 mt-1 d-flex flex-column gap-2">
+                                @if (canAddEvidence)
+                                {
+                                    @* US-106 R1: ask the AI about this requirement only *@
+                                    <form asp-action="AskTheAi" method="post" class="ask-the-ai">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="requirementId" value="@requirement.Id" />
+                                        <input type="hidden" name="sub" value="@sub" />
+                                        <input type="hidden" name="req" value="@requirement.Code" />
+                                        <button type="submit" class="btn btn-sm btn-outline-info py-0" title="The local AI looks for stories and evidence that meet this requirement, and drafts a story when nothing does.">Ask the AI</button>
+                                    </form>
+                                }
+                                @if (canMarkHere)
+                                {
+                                    <details>
+                                        <summary class="btn btn-sm btn-outline-secondary py-0">Not applicable</summary>
+                                        <form asp-action="MarkNotApplicable" method="post" class="d-flex flex-column gap-1 mt-1 mark-not-applicable">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="requirementId" value="@requirement.Id" />
+                                            <input type="hidden" name="sub" value="@sub" />
+                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <input name="reason" class="form-control form-control-sm" placeholder="Reason, e.g. from the risk assessment" aria-label="Why @requirement.Code does not apply" />
+                                            @if (Model.ProjectRisks.Count > 0)
+                                            {
+                                                @* R14: a risk as the justification (CRA Art. 13(3)) *@
+                                                <select name="riskId" class="form-select form-select-sm" aria-label="Risk that justifies it">
+                                                    <option value="">No risk named</option>
+                                                    @foreach (var risk in Model.ProjectRisks)
+                                                    {
+                                                        <option value="@risk.Id">@risk.Title (@risk.Level)</option>
+                                                    }
+                                                </select>
+                                            }
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary align-self-start">Mark</button>
+                                        </form>
+                                    </details>
+                                }
+                    </div>
+                </details>
+            }
+            @if (canAddEvidence)
+            {
+                @* R5: the one primary action *@
+                <a class="btn btn-primary" id="primary-action" href="#add-evidence-section">Add evidence</a>
+            }
+        </div>
+    </header>
+
+    @if (TempData["NewIssueAddress"] is string newIssue)
+    {
+        @* US-106 R4: GitHub's "new issue" page, filled in from the accepted draft *@
+        <p><a class="small" id="new-issue-address" href="@newIssue" target="_blank" rel="noopener noreferrer">Create the issue in GitHub</a></p>
+    }
+    @if (TempData["ApplicabilityMessage"] is string applicabilityMessage)
+    {
+        <p class="small text-muted" id="applicability-message" role="status">@applicabilityMessage</p>
+    }
+
+    <section class="requirement-text mb-3">
+                @* R5: the risks and other facts as small tags *@
+                <div class="d-flex flex-wrap gap-1 my-1">
+                    @if (row.HighRisk)
+                    {
+                        @* US-060 R4 *@
+                        <span class="badge text-bg-danger high-risk" title="Named by a measure of an open High or Critical risk">High risk</span>
+                    }
+                    @if (!text.Translated && Model.HasTranslations)
+                    {
+                        <span class="badge text-bg-light border not-translated" title="Shown in English">Not translated yet</span>
+                    }
+                </div>
+                @if (row.Risks.Count > 0)
+                {
+                    @* US-124 R2: the open risks that reach this requirement *@
+                    <div class="small requirement-risks d-flex flex-wrap gap-1 mb-1">
+                        @foreach (var risk in row.Risks)
+                        {
+                            <span class="badge rounded-pill text-bg-light border fw-normal">Risk: <a class="requirement-risk text-decoration-none" asp-controller="Risks" asp-action="Details" asp-route-id="@risk.Id">@risk.Title</a> · @risk.Level</span>
+                        }
+                    </div>
+                }
+                @if (Model.ImplementsName is not null && requirement.Implements is not null)
+                {
+                    @* US-142 R6 *@
+                    <div class="small text-muted requirement-implements">Implements @Model.ImplementsName @requirement.Implements</div>
+                }
+                @if (!string.IsNullOrEmpty(text.Description))
+                {
+                    @* R5: the text behind one line *@
+                    if (text.Description.Length <= ShortDescription)
+                    {
+                        <div class="small text-muted">@text.Description</div>
+                    }
+                    else
+                    {
+                        <details class="small text-muted requirement-description">
+                            <summary>@text.Description[..ShortDescription].TrimEnd()…</summary>
+                            @text.Description
+                        </details>
+                    }
+                }
+                @if (requirement.Reference is not null)
+                {
+                    @* US-043 R7 *@
+                    <a class="official-text small" href="@requirement.Reference" target="_blank" rel="noopener noreferrer">Official text</a>
+                }
+            @if (row.NeedsReview)
+            {
+                @* US-110 R4, R5 *@
+                <div class="needs-review small mt-2 border-start border-warning ps-2 text-wrap row-detail">
+                    <div class="fw-semibold">The text changed in this version</div>
+                    @if (row.PreviousRequirement is { } previous)
+                    {
+                        <div class="previous-text text-muted"><span class="text-decoration-line-through">@previous.Title@(string.IsNullOrEmpty(previous.Description) ? "" : ": " + previous.Description)</span></div>
+                    }
+                    <div class="current-text">@requirement.Title@(string.IsNullOrEmpty(requirement.Description) ? "" : ": " + requirement.Description)</div>
+                    @if (!project.IsClosed && Model.CanLink && (!row.NotApplicableNeedsReview || Model.CanDecide))
+                    {
+                        <form asp-action="ConfirmReview" method="post" class="confirm-review mt-1">
+                            <input type="hidden" name="projectId" value="@project.Id" />
+                            <input type="hidden" name="requirementId" value="@requirement.Id" />
+                            <input type="hidden" name="sub" value="@sub" />
+                            <input type="hidden" name="req" value="@requirement.Code" />
+                            <input type="hidden" name="show" value="@Model.ShowFilter" />
+                            <button type="submit" class="btn btn-sm btn-outline-success">Still correct</button>
+                        </form>
+                    }
+                </div>
+            }
+    </section>
+
+    <div class="row g-3 row-groups">
+        <section class="col-lg-6" aria-label="User stories">
+            <div class="card h-100"><div class="card-body">
+                @if (row.Links.Count == 0)
+                {
+                    <div class="row-group-title small text-muted">User stories (0)</div>
+                    <p class="small text-muted mb-0 no-stories">No user story is linked yet</p>
+                }
+                @if (row.Links.Count > 0)
+                {
+                    @* R1, R2, R7: the user stories, each with its state and where it came from *@
+                    <div class="row-group mb-2" data-group="stories">
+                        <div class="row-group-title small text-muted">User stories (<span class="row-group-count">@row.Links.Count</span>)</div>
+                        @foreach (var link in row.Links)
+                        {
+                            var state = RequirementRows.StoryState(link.WorkItem.State);
+                            <div class="row-item d-flex align-items-start gap-1">
+                                <div class="flex-grow-1">
+                                    <a class="linked-story" href="@link.WorkItem.Url" target="_blank" rel="noopener noreferrer">@link.WorkItem.Title</a>
+                                    <div class="small text-muted item-source">@RequirementRows.StorySource(link, Model.NameOf)</div>
+                                </div>
+                                <span class="badge story-state @(state == "Done" ? "text-bg-success" : state == "Open" ? "text-bg-light border" : "text-bg-secondary")">@state</span>
+                                @if (link.Link.NeedsReview)
+                                {
+                                    <span class="badge text-bg-warning review-pending">Review</span>
+                                }
+                                @if (!project.IsClosed && Model.CanLink)
+                                {
+                                    @* R8: removing is in a small menu, not a bare × *@
+                                    <details class="item-menu">
+                                        <summary class="btn btn-sm btn-link p-0 text-muted" aria-label="More for @link.WorkItem.Title">⋯</summary>
+                                        <form asp-action="UnlinkRequirement" method="post" class="unlink-requirement mt-1" data-confirm="The story is no longer linked to @requirement.Code.">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="linkId" value="@link.LinkId" />
+                                            <input type="hidden" name="sub" value="@sub" />
+                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Remove link to @link.WorkItem.Title">Remove link</button>
+                                        </form>
+                                    </details>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            @if (canLinkHere)
+            {
+                <h3 class="h6 mt-3 mb-1">Link a user story</h3>
+                    <form asp-action="LinkRequirement" method="post" class="d-flex gap-1 mt-1 link-requirement">
+                        <input type="hidden" name="projectId" value="@project.Id" />
+                        <input type="hidden" name="requirementId" value="@requirement.Id" />
+                        <input type="hidden" name="sub" value="@sub" />
+                        <input type="hidden" name="req" value="@requirement.Code" />
+                        <select name="workItemId" class="form-select form-select-sm" aria-label="User story for @requirement.Code">
+                            @foreach (var story in linkable)
+                            {
+                                <option value="@story.Id">@story.Title</option>
+                            }
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Link</button>
+                    </form>
+            }
+            </div></div>
+        </section>
+        <section class="col-lg-6" aria-label="Evidence">
+            <div class="card h-100"><div class="card-body">
+                @if (row.Evidence.Count == 0)
+                {
+                    <div class="row-group-title small text-muted">Evidence (0)</div>
+                    <p class="small text-muted mb-0 no-evidence">No evidence yet</p>
+                }
+                @if (row.Evidence.Count > 0)
+                {
+                    @* R1, R2: the evidence, each with where it came from *@
+                    <div class="row-group mb-2" data-group="evidence">
+                        <div class="row-group-title small text-muted">Evidence (<span class="row-group-count">@row.Evidence.Count</span>)</div>
+                        @foreach (var item in row.Evidence)
+                        {
+                            @* US-057: R3: expired is shown but does not count *@
+                            var evidence = item.Evidence;
+                            <div class="evidence row-item d-flex align-items-start gap-1" data-title="@evidence.Title">
+                                <div class="flex-grow-1">
+                                    @if (evidence.IsFile)
+                                    {
+                                        <a class="evidence-title" asp-action="EvidenceFile" asp-route-id="@project.Id" asp-route-evidenceId="@evidence.Id">@evidence.Title</a>
+                                    }
+                                    else
+                                    {
+                                        <a class="evidence-title" href="@evidence.Url" target="_blank" rel="noopener noreferrer">@evidence.Title</a>
+                                    }
+                                    <div class="small text-muted item-source">
+                                        @RequirementRows.EvidenceSource(item, Model.NameOf)
+                                        @if (evidence.IsFile)
+                                        {
+                                            <span class="evidence-sha256" title="SHA-256 @evidence.Sha256"> · SHA-256 @(evidence.Sha256![..8])…</span>
+                                        }
+                                        @if (!item.IsExpired && evidence.ValidUntil is { } until)
+                                        {
+                                            <span> · valid until @until.ToString("dd-MM-yyyy")</span>
+                                        }
+                                    </div>
+                                    @* US-038: the AI's check of the evidence, "AI-generated" until a person decides (R2) *@
+                                    @if (item.Check is { } check)
+                                    {
+                                        var verdict = check.DecidedVerdict ?? check.AiVerdict;
+                                        <div class="small evidence-check mt-1" data-verdict="@verdict" data-status="@check.Status">
+                                            @if (check.IsDecided)
+                                            {
+                                                <span class="badge @(verdict switch { ComplianceTracker.Domain.Mappings.EvidenceVerdict.Covers => "text-bg-success", ComplianceTracker.Domain.Mappings.EvidenceVerdict.PartlyCovers => "text-bg-warning", _ => "text-bg-danger" }) evidence-check-verdict">@(verdict switch { ComplianceTracker.Domain.Mappings.EvidenceVerdict.Covers => "Evidence confirmed", ComplianceTracker.Domain.Mappings.EvidenceVerdict.PartlyCovers => "Evidence partly", _ => "Evidence does not cover" })</span>
+                                                @if (check.DecisionReason is { } why)
+                                                {
+                                                    <span class="text-muted">(@why)</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="badge text-bg-info">AI-generated</span>
+                                                <span class="evidence-check-verdict">@ComplianceTracker.Domain.Mappings.EvidenceCheck.Text(check.AiVerdict)</span>
+                                            }
+                                            @if (check.Missing.Length > 0 && !check.Missing.Equals("Nothing", StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                <div class="text-muted evidence-check-missing">Missing: @check.Missing</div>
+                                            }
+                                            @if (check.Quotes.Length > 0)
+                                            {
+                                                <details class="evidence-check-quotes"><summary class="text-muted">Quotes</summary>
+                                                    @foreach (var quote in check.Quotes.Split('\n'))
+                                                    {
+                                                        <div class="fst-italic">“@quote”</div>
+                                                    }
+                                                </details>
+                                            }
+                                            @if (!check.IsDecided && !project.IsClosed && Model.CanDecide)
+                                            {
+                                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                                    <form asp-action="ConfirmEvidenceCheck" method="post" class="confirm-evidence-check">
+                                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                                        <input type="hidden" name="checkId" value="@check.Id" />
+                                                        <input type="hidden" name="sub" value="@sub" />
+                                                        <input type="hidden" name="req" value="@requirement.Code" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-success">Confirm</button>
+                                                    </form>
+                                                    <form asp-action="OverruleEvidenceCheck" method="post" class="d-flex flex-wrap gap-1 overrule-evidence-check">
+                                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                                        <input type="hidden" name="checkId" value="@check.Id" />
+                                                        <input type="hidden" name="sub" value="@sub" />
+                                                        <input type="hidden" name="req" value="@requirement.Code" />
+                                                        <select name="verdict" class="form-select form-select-sm w-auto" aria-label="Your verdict">
+                                                            @foreach (var option in Enum.GetValues<ComplianceTracker.Domain.Mappings.EvidenceVerdict>().Where(v => v != check.AiVerdict))
+                                                            {
+                                                                <option value="@option">@ComplianceTracker.Domain.Mappings.EvidenceCheck.Text(option)</option>
+                                                            }
+                                                        </select>
+                                                        <input name="reason" maxlength="1000" class="form-control form-control-sm w-auto" placeholder="Why" aria-label="Reason for overruling" required />
+                                                        <button type="submit" class="btn btn-sm btn-outline-secondary">Overrule</button>
+                                                    </form>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    @if (!item.IsExpired && evidence.IsActive && !project.IsClosed && Model.CanLink)
+                                    {
+                                        <form asp-action="CheckEvidence" method="post" class="check-evidence mt-1">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="evidenceId" value="@evidence.Id" />
+                                            <input type="hidden" name="requirementId" value="@requirement.Id" />
+                                            <input type="hidden" name="sub" value="@sub" />
+                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <button type="submit" class="btn btn-sm btn-link p-0">@(item.Check is null ? "Check with AI" : "Check again with AI")</button>
+                                        </form>
+                                    }
+                                </div>
+                                @if (item.NeedsReview)
+                                {
+                                    <span class="badge text-bg-warning review-pending">Review</span>
+                                }
+                                @if (item.IsExpired)
+                                {
+                                    <span class="badge text-bg-warning evidence-expired">Expired</span>
+                                }
+                                @if (evidence.IsFromOrganisation)
+                                {
+                                    @* US-136 *@
+                                    <span class="badge text-bg-light border from-organisation">From the organisation</span>
+                                }
+                                else if (!project.IsClosed && Model.CanLink)
+                                {
+                                    <details class="item-menu">
+                                        <summary class="btn btn-sm btn-link p-0 text-muted" aria-label="More for @evidence.Title">⋯</summary>
+                                        <form asp-action="RemoveEvidence" method="post" data-confirm="The evidence is no longer linked to this requirement." class="remove-evidence mt-1">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="evidenceId" value="@evidence.Id" />
+                                            <input type="hidden" name="requirementId" value="@requirement.Id" />
+                                            <input type="hidden" name="sub" value="@sub" />
+                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Remove evidence @evidence.Title">Remove evidence</button>
+                                        </form>
+                                    </details>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            @if (canAddEvidence)
+            {
+                @* US-057 R1, R2 *@
+                <h3 class="h6 mt-3 mb-1" id="add-evidence-section">Add evidence</h3>
+                    <form asp-action="AddEvidence" method="post" enctype="multipart/form-data" class="d-flex flex-column gap-1 mt-1 add-evidence">
+                        <input type="hidden" name="projectId" value="@project.Id" />
+                        <input type="hidden" name="requirementId" value="@requirement.Id" />
+                        <input type="hidden" name="sub" value="@sub" />
+                        <input type="hidden" name="req" value="@requirement.Code" />
+                        <input name="title" class="form-control form-control-sm" maxlength="200" placeholder="Title, e.g. PR 42 merged" aria-label="Evidence title for @requirement.Code" />
+                        <input name="url" type="url" class="form-control form-control-sm" placeholder="Link (https://…)" aria-label="Evidence link for @requirement.Code" />
+                        <input name="file" type="file" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg,.txt,.csv,.md" aria-label="Or a file (max 10 MB)" />
+                        <div class="d-flex gap-1 align-items-center">
+                            <label class="text-muted text-nowrap" for="valid-until-@requirement.Id">Valid until</label>
+                            <input name="validUntil" id="valid-until-@requirement.Id" type="date" class="form-control form-control-sm" />
+                            <button type="submit" class="btn btn-sm btn-primary text-nowrap">Add</button>
+                        </div>
+                    </form>
+                    var pickable = Model.PickableEvidence.Where(e => !row.Evidence.Any(x => x.Evidence.Id == e.Evidence.Id)).ToList();
+                    @if (pickable.Count > 0)
+                    {
+                        @* US-059 *@
+                        <form asp-action="LinkExistingEvidence" method="post" class="d-flex gap-1 mt-1 pick-evidence">
+                            <input type="hidden" name="projectId" value="@project.Id" />
+                            <input type="hidden" name="requirementId" value="@requirement.Id" />
+                            <input type="hidden" name="sub" value="@sub" />
+                            <input type="hidden" name="req" value="@requirement.Code" />
+                            <select name="evidenceId" class="form-select form-select-sm" aria-label="Pick existing evidence for @requirement.Code">
+                                @foreach (var existing in pickable)
+                                {
+                                    <option value="@existing.Evidence.Id">@existing.Evidence.Title</option>
+                                }
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Pick existing</button>
+                        </form>
+                    }
+            }
+            </div></div>
+        </section>
+    </div>
+
+    <section class="mt-3" aria-label="Waiting for your decision">
+                @if (row.FailingTests > 0)
+                {
+                    @* US-058 *@
+                    <div class="mb-2"><span class="badge text-bg-danger failing-tests">@(row.FailingTests == 1 ? "1 failing test" : $"{row.FailingTests} failing tests")</span></div>
+                }
+                @if (waiting > 0)
+                {
+                    @* R3: everything that waits for a person, together, each with its source and Accept/Reject side by side *@
+                    <div class="row-group waiting-box mb-2" data-group="waiting">
+                        <div class="row-group-title small fw-semibold">Waiting for your decision (<span class="row-group-count">@waiting</span>)</div>
+                        @foreach (var suggested in row.PendingEvidenceSuggestions)
+                        {
+                            @* US-058 *@
+                            <div class="suggested-evidence row-item" data-title="@suggested.Title">
+                                @if (suggested.Url is not null)
+                                {
+                                    <a class="suggested-evidence-title" href="@suggested.Url" target="_blank" rel="noopener noreferrer">@suggested.Title</a>
+                                }
+                                else
+                                {
+                                    <span class="suggested-evidence-title" title="@suggested.PassingScenarios">@suggested.Title</span>
+                                }
+                                <div class="small text-muted item-source">Suggested evidence · @(suggested.Source == ComplianceTracker.Domain.Mappings.EvidenceSourceKind.PullRequest ? "from a merged pull request" : "from a test run")</div>
+                                @if (!project.IsClosed && Model.CanLink)
+                                {
+                                    <div class="d-flex flex-wrap gap-1 mt-1">
+                                        <form asp-action="AcceptSuggestedEvidence" method="post" class="accept-evidence-suggestion">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="suggestionId" value="@suggested.Id" />
+                                            <input type="hidden" name="sub" value="@sub" />
+                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success">Accept</button>
+                                        </form>
+                                        <form asp-action="RejectSuggestedEvidence" method="post" class="d-flex gap-1 reject-evidence-suggestion-row">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="suggestionId" value="@suggested.Id" />
+                                            <input type="hidden" name="sub" value="@sub" />
+                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <input name="reason" class="form-control form-control-sm" placeholder="Why, e.g. only a refactoring" aria-label="Reason" required />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                        </form>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        @if (row.IsApplicable && row.ApplicabilitySuggestion is { } applicability)
+                        {
+                            @* US-060 R6 *@
+                            <div class="applicability-suggestion row-item" data-code="@requirement.Code">
+                                <span class="small fw-semibold">Not applicable?</span>
+                                <div class="small applicability-reason">@applicability.Reason</div>
+                                <div class="small text-muted item-source"><span class="badge text-bg-info">AI-generated</span> Suggested by the AI · context used: <span class="applicability-context">@(string.IsNullOrEmpty(applicability.ContextUsed) ? "none" : applicability.ContextUsed)</span></div>
+                                @if (!project.IsClosed && Model.CanDecide)
+                                {
+                                    <div class="d-flex flex-wrap align-items-start gap-1 mt-1">
+                                        <form asp-action="AcceptApplicability" method="post" class="d-flex gap-1 accept-applicability">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="suggestionId" value="@applicability.Id" />
+                                            <input type="hidden" name="sub" value="@sub" />
+                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <input name="reason" class="form-control form-control-sm" value="@applicability.Reason" maxlength="1000" aria-label="Reason for not applicable" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success text-nowrap">Accept</button>
+                                        </form>
+                                        <form asp-action="RejectApplicability" method="post" class="reject-applicability">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="suggestionId" value="@applicability.Id" />
+                                            <input type="hidden" name="sub" value="@sub" />
+                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                        </form>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        @if (row.IsApplicable)
+                        {
+                            @foreach (var entry in row.SuggestedEvidence)
+                            {
+                                @* US-106 R2: the project's evidence the AI suggests for this requirement *@
+                                <div class="ai-evidence-suggestion row-item" data-evidence="@entry.Evidence.Title">
+                                    <span class="suggested-evidence-for-requirement">@entry.Evidence.Title</span>
+                                    <div class="small text-muted item-source"><span class="badge text-bg-info">AI-generated</span> Suggested evidence · score @entry.Suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) @if (entry.Suggestion.SearchScore is { } search){<span class="suggestion-search-score">(search @search.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))</span>}</div>
+                                    @if (entry.Suggestion.EarlierRejection is { } earlierEvidence)
+                                    {
+                                        <div class="small text-muted earlier-rejection">@earlierEvidence</div>
+                                    }
+                                    @if (!project.IsClosed && Model.CanLink)
+                                    {
+                                        <div class="d-flex flex-wrap gap-1 mt-1">
+                                            <form asp-action="ApproveEvidenceSuggestion" method="post" class="approve-row-evidence-suggestion">
+                                                <input type="hidden" name="projectId" value="@project.Id" />
+                                                <input type="hidden" name="suggestionId" value="@entry.Suggestion.Id" />
+                                                <input type="hidden" name="sub" value="@sub" />
+                                                <input type="hidden" name="req" value="@requirement.Code" />
+                                                <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
+                                            </form>
+                                            <form asp-action="RejectEvidenceSuggestion" method="post" class="d-flex flex-wrap gap-1 reject-row-evidence-suggestion">
+                                                <input type="hidden" name="projectId" value="@project.Id" />
+                                                <input type="hidden" name="suggestionId" value="@entry.Suggestion.Id" />
+                                                <input type="hidden" name="sub" value="@sub" />
+                                                <input type="hidden" name="req" value="@requirement.Code" />
+                                                <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason">
+                                                    <option value="">Reason…</option>
+                                                    @foreach (var reason in Enum.GetValues<ComplianceTracker.Domain.Mappings.RejectionReason>())
+                                                    {
+                                                        <option value="@reason">@reason</option>
+                                                    }
+                                                </select>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                            </form>
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                            @if (row.Draft is { } draft)
+                            {
+                                @* US-106 R3–R6: the AI's draft, editable; it becomes a story only when a person accepts it *@
+                                <div class="story-draft row-item" data-title="@draft.Title">
+                                    <div class="small item-source"><span class="badge text-bg-info ai-generated">AI-generated</span> Draft user story · nothing in the project matched</div>
+                                    @if (!project.IsClosed && Model.CanLink)
+                                    {
+                                        <form asp-action="AcceptStoryDraft" method="post" class="d-flex flex-column gap-1 mt-1 accept-story-draft">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="draftId" value="@draft.Id" />
+                                            <input type="hidden" name="sub" value="@sub" />
+                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <input name="title" class="form-control form-control-sm" value="@draft.Title" maxlength="200" aria-label="Title" />
+                                            <input name="role" class="form-control form-control-sm" value="@draft.Role" placeholder="Role" aria-label="Role" />
+                                            <textarea name="story" class="form-control form-control-sm" rows="2" aria-label="User story">@draft.Story</textarea>
+                                            <textarea name="rules" class="form-control form-control-sm" rows="2" placeholder="Rules" aria-label="Rules">@draft.Rules</textarea>
+                                            <textarea name="examples" class="form-control form-control-sm" rows="2" placeholder="Examples" aria-label="Examples">@draft.Examples</textarea>
+                                            <button type="submit" class="btn btn-sm btn-outline-success align-self-start">Create story</button>
+                                        </form>
+                                        <form asp-action="DiscardStoryDraft" method="post" class="d-flex gap-1 mt-1 discard-story-draft">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="draftId" value="@draft.Id" />
+                                            <input type="hidden" name="sub" value="@sub" />
+                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <input name="reason" class="form-control form-control-sm" placeholder="Why it is discarded" aria-label="Reason" required />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Discard</button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <div class="small"><strong>@draft.Title</strong>: @draft.Story</div>
+                                    }
+                                </div>
+                            }
+
+                            @foreach (var entry in row.Suggestions)
+                            {
+                                @* US-044 R4: best first *@
+                                var suggestion = entry.Suggestion;
+                                <div class="ai-suggestion row-item" data-story="@entry.WorkItem.Title" data-code="@requirement.Code">
+                                    <a class="suggestion-story" href="@entry.WorkItem.Url" target="_blank" rel="noopener noreferrer">@entry.WorkItem.Title</a>
+                                    <div class="small text-muted item-source"><span class="badge text-bg-info">AI-generated</span> Suggested story · score <span class="suggestion-score">@suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span> @if (suggestion.SearchScore is { } search){<span class="suggestion-search-score">(search @search.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))</span>}</div>
+                                    <div class="small suggestion-rationale">@(suggestion.Rationale ?? "Writing rationale…")</div>
+                                    @if (suggestion.EarlierRejection is { } earlier)
+                                    {
+                                        @* US-145 R4 *@
+                                        <div class="small text-muted earlier-rejection">@earlier</div>
+                                    }
+                                    @if (suggestion.ContextUsed is { } contextUsed)
+                                    {
+                                        <div class="small text-muted suggestion-context">Context used: @contextUsed</div>
+                                    }
+                                    @if (!project.IsClosed && Model.CanDecide)
+                                    {
+                                        <div class="d-flex flex-wrap align-items-start gap-1 mt-1">
+                                            <form asp-action="ApproveSuggestion" method="post" class="approve-suggestion">
+                                                <input type="hidden" name="projectId" value="@project.Id" />
+                                                <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                                <input type="hidden" name="sub" value="@sub" />
+                                                <input type="hidden" name="req" value="@requirement.Code" />
+                                                <input type="hidden" name="show" value="@Model.ShowFilter" />
+                                                <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
+                                            </form>
+                                            <form asp-action="RejectSuggestion" method="post" class="d-flex flex-wrap gap-1 reject-suggestion">
+                                                <input type="hidden" name="projectId" value="@project.Id" />
+                                                <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                                <input type="hidden" name="sub" value="@sub" />
+                                                <input type="hidden" name="req" value="@requirement.Code" />
+                                                <input type="hidden" name="show" value="@Model.ShowFilter" />
+                                                <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason">
+                                                    <option value="">Reason…</option>
+                                                    @foreach (var reason in Enum.GetValues<ComplianceTracker.Domain.Mappings.RejectionReason>())
+                                                    {
+                                                        <option value="@reason">@reason</option>
+                                                    }
+                                                </select>
+                                                <input name="comment" class="form-control form-control-sm w-auto" placeholder="Comment (optional)" aria-label="Comment" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                            </form>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+                @if (row.RejectedSuggestions.Count > 0)
+                {
+                    @* US-145 R6: a rejection can be taken back *@
+                    <details class="small mb-1 rejected-story-suggestions">
+                        <summary class="text-muted">Rejected suggestions (@row.RejectedSuggestions.Count)</summary>
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var no in row.RejectedSuggestions)
+                            {
+                                <li class="rejected-suggestion d-flex flex-wrap align-items-center gap-1" data-story="@no.WorkItem.Title">
+                                    <span>@no.WorkItem.Title · @no.Suggestion.RejectionReason</span>
+                                    @if (!project.IsClosed && Model.CanDecide)
+                                    {
+                                        <form asp-action="UndoStoryRejection" method="post" class="undo-rejection">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="suggestionId" value="@no.Suggestion.Id" />
+                                            <input type="hidden" name="sub" value="@sub" />
+                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <button type="submit" class="btn btn-sm btn-link p-0">Undo rejection</button>
+                                        </form>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    </details>
+                }
+    </section>
+</article>

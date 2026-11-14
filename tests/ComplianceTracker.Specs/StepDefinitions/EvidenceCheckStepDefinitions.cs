@@ -96,7 +96,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         private async Task<IElement> RowAsync(string code)
         {
             await _compliance.OpenSubTabWithAsync(Project, code);
-            return _web.Page!.QuerySelectorAll("tr.requirement-row").FirstOrDefault(r => r.GetAttribute("data-code") == code)
+            return RequirementRowLookup.Find(_web, code)
                 ?? throw new Xunit.Sdk.XunitException($"No row '{code}'.");
         }
 

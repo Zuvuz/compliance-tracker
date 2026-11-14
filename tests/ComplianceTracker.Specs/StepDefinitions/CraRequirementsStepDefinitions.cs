@@ -84,6 +84,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Then("each requirement links to the official text")]
         public void ThenEachRequirementLinksToTheOfficialText()
         {
+            RequirementRowLookup.Overview(_web); // US-153: the rows are on the overview
             var rows = _web.Page!.QuerySelectorAll("tr.requirement-row").ToList();
             Assert.NotEmpty(rows);
             Assert.All(rows, row => Assert.StartsWith(
@@ -102,7 +103,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // ---------------------------------------------------------- Helpers
 
         private IElement Row(string code)
-            => _web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']")
+            => RequirementRowLookup.Find(_web, code)
                ?? throw new Xunit.Sdk.XunitException($"The page {_web.CurrentPath} has no requirement '{code}'.");
 
         private static Dictionary<string, string> HiddenFields(IElement form)

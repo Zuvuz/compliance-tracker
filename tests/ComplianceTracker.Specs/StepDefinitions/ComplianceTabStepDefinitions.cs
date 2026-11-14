@@ -91,7 +91,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await WhenILinkToTheRequirement(story, code);
         }
 
-        // Opens the sub-tab of the project's Compliance tab that lists the requirement (US-043 uses the CRA's)
+        // Opens the sub-tab of the project's Compliance tab that lists the requirement (US-043 uses the CRA's), then the
+        // requirement's own page (US-153)
         public async Task OpenSubTabWithAsync(string projectName, string code)
         {
             await _web.OpenAsync($"/Projects/Details/{await ProjectIdAsync(projectName)}/compliance");
@@ -100,6 +101,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 await _web.OpenAsync(href);
                 if (_web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']") is not null)
                 {
+                    // US-153: the actions are on the requirement's own page
+                    await RequirementRowLookup.FindAsync(_web, code);
                     return;
                 }
             }
@@ -184,7 +187,10 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         [Then("the coverage says {string}")]
         public void ThenTheCoverageSays(string text)
-            => Assert.Equal(text, _web.Page!.QuerySelector("#coverage")?.TextContent.Trim());
+        {
+            RequirementRowLookup.Overview(_web);
+            Assert.Equal(text, _web.Page!.QuerySelector("#coverage")?.TextContent.Trim());
+        }
 
         [Then("the user story {string} shows the requirements {string}")]
         public void ThenTheUserStoryShowsTheRequirements(string story, string codes)
@@ -252,7 +258,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             => _web.Page!.QuerySelectorAll("#requirements-table tr.requirement-row").Select(r => r.GetAttribute("data-code")!).ToList();
 
         private IElement Row(string code)
-            => _web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']")
+            => RequirementRowLookup.Find(_web, code)
                ?? throw new Xunit.Sdk.XunitException($"The page {_web.CurrentPath} has no requirement '{code}'.");
 
         private static Dictionary<string, string> HiddenFields(IElement form)

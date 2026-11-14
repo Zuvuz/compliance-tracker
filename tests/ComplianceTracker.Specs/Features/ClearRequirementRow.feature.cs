@@ -255,10 +255,10 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I open the address of \"I.2(d)\" in \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 31
-    await testRunner.ThenAsync("the \"CRA\" sub-tab is shown with the row \"I.2(d)\" open", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the requirement page of \"I.2(d)\" is shown under the \"CRA\" sub-tab", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 32
-    await testRunner.AndAsync("the row \"I.2(d)\" links to its own address", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the overview row \"I.2(d)\" links to its own address", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

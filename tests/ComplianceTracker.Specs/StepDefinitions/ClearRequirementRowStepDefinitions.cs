@@ -5,8 +5,8 @@ using Microsoft.EntityFrameworkCore;
 namespace ComplianceTracker.Specs.StepDefinitions
 {
     // US-144: the requirement row's groups and sources, its own address, the All sub-tab, a risk as the reason for "not
-    // applicable" and unused frameworks. UI contract: Views/Projects/_RequirementRow.cshtml (.row-group[data-group],
-    // .row-group-title, .item-source, .story-state, .row-summary, .row-address, .not-applicable-risk) and
+    // applicable" and unused frameworks. UI contract: Views/Projects/_RequirementPage.cshtml (.row-group[data-group],
+    // .row-group-title, .item-source, .story-state, .not-applicable-risk), _RequirementSummaryRow.cshtml (.row-summary) and
     // Views/Projects/_ComplianceTab.cshtml (#compliance-tabs, tr.framework-group, #unused-frameworks).
     [Binding]
     public class ClearRequirementRowStepDefinitions
@@ -77,20 +77,25 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.NotNull(item.QuerySelector("form.reject-evidence-suggestion-row"));
         }
 
+        // US-153: the overview row sums up; what waits is its own tag
         [Then("the row {string} sums up {string}")]
-        public void ThenTheRowSumsUp(string code, string summary) => Assert.Equal(summary, Normalize(Row(code).QuerySelector(".row-summary")!.TextContent));
-
-        [Then("the {string} sub-tab is shown with the row {string} open")]
-        public void ThenTheSubTabIsShownWithTheRowOpen(string tab, string code)
+        public async Task ThenTheRowSumsUp(string code, string summary)
         {
-            Assert.Equal(tab, _web.Page!.QuerySelector("#compliance-tabs a.active")?.TextContent.Trim());
-            Assert.Equal("true", Row(code).GetAttribute("data-open"));
-            Assert.Equal("true", Row(code).GetAttribute("data-attention")); // never folded by a remembered choice
+            var row = await ListRowAsync(code);
+            var waiting = row.QuerySelector(".row-waiting")?.TextContent.Trim();
+            Assert.Equal(summary, Normalize(row.QuerySelector(".row-summary")!.TextContent) + (waiting is null ? "" : " · " + waiting));
         }
 
-        [Then("the row {string} links to its own address")]
-        public void ThenTheRowLinksToItsOwnAddress(string code)
-            => Assert.EndsWith("/compliance/cra/" + code, Uri.UnescapeDataString(Row(code).QuerySelector("a.row-address")!.GetAttribute("href")!));
+        [Then("the requirement page of {string} is shown under the {string} sub-tab")]
+        public void ThenTheRequirementPageIsShown(string code, string tab)
+        {
+            Assert.Equal(tab, _web.Page!.QuerySelector("#compliance-tabs a.active")?.TextContent.Trim());
+            Assert.Equal("true", Row(code).GetAttribute("data-detail"));
+        }
+
+        [Then("the overview row {string} links to its own address")]
+        public async Task ThenTheRowLinksToItsOwnAddress(string code)
+            => Assert.EndsWith("/compliance/cra/" + code, Uri.UnescapeDataString((await ListRowAsync(code)).QuerySelector("a.requirement-open")!.GetAttribute("href")!));
 
         [Then("the requirements are grouped under {string} and {string}")]
         public void ThenTheRequirementsAreGrouped(string first, string second)
@@ -124,8 +129,18 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         // ---------------------------------------------------------- Helpers
 
+        private async Task<IElement> ListRowAsync(string code)
+        {
+            if (RequirementRowLookup.ListRow(_web, code) is null && _web.Page?.QuerySelector("#back-to-requirements") is { } back)
+            {
+                await _web.OpenAsync(back.GetAttribute("href")!);
+            }
+
+            return RequirementRowLookup.ListRow(_web, code) ?? throw new Xunit.Sdk.XunitException($"The overview has no row '{code}'.");
+        }
+
         private IElement Row(string code)
-            => _web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']")
+            => RequirementRowLookup.Find(_web, code)
                ?? throw new Xunit.Sdk.XunitException($"The Compliance tab has no row '{code}'.");
 
         private IElement Group(string code, string group)

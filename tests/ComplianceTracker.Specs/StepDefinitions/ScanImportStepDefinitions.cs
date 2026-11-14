@@ -92,7 +92,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Then("the row {string} has the evidence {string} with its SHA-256")]
         public void ThenTheRowHasTheEvidence(string code, string title)
         {
-            var row = _web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']")
+            var row = RequirementRowLookup.Find(_web, code)
                 ?? throw new Xunit.Sdk.XunitException($"The page has no requirement '{code}'.");
             var evidence = row.QuerySelectorAll(".evidence").FirstOrDefault(e => e.GetAttribute("data-title")?.StartsWith(title, StringComparison.Ordinal) == true)
                 ?? throw new Xunit.Sdk.XunitException($"The row '{code}' has no evidence '{title}'.");

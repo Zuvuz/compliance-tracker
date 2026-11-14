@@ -4,8 +4,8 @@ using ComplianceTracker.Domain.WorkItems;
 
 namespace ComplianceTracker.Web.Models
 {
-    // US-144: what one requirement row on the Compliance tab needs (Views/Projects/_RequirementRow.cshtml). Sub is the
-    // sub-tab the forms go back to ("all" on the All tab); Open is true for the requirement the address points at (R12).
+    // US-144, US-153: what a requirement's overview row (_RequirementSummaryRow.cshtml) and its own page
+    // (_RequirementPage.cshtml) need. Sub is the sub-tab the back link goes to ("all" on the All tab).
     public record RequirementRowModel(
         Project Project,
         FrameworkCompliance Framework,

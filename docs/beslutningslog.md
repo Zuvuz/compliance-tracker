@@ -1666,6 +1666,23 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At tegne eller rette diagrammer i trackeren.
   - At læse `.xml` som draw.io, da endelsen også bruges af mange andre formater.
 
+### B107 – Compliance-fanen er en let oversigt; hvert krav har sin egen side (US-153)
+
+- **Beslutning:**
+  - **Oversigten** viser hvert krav som én let række: kode, titel, hvad der er linket ("1 story · 2 evidence"), hvad der venter, og status. Rækkerne har ingen formularer eller vælgere.
+  - **Kravets side** ligger på kravets adresse fra US-144 R12, fx `/Projects/Details/{id}/compliance/cra/I.2(d)`. Den har:
+    - en tilbage-link til oversigten;
+    - et hoved med kode, titel, status og én primær handling ("Add evidence"), mens "Ask the AI" og "Not applicable" ligger under "More";
+    - kravets tekst;
+    - user stories, evidens og det, der venter på en beslutning.
+  - **Efter en handling** vises samme side igen. Formularerne sender kravets kode som `req`, og en fejl vises også på siden.
+  - **Kun kravets side** henter projektets evidens og risici til vælgerne.
+  - **Folde-rækkerne** fra US-144 (R9, R10) er fjernet. Træet fra US-143 bliver.
+- **Begrundelse:** Compliance-fanen var 1,35 MB med 436 formularer og 219 vælgere for 72 krav, så den var tung at hente og svær at overskue. Nu ser man status for alle krav på én gang og handler ét sted pr. krav. Det giver også én adresse at linke til fra dokumentation og reviews.
+- **Fravalgt:**
+  - Et sidepanel ved siden af listen: det kræver mere JavaScript og har ingen egen adresse.
+  - At beholde formularerne skjult i rækkerne, fordi siden så stadig ville være lige så tung.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

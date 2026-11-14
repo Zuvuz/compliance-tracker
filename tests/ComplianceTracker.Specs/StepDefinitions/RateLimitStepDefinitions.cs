@@ -23,7 +23,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             var id = await ProjectIdAsync("Acme Portal");
             await _web.OpenAsync($"/Projects/Details/{id}/compliance/cra");
-            var form = _web.Page!.QuerySelectorAll("tr.requirement-row").First(r => r.GetAttribute("data-code") == code).QuerySelector("form.ask-the-ai")
+            var form = RequirementRowLookup.Find(_web, code)!.QuerySelector("form.ask-the-ai")
                 ?? throw new Xunit.Sdk.XunitException($"The row '{code}' has no \"Ask the AI\".");
             for (var i = 0; i < times; i++)
             {

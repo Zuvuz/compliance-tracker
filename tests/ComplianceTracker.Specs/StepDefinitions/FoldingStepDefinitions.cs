@@ -32,18 +32,6 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public void ThenTheEvidenceCardNeedsAttention(string title)
             => Assert.Equal("true", Card(title).GetAttribute("data-attention"));
 
-        [Then("the row {string} can be folded, with the summary {string}")]
-        public void ThenTheRowCanBeFolded(string code, string summary)
-            => AssertFoldable(Row(code), summary);
-
-        [Then("the row {string} needs attention")]
-        public void ThenTheRowNeedsAttention(string code)
-            => Assert.Equal("true", Row(code).GetAttribute("data-attention"));
-
-        [Then("the row {string} does not need attention")]
-        public void ThenTheRowDoesNotNeedAttention(string code)
-            => Assert.Equal("false", Row(code).GetAttribute("data-attention"));
-
         // The button, the part and the summary share a key; the summary is hidden until the part is folded
         private static void AssertFoldable(IElement container, string summary)
         {
@@ -58,9 +46,5 @@ namespace ComplianceTracker.Specs.StepDefinitions
         private IElement Card(string title)
             => _web.Page!.QuerySelectorAll(".evidence-item").FirstOrDefault(c => c.GetAttribute("data-title") == title)
                ?? throw new Xunit.Sdk.XunitException($"No evidence card '{title}'.");
-
-        private IElement Row(string code)
-            => _web.Page!.QuerySelector($"#requirements-table tr.requirement-row[data-code='{code}']")
-               ?? throw new Xunit.Sdk.XunitException($"No requirement row '{code}'.");
     }
 }
