@@ -39,13 +39,28 @@
 
     @if (Model.RiskDrafts.Count > 0)
     {
-        @* US-112 R2, R4, R5: each draft with why; accept after editing, or discard with a reason. #risk-drafts .risk-draft[data-title] *@
+        @* US-112 R2, R4, R5: each draft with why; accept after editing, or discard with a reason. #risk-drafts .risk-draft[data-title].
+           US-157: grouped under h3.risk-draft-theme[data-theme] *@
         var canDecideDrafts = !project.IsClosed && await Permissions.CanAsync(Permission.ManageRisks);
         <div class="card mb-3 border-info" id="risk-drafts">
             <div class="card-body small">
                 <h2 class="h6 card-title"><span class="badge text-bg-info">AI-generated</span> Drafts waiting for your decision (@Model.RiskDrafts.Count)</h2>
-                @foreach (var draft in Model.RiskDrafts)
+                @{
+                    // US-157: the drafts grouped by the theme of the round that gave them, in the agent's order
+                    var themeOrder = new[] { ComplianceTracker.Application.Risks.RiskThemes.Access, ComplianceTracker.Application.Risks.RiskThemes.Data,
+                        ComplianceTracker.Application.Risks.RiskThemes.Updates, ComplianceTracker.Application.Risks.RiskThemes.Availability,
+                        ComplianceTracker.Application.Risks.RiskThemes.Requirements, ComplianceTracker.Application.Risks.RiskThemes.EventsAndFindings }
+                        .Select(t => t.Name).ToList();
+                    int Order(string? theme) => theme is null ? int.MaxValue : themeOrder.IndexOf(theme) is var i && i >= 0 ? i : int.MaxValue - 1;
+                    string? shownTheme = "";
+                }
+                @foreach (var draft in Model.RiskDrafts.OrderBy(d => Order(d.Theme)))
                 {
+                    if (draft.Theme != shownTheme)
+                    {
+                        shownTheme = draft.Theme;
+                        <h3 class="h6 mt-3 mb-1 risk-draft-theme" data-theme="@(draft.Theme ?? "Other")">@(draft.Theme ?? "Other")</h3>
+                    }
                     <details class="risk-draft border-start border-3 border-info ps-2 my-2" data-title="@draft.Title">
                         <summary><span class="badge @Badge(draft.Level)">@draft.Level</span> @draft.Title <span class="text-muted">· @draft.Likelihood × @draft.Impact</span></summary>
                         <div class="mt-1"><strong>Threat:</strong> @draft.Threat</div>

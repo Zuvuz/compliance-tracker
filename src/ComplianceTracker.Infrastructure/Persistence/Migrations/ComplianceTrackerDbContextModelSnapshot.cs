@@ -5495,6 +5495,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<string>("Theme")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("Threat")
                         .IsRequired()
                         .HasMaxLength(2000)

@@ -75,6 +75,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(d => d.BasedOn).IsRequired().HasMaxLength(RiskDraft.MaxTextLength);
             builder.Property(d => d.Reasoning).IsRequired().HasMaxLength(RiskDraft.MaxTextLength);
             builder.Property(d => d.Model).IsRequired().HasMaxLength(200);
+            builder.Property(d => d.Theme).HasMaxLength(RiskDraft.MaxThemeLength); // US-157
             builder.Property(d => d.PromptVersion).IsRequired().HasMaxLength(50);
             builder.Property(d => d.Status).HasConversion<string>().HasMaxLength(20);
             builder.Property(d => d.DecidedRole).HasConversion<string>().HasMaxLength(50);

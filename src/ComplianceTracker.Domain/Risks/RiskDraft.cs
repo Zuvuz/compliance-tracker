@@ -30,6 +30,10 @@ namespace ComplianceTracker.Domain.Risks
         public string Reasoning { get; private set; } = "";
         public string Model { get; private set; } = "";
         public string PromptVersion { get; private set; } = "";
+
+        // US-157: the threat theme of the round that drafted it, e.g. "Access and sign-in"; null for older drafts
+        public string? Theme { get; private set; }
+        public const int MaxThemeLength = 100;
         public DateTime CreatedAt { get; private set; }
 
         public RiskDraftStatus Status { get; private set; } = RiskDraftStatus.Draft;
@@ -47,7 +51,7 @@ namespace ComplianceTracker.Domain.Risks
         private RiskDraft() { }
 
         public static RiskDraft Create(Guid projectId, string? title, string? threat, string? asset, int likelihood, int impact,
-            string? basedOn, string? reasoning, string model, string promptVersion, DateTime at)
+            string? basedOn, string? reasoning, string model, string promptVersion, DateTime at, string? theme = null)
         {
             var cleaned = title?.Trim() ?? "";
             if (cleaned.Length == 0)
@@ -68,7 +72,8 @@ namespace ComplianceTracker.Domain.Risks
                 Reasoning = Cut(reasoning, MaxTextLength),
                 Model = model,
                 PromptVersion = promptVersion,
-                CreatedAt = at
+                CreatedAt = at,
+                Theme = string.IsNullOrWhiteSpace(theme) ? null : Cut(theme.Trim(), MaxThemeLength)
             };
         }
 

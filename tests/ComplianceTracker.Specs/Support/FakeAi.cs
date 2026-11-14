@@ -34,6 +34,11 @@ namespace ComplianceTracker.Specs.Support
         // US-038: the answer to "Check whether the evidence …" per requirement code; "Covers" when none is set
         public Dictionary<string, string> EvidenceAnswers { get; } = new(StringComparer.Ordinal);
 
+        // US-157: the risk agent's answer per theme ("Access and sign-in"); themes not here get RiskDraftAnswer, and the
+        // themes in RiskThemesDown cannot be reached
+        public Dictionary<string, string> RiskDraftAnswers { get; } = new(StringComparer.Ordinal);
+        public HashSet<string> RiskThemesDown { get; } = new(StringComparer.Ordinal);
+
         // US-112: the risk agent's answer; two risks when none is set
         public string RiskDraftAnswer { get; set; } =
             "RISK: Stolen session cookie\nTHREAT: An attacker steals a session cookie via XSS\nASSET: User accounts\nLIKELIHOOD: 3\nIMPACT: 4\nBASED ON: I.2(d) not covered\nWHY: Sign-in is not protected yet\n---\n"
@@ -100,7 +105,14 @@ namespace ComplianceTracker.Specs.Support
                     Prompts.Add(prompt);
                 }
 
-                return Task.FromResult(RiskDraftAnswer);
+                var themeAt = prompt.IndexOf("Theme: ", StringComparison.Ordinal);
+                var theme = themeAt < 0 ? "" : prompt[(themeAt + "Theme: ".Length)..prompt.IndexOf('.', themeAt)];
+                if (RiskThemesDown.Contains(theme))
+                {
+                    throw new AiUnavailableException($"No answer for {theme}");
+                }
+
+                return Task.FromResult(RiskDraftAnswers.TryGetValue(theme, out var forTheme) ? forTheme : RiskDraftAnswer);
             }
 
             var start = prompt.IndexOf("Requirement ", StringComparison.Ordinal) + "Requirement ".Length;
