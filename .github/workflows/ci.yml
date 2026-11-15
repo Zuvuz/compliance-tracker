@@ -56,8 +56,17 @@ jobs:
       - name: Byg
         run: dotnet build --no-restore --configuration Release
 
+      - name: Giv testene plads til fil-overvågning
+        # Hver test starter webappen, og den overvåger sine filer. Ubuntu-maskinen tillader kun 128 overvågere, så med
+        # mange scenarier svarede siderne 500 ("inotify instances has been reached"). Grænsen hæves, og appen poller i stedet.
+        run: |
+          sudo sysctl -w fs.inotify.max_user_instances=8192
+          sudo sysctl -w fs.inotify.max_user_watches=524288
+
       - name: Kør tests med testdækning (US-140)
         # coverlet (MIT) måler i alle tre testprojekter; hvad der tælles, står i coverlet.runsettings
+        env:
+          DOTNET_USE_POLLING_FILE_WATCHER: "true"
         run: >
           dotnet test --no-build --configuration Release --verbosity normal
           --settings coverlet.runsettings --collect "XPlat Code Coverage" --results-directory coverage
