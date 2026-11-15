@@ -88,6 +88,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<Nis2Assessment> Nis2Assessments => Set<Nis2Assessment>(); // US-142
         public DbSet<GapAnswer> GapAnswers => Set<GapAnswer>(); // US-189
         public DbSet<Supplier> Suppliers => Set<Supplier>(); // US-191
+        public DbSet<Domain.Reminders.Reminder> Reminders => Set<Domain.Reminders.Reminder>(); // US-183
         public DbSet<SupplierEvidenceFile> SupplierEvidenceFiles => Set<SupplierEvidenceFile>();
         public DbSet<DocumentLinkSuggestion> DocumentLinkSuggestions => Set<DocumentLinkSuggestion>(); // US-136 R2
 

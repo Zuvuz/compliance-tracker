@@ -110,6 +110,8 @@ namespace ComplianceTracker.Application
             services.AddScoped<Organizations.GapQuestionService>(); // US-189
             services.AddScoped<Organizations.Nis2GapReportService>(); // US-190
             services.AddScoped<Organizations.SupplierService>(); // US-191
+            services.AddScoped<Reminders.ReminderService>(); // US-183
+            services.AddScoped<Reminders.ReminderSettingsService>();
             services.AddScoped<Reports.ReportFiles>(); // US-131
             services.AddScoped<Reports.ReportService>(); // US-050
             services.AddScoped<Reports.ReportSigningService>(); // US-132

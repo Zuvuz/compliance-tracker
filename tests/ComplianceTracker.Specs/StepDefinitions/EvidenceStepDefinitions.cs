@@ -33,6 +33,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public Task WhenIAddALink(string title, string url, string code)
             => AddAsync(code, title, url: url);
 
+        [Given("I add the evidence {string} with the link {string} valid until {string} to {string}")]
         [When("I add the evidence {string} with the link {string} valid until {string} to {string}")]
         public Task WhenIAddALinkValidUntil(string title, string url, string validUntil, string code)
             => AddAsync(code, title, url: url, validUntil: DateOnly.ParseExact(validUntil, "dd-MM-yyyy", CultureInfo.InvariantCulture));

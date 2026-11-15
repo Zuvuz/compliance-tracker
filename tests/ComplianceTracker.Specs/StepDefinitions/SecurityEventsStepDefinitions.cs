@@ -22,6 +22,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // ---------------------------------------------------------- Given / When
 
         [Given("I have recorded the actively exploited vulnerability {string} for {string}, aware since {string}")]
+        [Given("I record the actively exploited vulnerability {string} for {string}, aware since {string}")]
         [When("I record the actively exploited vulnerability {string} for {string}, aware since {string}")]
         public Task WhenIRecordAVulnerability(string title, string project, string awareAt)
             => RecordAsync(project, "ActivelyExploitedVulnerability", title, awareAt);

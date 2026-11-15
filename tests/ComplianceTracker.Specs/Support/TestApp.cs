@@ -48,6 +48,7 @@ namespace ComplianceTracker.Specs.Support
                 // The tests run the scheduled GitHub check themselves ("the scheduled check runs"), never on a timer
                 ["WorkItemSync:Enabled"] = "false",
                 ["NeedsActionReassessment:Enabled"] = "false",
+                ["Reminders:RunInBackground"] = "false", // US-183: the scenarios run the reminders themselves
                 // US-063: the feedback writer's token, which the pretend GitHub accepts
                 ["Feedback:GitHubToken"] = FakeGitHub.FeedbackToken,
                 // US-137: EUR-Lex imports go to the pretend Publications Office (FakeEurLex)
@@ -78,6 +79,10 @@ namespace ComplianceTracker.Specs.Support
 
                 // US-137: the EUR-Lex adapter reads the pretend Publications Office
                 services.AddHttpClient<ComplianceTracker.Infrastructure.Frameworks.HttpEurLexSource>().ConfigurePrimaryHttpMessageHandler(FakeEurLex.CreateHandler);
+
+                // US-183: the pretend mail server
+                services.AddSingleton<FakeMail>();
+                services.AddSingleton<ComplianceTracker.Application.Reminders.IMailSender>(provider => provider.GetRequiredService<FakeMail>());
 
                 // US-020: the pretend AI replaces the Ollama adapters (the last registration wins)
                 services.AddSingleton<IEmbeddingModel>(ai);

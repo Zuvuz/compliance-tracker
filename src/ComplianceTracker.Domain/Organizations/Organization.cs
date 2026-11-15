@@ -28,6 +28,19 @@ namespace ComplianceTracker.Domain.Organizations
         public string Country { get; private set; } = DefaultCountry;
         public const string DefaultCountry = "DK";
 
+        // US-183 R1: how many days before a deadline the reminders are sent
+        public int ReminderDaysBefore { get; private set; } = Reminders.ReminderKinds.DefaultDaysBefore;
+
+        public void SetReminderDaysBefore(int days)
+        {
+            if (days < 1 || days > Reminders.ReminderKinds.MaxDaysBefore)
+            {
+                throw new DomainException($"Choose from 1 to {Reminders.ReminderKinds.MaxDaysBefore} days");
+            }
+
+            ReminderDaysBefore = days;
+        }
+
         // The 27 EU member states
         public static readonly IReadOnlyList<string> EuCountries =
         [
