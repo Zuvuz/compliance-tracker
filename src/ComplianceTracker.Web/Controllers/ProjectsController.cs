@@ -271,6 +271,13 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound();
             }
 
+            // US-154: one piece of evidence on its own address; an unknown id is "not found"
+            if (activeTab is ProjectTabs.Evidence && sub is not null
+                && !(Guid.TryParse(sub, out var evidenceId) && evidenceTab?.Evidence.Any(e => e.Evidence.Id == evidenceId) == true))
+            {
+                return NotFound();
+            }
+
             // US-153 R3: a requirement's page; an unknown code is "not found"
             if (requirementPage && RequirementPages.Find(compliance, sub, req) is null)
             {

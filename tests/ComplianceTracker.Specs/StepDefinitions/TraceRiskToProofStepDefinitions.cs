@@ -29,6 +29,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task GivenTheEvidenceProves(string title, string code)
         {
             await _evidence.GivenTheEvidenceIsOnTheTab(title, Project);
+            await OpenEvidencePageAsync(title); // US-154
             var form = Card(title).QuerySelector("form.link-evidence")!;
             var option = form.QuerySelectorAll("option").First(o => o.TextContent.Trim().StartsWith(code + " ", StringComparison.Ordinal));
             await _web.PostFormAsync(form.GetAttribute("action")!, new Dictionary<string, string>(Hidden(form)) { ["requirementIds"] = option.GetAttribute("value")! });
@@ -46,6 +47,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task WhenILinkTheEvidenceToTheStory(string title, string story)
         {
             await OpenTabAsync("evidence");
+            await OpenEvidencePageAsync(title); // US-154
             var form = Card(title).QuerySelector("form.link-evidence-story") ?? throw new Xunit.Sdk.XunitException("No story can be linked.");
             var option = form.QuerySelectorAll("option").Single(o => o.TextContent.Trim() == story);
             await _web.PostFormAsync(form.GetAttribute("action")!, new Dictionary<string, string>(Hidden(form)) { ["workItemId"] = option.GetAttribute("value")! });
@@ -130,6 +132,15 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await using var db = _web.CreateDbContext();
             var id = await db.Projects.Where(p => p.Name == Project).Select(p => p.Id).SingleAsync();
             await _web.OpenAsync($"/Projects/Details/{id}/{tab}");
+        }
+
+        // US-154: the pickers of one piece of evidence are on its own address
+        private async Task OpenEvidencePageAsync(string title)
+        {
+            if (Card(title).QuerySelector("a.link-evidence-page") is { } link)
+            {
+                await _web.OpenAsync(link.GetAttribute("href")!);
+            }
         }
 
         private static Dictionary<string, string> Hidden(IElement form)

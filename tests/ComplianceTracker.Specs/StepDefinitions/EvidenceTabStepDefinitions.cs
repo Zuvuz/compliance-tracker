@@ -132,6 +132,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task WhenILinkToTheRequirements(string title, string first, string second)
         {
             await OpenTabAsync(Project);
+            // US-154: the pickers are on the evidence's own address
+            await _web.OpenAsync(Item(title).QuerySelector("a.link-evidence-page")!.GetAttribute("href")!);
             var form = Item(title).QuerySelector("form.link-evidence")!;
             var ids = form.QuerySelectorAll("option")
                 .Where(o => o.TextContent.StartsWith(first + " ", StringComparison.Ordinal) || o.TextContent.StartsWith(second + " ", StringComparison.Ordinal))
