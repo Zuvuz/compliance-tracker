@@ -284,6 +284,18 @@ namespace ComplianceTracker.Application.Scanning
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        // US-176 R1: an acceptance made by mistake; the finding is open again
+        public async Task UndoAcceptFindingAsync(Guid projectId, Guid findingId, CancellationToken cancellationToken = default)
+        {
+            var (_, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var finding = (await _scans.ListFindingsAsync(project.Id, cancellationToken)).FirstOrDefault(f => f.Id == findingId)
+                ?? throw new DomainException("Finding not found");
+            var reason = finding.AcceptedReason;
+            finding.UndoAccept();
+            await _log.LogAsync(ActivityAction.FindingAcceptanceUndone, project.Id, $"{finding.RuleId} open again (was accepted: {reason})", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
         // The Scans tab; null for other organisations' projects
         public async Task<ScanOverview?> ForProjectAsync(Guid projectId, CancellationToken cancellationToken = default)
         {

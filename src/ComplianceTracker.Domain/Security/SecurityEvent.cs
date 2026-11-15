@@ -265,6 +265,35 @@ namespace ComplianceTracker.Domain.Security
             ClosedReason = text;
         }
 
+        // US-176 R1, R4: recorded by mistake. Closed with the reason and kept for the timeline; not possible once a report
+        // was sent to the CSIRT (then a correction is added instead)
+        public bool RecordedInError { get; private set; }
+
+        public void MarkRecordedInError(string? reason, Guid userId, DateTime now)
+        {
+            EnsureOpen();
+            if (Enum.GetValues<SecurityReportKind>().Any(r => SentAt(r) is not null))
+            {
+                throw new DomainException("A report was sent for this event; add a correction instead");
+            }
+
+            var text = (reason ?? "").Trim();
+            if (text.Length == 0)
+            {
+                throw new DomainException("Say why the event was recorded in error");
+            }
+
+            if (text.Length > MaxDescriptionLength - 20) // room for "Recorded in error: "
+            {
+                throw new DomainException($"The reason must be {MaxDescriptionLength} characters or fewer");
+            }
+
+            RecordedInError = true;
+            ClosedAt = now;
+            ClosedById = userId;
+            ClosedReason = $"Recorded in error: {text}";
+        }
+
         // US-127 (CRA Annex I, Part II (4)): the vulnerability is disclosed after the fix
         public void MarkDisclosed(DateTime at, DateTime now)
         {

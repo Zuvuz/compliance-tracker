@@ -233,6 +233,17 @@
                                 <td class="small finding-state">@(finding.State == FindingState.Fixed
                                     ? $"Fixed in scan of {finding.FixedAt!.Value.ToLocalTime():dd-MM-yyyy}"
                                     : $"Accepted: {finding.AcceptedReason}")</td>
+                                <td>
+                                    @if (finding.State == FindingState.Accepted && canChange)
+                                    {
+                                        @* US-176 R1: accepted by mistake *@
+                                        <form asp-action="UndoAcceptFinding" method="post" class="undo-accept-finding">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="findingId" value="@finding.Id" />
+                                            <button type="submit" class="btn btn-sm btn-link p-0">Undo acceptance</button>
+                                        </form>
+                                    }
+                                </td>
                             </tr>
                         }
                     </tbody>

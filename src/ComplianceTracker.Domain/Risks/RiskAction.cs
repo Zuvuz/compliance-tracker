@@ -77,6 +77,24 @@ namespace ComplianceTracker.Domain.Risks
             return link;
         }
 
+        // US-176 R1: a link made by mistake; a done action keeps its proof
+        internal RiskActionLink Unlink(Guid linkId)
+        {
+            if (IsDone)
+            {
+                throw new DomainException("A done action keeps the proof it was done with");
+            }
+
+            var link = _links.FirstOrDefault(l => l.Id == linkId) ?? throw new DomainException("Link not found");
+            _links.Remove(link);
+            if (_links.Count == 0 && Status == RiskActionStatus.InProgress)
+            {
+                Status = RiskActionStatus.Planned;
+            }
+
+            return link;
+        }
+
         // R3: hasProof says whether a linked work item is done or a linked evidence is there (the caller knows)
         internal void Complete(bool hasProof, Guid userId, DateTime at)
         {

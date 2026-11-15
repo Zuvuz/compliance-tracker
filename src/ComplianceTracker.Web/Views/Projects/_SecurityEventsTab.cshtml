@@ -188,6 +188,19 @@
                                     <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">Disclosed</button>
                                 </form>
                             }
+                            @if (Enum.GetValues<SecurityReportKind>().All(r => securityEvent.SentAt(r) is null))
+                            {
+                                @* US-176 R1, R4: recorded by mistake, while no report was sent *@
+                                <details class="recorded-in-error-menu">
+                                    <summary class="btn btn-sm btn-link text-danger p-0">Recorded in error</summary>
+                                    <form asp-action="SecurityEventRecordedInError" method="post" class="d-flex flex-wrap gap-1 mt-1 recorded-in-error" data-confirm="The event is closed as recorded in error. It stays in the history." data-confirm-final="true">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="eventId" value="@securityEvent.Id" />
+                                        <input name="reason" class="form-control form-control-sm w-auto" maxlength="4000" placeholder="Why, e.g. a test entry" aria-label="Why it was recorded in error" required />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Close as recorded in error</button>
+                                    </form>
+                                </details>
+                            }
                             <form asp-action="CloseSecurityEvent" method="post" data-confirm="The security event is closed; its deadlines stop." data-confirm-final="true" class="d-flex gap-1 close-security-event">
                                 <input type="hidden" name="projectId" value="@project.Id" />
                                 <input type="hidden" name="eventId" value="@securityEvent.Id" />

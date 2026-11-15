@@ -1804,6 +1804,22 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - **Test:** et scenarie åbner alle sider og faner med realistiske data (30 stories, 12 risici, 20 evidens) og kræver under 150 KB pr. side og ingen lange vælgere gentaget pr. række.
 - **Begrundelse:** Siderne skal være hurtige for alle og blive ved med at være det, når et projekt vokser (ISO/IEC 27001 A.8.6).
 - **Fravalgt:** at hente vælgerne med JavaScript, når de åbnes. En egen adresse virker uden JavaScript og kan linkes til.
+### B116 – Fejl rettes ved at trække tilbage, ikke ved at slette (US-176)
+
+- **Beslutning:**
+  - **Risici og handlinger:**
+    - En risiko, der er oprettet ved en fejl, kan trækkes tilbage med en begrundelse, mens den er åben. Den lukkes og markeres "Withdrawn", forsvinder fra registret og risikorapporten og bliver i historikken.
+    - En accepteret eller lukket risiko kan genåbnes med en begrundelse og samme rettighed som at acceptere. En accepteret risiko skal så reduceres igen.
+    - En handling på en risiko kan fjernes, og en story eller evidens kan tages af den, så længe handlingen ikke er udført.
+  - **Scanninger:** en accepteret finding kan fortrydes og er åben igen.
+  - **Security events:**
+    - En security event, der er registreret ved en fejl, lukkes som "Recorded in error" med en begrundelse og bliver i tidslinjen.
+    - Når en rapport er sendt til CSIRT, er det ikke muligt længere. Så tilføjes en rettelse i stedet.
+  - **Låst:** låste rapporter og audit-pakker ændres aldrig.
+  - **Log:** alt logges (`RiskWithdrawn`, `RiskReopened`, `RiskActionRemoved`, `RiskActionUnlinked`, `FindingAcceptanceUndone`, `SecurityEventRecordedInError`).
+- **Begrundelse:** Man skal kunne rette en fejl uden en admin og uden at efterlade forkerte data i rapporterne. Historikken bevares (ISO/IEC 27001 A.5.33 og A.8.15, CRA art. 14).
+- **Afvigelse:** at genåbne en accepteret risiko kræver ikke fire-øjne. Det gør risikoen åben og synlig igen og sænker ikke opmærksomheden.
+- **Senere:** at trække en scanning, en SBOM, testresultater eller en kravspecifikations-version tilbage. Det kræver, at fundene rulles tilbage pr. scanning, og ligger i US-177.
 
 ## Åbne spørgsmål til klassediagrammet
 

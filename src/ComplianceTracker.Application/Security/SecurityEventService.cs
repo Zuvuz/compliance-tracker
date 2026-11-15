@@ -184,6 +184,16 @@ namespace ComplianceTracker.Application.Security
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        // US-176 R1, R4: recorded by mistake; kept for the timeline, not possible once a report was sent
+        public async Task MarkRecordedInErrorAsync(Guid projectId, Guid eventId, string? reason, CancellationToken cancellationToken = default)
+        {
+            var (user, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var securityEvent = await RequireAsync(project, eventId, cancellationToken);
+            securityEvent.MarkRecordedInError(reason, user.Id, Now);
+            await _log.LogAsync(ActivityAction.SecurityEventRecordedInError, project.Id, $"{securityEvent.Title}: {securityEvent.ClosedReason}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
         // US-127: a vulnerability that is not exploited is disclosed after its fix
         public async Task MarkDisclosedAsync(Guid projectId, Guid eventId, DateTime atUtc, CancellationToken cancellationToken = default)
         {

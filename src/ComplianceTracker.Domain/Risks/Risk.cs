@@ -56,6 +56,9 @@ namespace ComplianceTracker.Domain.Risks
         public string? ClosedReason { get; private set; }
         public DateTime? ClosedAt { get; private set; }
 
+        // US-176 R1: created by mistake and taken back; closed, kept in the history, never in reports
+        public bool IsWithdrawn { get; private set; }
+
         public Guid CreatedById { get; private set; }
         public DateTime CreatedAt { get; private set; }
 
@@ -98,8 +101,8 @@ namespace ComplianceTracker.Domain.Risks
         public bool HasNoMeasures => Status == RiskStatus.Open && Treatment == RiskTreatment.Reduce && _measures.Count == 0;
 
         // What the register shows: "Treated" for a risk to reduce that has measures
-        public string DisplayStatus => Status == RiskStatus.Open && Treatment == RiskTreatment.Reduce && _measures.Count > 0
-            ? "Treated"
+        public string DisplayStatus => IsWithdrawn ? "Withdrawn"
+            : Status == RiskStatus.Open && Treatment == RiskTreatment.Reduce && _measures.Count > 0 ? "Treated"
             : Status.ToString();
 
         // For EF Core only
@@ -182,6 +185,58 @@ namespace ComplianceTracker.Domain.Risks
             return change;
         }
 
+        // US-176 R1, R2: a risk created by mistake is withdrawn with a reason, while nobody has accepted or closed it
+        public ProjectChange Withdraw(string? reason, DateTime at)
+        {
+            if (Status != RiskStatus.Open)
+            {
+                throw new DomainException("Only an open risk can be withdrawn; reopen it first");
+            }
+
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                throw new DomainException("Say why the risk is withdrawn");
+            }
+
+            var change = new ProjectChange("Status", DisplayStatus, $"Withdrawn ({reason.Trim()})");
+            Status = RiskStatus.Closed;
+            ClosedReason = reason.Trim();
+            ClosedAt = at;
+            IsWithdrawn = true;
+            return change;
+        }
+
+        // US-176 R1: an accepted or closed risk is opened again, e.g. accepted by mistake; a withdrawn one stays withdrawn
+        public ProjectChange Reopen(string? reason)
+        {
+            if (Status == RiskStatus.Open)
+            {
+                throw new DomainException("The risk is open already");
+            }
+
+            if (IsWithdrawn)
+            {
+                throw new DomainException("A withdrawn risk cannot be reopened; add it again");
+            }
+
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                throw new DomainException("Say why the risk is reopened");
+            }
+
+            var change = new ProjectChange("Status", DisplayStatus, $"Open again ({reason.Trim()})");
+            if (Status == RiskStatus.Accepted)
+            {
+                // Accepting set the treatment to Accept; reopened, the risk is to be reduced again
+                Treatment = RiskTreatment.Reduce;
+                (AcceptedReason, AcceptedById, AcceptedRole, AcceptedAt) = (null, null, null, null);
+            }
+
+            (ClosedReason, ClosedAt) = (null, null);
+            Status = RiskStatus.Open;
+            return change;
+        }
+
         // R6
         public void MarkReviewed(Guid userId, DateTime at)
         {
@@ -242,6 +297,22 @@ namespace ComplianceTracker.Domain.Risks
         {
             EnsureNotClosed();
             Action(actionId).Complete(hasProof, userId, at);
+        }
+
+        // US-176 R1: an action added by mistake
+        public RiskAction RemoveAction(Guid actionId)
+        {
+            EnsureNotClosed();
+            var action = Action(actionId);
+            _actions.Remove(action);
+            return action;
+        }
+
+        // US-176 R1: a story or evidence linked to an action by mistake
+        public RiskActionLink UnlinkAction(Guid actionId, Guid linkId)
+        {
+            EnsureNotClosed();
+            return Action(actionId).Unlink(linkId);
         }
 
         public RiskAction Action(Guid actionId)

@@ -304,6 +304,15 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-156: the tracker assessed again what needs action after the product changed (by the system). Details holds
         // what started it and the result, e.g. "intended purpose changed: 2 need action, 0 do not apply (model, version)".
-        NeedsActionReassessed
+        NeedsActionReassessed,
+
+        // US-176: mistakes taken back. SubjectId points at the project; Details holds the item and the reason, e.g.
+        // "Typo risk: Created by mistake".
+        RiskWithdrawn,
+        RiskReopened,
+        RiskActionRemoved,
+        RiskActionUnlinked,
+        FindingAcceptanceUndone,
+        SecurityEventRecordedInError
     }
 }
