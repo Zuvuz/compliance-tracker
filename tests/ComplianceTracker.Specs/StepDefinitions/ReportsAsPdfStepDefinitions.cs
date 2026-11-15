@@ -114,8 +114,9 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Then("every page with a table shows the column {string}")]
         public void ThenEveryPageWithATableShowsTheColumn(string column)
         {
-            // The first page starts with the title and summary; every later page holds table rows and must repeat the header
-            foreach (var page in Pages().Skip(1))
+            // The first page starts with the title and summary; every later page holds table rows and must repeat the header.
+            // US-194: the lifecycle sheets at the end have their own columns.
+            foreach (var page in Pages().Skip(1).TakeWhile(p => !p.Contains("Lifecycle checklist", StringComparison.Ordinal)))
             {
                 Assert.Contains(column, page, StringComparison.Ordinal);
             }

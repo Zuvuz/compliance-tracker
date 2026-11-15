@@ -195,13 +195,23 @@ namespace ComplianceTracker.Specs.Features
 #line 16
     await testRunner.WhenAsync("I download the traceability matrix of \"Acme Portal\" as Excel for the team", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
+                global::Reqnroll.Table table27 = new global::Reqnroll.Table(new string[] {
+                            "Sheet"});
+                table27.AddRow(new string[] {
+                            "Summary"});
+                table27.AddRow(new string[] {
+                            "CRA"});
+                table27.AddRow(new string[] {
+                            "Lifecycle checklist"});
+                table27.AddRow(new string[] {
+                            "Phase changes"});
 #line 17
-    await testRunner.ThenAsync("the workbook has the sheets \"Summary\" and \"CRA\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the workbook has these sheets in order:", ((string)(null)), table27, "Then ");
 #line hidden
-#line 18
+#line 23
     await testRunner.AndAsync("the header of \"CRA\" is bold, frozen and filtered", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 19
+#line 24
     await testRunner.AndAsync("on \"CRA\" the status of \"I.2(a)\" is \"Not covered\" in red", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -225,7 +235,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The team sees what to do first", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 22
+#line 27
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -238,17 +248,17 @@ namespace ComplianceTracker.Specs.Features
 #line 5
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 23
+#line 28
     await testRunner.GivenAsync("the user story \"[US-004] Sign in with Keycloak\" is linked to the requirement \"I.2" +
                         "(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 24
+#line 29
     await testRunner.WhenAsync("I download the traceability matrix of \"Acme Portal\" as Excel for the team", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 25
+#line 30
     await testRunner.ThenAsync("the first row of \"CRA\" is a requirement that is \"Not covered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 26
+#line 31
     await testRunner.AndAsync("on \"CRA\" the row \"I.2(d)\" lists the story \"[US-004] Sign in with Keycloak\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -274,7 +284,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The auditor sees who decided", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 29
+#line 34
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -287,21 +297,21 @@ namespace ComplianceTracker.Specs.Features
 #line 5
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 30
+#line 35
     await testRunner.GivenAsync("the user story \"[US-004] Sign in with Keycloak\" is linked to the requirement \"I.2" +
                         "(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 31
+#line 36
     await testRunner.AndAsync("\"I.2(k)\" is not applicable for \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 32
+#line 37
     await testRunner.WhenAsync("I download the traceability matrix of \"Acme Portal\" as Excel for an auditor", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 33
+#line 38
     await testRunner.ThenAsync("on \"CRA\" the row \"I.2(d)\" says \"Decided by\" \"Anna\" and \"Role\" \"Organisation admin" +
                         "\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 34
+#line 39
     await testRunner.AndAsync("on \"CRA\" the status of \"I.2(k)\" is \"Not applicable\" in grey", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -325,7 +335,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The management gets the overview only", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 37
+#line 42
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -338,13 +348,13 @@ namespace ComplianceTracker.Specs.Features
 #line 5
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 38
+#line 43
     await testRunner.WhenAsync("I download the traceability matrix of \"Acme Portal\" as Excel for the management", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 39
+#line 44
     await testRunner.ThenAsync("on \"Status\" the first row says \"Regulation\" \"CRA\" and \"Coverage\" \"0 % (0 of 72)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 40
+#line 45
     await testRunner.AndAsync("on \"Key figures\" the first row says \"Figure\" \"Requirements covered\" and \"Value\" \"" +
                         "0 of 72\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
@@ -367,7 +377,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The download is logged", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 43
+#line 48
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -380,10 +390,10 @@ namespace ComplianceTracker.Specs.Features
 #line 5
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 44
+#line 49
     await testRunner.WhenAsync("I download the traceability matrix of \"Acme Portal\" as Excel for an auditor", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 45
+#line 50
     await testRunner.ThenAsync("the download is logged as \"Excel for Auditor: CRA\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }

@@ -50,6 +50,17 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.Equal(otherValue, rows[0][header.IndexOf(otherColumn)]);
         }
 
+        // US-194: a lifecycle checklist row by its item, with its status and its note
+        [Then("on {string} the row {string} says {string} and {string}")]
+        public void ThenTheRowSays(string sheet, string item, string status, string note)
+        {
+            var (header, rows) = Table(sheet);
+            var row = rows.FirstOrDefault(r => r[header.IndexOf("Item")] == item)
+                ?? throw new Xunit.Sdk.XunitException($"'{sheet}' has no row '{item}'.");
+            Assert.Equal(status, row[header.IndexOf("Status")]);
+            Assert.Equal(note, header.IndexOf("Who, when or why") < row.Count ? row[header.IndexOf("Who, when or why")] : "");
+        }
+
         [Then("the workbook has only the sheet {string}")]
         public void ThenTheWorkbookHasOnlyTheSheet(string name)
             => Assert.Equal([name], Read(book => SheetNames(book)));

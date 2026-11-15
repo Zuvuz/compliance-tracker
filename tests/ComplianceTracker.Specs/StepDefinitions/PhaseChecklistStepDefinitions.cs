@@ -29,6 +29,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public Task WhenITick(string item, string project, string comment)
             => ChangeAsync(project, item, "tick", new() { ["comment"] = comment });
 
+        [Given("I turn off the checklist item {string} of {string} because {string}")]
         [When("I turn off the checklist item {string} of {string} because {string}")]
         public Task WhenITurnOff(string item, string project, string reason)
             => ChangeAsync(project, item, "off", new() { ["reason"] = reason });

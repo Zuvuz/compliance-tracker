@@ -44,13 +44,15 @@ namespace ComplianceTracker.Application.Reports
         private readonly TimeProvider _clock;
         private readonly AuditReadinessService _readiness; // US-178
         private readonly ISpreadsheetWriter _spreadsheets; // US-179
+        private readonly Projects.PhaseGates _gates; // US-194
 
         public AuditPackageService(
             ReportFiles files, ProjectQueries projects, ComplianceQueries compliance, IEvidenceRepository evidence, IRequirementDocumentRepository documents,
             ISbomRepository sboms, AuditService audits, IActivityLogRepository log, IReportSnapshotRepository snapshots, CurrentMember member,
             IActivityLogger logger, IUnitOfWork unitOfWork, ICurrentUser currentUser, TimeProvider clock, AuditReadinessService readiness,
-            ISpreadsheetWriter spreadsheets)
+            ISpreadsheetWriter spreadsheets, Projects.PhaseGates gates)
         {
+            _gates = gates;
             _spreadsheets = spreadsheets;
             _readiness = readiness;
             _files = files;
@@ -112,6 +114,13 @@ namespace ComplianceTracker.Application.Reports
 
             var risks = await _files.RiskAssessmentAsync(project.Id, cancellationToken);
             parts.Add(new PackagePart("04-risk-assessment.pdf", risks?.Pdf.Content, "Risk assessment (US-054)"));
+
+            // US-194 R2, R3: the lifecycle, every phase's checklist and the phase changes
+            if (await _gates.LifecycleAsync(project.Id, compliance.Frameworks, cancellationToken) is { } lifecycle)
+            {
+                parts.Add(new PackagePart("lifecycle.txt", Encoding.UTF8.GetBytes(Projects.LifecycleReport.Text(project.Name, lifecycle,
+                    id => organization.Users.FirstOrDefault(u => u.Id == id)?.Name ?? "Unknown")), "The lifecycle phase, its checklists and the phase changes (US-194)"));
+            }
 
             parts.Add(new PackagePart($"05-activity-log-{start:yyyy-MM-dd}-to-{end:yyyy-MM-dd}.csv",
                 await ActivityCsvAsync(organization, project, start, end, cancellationToken), $"Activity log of the project, {start:dd-MM-yyyy} – {end:dd-MM-yyyy} (US-055)"));

@@ -14,7 +14,12 @@ Feature: The traceability matrix for each reader
   @US-120 @iso27001-7.5.3 @integration
   Scenario: The Excel file is formatted
     When I download the traceability matrix of "Acme Portal" as Excel for the team
-    Then the workbook has the sheets "Summary" and "CRA"
+    Then the workbook has these sheets in order:
+      | Sheet               |
+      | Summary             |
+      | CRA                 |
+      | Lifecycle checklist |
+      | Phase changes       |
     And the header of "CRA" is bold, frozen and filtered
     And on "CRA" the status of "I.2(a)" is "Not covered" in red
 

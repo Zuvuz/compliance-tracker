@@ -18,7 +18,8 @@ namespace ComplianceTracker.Application.Reports
         Risks,
         Scans,         // the SBOM
         ProjectEdit,   // support period, vulnerability contact
-        Audits
+        Audits,
+        Overview       // US-194: the project's lifecycle checklist
     }
 
     // One line of the check: what an auditor asks for, whether it is there, and where it is fixed
@@ -62,6 +63,19 @@ namespace ComplianceTracker.Application.Reports
         public const int NamedRequirements = 10;
 
         public static bool IsIso27001(Framework framework) => framework.Name.Contains("27001", StringComparison.Ordinal);
+
+        // US-194 R5: the current phase's checklist as one more group, e.g. "Lifecycle: 2 items missing in Verification"
+        public static FrameworkReadiness Lifecycle(Projects.ProjectLifecycle lifecycle)
+        {
+            var missing = lifecycle.Missing;
+            return new FrameworkReadiness("Lifecycle", "lifecycle",
+            [
+                new ReadinessLine($"Checklist of the phase {lifecycle.Phase}", missing.Count == 0,
+                    missing.Count == 0 ? $"{lifecycle.Done} of {lifecycle.Counted} done"
+                        : $"{missing.Count} missing: {string.Join(", ", missing.Select(m => m.Item.Text))}",
+                    ReadinessFix.Overview)
+            ]);
+        }
 
         public static PackageReadiness Check(IReadOnlyList<FrameworkCompliance> frameworks, ReadinessFacts facts, DateOnly today)
             => new(frameworks.Select(f => Check(f, facts, today)).ToList());
@@ -163,10 +177,12 @@ namespace ComplianceTracker.Application.Reports
         private readonly IRiskRepository _risks;
         private readonly AuditService _audits;
         private readonly TimeProvider _clock;
+        private readonly Projects.PhaseGates _gates; // US-194
 
         public AuditReadinessService(ProjectQueries projects, ComplianceQueries compliance, ISbomRepository sboms, IRiskRepository risks,
-            AuditService audits, TimeProvider clock)
+            AuditService audits, TimeProvider clock, Projects.PhaseGates gates)
         {
+            _gates = gates;
             _projects = projects;
             _compliance = compliance;
             _sboms = sboms;
@@ -195,7 +211,12 @@ namespace ComplianceTracker.Application.Reports
                 project.VulnerabilityContactEmail,
                 (await _risks.ListAsync(project.Id, cancellationToken)).Count(r => r.Status != RiskStatus.Closed),
                 audits?.All.Select(a => (DateOnly?)a.HeldOn).Max());
-            return AuditReadiness.Check(chosen, facts, DateOnly.FromDateTime(_clock.GetUtcNow().UtcDateTime));
+            var check = AuditReadiness.Check(chosen, facts, DateOnly.FromDateTime(_clock.GetUtcNow().UtcDateTime));
+
+            // US-194 R5: the current phase's checklist items that are missing
+            return await _gates.LifecycleAsync(project.Id, compliance.Frameworks, cancellationToken) is { } lifecycle
+                ? check with { Frameworks = [.. check.Frameworks, AuditReadiness.Lifecycle(lifecycle)] }
+                : check;
         }
     }
 }

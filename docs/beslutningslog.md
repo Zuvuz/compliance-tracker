@@ -1993,6 +1993,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - **Forespørgsler:** oversigten laver én fast forespørgsel mere for de egne punkter, så grænsen er hævet fra 52 til 53 (US-139).
 - **Begrundelse:** Organisationens egne regler for sikker udvikling (ISO/IEC 27001 A.5.1, A.8.25) skal følges i hvert projekt på samme måde som regulativernes.
 
+### B129 – Livsfasen og tjeklisten i rapporterne (US-194)
+
+- **Beslutning:**
+  - **Sporbarhedsrapporten:** resuméet viser fasen og "x af y gjort" i den nuværende fase, også i ledelsesrapporten. Team- og auditor-udgaven får to nye ark:
+    - **"Lifecycle checklist":** hvert punkt i hver fase med regulativ, status og hvem, hvornår eller hvorfor.
+    - **"Phase changes":** hvert faseskift med det, der manglede på det tidspunkt.
+  - **Den tekniske dokumentation:** fasen, tjeklisterne og faseskiftene står i afsnit 2 (design, udvikling og håndtering af sårbarheder). Afsnit 1–8 følger stadig CRA Annex VII.
+  - **Audit-pakken** får `lifecycle.txt`.
+  - **Audit-tjekket** (US-178) får en gruppe "Lifecycle" med de punkter, der mangler i den nuværende fase, og et link til tjeklisten.
+  - **Faseskiftene** læses fra aktivitetsloggen, hvor hvert `ProjectPhaseChanged` parres med den `PhaseChangedWithItemsMissing`, der blev logget samtidig.
+  - **Valgfrie tests,** som ingen har valgt, kommer ikke med.
+  - **Forespørgsler:** sporbarhedsrapporten genbruger den overholdelse, den allerede har slået op. Resten er faste forespørgsler, så grænsen er hævet fra 53 til 63 (US-139).
+- **Begrundelse:** Ledelse og auditor skal kunne se, hvor produktet er i sin livscyklus, og hvad der manglede, da det gik videre (CRA Annex VII, ISO/IEC 27001 9.2 og 9.3).
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

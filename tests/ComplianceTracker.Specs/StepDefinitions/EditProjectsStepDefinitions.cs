@@ -54,6 +54,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             => EditAsync(projectName, "IntendedPurpose", purpose);
 
         // Sends the phase form. Also when the page hides it (R4), so the test proves the server refuses it too.
+        [Given("I change the phase of {string} to {string}")]
         [When("I change the phase of {string} to {string}")]
         public async Task WhenIChangeThePhase(string projectName, string phase)
         {
