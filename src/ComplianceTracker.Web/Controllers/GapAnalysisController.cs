@@ -20,13 +20,16 @@ namespace ComplianceTracker.Web.Controllers
         private readonly GapAnalysisService _gap;
         private readonly DocumentSuggestionService _suggestions;
         private readonly GapQuestionService _questions;
+        private readonly Nis2GapReportService _report;
         private readonly CurrentMember _member;
 
-        public GapAnalysisController(GapAnalysisService gap, DocumentSuggestionService suggestions, GapQuestionService questions, CurrentMember member)
+        public GapAnalysisController(GapAnalysisService gap, DocumentSuggestionService suggestions, GapQuestionService questions,
+            Nis2GapReportService report, CurrentMember member)
         {
             _gap = gap;
             _suggestions = suggestions;
             _questions = questions;
+            _report = report;
             _member = member;
         }
 
@@ -39,14 +42,29 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             ViewData["OrganisationArea"] = true;
+            var (areaId, lines, reports) = await _report.CurrentAsync(cancellationToken); // US-190
             return View(new GapAnalysisViewModel(
                 await _suggestions.PendingForAsync(IsNis2, cancellationToken),
                 await _member.CanAsync(Permission.ManageFrameworks, cancellationToken),
                 TempData[ResultKey] is string json ? JsonSerializer.Deserialize<GapUploadView>(json) : null)
             {
                 Questions = await _questions.QuestionsAsync(cancellationToken), // US-189
-                CanAnswer = await _member.CanAsync(Permission.DecideCompliance, cancellationToken)
+                CanAnswer = await _member.CanAsync(Permission.DecideCompliance, cancellationToken),
+                AreaId = areaId,
+                Lines = lines,
+                Reports = reports,
+                CanAddRisks = await _member.CanAsync(Permission.ManageRisks, cancellationToken)
             });
+        }
+
+        // POST /GapAnalysis/Report: US-190 R3, the locked gap report; any member may make it
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> Report(CancellationToken cancellationToken)
+        {
+            await _report.MakeAsync(cancellationToken);
+            return RedirectToAction(nameof(Index), null, "report");
         }
 
         // POST /GapAnalysis/Answer: US-189 R3, R5, one question at a time; back to the question
@@ -95,5 +113,11 @@ namespace ComplianceTracker.Web.Controllers
         // US-189
         public IReadOnlyList<GapQuestionView> Questions { get; init; } = [];
         public bool CanAnswer { get; init; }
+
+        // US-190
+        public Guid AreaId { get; init; }
+        public IReadOnlyList<GapLine> Lines { get; init; } = [];
+        public IReadOnlyList<Domain.Reports.ReportSnapshot> Reports { get; init; } = [];
+        public bool CanAddRisks { get; init; }
     }
 }
