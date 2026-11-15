@@ -32,6 +32,7 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.FeedbackDismissed
                 or ActivityAction.SealUploaded or ActivityAction.SealRemoved
                 or ActivityAction.Nis2ScopeChecked or ActivityAction.OrganisationCountryChanged
+                or ActivityAction.GapQuestionAnswered // US-189
                 or ActivityAction.IndustryProfileChosen => ActivityGroup.Organisation,
             ActivityAction.CatalogImported or ActivityAction.CatalogActivated or ActivityAction.FrameworkEnabled
                 or ActivityAction.FrameworkDisabled

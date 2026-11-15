@@ -4555,6 +4555,49 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("DocumentLinkSuggestions", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Organizations.GapAnswer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AnsweredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("AnsweredById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AnsweredRole")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Maturity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ReplacedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RequirementCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "RequirementCode", "AnsweredAt");
+
+                    b.ToTable("GapAnswers", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Invitation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7142,6 +7185,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Organizations.GapAnswer", b =>
+                {
                     b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
                         .WithMany()
                         .HasForeignKey("OrganizationId")

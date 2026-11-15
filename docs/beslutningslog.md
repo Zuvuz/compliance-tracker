@@ -1898,6 +1898,17 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At lade sprogmodellen skrive begrundelsen. Det er langsomt med den lille lokale model, og et citat fra dokumentet kan efterprøves.
   - At læse billeder med OCR.
 
+### B123 – Spørgsmål til det, dokumenterne ikke viser (US-189)
+
+- **Beslutning:**
+  - **16 faste spørgsmål** i almindeligt sprog: et for hver NIS2-foranstaltning i art. 20, art. 21(2)(a)–(j), 21(3), 21(4) og art. 23. Spørgsmålene er bygget ind ligesom NIS2-kravene og gemmes ikke i databasen.
+  - **Modenhed 0–4:** 0 ingen, 1 ad hoc, 2 defineret, 3 implementeret, 4 målt og forbedret. Et svar er en vurdering og kræver derfor DecideCompliance. Hvert svar logges.
+  - **Spørgsmål, der allerede er dækket** af godkendt evidens eller links i organisationsområdet, foldes væk, men kan stadig åbnes.
+  - **"Needs evidence":** et svar på 3 eller mere, uden at noget godkendt beviser det.
+  - **Svar tilføjes kun.** Et nyt svar erstatter det gamle, som gemmes med tidspunktet, hvor det blev erstattet (tabellen `GapAnswers`).
+- **Begrundelse:** Ikke alt står i dokumenter. Resten skal besvares på samme måde hver gang, så næste vurdering kan sammenlignes (ISO/IEC 27001 9.1).
+- **Fravalgt:** at sende spørgeskemaet til personer uden for trackeren.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

@@ -107,6 +107,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<Organizations.OrganisationAreaService>(); // US-142
             services.AddScoped<Organizations.DocumentSuggestionService>(); // US-136 R2
             services.AddScoped<Organizations.GapAnalysisService>(); // US-188
+            services.AddScoped<Organizations.GapQuestionService>(); // US-189
             services.AddScoped<Reports.ReportFiles>(); // US-131
             services.AddScoped<Reports.ReportService>(); // US-050
             services.AddScoped<Reports.ReportSigningService>(); // US-132
