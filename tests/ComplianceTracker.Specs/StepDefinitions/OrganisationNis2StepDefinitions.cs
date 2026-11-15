@@ -26,7 +26,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task WhenIOpenFromTheTopBar(string text)
         {
             await _web.OpenAsync("/");
-            var link = _web.Page!.QuerySelectorAll("#top-bar a.nav-link").FirstOrDefault(a => a.TextContent.Trim() == text)
+            var link = _web.Page!.QuerySelectorAll("#top-bar a.nav-link, #top-bar a.dropdown-item").FirstOrDefault(a => a.TextContent.Trim() == text)
                 ?? throw new Xunit.Sdk.XunitException($"The top bar has no link '{text}'.");
             await _web.OpenAsync(link.GetAttribute("href")!);
         }
@@ -117,7 +117,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public void ThenISeeTheOrganisationArea(string organisation, string first, string second, string third, string fourth)
         {
             Assert.Contains(organisation, _web.Page!.QuerySelector("#organisation-area-title")?.TextContent ?? "");
-            var tabs = _web.Page.QuerySelectorAll("#project-tabs a").Select(a => a.TextContent.Trim()).ToList();
+            var tabs = _web.Page.QuerySelectorAll("#project-nav a[data-tab]").Select(a => a.TextContent.Trim()).ToList();
             Assert.All(new[] { first, second, third, fourth }, t => Assert.Contains(t, tabs));
             // Only what makes sense for the organisation (no product requirements, scans or security events yet)
             Assert.DoesNotContain("Product requirements", tabs);

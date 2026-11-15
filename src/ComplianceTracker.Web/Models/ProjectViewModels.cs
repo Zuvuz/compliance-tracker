@@ -121,6 +121,27 @@ namespace ComplianceTracker.Web.Models
         public static IReadOnlyList<(string Slug, string Title)> For(Domain.Projects.Project project)
             => project.IsOrganisationArea ? OrganisationArea : All;
 
+        // US-169 R2: the tabs in at most 6 groups; a group with one tab is that tab. Every tab keeps its own address.
+        public static readonly IReadOnlyList<(string Title, string[] Slugs)> Groups =
+        [
+            ("Overview", [Overview, Nis2Scope, Suggestions, Activity]),
+            ("Requirements", [Compliance, ProductRequirements, Frameworks]),
+            ("Evidence", [Evidence]),
+            ("Risks", [Risks]),
+            ("Security", [SecurityEvents, Scans]),
+            ("Reports", [Reports])
+        ];
+
+        // The groups of a project with only the tabs it has, in the group's order
+        public static IReadOnlyList<(string Title, IReadOnlyList<(string Slug, string Title)> Tabs)> GroupsFor(Domain.Projects.Project project)
+        {
+            var tabs = For(project);
+            return Groups
+                .Select(g => (g.Title, (IReadOnlyList<(string Slug, string Title)>)g.Slugs.Select(s => tabs.FirstOrDefault(t => t.Slug == s)).Where(t => t.Slug is not null).ToList()))
+                .Where(g => g.Item2.Count > 0)
+                .ToList();
+        }
+
         // The tab for an address, Overview when there is none, or null for an unknown one (or one the page does not have)
         public static string? Find(string? slug, bool organisationArea = false)
             => string.IsNullOrEmpty(slug)

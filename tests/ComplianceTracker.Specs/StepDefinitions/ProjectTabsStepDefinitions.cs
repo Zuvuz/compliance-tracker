@@ -96,7 +96,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         // ---------------------------------------------------------- Helpers
 
-        private IEnumerable<IElement> Tabs() => _web.Page!.QuerySelectorAll("#project-tabs a[data-tab]");
+        private IEnumerable<IElement> Tabs() => _web.Page!.QuerySelectorAll("#project-nav a[data-tab]");
 
         private string? Text(string selector) => _web.Page!.QuerySelector(selector)?.TextContent.Trim();
 

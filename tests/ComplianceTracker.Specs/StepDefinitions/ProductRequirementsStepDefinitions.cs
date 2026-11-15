@@ -120,7 +120,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task ThenIAmOnTheTab(string title, string project)
         {
             Assert.Equal($"/Projects/Details/{await ProjectIdAsync(project)}/{Tab}", _web.CurrentPath, ignoreCase: true);
-            Assert.Equal(title, _web.Page!.QuerySelector("#project-tabs a.active")?.TextContent.Trim());
+            Assert.Equal(title, _web.Page!.QuerySelector("#project-nav a[data-tab].active")?.TextContent.Trim());
         }
 
         [Then("the tab shows the sections {string}, {string} and {string}")]
@@ -176,7 +176,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         private IEnumerable<string> TabTitles()
-            => _web.Page!.QuerySelectorAll("#project-tabs a[data-tab]").Select(a => a.TextContent.Trim());
+            => _web.Page!.QuerySelectorAll("#project-nav a[data-tab]").Select(a => a.TextContent.Trim());
 
         private IReadOnlyList<string> Sections()
             => _web.Page!.QuerySelectorAll(".method-section").Select(s => s.GetAttribute("data-method")!).ToList();
