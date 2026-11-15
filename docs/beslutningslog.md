@@ -1923,6 +1923,26 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Afvigelse:** en handling kan ikke blive til en user story. Organisationsområdet har ingen user stories, så det bliver en risiko i stedet.
 - **Fravalgt:** rapporten som Word-fil. Det står som åbent spørgsmål i issuet.
 
+### B125 – Underleverandører, og at de overholder reglerne (US-191)
+
+- **Beslutning:**
+  - **Siden "Suppliers"** ligger under Organisation. For hver underleverandør registreres:
+    - navn og hvad den leverer;
+    - kritikalitet (High, Medium eller Low);
+    - kontakt;
+    - de regler, den skal overholde for os. De vælges fra en fast liste: NIS2 art. 21(2)(d), GDPR art. 28, ISO/IEC 27001 A.5.19–A.5.22, CRA art. 13(5) og DORA art. 28.
+  - **Evidens:** certifikat, databehandleraftale, sikkerhedsspørgeskema, auditrapport, kontrakt eller andet, med eller uden slutdato. Filen kontrolleres som al anden evidens og gemmes i sin egen tabel.
+  - **Status:**
+    - **Low** kræver ingen evidens.
+    - **High og Medium** er "Missing" uden gyldig evidens. Udløbet evidens nævnes ved navn.
+    - **"Expires soon"**, når al gyldig evidens slutter inden for 30 dage.
+  - **CRA:** antallet af komponenter i projekternes nyeste SBOM'er, hvis leverandørfelt nævner underleverandøren.
+  - **Gap-rapporten** (US-190) får et ark med underleverandørerne og deres status.
+  - **Rettigheder:** at registrere og tilføje evidens kræver DecideCompliance. Alle medlemmer kan se listen.
+- **Begrundelse:** NIS2 art. 21(2)(d) og 21(3) kræver, at forsyningskæden vurderes. ISO/IEC 27001 A.5.19–A.5.22 kræver aftaler og opfølgning.
+- **Afvigelse:** der sendes endnu ingen påmindelse før en slutdato. Det kommer med påmindelserne i US-183.
+- **Fravalgt:** en portal, hvor underleverandøren selv uploader.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

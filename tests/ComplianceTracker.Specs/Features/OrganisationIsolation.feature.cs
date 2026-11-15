@@ -155,16 +155,16 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.AndAsync("an audit of \"Acme Portal\" found \"Access reviews not documented\" for \"Anna\" due \"2" +
                     "026-12-31\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-            global::Reqnroll.Table table15 = new global::Reqnroll.Table(new string[] {
+            global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
                         "Title",
                         "Likelihood",
                         "Impact"});
-            table15.AddRow(new string[] {
+            table1.AddRow(new string[] {
                         "Old firmware",
                         "2",
                         "3"});
 #line 23
-    await testRunner.AndAsync("I import the risks file \"risks.csv\" into \"Acme Portal\" with the rows", ((string)(null)), table15, "And ");
+    await testRunner.AndAsync("I import the risks file \"risks.csv\" into \"Acme Portal\" with the rows", ((string)(null)), table1, "And ");
 #line hidden
 #line 26
     await testRunner.AndAsync("I have created the upload token \"GitHub Actions\" for \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -183,22 +183,30 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.AndAsync("I have locked the traceability report of \"Acme Portal\" for \"team\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 31
+    await testRunner.AndAsync("I have added the supplier \"Hosting ApS\" delivering \"Hosting\" with criticality \"Hi" +
+                    "gh\" and the rule \"NIS2 Art. 21(2)(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 32
+    await testRunner.AndAsync("\"Hosting ApS\" has the evidence \"ISO/IEC 27001 certificate\" valid until \"2027-10-0" +
+                    "1\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 33
     await testRunner.AndAsync("I have recorded the actively exploited vulnerability \"CVE-2026-1234\" for \"Acme Po" +
                     "rtal\", aware since \"2026-11-01T08:00:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 32
+#line 34
     await testRunner.AndAsync("\"Acme Portal\" has version 1 of \"kravspec.xlsx\" with \"REQ-001 Log in\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 33
+#line 35
     await testRunner.AndAsync("the framework \"Security policy\" has a draft with \"A.5.15 Access control\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 34
+#line 36
     await testRunner.AndAsync("\"Carl\" has joined \"Acme ApS\" as \"Developer\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 35
+#line 37
     await testRunner.AndAsync("I have created an invitation link with the role \"Auditor\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 36
+#line 38
     await testRunner.AndAsync("\"Bo\" has created the organisation \"Beta ApS\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
         }
@@ -254,7 +262,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Every action refuses another organisation\'s ids", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 39
+#line 41
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -267,16 +275,16 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 40
+#line 42
     await testRunner.WhenAsync("\"Bo\" calls every action with the ids of \"Acme ApS\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 41
+#line 43
     await testRunner.ThenAsync("every page and file gives \"not found\" or \"forbidden\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 42
+#line 44
     await testRunner.AndAsync("no change changed anything in the database", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 43
+#line 45
     await testRunner.AndAsync("every id the actions take was one of Acme ApS\'s", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -298,7 +306,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The same addresses work for the organisation\'s own member", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 46
+#line 48
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -311,10 +319,10 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 47
+#line 49
     await testRunner.WhenAsync("\"Anna\" opens every page and file with the ids of \"Acme ApS\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 48
+#line 50
     await testRunner.ThenAsync("they all work", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -338,7 +346,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The live updates cannot be followed for another organisation\'s project", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 51
+#line 53
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -351,10 +359,10 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 52
+#line 54
     await testRunner.WhenAsync("\"Bo\" follows the live updates of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 53
+#line 55
     await testRunner.ThenAsync("the hub refuses", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }

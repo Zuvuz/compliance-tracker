@@ -88,7 +88,8 @@ namespace ComplianceTracker.Application.Organizations
         }
 
         // R3: the report for management: the summary with the approval fields, each measure, and the action plan
-        public static ReportDocument Document(string organisation, DateOnly today, IReadOnlyList<GapLine> lines)
+        public static ReportDocument Document(string organisation, DateOnly today, IReadOnlyList<GapLine> lines,
+            IReadOnlyList<SupplierView>? suppliers = null)
         {
             static ReportStatus Colour(GapStatus status) => status switch
             {
@@ -119,7 +120,12 @@ namespace ComplianceTracker.Application.Organizations
                         string.Join("; ", l.Evidence), l.Change ?? ""], Colour(l.Status))).ToList()),
                 new ReportSheet("Action plan", ["Priority", "Code", "Action", "Owner", "Due"], 0,
                     gaps.Select(l => new ReportRow([l.Priority.ToString(), l.Code, l.Action, "", ""],
-                        l.Priority == GapPriority.High ? ReportStatus.Bad : ReportStatus.Warning)).ToList())
+                        l.Priority == GapPriority.High ? ReportStatus.Bad : ReportStatus.Warning)).ToList()),
+                // US-191 R5: the supply chain (NIS2 Art. 21(2)(d) and 21(3))
+                new ReportSheet("Suppliers", ["Supplier", "Delivers", "Criticality", "Rules", "Status"], 4,
+                    (suppliers ?? []).Select(s => new ReportRow([s.Supplier.Name, s.Supplier.Delivers, s.Supplier.Criticality.ToString(),
+                        string.Join(", ", s.Supplier.RuleList), $"{s.Status.State}: {s.Status.Detail}"],
+                        s.Status.State switch { SupplierState.Ok => ReportStatus.Good, SupplierState.ExpiresSoon => ReportStatus.Warning, _ => ReportStatus.Bad })).ToList())
             ]);
         }
 
@@ -156,6 +162,7 @@ namespace ComplianceTracker.Application.Organizations
     public class Nis2GapReportService
     {
         private readonly GapQuestionService _questions;
+        private readonly SupplierService _suppliers; // US-191
         private readonly OrganisationAreaService _area;
         private readonly ComplianceQueries _compliance;
         private readonly IReportSnapshotRepository _snapshots;
@@ -166,11 +173,12 @@ namespace ComplianceTracker.Application.Organizations
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
 
-        public Nis2GapReportService(GapQuestionService questions, OrganisationAreaService area, ComplianceQueries compliance,
+        public Nis2GapReportService(GapQuestionService questions, SupplierService suppliers, OrganisationAreaService area, ComplianceQueries compliance,
             IReportSnapshotRepository snapshots, IPdfWriter pdf, CurrentMember member, ICurrentUser currentUser, IActivityLogger log,
             IUnitOfWork unitOfWork, TimeProvider clock)
         {
             _questions = questions;
+            _suppliers = suppliers;
             _area = area;
             _compliance = compliance;
             _snapshots = snapshots;
@@ -210,7 +218,7 @@ namespace ComplianceTracker.Application.Organizations
             var (areaId, lines, _) = await CurrentAsync(cancellationToken);
             var now = _clock.GetUtcNow().UtcDateTime;
             var today = DateOnly.FromDateTime(now);
-            var document = Nis2GapReport.Document(organization.Name, today, lines);
+            var document = Nis2GapReport.Document(organization.Name, today, lines, await _suppliers.ListAsync(cancellationToken));
             var pdf = _pdf.FromReport(document, new PdfHeader(organization.Name, "Organisation", "NIS2 gap analysis", now, _currentUser.Identity.Name));
 
             var snapshot = ReportSnapshot.Lock(organization.Id, areaId, Nis2GapReport.Kind, $"NIS2 gap analysis {today:dd-MM-yyyy}",

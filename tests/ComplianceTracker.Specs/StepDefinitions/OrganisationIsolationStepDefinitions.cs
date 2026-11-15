@@ -374,6 +374,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "sbomid" => ids.Sbom, // US-079
                 "importid" => ids.RiskImport, // US-049
                 "auditid" or "correctsauditid" => ids.Audit, // US-134
+                "supplierid" => ids.Supplier, // US-191
+                "supplierevidenceid" => ids.SupplierEvidence,
                 "findingid" => ids.Finding,
                 "tokenid" => ids.UploadToken, // US-122
                 "snapshotid" => ids.ReportSnapshot, // US-050
@@ -397,10 +399,11 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Guid Organization, Guid Project, Guid Risk, Guid Measure, Guid Evidence, Guid WorkItem, Guid Link,
             Guid Document, Guid DocumentVersion, Guid Framework, Guid FrameworkVersion, Guid FrameworkRequirement,
             Guid CraRequirement, Guid Member, Guid Invitation, Guid SecurityEvent, Guid RiskAction, Guid Scan, Guid Finding, Guid UploadToken,
-            Guid ApprovalRequest, Guid OrganisationDocument, Guid OrganisationDocumentLink, Guid ReportSnapshot, Guid Sbom, Guid RiskImport, Guid Audit)
+            Guid ApprovalRequest, Guid OrganisationDocument, Guid OrganisationDocumentLink, Guid ReportSnapshot, Guid Sbom, Guid RiskImport, Guid Audit,
+            Guid Supplier, Guid SupplierEvidence)
         {
             public IEnumerable<Guid> All => [Organization, Project, Risk, Measure, Evidence, WorkItem, Link, Document,
-                DocumentVersion, Framework, FrameworkVersion, FrameworkRequirement, Member, Invitation, SecurityEvent, RiskAction, Scan, Finding, UploadToken, ApprovalRequest, OrganisationDocument, OrganisationDocumentLink, ReportSnapshot, Sbom, RiskImport, Audit];
+                DocumentVersion, Framework, FrameworkVersion, FrameworkRequirement, Member, Invitation, SecurityEvent, RiskAction, Scan, Finding, UploadToken, ApprovalRequest, OrganisationDocument, OrganisationDocumentLink, ReportSnapshot, Sbom, RiskImport, Audit, Supplier, SupplierEvidence];
         }
 
         private async Task<Ids> IdsAsync(string organisation)
@@ -441,7 +444,9 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 await db.ReportSnapshots.Where(s => s.ProjectId == project.Id).Select(s => s.Id).SingleAsync(), // US-050
                 await db.Sboms.Where(s => s.ProjectId == project.Id).Select(s => s.Id).SingleAsync(), // US-079
                 await db.RiskImports.Where(i => i.ProjectId == project.Id).Select(i => i.Id).SingleAsync(), // US-049
-                await db.Audits.Where(a => a.ProjectId == project.Id).Select(a => a.Id).SingleAsync()); // US-134
+                await db.Audits.Where(a => a.ProjectId == project.Id).Select(a => a.Id).SingleAsync(), // US-134
+                await db.Suppliers.Where(s => s.OrganizationId == org.Id).Select(s => s.Id).SingleAsync(), // US-191
+                await db.Suppliers.Where(s => s.OrganizationId == org.Id).SelectMany(s => s.Evidence).Select(e => e.Id).SingleAsync());
         }
 
         // A form token for the caller, from a page they may open (their own Users page)

@@ -1,0 +1,105 @@
+@* US-191: the organisation's suppliers. R1: criticality; R2: the rules each must meet; R3: evidence with its end date and the
+   status (OK, expires soon, missing); R4: the SBOM components it delivers. Ids and classes used by the tests:
+   form#add-supplier, #suppliers rows with data-supplier (data-state, .supplier-detail, .supplier-components), and per
+   supplier form.add-supplier-evidence and form.remove-supplier. *@
+@model ComplianceTracker.Web.Controllers.SuppliersViewModel
+@using ComplianceTracker.Domain.Organizations
+@{
+    ViewData["Title"] = "Suppliers";
+}
+
+<h1 class="h3">Suppliers</h1>
+<p class="text-muted">The suppliers the organisation depends on, and the evidence that they meet the rules that apply to you
+    (NIS2 Art. 21(2)(d), GDPR Art. 28, ISO/IEC 27001 A.5.19–A.5.22, CRA Art. 13(5)). High and medium criticality need valid evidence.</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+@if (Model.CanManage)
+{
+    <details class="card mb-3" open="@(Model.Suppliers.Count == 0)">
+        <summary class="card-header">Add a supplier</summary>
+        <form asp-action="Add" method="post" id="add-supplier" class="card-body row g-2">
+            <div class="col-md-4"><label for="supplier-name" class="form-label small">Name</label>
+                <input id="supplier-name" name="name" maxlength="200" class="form-control form-control-sm" required /></div>
+            <div class="col-md-5"><label for="supplier-delivers" class="form-label small">What it delivers</label>
+                <input id="supplier-delivers" name="delivers" maxlength="500" class="form-control form-control-sm" placeholder="e.g. hosting of the customer portal" /></div>
+            <div class="col-md-3"><label for="supplier-criticality" class="form-label small">Criticality</label>
+                <select id="supplier-criticality" name="criticality" class="form-select form-select-sm" required>
+                    @foreach (var c in Enum.GetValues<SupplierCriticality>())
+                    {
+                        <option value="@c">@c</option>
+                    }
+                </select></div>
+            <div class="col-md-4"><label for="supplier-contact" class="form-label small">Contact (optional)</label>
+                <input id="supplier-contact" name="contact" maxlength="500" class="form-control form-control-sm" /></div>
+            <fieldset class="col-md-8"><legend class="form-label small mb-1">Rules it must meet for us</legend>
+                @foreach (var rule in Supplier.KnownRules)
+                {
+                    <label class="form-check-label small me-3"><input type="checkbox" name="rules" value="@rule" class="form-check-input me-1" />@rule</label>
+                }
+            </fieldset>
+            <div class="col-12"><button type="submit" class="btn btn-sm btn-primary">Add supplier</button></div>
+        </form>
+    </details>
+}
+
+@if (Model.Suppliers.Count == 0)
+{
+    <p class="text-muted" id="no-suppliers">No suppliers yet.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm align-middle" id="suppliers">
+            <thead><tr><th>Supplier</th><th>Criticality</th><th>Rules</th><th>Status</th><th>Evidence</th></tr></thead>
+            <tbody>
+                @foreach (var view in Model.Suppliers)
+                {
+                    var supplier = view.Supplier;
+                    <tr id="supplier-@supplier.Id" data-supplier="@supplier.Name" data-state="@view.Status.State">
+                        <td><span class="fw-semibold">@supplier.Name</span>
+                            <div class="small text-muted">@supplier.Delivers</div>
+                            @if (view.Components > 0)
+                            {
+                                <div class="small supplier-components">@view.Components SBOM component@(view.Components == 1 ? "" : "s")</div>
+                            }
+                        </td>
+                        <td>@supplier.Criticality</td>
+                        <td class="small">@string.Join(", ", supplier.RuleList)</td>
+                        <td><span class="badge @(view.Status.State switch { SupplierState.Ok => "text-bg-success", SupplierState.ExpiresSoon => "text-bg-warning", _ => "text-bg-danger" })">@(view.Status.State switch { SupplierState.ExpiresSoon => "Expires soon", SupplierState.Missing => "Missing", _ => "OK" })</span>
+                            <div class="small supplier-detail">@view.Status.Detail</div></td>
+                        <td class="small">
+                            <ul class="list-unstyled mb-1">
+                                @foreach (var evidence in supplier.Evidence.OrderByDescending(e => e.AddedAt))
+                                {
+                                    <li><a asp-action="File" asp-route-supplierId="@supplier.Id" asp-route-supplierEvidenceId="@evidence.Id">@evidence.Title</a>
+                                        <span class="text-muted">@evidence.Kind@(evidence.ValidUntil is { } until ? $", valid until {until:dd-MM-yyyy}" : "")</span></li>
+                                }
+                            </ul>
+                            @if (Model.CanManage)
+                            {
+                                <form asp-action="AddEvidence" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-1 add-supplier-evidence" data-busy="Uploading…">
+                                    <input type="hidden" name="supplierId" value="@supplier.Id" />
+                                    <select name="kind" class="form-select form-select-sm w-auto" aria-label="Kind of evidence for @supplier.Name">
+                                        @foreach (var kind in Enum.GetValues<SupplierEvidenceKind>())
+                                        {
+                                            <option value="@kind">@kind</option>
+                                        }
+                                    </select>
+                                    <input name="title" maxlength="200" class="form-control form-control-sm w-auto" placeholder="Title" aria-label="Title of the evidence for @supplier.Name" required />
+                                    <input name="validUntil" type="date" class="form-control form-control-sm w-auto" aria-label="Valid until" title="Valid until (optional)" />
+                                    <input name="file" type="file" class="form-control form-control-sm w-auto" aria-label="File for @supplier.Name" required />
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Add</button>
+                                </form>
+                                <form asp-action="Remove" method="post" class="mt-1 remove-supplier" data-confirm="Remove @supplier.Name? Its evidence is kept in the history.">
+                                    <input type="hidden" name="supplierId" value="@supplier.Id" />
+                                    <button type="submit" class="btn btn-sm btn-link text-danger p-0">Remove supplier</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

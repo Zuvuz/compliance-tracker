@@ -87,6 +87,8 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<Domain.Frameworks.RequirementText> RequirementTexts => Set<Domain.Frameworks.RequirementText>(); // US-142
         public DbSet<Nis2Assessment> Nis2Assessments => Set<Nis2Assessment>(); // US-142
         public DbSet<GapAnswer> GapAnswers => Set<GapAnswer>(); // US-189
+        public DbSet<Supplier> Suppliers => Set<Supplier>(); // US-191
+        public DbSet<SupplierEvidenceFile> SupplierEvidenceFiles => Set<SupplierEvidenceFile>();
         public DbSet<DocumentLinkSuggestion> DocumentLinkSuggestions => Set<DocumentLinkSuggestion>(); // US-136 R2
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
