@@ -22,7 +22,7 @@
         {
             <div class="d-flex gap-1">
                 @* US-112: the AI agent drafts; a person decides every risk *@
-                <form asp-controller="Risks" asp-action="Draft" method="post" class="d-inline" id="draft-risks">
+                <form asp-controller="Risks" asp-action="Draft" method="post" class="d-inline" id="draft-risks" data-busy="Working… this can take a minute">
                     <input type="hidden" name="projectId" value="@project.Id" />
                     <button type="submit" class="btn btn-outline-info btn-sm">Draft risks with AI</button>
                 </form>

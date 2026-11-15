@@ -135,7 +135,7 @@
                                 @if (canAddEvidence)
                                 {
                                     @* US-106 R1: ask the AI about this requirement only *@
-                                    <form asp-action="AskTheAi" method="post" class="ask-the-ai">
+                                    <form asp-action="AskTheAi" method="post" class="ask-the-ai" data-busy="Working… this can take a minute">
                                         <input type="hidden" name="projectId" value="@project.Id" />
                                         <input type="hidden" name="requirementId" value="@requirement.Id" />
                                         <input type="hidden" name="sub" value="@sub" />
@@ -211,7 +211,7 @@
             @if (!project.IsClosed && Model.CanDecide)
             {
                 <div class="d-flex flex-wrap align-items-start gap-2 mt-2">
-                    <form asp-action="CreateStoryForNeedsAction" method="post" class="create-story-for-needs-action">
+                    <form asp-action="CreateStoryForNeedsAction" method="post" class="create-story-for-needs-action" data-busy="Working… this can take a minute">
                         <input type="hidden" name="projectId" value="@project.Id" />
                         <input type="hidden" name="markId" value="@mark.Id" />
                         <input type="hidden" name="sub" value="@sub" />
@@ -478,7 +478,7 @@
                                     }
                                     @if (!item.IsExpired && evidence.IsActive && !project.IsClosed && Model.CanLink)
                                     {
-                                        <form asp-action="CheckEvidence" method="post" class="check-evidence mt-1">
+                                        <form asp-action="CheckEvidence" method="post" class="check-evidence mt-1" data-busy="Working… this can take a minute">
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="evidenceId" value="@evidence.Id" />
                                             <input type="hidden" name="requirementId" value="@requirement.Id" />
@@ -523,7 +523,7 @@
             {
                 @* US-057 R1, R2 *@
                 <h3 class="h6 mt-3 mb-1" id="add-evidence-section">Add evidence</h3>
-                    <form asp-action="AddEvidence" method="post" enctype="multipart/form-data" class="d-flex flex-column gap-1 mt-1 add-evidence">
+                    <form asp-action="AddEvidence" method="post" enctype="multipart/form-data" class="d-flex flex-column gap-1 mt-1 add-evidence" data-busy="Uploading…">
                         <input type="hidden" name="projectId" value="@project.Id" />
                         <input type="hidden" name="requirementId" value="@requirement.Id" />
                         <input type="hidden" name="sub" value="@sub" />

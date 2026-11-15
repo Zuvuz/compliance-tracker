@@ -31,7 +31,7 @@
     <a asp-action="Template" id="template-link">Download the template</a>
 </p>
 
-<form asp-action="Import" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 mb-4" id="upload-risks">
+<form asp-action="Import" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 mb-4" id="upload-risks" data-busy="Uploading…">
     <input type="hidden" name="projectId" value="@project.Id" />
     <input type="file" name="file" accept=".csv,.txt,.xlsx" class="form-control form-control-sm w-auto" aria-label="Risk register (CSV or .xlsx, max 1 MB)" required />
     <button type="submit" class="btn btn-sm btn-outline-primary">Upload and check</button>

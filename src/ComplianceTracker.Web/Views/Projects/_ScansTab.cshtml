@@ -53,7 +53,7 @@
 
     @if (canChange)
     {
-        <form asp-action="UploadScan" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 mb-4" id="upload-scan">
+        <form asp-action="UploadScan" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 mb-4" id="upload-scan" data-busy="Uploading…">
             <input type="hidden" name="projectId" value="@project.Id" />
             <input type="file" name="file" accept=".sarif,.json" class="form-control form-control-sm w-auto" aria-label="SARIF file (max 50 MB)" required />
             <button type="submit" class="btn btn-sm btn-primary">Upload scan</button>
@@ -259,7 +259,7 @@
 
         @if (canChange)
         {
-            <form asp-action="UploadSbom" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 mb-3" id="upload-sbom">
+            <form asp-action="UploadSbom" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 mb-3" id="upload-sbom" data-busy="Uploading…">
                 <input type="hidden" name="projectId" value="@project.Id" />
                 <input name="productVersion" maxlength="100" class="form-control form-control-sm w-auto" placeholder="Product version, e.g. 2.1.0" aria-label="Product version" required />
                 <input type="file" name="file" accept=".json" class="form-control form-control-sm w-auto" aria-label="SBOM file (max 50 MB)" required />

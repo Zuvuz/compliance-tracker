@@ -368,7 +368,7 @@
                             }
                             @if (canChange)
                             {
-                                <form asp-action="MoreEvidenceSuggestions" method="post" class="more-evidence-suggestions">
+                                <form asp-action="MoreEvidenceSuggestions" method="post" class="more-evidence-suggestions" data-busy="Working… this can take a minute">
                                     <input type="hidden" name="projectId" value="@project.Id" />
                                     <input type="hidden" name="evidenceId" value="@evidence.Id" />
                                     <button type="submit" class="btn btn-sm btn-link p-0">@(row.Suggestions.Count > 0 ? "Show more suggestions" : "Suggest requirements")</button>
@@ -388,7 +388,7 @@
             <div class="card">
                 <div class="card-body">
                     <h2 class="h6 card-title">Add evidence</h2>
-                    <form asp-action="UploadEvidence" method="post" enctype="multipart/form-data" id="evidence-upload" class="d-flex flex-column gap-2">
+                    <form asp-action="UploadEvidence" method="post" enctype="multipart/form-data" id="evidence-upload" class="d-flex flex-column gap-2" data-busy="Uploading…">
                         <input type="hidden" name="projectId" value="@project.Id" />
                         <input name="title" class="form-control form-control-sm" maxlength="200" placeholder="Title, e.g. Access policy 2026" aria-label="Title" required />
                         <input name="url" type="url" class="form-control form-control-sm" placeholder="Link (https://…)" aria-label="Link" />
@@ -411,7 +411,7 @@
                     {
                         <div class="alert alert-info small py-2" id="test-results-summary">@testResults</div>
                     }
-                    <form asp-action="UploadTestResults" method="post" enctype="multipart/form-data" id="test-results-upload" class="d-flex flex-column gap-2">
+                    <form asp-action="UploadTestResults" method="post" enctype="multipart/form-data" id="test-results-upload" class="d-flex flex-column gap-2" data-busy="Uploading…">
                         <input type="hidden" name="projectId" value="@project.Id" />
                         <input name="file" type="file" class="form-control form-control-sm" accept=".trx,.xml" aria-label="Test results (TRX or JUnit XML, max 10 MB)" required />
                         <button type="submit" class="btn btn-sm btn-outline-primary">Upload test results</button>

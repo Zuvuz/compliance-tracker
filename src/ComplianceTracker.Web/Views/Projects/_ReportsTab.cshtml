@@ -268,7 +268,7 @@
     {
         <div class="alert @(result.StartsWith("Matches") ? "alert-success" : "alert-warning") py-2" id="fingerprint-result" role="status">@result</div>
     }
-    <form asp-action="CheckFingerprint" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2" id="check-fingerprint">
+    <form asp-action="CheckFingerprint" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2" id="check-fingerprint" data-busy="Uploading…">
         <input type="hidden" name="projectId" value="@project.Id" />
         <input type="file" name="file" class="form-control form-control-sm w-auto" aria-label="File to check" />
         <button type="submit" class="btn btn-sm btn-outline-secondary">Check fingerprint</button>

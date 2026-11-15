@@ -171,7 +171,7 @@
             }
             @if (Model.CanManage)
             {
-                <form asp-action="MoreSuggestions" method="post" class="mt-1 more-document-suggestions">
+                <form asp-action="MoreSuggestions" method="post" class="mt-1 more-document-suggestions" data-busy="Working… this can take a minute">
                     <input type="hidden" name="documentId" value="@document.Id" />
                     <button type="submit" class="btn btn-link btn-sm p-0">Ask the AI for (more) requirements</button>
                 </form>
@@ -202,7 +202,7 @@
                         </select>
                         <button type="submit" class="btn btn-sm btn-outline-primary">Link</button>
                     </form>
-                    <form asp-action="NewVersion" method="post" enctype="multipart/form-data" class="d-flex gap-1 new-version">
+                    <form asp-action="NewVersion" method="post" enctype="multipart/form-data" class="d-flex gap-1 new-version" data-busy="Uploading…">
                         <input type="hidden" name="documentId" value="@document.Id" />
                         <input name="version" class="form-control form-control-sm ct-max-w-11" placeholder="New version, e.g. v4" aria-label="New version" />
                         <input type="file" name="file" class="form-control form-control-sm" aria-label="File of the new version" />
@@ -228,7 +228,7 @@
 @if (Model.CanManage)
 {
     <h2 class="h5 mt-4">Add a document</h2>
-    <form asp-action="Upload" method="post" enctype="multipart/form-data" class="row g-2" id="upload-document">
+    <form asp-action="Upload" method="post" enctype="multipart/form-data" class="row g-2" id="upload-document" data-busy="Uploading…">
         <div class="col-md-2">
             <select name="kind" class="form-select" aria-label="Kind">
                 <option value="Policy">Policy</option>
