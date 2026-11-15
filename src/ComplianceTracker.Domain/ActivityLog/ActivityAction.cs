@@ -330,6 +330,12 @@ namespace ComplianceTracker.Domain.ActivityLog
         ChecklistItemChanged,
 
         // US-047 R5: a phase change made while checklist items were missing; Details lists them
-        PhaseChangedWithItemsMissing
+        PhaseChangedWithItemsMissing,
+
+        // US-192: the organisation's own checklist items. SubjectId points at the organisation; Details holds the phase, the
+        // text and the source, e.g. "Design: Architecture review held (Own policy)".
+        OrganisationChecklistItemAdded,
+        OrganisationChecklistItemChanged,
+        OrganisationChecklistItemRemoved
     }
 }

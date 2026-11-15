@@ -1981,6 +1981,18 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** CRA art. 13 og ISO/IEC 27001 A.8.25–A.8.29 stiller krav i hver fase. Med et mærke på hvert punkt kan man se, hvilket regulativ det kommer fra.
 - **Fravalgt:** at blokere et faseskift.
 
+### B128 – Organisationens egne tjeklistepunkter (US-192)
+
+- **Beslutning:**
+  - **Siden "Checklists"** ligger under Organisation. Den viser de indbyggede punkter pr. fase, som kun kan læses, og organisationens egne punkter.
+  - **Et eget punkt** har en fase, en tekst og en kilde: enten "Own policy" eller et af organisationens frameworks. Det kan have en reference, fx "ISMS-PRO-12".
+  - **Hvor punktet vises:** et punkt med "Own policy" vises i alle projekter i fasen. Et punkt bundet til et framework vises kun i de projekter, der følger det framework.
+  - **Afkrydsning:** egne punkter krydses af ligesom de indbyggede manuelle punkter (US-047). De tæller med i advarslen ved faseskift.
+  - **Fjernede punkter** vises ikke længere, men afkrydsninger og log bevares.
+  - **Rettigheder:** at tilføje, rette og fjerne kræver ManageFrameworks. Alt logges.
+  - **Forespørgsler:** oversigten laver én fast forespørgsel mere for de egne punkter, så grænsen er hævet fra 52 til 53 (US-139).
+- **Begrundelse:** Organisationens egne regler for sikker udvikling (ISO/IEC 27001 A.5.1, A.8.25) skal følges i hvert projekt på samme måde som regulativernes.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

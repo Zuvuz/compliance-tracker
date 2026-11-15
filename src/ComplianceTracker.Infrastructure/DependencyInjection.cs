@@ -111,6 +111,7 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<Application.Organizations.ISupplierRepository, SupplierRepository>(); // US-191
             services.AddScoped<Application.Reminders.IReminderRepository, ReminderRepository>(); // US-183
             services.AddScoped<Application.Projects.IProjectChecklistRepository, ProjectChecklistRepository>(); // US-047
+            services.AddScoped<Application.Projects.IOrganisationChecklistRepository, OrganisationChecklistRepository>(); // US-192
             services.AddOptions<Reminders.MailOptions>().BindConfiguration(Reminders.MailOptions.Section);
             services.AddSingleton<Application.Reminders.IMailSender, Reminders.SmtpMailSender>();
             services.AddScoped<Application.Organizations.IDocumentLinkSuggestionRepository, DocumentLinkSuggestionRepository>(); // US-136 R2

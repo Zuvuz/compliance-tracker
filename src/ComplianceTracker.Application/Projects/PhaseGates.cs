@@ -23,12 +23,14 @@ namespace ComplianceTracker.Application.Projects
         private readonly IScanRepository _scans;
         private readonly ISbomRepository _sboms;
         private readonly IProjectChecklistRepository _checklist; // US-047
+        private readonly IOrganisationChecklistRepository _own; // US-192
 
         public PhaseGates(IProjectRepository projects, IFrameworkRepository frameworks, IClassificationRepository classifications,
             IRiskRepository risks, CurrentMember member, ComplianceQueries compliance, IScanRepository scans, ISbomRepository sboms,
-            IProjectChecklistRepository checklist)
+            IProjectChecklistRepository checklist, IOrganisationChecklistRepository own)
         {
             _checklist = checklist;
+            _own = own;
             _compliance = compliance;
             _scans = scans;
             _sboms = sboms;
@@ -74,7 +76,7 @@ namespace ComplianceTracker.Application.Projects
             }
 
             var facts = await FactsAsync(organization, project, null, cancellationToken, needs);
-            var lines = ChecklistRules.Lines(BuiltInChecklist.For(facts.Frameworks), await _checklist.ListAsync(project.Id, cancellationToken), facts.Checklist);
+            var lines = ChecklistRules.Lines(await ItemsAsync(organization, project, facts, cancellationToken), await _checklist.ListAsync(project.Id, cancellationToken), facts.Checklist);
             var current = lines.Where(l => l.Item.Phase == project.Phase).ToList();
             var checklist = new PhaseChecklistView(project.Phase,
                 current.Where(l => l.State != ChecklistState.NotChosen).ToList(),
@@ -90,9 +92,14 @@ namespace ComplianceTracker.Application.Projects
             DateOnly? supportEndsOn = null)
         {
             var facts = await FactsAsync(organization, project, supportEndsOn, cancellationToken);
-            var lines = ChecklistRules.Lines(BuiltInChecklist.For(facts.Frameworks), await _checklist.ListAsync(project.Id, cancellationToken), facts.Checklist);
+            var lines = ChecklistRules.Lines(await ItemsAsync(organization, project, facts, cancellationToken), await _checklist.ListAsync(project.Id, cancellationToken), facts.Checklist);
             return Gate(project, to, facts, lines);
         }
+
+        // US-047 R2: the built-in items of the regulations the project follows; US-192 R3: and the organisation's own
+        private async Task<IReadOnlyList<ChecklistItem>> ItemsAsync(Organization organization, Project project, AllFacts facts, CancellationToken cancellationToken)
+            => [.. BuiltInChecklist.For(facts.Frameworks),
+                .. (await _own.ListAsync(organization.Id, cancellationToken)).Where(i => i.IsActive && i.AppliesTo(project)).Select(i => i.AsItem())];
 
         private static PhaseGate? Gate(Project project, LifecyclePhase to, AllFacts facts, IReadOnlyList<ChecklistLine> lines)
         {

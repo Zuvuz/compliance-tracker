@@ -90,6 +90,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<Supplier> Suppliers => Set<Supplier>(); // US-191
         public DbSet<Domain.Reminders.Reminder> Reminders => Set<Domain.Reminders.Reminder>(); // US-183
         public DbSet<Domain.Projects.ProjectChecklistEntry> ProjectChecklistEntries => Set<Domain.Projects.ProjectChecklistEntry>(); // US-047
+        public DbSet<Domain.Projects.OrganisationChecklistItem> OrganisationChecklistItems => Set<Domain.Projects.OrganisationChecklistItem>(); // US-192
         public DbSet<SupplierEvidenceFile> SupplierEvidenceFiles => Set<SupplierEvidenceFile>();
         public DbSet<DocumentLinkSuggestion> DocumentLinkSuggestions => Set<DocumentLinkSuggestion>(); // US-136 R2
 

@@ -1,0 +1,81 @@
+@* US-192: per phase the built-in checklist items (read only, US-047) and the organisation's own, which those who manage
+   frameworks add, change and remove. Ids and classes used by the tests: form#add-checklist-item, #checklists sections with
+   data-phase, .builtin-item, .own-item (data-text) with form.change-checklist-item and form.remove-checklist-item. *@
+@model ComplianceTracker.Application.Projects.OrganisationChecklistsView
+@using ComplianceTracker.Domain.Projects
+@{
+    ViewData["Title"] = "Checklists";
+}
+
+<h1 class="h3">Checklists</h1>
+<p class="text-muted">What must be in place in each lifecycle phase. The built-in items come from the regulations; add the
+    organisation's own rules, and they are shown in every project in that phase (or only in projects following the chosen framework).</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+@if (Model.CanManage)
+{
+    <form asp-action="Add" method="post" id="add-checklist-item" class="card card-body mb-3 row g-2 flex-row">
+        <div class="col-md-2"><label for="item-phase" class="form-label small">Phase</label>
+            <select id="item-phase" name="phase" class="form-select form-select-sm">
+                @foreach (var phase in Enum.GetValues<LifecyclePhase>())
+                {
+                    <option value="@phase">@phase</option>
+                }
+            </select></div>
+        <div class="col-md-4"><label for="item-text" class="form-label small">What must be in place</label>
+            <input id="item-text" name="text" maxlength="300" class="form-control form-control-sm" placeholder="e.g. Architecture review held" required /></div>
+        <div class="col-md-3"><label for="item-source" class="form-label small">Source</label>
+            <select id="item-source" name="frameworkId" class="form-select form-select-sm">
+                <option value="">@OrganisationChecklistItem.OwnPolicy</option>
+                @foreach (var (id, name) in Model.Frameworks)
+                {
+                    <option value="@id">@name</option>
+                }
+            </select></div>
+        <div class="col-md-2"><label for="item-reference" class="form-label small">Reference (optional)</label>
+            <input id="item-reference" name="reference" maxlength="100" class="form-control form-control-sm" placeholder="e.g. ISMS-PRO-12" /></div>
+        <div class="col-md-1 d-flex align-items-end"><button type="submit" class="btn btn-sm btn-primary">Add</button></div>
+    </form>
+}
+
+<div id="checklists">
+    @foreach (var phase in Enum.GetValues<LifecyclePhase>())
+    {
+        var own = Model.Own.Where(i => i.Phase == phase).ToList();
+        var builtIn = Model.BuiltIn.Where(i => i.Phase == phase).ToList();
+        <section class="mb-3" data-phase="@phase">
+            <h2 class="h5">@phase</h2>
+            <ul class="list-unstyled small mb-1">
+                @foreach (var item in own)
+                {
+                    <li class="own-item border-top py-1" data-text="@item.Text">
+                        <span class="fw-semibold">@item.Text</span>
+                        <span class="badge text-bg-light border">@(item.Reference.Length == 0 ? item.Source : $"{item.Source} {item.Reference}")</span>
+                        @if (Model.CanManage)
+                        {
+                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                <form asp-action="Change" method="post" class="d-flex flex-wrap gap-1 change-checklist-item">
+                                    <input type="hidden" name="itemId" value="@item.Id" />
+                                    <input name="text" maxlength="300" value="@item.Text" class="form-control form-control-sm w-auto" aria-label="Text of @item.Text" required />
+                                    <input name="reference" maxlength="100" value="@item.Reference" class="form-control form-control-sm w-auto" aria-label="Reference of @item.Text" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Save</button>
+                                </form>
+                                <form asp-action="Remove" method="post" class="remove-checklist-item" data-confirm="Remove the item? Projects keep what was ticked.">
+                                    <input type="hidden" name="itemId" value="@item.Id" />
+                                    <button type="submit" class="btn btn-sm btn-link text-danger p-0">Remove</button>
+                                </form>
+                            </div>
+                        }
+                    </li>
+                }
+                @foreach (var item in builtIn)
+                {
+                    <li class="builtin-item border-top py-1 text-muted">
+                        @item.Text <span class="badge text-bg-light border">@item.Source</span>@(item.Optional ? " (optional)" : "")
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+</div>
