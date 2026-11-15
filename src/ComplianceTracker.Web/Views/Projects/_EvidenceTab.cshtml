@@ -176,7 +176,7 @@
                             {
                                 <details>
                                     <summary class="small link-primary">+ Link requirement</summary>
-                                    <form asp-action="LinkEvidence" method="post" class="d-flex gap-1 mt-1 link-evidence">
+                                    <form asp-action="LinkEvidence" method="post" class="d-flex flex-wrap gap-1 mt-1 link-evidence">
                                         <input type="hidden" name="projectId" value="@project.Id" />
                                         <input type="hidden" name="evidenceId" value="@evidence.Id" />
                                         <select name="requirementIds" multiple size="6" class="form-select form-select-sm" aria-label="Requirements @evidence.Title proves">
@@ -230,7 +230,7 @@
                                 @* US-146 R5 *@
                                 <details>
                                     <summary class="small link-primary">+ Link story</summary>
-                                    <form asp-action="LinkEvidenceStory" method="post" class="d-flex gap-1 mt-1 link-evidence-story">
+                                    <form asp-action="LinkEvidenceStory" method="post" class="d-flex flex-wrap gap-1 mt-1 link-evidence-story">
                                         <input type="hidden" name="projectId" value="@project.Id" />
                                         <input type="hidden" name="evidenceId" value="@evidence.Id" />
                                         <select name="workItemId" class="form-select form-select-sm" aria-label="User story @evidence.Title shows is done">
