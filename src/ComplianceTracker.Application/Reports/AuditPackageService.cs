@@ -43,12 +43,15 @@ namespace ComplianceTracker.Application.Reports
         private readonly ICurrentUser _currentUser;
         private readonly TimeProvider _clock;
         private readonly AuditReadinessService _readiness; // US-178
+        private readonly ISpreadsheetWriter _spreadsheets; // US-179
 
         public AuditPackageService(
             ReportFiles files, ProjectQueries projects, ComplianceQueries compliance, IEvidenceRepository evidence, IRequirementDocumentRepository documents,
             ISbomRepository sboms, AuditService audits, IActivityLogRepository log, IReportSnapshotRepository snapshots, CurrentMember member,
-            IActivityLogger logger, IUnitOfWork unitOfWork, ICurrentUser currentUser, TimeProvider clock, AuditReadinessService readiness)
+            IActivityLogger logger, IUnitOfWork unitOfWork, ICurrentUser currentUser, TimeProvider clock, AuditReadinessService readiness,
+            ISpreadsheetWriter spreadsheets)
         {
+            _spreadsheets = spreadsheets;
             _readiness = readiness;
             _files = files;
             _projects = projects;
@@ -113,8 +116,10 @@ namespace ComplianceTracker.Application.Reports
             parts.Add(new PackagePart($"05-activity-log-{start:yyyy-MM-dd}-to-{end:yyyy-MM-dd}.csv",
                 await ActivityCsvAsync(organization, project, start, end, cancellationToken), $"Activity log of the project, {start:dd-MM-yyyy} – {end:dd-MM-yyyy} (US-055)"));
 
-            // Every evidence file with its fingerprint; links are listed in the contents
+            // Every evidence file with its fingerprint, stored once (US-179 R3); links are listed in the contents
             var links = new List<string>();
+            var evidenceFiles = new Dictionary<Guid, (string Path, string Sha256)>();
+            var evidencePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var evidence in (await _evidence.ListActiveAsync(project.Id, cancellationToken)).OrderBy(e => e.Title, StringComparer.Ordinal))
             {
                 if (!evidence.IsFile)
@@ -124,8 +129,14 @@ namespace ComplianceTracker.Application.Reports
                 }
 
                 var file = await _compliance.EvidenceFileAsync(project.Id, evidence.Id, cancellationToken);
-                parts.Add(new PackagePart($"evidence/{Safe(evidence.Title)}-{evidence.FileName}", file?.Content, $"Evidence \"{evidence.Title}\" (US-057)",
-                    file is null ? "The file could not be read" : null));
+                var path = AuditPackageIndex.EvidencePath(Safe(evidence.Title), evidence.FileName!, evidencePaths);
+                var part = new PackagePart(path, file?.Content, $"Evidence \"{evidence.Title}\" (US-057)",
+                    file is null ? "The file could not be read" : null);
+                parts.Add(part);
+                if (part.Sha256 is { } sha)
+                {
+                    evidenceFiles[evidence.Id] = (path, sha);
+                }
             }
 
             foreach (var document in (await _documents.ListAsync(project.Id, cancellationToken)).Where(d => d.Latest is not null))
@@ -152,6 +163,20 @@ namespace ComplianceTracker.Application.Reports
 
             var now = _clock.GetUtcNow().UtcDateTime;
             var title = $"Audit package – {project.Name}, {start:dd-MM-yyyy} – {end:dd-MM-yyyy}";
+
+            // US-179 R1, R2, R4: a folder per requirement with a README, and the index as HTML and Excel
+            var rows = AuditPackageIndex.Rows(chosen, evidenceFiles);
+            foreach (var row in rows)
+            {
+                parts.Add(new PackagePart($"{row.Folder}/README.txt", Encoding.UTF8.GetBytes(AuditPackageIndex.Readme(row)), $"{row.Framework} {row.Code}: status and evidence (US-179)"));
+            }
+
+            if (rows.Count > 0)
+            {
+                parts.Insert(0, new PackagePart(AuditPackageIndex.XlsxPath, _spreadsheets.ToXlsx(AuditPackageIndex.Sheet(title, rows)), "Index of the requirements and their evidence, as a workbook (US-179)"));
+                parts.Insert(0, new PackagePart(AuditPackageIndex.HtmlPath, Encoding.UTF8.GetBytes(AuditPackageIndex.Html(title, rows)), "Index of the requirements and their evidence; open it in a browser (US-179)"));
+            }
+
             var contents = Contents(title, organization.Name, project.Name, chosen.Select(f => f.Framework.Name).ToList(), start, end,
                 _currentUser.Identity.Name, now, parts, links);
             // US-178 R3: what an auditor asks for and what is missing, in the package itself

@@ -49,3 +49,28 @@ Feature: Audit package for an external auditor
     Given "Bo" has joined "Acme ApS" as "Auditor"
     When "Bo" creates the audit package of "Acme Portal"
     Then the project "Acme Portal" has 1 audit package
+
+  # US-179: the package sorted per requirement. Each applicable requirement has a folder with a README; a file is stored
+  # once under evidence/ and referred to from every requirement it proves; an index lists everything as HTML and Excel.
+
+  @US-179 @iso27001-A.5.33 @integration
+  Scenario: Each requirement has a folder with a README that names its evidence
+    When I create the audit package of "Acme Portal"
+    Then the audit package contains "CRA/I.2(d)/README.txt"
+    And the audit package's file "CRA/I.2(d)/README.txt" says "File: evidence/MFA-config-mfa.pdf"
+    And the audit package's file "CRA/I.2(d)/README.txt" says "[US-004] Sign in"
+
+  @US-179 @integration
+  Scenario: A file on two requirements is stored once
+    Given the evidence "Access policy" is linked to "I.2(a)" and "I.2(b)"
+    When I create the audit package of "Acme Portal"
+    Then the audit package has 2 files under "evidence/"
+    And the audit package's file "CRA/I.2(a)/README.txt" says "File: evidence/Access-policy-access-policy.pdf"
+    And the audit package's file "CRA/I.2(b)/README.txt" says "File: evidence/Access-policy-access-policy.pdf"
+
+  @US-179 @integration
+  Scenario: The index lists each requirement with its evidence and fingerprint
+    When I create the audit package of "Acme Portal"
+    Then the audit package's index lists "I.2(d)" with "evidence/MFA-config-mfa.pdf" and the SHA-256 of the evidence "MFA config"
+    And the audit package's file "index.html" says "<a href='evidence/MFA-config-mfa.pdf'>MFA config</a>"
+    And the audit package's file "index.html" says no "<script"

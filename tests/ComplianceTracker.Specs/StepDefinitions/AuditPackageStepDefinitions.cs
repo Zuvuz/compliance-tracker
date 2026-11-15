@@ -1,5 +1,7 @@
 using System.IO.Compression;
 using System.Text;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Spreadsheet;
 using ComplianceTracker.Specs.Support;
 using Microsoft.EntityFrameworkCore;
 
@@ -64,6 +66,31 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Then("the audit package's contents say {string}")]
         public async Task ThenTheContentsSay(string text) => Assert.Contains(text, await ContentsAsync(), StringComparison.Ordinal);
 
+        // US-179
+        [Then("the audit package's file {string} says {string}")]
+        public async Task ThenTheFileSays(string path, string text)
+            => Assert.Contains(text, Encoding.UTF8.GetString(await FileAsync(path)), StringComparison.Ordinal);
+
+        [Then("the audit package's file {string} says no {string}")]
+        public async Task ThenTheFileSaysNo(string path, string text)
+            => Assert.DoesNotContain(text, Encoding.UTF8.GetString(await FileAsync(path)), StringComparison.OrdinalIgnoreCase);
+
+        [Then("the audit package has {int} file(s) under {string}")]
+        public async Task ThenHasFilesUnder(int count, string folder)
+            => Assert.Equal(count, (await FilesAsync()).Keys.Count(k => k.StartsWith(folder, StringComparison.Ordinal)));
+
+        [Then("the audit package's index lists {string} with {string} and the SHA-256 of the evidence {string}")]
+        public async Task ThenTheIndexLists(string code, string path, string evidence)
+        {
+            await using var db = _web.CreateDbContext();
+            var sha = await db.Evidence.Where(e => e.Title == evidence).Select(e => e.Sha256).SingleAsync();
+            using var stream = new MemoryStream(await FileAsync("index.xlsx"));
+            using var book = SpreadsheetDocument.Open(stream, false);
+            var rows = book.WorkbookPart!.WorksheetParts.SelectMany(p => p.Worksheet.Descendants<Row>())
+                .Select(r => r.Elements<Cell>().Select(c => c.InlineString?.InnerText ?? c.CellValue?.Text ?? "").ToList()).ToList();
+            Assert.Contains(rows, r => r.Contains(code) && r.Contains(path) && r.Contains(sha!));
+        }
+
         [Then("the activity log has {string} with the package's fingerprint")]
         public async Task ThenTheLogHasTheFingerprint(string action)
         {
@@ -121,6 +148,10 @@ namespace ComplianceTracker.Specs.StepDefinitions
             });
             return _files;
         }
+
+        private async Task<byte[]> FileAsync(string path)
+            => (await FilesAsync()).TryGetValue(path, out var file) ? file
+                : throw new Xunit.Sdk.XunitException($"The package has no '{path}'; it has {string.Join(", ", (await FilesAsync()).Keys)}.");
 
         private async Task<string> ContentsAsync() => Encoding.UTF8.GetString((await FilesAsync())["00-contents.txt"]);
 

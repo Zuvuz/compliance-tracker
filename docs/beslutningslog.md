@@ -1855,6 +1855,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At stoppe pakken, når noget mangler, fordi en auditor også skal se hullerne.
   - At læse indholdet af dokumenterne. Det gør AI'ens evidens-tjek (US-038).
 
+### B120 – Audit-pakken sorteres pr. krav (US-179)
+
+- **Beslutning:**
+  - **En mappe pr. krav:** hvert krav i de valgte frameworks får mappen `<framework>/<kode>/`, fx `CRA/I.2(d)/`, med en `README.txt`. Den viser kravets tekst, status, koblede user stories, fejlende tests og hver evidens med sti i pakken (eller link), SHA-256 og kilde.
+  - **Sikre navne:** tegn, som Windows, macOS eller Linux ikke tillader (`/ \ : * ? " < > |`), bliver til `-`. Parenteser beholdes. To koder, der giver samme mappe, får et nummer.
+  - **Filer gemmes én gang** under `evidence/`. Kravenes README'er peger på dem, så pakken ikke vokser, når en fil dækker flere krav. To filer med samme navn får et nummer.
+  - **Indeks:** `index.html` (virker offline, ingen scripts, relative links) og `index.xlsx` med en række pr. evidens.
+  - **Fingeraftrykket** dækker alle filer, også mapperne og indekset.
+- **Begrundelse:** En auditor arbejder krav for krav. Med en mappe pr. krav og et indeks finder hen beviset uden at søge i én lang liste.
+- **Fravalgt:**
+  - At kopiere filerne ind i hver kravmappe. Det gør pakken større, og samme fil får flere stier.
+  - Genveje (symlinks) i ZIP-filen. Windows' egen udpakning håndterer dem ikke.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

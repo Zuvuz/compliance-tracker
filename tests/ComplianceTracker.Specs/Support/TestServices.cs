@@ -75,6 +75,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddSingleton<ComplianceTracker.Application.Compliance.IDiagramReader, ComplianceTracker.Infrastructure.Compliance.PlantUmlDiagramReader>();
                 services.AddSingleton<ComplianceTracker.Application.Compliance.IDiagramReader, ComplianceTracker.Infrastructure.Compliance.BpmnDiagramReader>();
                 services.AddSingleton<ComplianceTracker.Application.Compliance.IDiagramReader, ComplianceTracker.Infrastructure.Compliance.SvgDiagramReader>();
+                services.AddSingleton<ComplianceTracker.Application.Reports.ISpreadsheetWriter, ComplianceTracker.Infrastructure.Reports.OpenXmlSpreadsheetWriter>(); // US-179: the audit package's index
 
                 // US-020: not used by these tests, but the use cases must be creatable
                 services.AddScoped<IMappingSuggestionRepository, MappingSuggestionRepository>();
