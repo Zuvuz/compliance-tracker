@@ -42,12 +42,14 @@ namespace ComplianceTracker.Application.Reports
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUser _currentUser;
         private readonly TimeProvider _clock;
+        private readonly AuditReadinessService _readiness; // US-178
 
         public AuditPackageService(
             ReportFiles files, ProjectQueries projects, ComplianceQueries compliance, IEvidenceRepository evidence, IRequirementDocumentRepository documents,
             ISbomRepository sboms, AuditService audits, IActivityLogRepository log, IReportSnapshotRepository snapshots, CurrentMember member,
-            IActivityLogger logger, IUnitOfWork unitOfWork, ICurrentUser currentUser, TimeProvider clock)
+            IActivityLogger logger, IUnitOfWork unitOfWork, ICurrentUser currentUser, TimeProvider clock, AuditReadinessService readiness)
         {
+            _readiness = readiness;
             _files = files;
             _projects = projects;
             _compliance = compliance;
@@ -152,7 +154,10 @@ namespace ComplianceTracker.Application.Reports
             var title = $"Audit package – {project.Name}, {start:dd-MM-yyyy} – {end:dd-MM-yyyy}";
             var contents = Contents(title, organization.Name, project.Name, chosen.Select(f => f.Framework.Name).ToList(), start, end,
                 _currentUser.Identity.Name, now, parts, links);
-            var zip = Zip([new PackagePart("00-contents.txt", Encoding.UTF8.GetBytes(contents), "Contents"), .. parts]);
+            // US-178 R3: what an auditor asks for and what is missing, in the package itself
+            var check = await _readiness.CheckAsync(project.Id, frameworks, cancellationToken);
+            var checkPart = new PackagePart("00-check.txt", Encoding.UTF8.GetBytes(check is null ? "No check" : AuditReadiness.Text(check, today)), "What an auditor asks for, and what is missing (US-178)");
+            var zip = Zip([new PackagePart("00-contents.txt", Encoding.UTF8.GetBytes(contents), "Contents"), checkPart, .. parts]);
 
             // R3, R5: kept like a locked report; the fingerprint is logged
             var snapshot = ReportSnapshot.Lock(organization.Id, project.Id, Kind, title,

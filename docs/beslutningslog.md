@@ -1836,6 +1836,25 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Antallet i topbaren, fordi det ville koste forespørgsler på hver side. Det står på "To review"-siden.
   - At flytte fanernes indhold, som kommer med designreglerne (US-168).
 
+### B119 – Audit-pakken tjekkes, før den laves (US-178)
+
+- **Beslutning:**
+  - **Tjeklisten:** "Check the package first" på fanen Rapporter viser pr. framework, hvad en auditor typisk beder om, og om det findes.
+    - **ISO/IEC 27001:** 4.3 scope, 5.2 politik, 6.1.2 risikovurdering, 6.1.3 risikobehandling og SoA, 9.2 intern audit og 9.3 ledelsens gennemgang. Hvert punkt findes som gyldig evidens på kravet med den kode i organisationens kopi. 9.2 er også dækket af en audit inden for 12 måneder.
+    - **CRA:** SBOM, supportperiode, kontakt for sårbarheder og risikovurdering (risikoregistret).
+    - **Alle frameworks:**
+      - gældende krav uden gyldig evidens (de første 10 nævnes, resten tælles);
+      - evidens, der udløber inden for 60 dage;
+      - ændringer, der venter på gennemsyn.
+  - **"Fix":** hvert punkt, der mangler, linker til der, hvor det rettes.
+  - **Pakken laves alligevel.** Tjekket ligger i den som `00-check.txt`.
+  - **Ikke relevante krav** tæller ikke som manglende, men står med begrundelsen.
+- **Begrundelse:** Hullerne skal findes før auditten og ikke under den (ISO/IEC 27001 9.2, CRA Annex VII).
+- **Afvigelse:** "udløber i audit-perioden" er blevet til "udløber inden for 60 dage". Pakkens periode slutter senest i dag, så det er de kommende uger, der betyder noget.
+- **Fravalgt:**
+  - At stoppe pakken, når noget mangler, fordi en auditor også skal se hullerne.
+  - At læse indholdet af dokumenterne. Det gør AI'ens evidens-tjek (US-038).
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

@@ -60,6 +60,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<Reports.StatementOfApplicabilityQueries>(); // US-053
             services.AddScoped<Audits.AuditService>(); // US-134
             services.AddScoped<Reports.AuditPackageService>(); // US-076
+            services.AddScoped<Reports.AuditReadinessService>(); // US-178
             services.AddScoped<Organizations.PersonalDataService>(); // US-095
             services.AddScoped<Compliance.EvidenceCheckService>(); // US-038
             services.AddScoped<Ai.CrossMappingService>(); // US-037

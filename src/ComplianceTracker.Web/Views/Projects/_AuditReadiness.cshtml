@@ -1,0 +1,44 @@
+@* US-178: the audit package's check. R1: per framework, what an auditor asks for and whether it is there; R2: each missing
+   item links to where it is fixed. Ids and classes used by the tests: #audit-check (data-ready), #audit-check-summary,
+   .readiness-framework[data-framework] with .readiness-line (data-ok) holding .readiness-title, .readiness-detail and
+   a.readiness-fix. *@
+@model (Guid ProjectId, ComplianceTracker.Application.Reports.PackageReadiness Readiness)
+@using ComplianceTracker.Application.Reports
+@{
+    string? FixUrl(ReadinessLine line, string slug) => line.Fix switch
+    {
+        ReadinessFix.Requirement when line.Code is not null => Url.Action("Details", new { id = Model.ProjectId, tab = ProjectTabs.Compliance, sub = slug, req = line.Code }),
+        ReadinessFix.Compliance => Url.Action("Details", new { id = Model.ProjectId, tab = ProjectTabs.Compliance, sub = slug, show = ComplianceFilters.NotCovered }),
+        ReadinessFix.Risks => Url.Action("Details", new { id = Model.ProjectId, tab = ProjectTabs.Risks }),
+        ReadinessFix.Scans => Url.Action("Details", new { id = Model.ProjectId, tab = ProjectTabs.Scans }),
+        ReadinessFix.ProjectEdit => Url.Action("Edit", new { id = Model.ProjectId }),
+        ReadinessFix.Audits => Url.Action("Index", "Audits", new { projectId = Model.ProjectId }),
+        _ => null
+    };
+}
+<section class="card mt-2" id="audit-check" data-ready="@(Model.Readiness.IsReady ? "true" : "false")">
+    <div class="card-body small">
+        <h3 class="h6 card-title">Audit package check: <span id="audit-check-summary" class="@(Model.Readiness.IsReady ? "text-success" : "text-danger")">@Model.Readiness.Summary</span></h3>
+        <p class="text-muted mb-2">What an auditor usually asks for. The package can be made anyway; what is missing is listed in it (00-check.txt).</p>
+        @foreach (var framework in Model.Readiness.Frameworks)
+        {
+            <div class="readiness-framework mb-2" data-framework="@framework.Framework">
+                <div class="fw-semibold">@framework.Framework <span class="text-muted fw-normal">· @(framework.Missing == 0 ? "ready" : $"{framework.Missing} missing")</span></div>
+                <ul class="list-unstyled mb-0">
+                    @foreach (var line in framework.Lines)
+                    {
+                        <li class="readiness-line d-flex flex-wrap gap-2 align-items-baseline" data-ok="@(line.Ok ? "true" : "false")">
+                            <span class="@(line.Ok ? "text-success" : "text-danger")" aria-hidden="true">@(line.Ok ? "✓" : "✗")</span>
+                            <span class="readiness-title">@line.Title</span>
+                            <span class="text-muted readiness-detail">@line.Detail</span>
+                            @if (!line.Ok && FixUrl(line, framework.Slug) is { } url)
+                            {
+                                <a class="readiness-fix" href="@url">Fix</a>
+                            }
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+</section>

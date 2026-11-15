@@ -151,6 +151,8 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> Details(
             Guid id, string? tab, string? sub, string? q, string? show, string? req,
             string? status, string? level, string? due,
+            // US-178: check=1 on the Reports tab checks the audit package for the chosen frameworks
+            string? check, string[]? frameworks,
             // US-159 R4: nothing=1 shows only the risks with nothing behind them
             string? nothing,
             // US-101: the Activity tab's filters (q is the search there too)
@@ -167,6 +169,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] Application.Reports.StatementOfApplicabilityQueries soa,
             [FromServices] Application.Audits.AuditService audits,
             [FromServices] Application.Risks.RiskDraftService riskDrafts,
+            [FromServices] Application.Reports.AuditReadinessService readiness,
             [FromServices] Application.Risks.RiskBackingQueries riskBacking,
             [FromServices] Application.Ai.INeedsActionReassessmentRepository reassessments,
             [FromServices] Application.Security.SecurityEventSuggestionService suggestionService,
@@ -311,6 +314,7 @@ namespace ComplianceTracker.Web.Controllers
                 EvidenceTab = evidenceTab,
                 Sub = sub,
                 OpenRequirement = activeTab == ProjectTabs.Compliance ? req : null,
+                AuditReadiness = activeTab == ProjectTabs.Reports && check == "1" ? await readiness.CheckAsync(id, frameworks, cancellationToken) : null, // US-178
                 // US-156: the newest assessment asked for after a change
                 Reassessment = activeTab == ProjectTabs.Compliance ? await reassessments.LatestAsync(id, cancellationToken) : null,
                 Gaps = activeTab == ProjectTabs.Suggestions ? await gapFinder.ForProjectAsync(id, cancellationToken) : null,
