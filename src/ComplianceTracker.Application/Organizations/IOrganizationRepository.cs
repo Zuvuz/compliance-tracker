@@ -4,6 +4,9 @@ namespace ComplianceTracker.Application.Organizations
 {
     // Storage for organisations and their members (implemented in Infrastructure, and in memory in the tests).
     // Repositories do not save on their own; that happens when IUnitOfWork.SaveChangesAsync is called.
+    // US-187: one organisation the signed-in person is a member of
+    public sealed record Membership(Guid OrganizationId, string Name, Domain.Users.UserRole Role);
+
     public interface IOrganizationRepository
     {
         Task<bool> CvrExistsAsync(string cvr, CancellationToken cancellationToken = default);
@@ -13,8 +16,9 @@ namespace ComplianceTracker.Application.Organizations
         // US-010: every organisation, for the system admin only
         Task<IReadOnlyList<Organization>> ListAllAsync(CancellationToken cancellationToken = default);
 
-        // The organisation the user with this sign-in id is a member of (null if none)
-        Task<Organization?> GetByMemberAsync(string externalId, CancellationToken cancellationToken = default);
+        // US-187: every organisation the person is an active member of, with their role there; their own organisation
+        // (where their role is not external) first, then by name
+        Task<IReadOnlyList<Membership>> ListMembershipsAsync(string externalId, CancellationToken cancellationToken = default);
 
         // US-090 R3: the name of the organisation the person was last removed from, or null
         Task<string?> FormerOrganizationNameAsync(string externalId, CancellationToken cancellationToken = default);

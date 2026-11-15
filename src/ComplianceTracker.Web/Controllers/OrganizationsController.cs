@@ -27,6 +27,26 @@ namespace ComplianceTracker.Web.Controllers
                 ? RedirectToAction(nameof(Create))
                 : RedirectToAction("Index", "Projects");
 
+        // POST /Organizations/Switch: US-187 R2, work in another organisation the person is a member of
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Switch(Guid organizationId, [FromServices] IWebHostEnvironment environment, CancellationToken cancellationToken)
+        {
+            if (!await _organizations.IsMemberOfAsync(organizationId, cancellationToken))
+            {
+                return NotFound();
+            }
+
+            Security.ChosenOrganisation.Write(Response, organizationId, environment.IsDevelopment());
+            return RedirectToAction("Index", "Projects");
+        }
+
+        // GET /Organizations/Customers: US-187 R5, every organisation the person works in, with its status
+        [HttpGet]
+        public async Task<IActionResult> Customers([FromServices] Security.CustomerSummaries summaries, [FromServices] TimeProvider clock,
+            CancellationToken cancellationToken)
+            => View(await summaries.ForMeAsync(DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime), cancellationToken));
+
         // GET: shows the empty create form
         [HttpGet]
         public async Task<IActionResult> Create(CancellationToken cancellationToken)

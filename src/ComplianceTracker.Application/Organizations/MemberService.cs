@@ -110,10 +110,7 @@ namespace ComplianceTracker.Application.Organizations
             try
             {
                 invitation.EnsureUsable(Now);
-                if (await _organizations.GetByMemberAsync(_currentUser.Identity.ExternalId, cancellationToken) is not null)
-                {
-                    problem = "You are already a member of an organisation";
-                }
+                problem = Refusal(await _organizations.ListMembershipsAsync(_currentUser.Identity.ExternalId, cancellationToken), invitation);
             }
             catch (DomainException error)
             {
@@ -131,10 +128,10 @@ namespace ComplianceTracker.Application.Organizations
                 ?? throw new DomainException("The invitation was not found");
             invitation.EnsureUsable(Now);
 
-            // B16: one organisation per person
-            if (await _organizations.GetByMemberAsync(identity.ExternalId, cancellationToken) is not null)
+            // B16, B121: one organisation per person, more only with an external role (US-187 R1)
+            if (Refusal(await _organizations.ListMembershipsAsync(identity.ExternalId, cancellationToken), invitation) is { } refusal)
             {
-                throw new DomainException("You are already a member of an organisation");
+                throw new DomainException(refusal);
             }
 
             var organization = await _organizations.GetByIdAsync(invitation.OrganizationId, cancellationToken)
@@ -146,6 +143,12 @@ namespace ComplianceTracker.Application.Organizations
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             _member.Reset();
         }
+
+        // US-187 R1: why the person may not join with this invitation, or null when they may
+        public static string? Refusal(IReadOnlyList<Membership> memberships, Domain.Organizations.Invitation invitation)
+            => memberships.Any(m => m.OrganizationId == invitation.OrganizationId) ? "You are already a member of this organisation"
+                : memberships.Count > 0 && !RolePermissions.IsExternal(invitation.Role) ? "You are already a member of an organisation"
+                : null;
 
         public static string Hash(string token)
             => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token))).ToLowerInvariant();

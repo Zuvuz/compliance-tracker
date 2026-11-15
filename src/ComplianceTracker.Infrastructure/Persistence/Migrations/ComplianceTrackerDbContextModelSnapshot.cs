@@ -6247,11 +6247,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ExternalId")
+                    b.HasIndex("ExternalId");
+
+                    b.HasIndex("OrganizationId", "ExternalId")
                         .IsUnique()
                         .HasFilter("\"RemovedAt\" IS NULL");
-
-                    b.HasIndex("OrganizationId");
 
                     b.ToTable("Users", (string)null);
                 });

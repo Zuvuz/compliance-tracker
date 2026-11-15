@@ -113,6 +113,7 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Beslutning:** Første gang en bruger logger ind, opretter brugeren sin organisation og bliver Admin. En bruger kan kun være medlem af én organisation og kun se den. (US-004)
 - **Begrundelse:** Holder adgangsreglerne enkle, indtil invitationer (US-009) og roller (US-010) er bygget.
 - **Opdateret (US-009, US-010):** Flere personer kan nu blive medlem gennem en invitation. En person kan stadig kun være medlem af én organisation.
+- **Opdateret (US-187):** Se B121. En person kan nu være medlem af flere organisationer, men kun med en ekstern rolle (Consultant eller Auditor).
 
 ## Kataloger
 
@@ -1867,6 +1868,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - At kopiere filerne ind i hver kravmappe. Det gør pakken større, og samme fil får flere stier.
   - Genveje (symlinks) i ZIP-filen. Windows' egen udpakning håndterer dem ikke.
+
+### B121 – En konsulent kan arbejde for flere kunder (US-187)
+
+- **Beslutning:**
+  - **Ny rolle "Consultant":** må det samme som en Compliance manager, men ikke styre medlemmer eller AI-deling.
+  - **Flere organisationer:** en person, der allerede er medlem et sted, kan kun komme med i en anden organisation som Consultant eller Auditor. En medarbejder hører stadig kun til én organisation (B16).
+  - **Valgt organisation:** gemmes i cookien `ct_org` (HttpOnly). Serveren bruger den kun, når personen er medlem dér. En ændret cookie viser derfor aldrig fremmede data, og skift til en fremmed organisation giver 404.
+  - **Standard:** personens egen organisation (en rolle, der ikke er ekstern), ellers den første efter navn.
+  - **Adgang og log:** kun kundens organisation-admin kan invitere og fjerne konsulenten. Kunden kan gøre konsulenten læse-kun ved at skifte rollen til Auditor. Alt, konsulenten gør, logges i kundens log med rollen. Login og logud logges i hver organisation.
+  - **"My customers":** viser hver organisation med dækning, åbne huller og næste udløb af evidens. Hver organisation læses i sit eget scope med de samme forespørgsler og tjek som på dens egne sider.
+- **Begrundelse:** En konsulent laver gap-analyser for mange kunder og skal ikke have en konto pr. kunde (ISO/IEC 27001 A.5.15, A.5.18).
+- **Afvigelse:** "Next deadline" er blevet til "næste udløb af evidens". Fristerne for fund og indberetninger kommer med påmindelserne (US-183).
+- **Fravalgt:** at konsulenten selv opretter kunder. Det står som åbent spørgsmål i issuet.
 
 ## Åbne spørgsmål til klassediagrammet
 

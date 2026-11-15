@@ -28,6 +28,9 @@ namespace ComplianceTracker.Web.Security
 
         public const string SignedInClaim = "ct_signed_in_at";
 
+        // US-187: set for one scope (My customers), otherwise the cookie of the request
+        public Guid? ChosenOrganizationId => _principal.OrganizationId ?? ChosenOrganisation.Read(_httpContextAccessor.HttpContext);
+
         private ClaimsPrincipal Principal
             => _principal.User
                ?? _httpContextAccessor.HttpContext?.User
@@ -47,5 +50,8 @@ namespace ComplianceTracker.Web.Security
     public class CurrentPrincipal
     {
         public ClaimsPrincipal? User { get; set; }
+
+        // US-187 R5: the organisation to read in this scope, e.g. one line of "My customers"
+        public Guid? OrganizationId { get; set; }
     }
 }

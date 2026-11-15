@@ -17,6 +17,9 @@ namespace ComplianceTracker.Domain.Users
         Developer,
 
         // Reads everything, including the log, but changes nothing
-        Auditor
+        Auditor,
+
+        // US-187: an external advisor who works for several organisations; may do what a Compliance manager may
+        Consultant
     }
 }

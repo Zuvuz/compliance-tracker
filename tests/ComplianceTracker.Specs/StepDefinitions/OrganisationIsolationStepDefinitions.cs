@@ -355,6 +355,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                     _ => null
                 },
                 "projectid" => ids.Project,
+                "organizationid" => ids.Organization, // US-187: switching to an organisation the person is not a member of
                 "riskid" => ids.Risk,
                 "requirementid" => frameworks ? ids.FrameworkRequirement : ids.CraRequirement,
                 "workitemid" => ids.WorkItem,

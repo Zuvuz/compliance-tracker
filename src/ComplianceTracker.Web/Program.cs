@@ -66,6 +66,7 @@ builder.Services.AddSingleton<ComplianceTracker.Infrastructure.Persistence.ICurr
 // or from the SignalR connection inside a hub call (US-018)
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<CurrentPrincipal>();
+builder.Services.AddScoped<CustomerSummaries>(); // US-187
 builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
 
 // US-010: lets pages hide what the member's role does not allow (the use cases check it anyway)
