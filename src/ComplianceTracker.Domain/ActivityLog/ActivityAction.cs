@@ -313,6 +313,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         RiskActionRemoved,
         RiskActionUnlinked,
         FindingAcceptanceUndone,
-        SecurityEventRecordedInError
+        SecurityEventRecordedInError,
+
+        // US-189: a NIS2 gap question was answered. SubjectId points at the organisation; Details holds the requirement and
+        // the maturity, e.g. "Art. 21(2)(d): 1 – Ad hoc".
+        GapQuestionAnswered
     }
 }

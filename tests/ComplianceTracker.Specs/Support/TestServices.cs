@@ -89,6 +89,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<ComplianceTracker.Application.Approvals.IApprovalRequestRepository, ApprovalRequestRepository>(); // US-135
                 services.AddScoped<ComplianceTracker.Application.Organizations.IOrganisationDocumentRepository, OrganisationDocumentRepository>(); // US-136
                 services.AddScoped<ComplianceTracker.Application.Organizations.INis2AssessmentRepository, Nis2AssessmentRepository>(); // US-142
+                services.AddScoped<ComplianceTracker.Application.Organizations.IGapAnswerRepository, GapAnswerRepository>(); // US-189
                 services.AddScoped<ComplianceTracker.Application.Organizations.IDocumentLinkSuggestionRepository, DocumentLinkSuggestionRepository>(); // US-136 R2
                 services.AddSingleton(new ComplianceTracker.Application.Organizations.IndustryFrameworks(
                     ComplianceTracker.Infrastructure.Persistence.BuiltInFrameworks.Cra.FrameworkId,

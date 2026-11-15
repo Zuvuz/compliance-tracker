@@ -56,6 +56,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             return UploadAsync((fileName, memory.ToArray()));
         }
 
+        [Given("I have approved the gap suggestion {string} for {string}")]
         [When("I approve the gap suggestion {string} for {string}")]
         public async Task WhenIApprove(string code, string document)
         {
@@ -68,6 +69,40 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         [When("I open the NIS2 gap analysis")]
         public Task WhenIOpen() => _web.OpenAsync(Path);
+
+        // US-189
+        [Given("I have answered {string} with {string} and {string}")]
+        [When("I answer {string} with {string} and {string}")]
+        public async Task WhenIAnswer(string code, string maturity, string comment)
+        {
+            await _web.OpenAsync(Path);
+            var form = Question(code).QuerySelector("form.answer-question")
+                ?? throw new Xunit.Sdk.XunitException($"'{code}' cannot be answered.");
+            var fields = form.QuerySelectorAll("input[type=hidden]").ToDictionary(i => i.GetAttribute("name")!, i => i.GetAttribute("value") ?? "");
+            fields["maturity"] = maturity;
+            fields["comment"] = comment;
+            await _web.PostFormAsync(form.GetAttribute("action")!, fields);
+        }
+
+        [Then("the question {string} is covered by evidence")]
+        public void ThenCovered(string code) => Assert.Equal("true", Question(code).GetAttribute("data-covered"));
+
+        [Then("the question {string} is open")]
+        public void ThenOpen(string code) => Assert.Equal("true", Question(code).GetAttribute("data-open"));
+
+        [Then("the question {string} has the answer {string}")]
+        public void ThenHasTheAnswer(string code, string answer)
+            => Assert.Contains(answer, Question(code).QuerySelector(".gap-answer")?.TextContent ?? "(no answer)");
+
+        [Then("the question {string} needs evidence")]
+        public void ThenNeedsEvidence(string code) => Assert.Equal("true", Question(code).GetAttribute("data-needs-evidence"));
+
+        [Then("the question {string} lists {int} earlier answer(s)")]
+        public void ThenListsEarlier(string code, int count)
+            => Assert.Equal(count, Question(code).QuerySelectorAll(".gap-earlier li").Length);
+
+        [Then("the question {string} cannot be answered")]
+        public void ThenCannotBeAnswered(string code) => Assert.Null(Question(code).QuerySelector("form.answer-question"));
 
         // ---------------------------------------------------------- Then
 
@@ -109,6 +144,10 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         // ---------------------------------------------------------- Helpers
+
+        private AngleSharp.Dom.IElement Question(string code)
+            => _web.Page!.QuerySelector($".gap-question[data-code='{code}']")
+               ?? throw new Xunit.Sdk.XunitException($"No question '{code}' on {_web.CurrentPath}.");
 
         private AngleSharp.Dom.IElement Row(string code, string document)
             => _web.Page!.QuerySelector($"#gap-suggestions tr[data-requirement='{code}'][data-document='{document}']")

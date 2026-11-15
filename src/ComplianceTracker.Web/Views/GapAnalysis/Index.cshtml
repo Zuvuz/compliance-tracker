@@ -121,3 +121,77 @@
         }
     </div>
 </section>
+
+@* US-189: the questions for what the documents do not show. R2: a question covered by approved evidence is folded away;
+   R4: "needs evidence" when the answer claims 3 or more without proof; R5: earlier answers are listed.
+   Ids and classes used by the tests: #questions, .gap-question[data-code] (data-covered, data-open, data-needs-evidence),
+   .gap-answer, .gap-earlier and form.answer-question. *@
+@{
+    var open = Model.Questions.Where(q => !q.CoveredByEvidence).ToList();
+    var covered = Model.Questions.Where(q => q.CoveredByEvidence).ToList();
+}
+<section class="card mb-3" id="questions">
+    <div class="card-body">
+        <h2 class="h5 card-title">3. Questions for what the documents do not show</h2>
+        <p class="small text-muted">@open.Count(q => q.IsOpen) of @open.Count questions are not answered yet. 0 none · 1 ad hoc · 2 defined · 3 implemented · 4 measured and improved.</p>
+        @foreach (var question in open)
+        {
+            <div class="gap-question border-top pt-2 pb-2" data-code="@question.Code" data-covered="false" data-open="@(question.IsOpen ? "true" : "false")"
+                 data-needs-evidence="@(question.NeedsEvidence ? "true" : "false")">
+                <div class="fw-semibold">@question.Code</div>
+                <div>@question.Question</div>
+                @if (question.Answer is { } answer)
+                {
+                    <div class="small gap-answer">
+                        Answer: <span class="fw-semibold">@ComplianceTracker.Domain.Organizations.Nis2Questions.Title(answer.Maturity)</span>
+                        @if (answer.Comment is { } note) { <span>· @note</span> }
+                        @if (question.NeedsEvidence) { <span class="badge text-bg-warning ms-1">Needs evidence</span> }
+                    </div>
+                }
+                @if (Model.CanAnswer)
+                {
+                    <form asp-action="Answer" method="post" class="d-flex flex-wrap gap-1 mt-1 answer-question">
+                        <input type="hidden" name="code" value="@question.Code" />
+                        <select name="maturity" class="form-select form-select-sm w-auto" aria-label="Maturity for @question.Code" required>
+                            <option value="">Maturity…</option>
+                            @foreach (var maturity in Enum.GetValues<ComplianceTracker.Domain.Organizations.Maturity>())
+                            {
+                                <option value="@maturity" selected="@(question.Answer?.Maturity == maturity)">@ComplianceTracker.Domain.Organizations.Nis2Questions.Title(maturity)</option>
+                            }
+                        </select>
+                        <input name="comment" maxlength="2000" class="form-control form-control-sm w-auto flex-grow-1" placeholder="What is in place (optional)" aria-label="Comment for @question.Code" value="@question.Answer?.Comment" />
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                    </form>
+                }
+                @if (question.Earlier.Count > 0)
+                {
+                    <details class="small mt-1 gap-earlier">
+                        <summary>Earlier answers (@question.Earlier.Count)</summary>
+                        <ul class="mb-0">
+                            @foreach (var earlier in question.Earlier)
+                            {
+                                <li>@ComplianceTracker.Domain.Organizations.Nis2Questions.Title(earlier.Maturity), @earlier.AnsweredAt.ToString("dd-MM-yyyy HH:mm") @(earlier.Comment is { } c ? "· " + c : "")</li>
+                            }
+                        </ul>
+                    </details>
+                }
+            </div>
+        }
+        @if (covered.Count > 0)
+        {
+            <details class="mt-2" id="questions-covered">
+                <summary class="small">Covered by approved evidence (@covered.Count)</summary>
+                @foreach (var question in covered)
+                {
+                    <div class="gap-question small border-top pt-1" data-code="@question.Code" data-covered="true" data-open="false" data-needs-evidence="false">
+                        <span class="fw-semibold">@question.Code</span> @question.Question
+                        @if (question.Answer is { } answer)
+                        {
+                            <span class="gap-answer">· @ComplianceTracker.Domain.Organizations.Nis2Questions.Title(answer.Maturity)</span>
+                        }
+                    </div>
+                }
+            </details>
+        }
+    </div>
+</section>

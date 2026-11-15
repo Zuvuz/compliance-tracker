@@ -19,12 +19,14 @@ namespace ComplianceTracker.Web.Controllers
 
         private readonly GapAnalysisService _gap;
         private readonly DocumentSuggestionService _suggestions;
+        private readonly GapQuestionService _questions;
         private readonly CurrentMember _member;
 
-        public GapAnalysisController(GapAnalysisService gap, DocumentSuggestionService suggestions, CurrentMember member)
+        public GapAnalysisController(GapAnalysisService gap, DocumentSuggestionService suggestions, GapQuestionService questions, CurrentMember member)
         {
             _gap = gap;
             _suggestions = suggestions;
+            _questions = questions;
             _member = member;
         }
 
@@ -40,7 +42,21 @@ namespace ComplianceTracker.Web.Controllers
             return View(new GapAnalysisViewModel(
                 await _suggestions.PendingForAsync(IsNis2, cancellationToken),
                 await _member.CanAsync(Permission.ManageFrameworks, cancellationToken),
-                TempData[ResultKey] is string json ? JsonSerializer.Deserialize<GapUploadView>(json) : null));
+                TempData[ResultKey] is string json ? JsonSerializer.Deserialize<GapUploadView>(json) : null)
+            {
+                Questions = await _questions.QuestionsAsync(cancellationToken), // US-189
+                CanAnswer = await _member.CanAsync(Permission.DecideCompliance, cancellationToken)
+            });
+        }
+
+        // POST /GapAnalysis/Answer: US-189 R3, R5, one question at a time; back to the question
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> Answer(string? code, Domain.Organizations.Maturity? maturity, string? comment, CancellationToken cancellationToken)
+        {
+            await _questions.AnswerAsync(code ?? "", maturity, comment, cancellationToken);
+            return RedirectToAction(nameof(Index), null, "questions");
         }
 
         // POST /GapAnalysis/Upload: R1, R4
@@ -74,5 +90,10 @@ namespace ComplianceTracker.Web.Controllers
 
     public sealed record GapUploadView(string Summary, IReadOnlyList<GapUploadLine> Lines, int More);
 
-    public sealed record GapAnalysisViewModel(IReadOnlyList<GapSuggestionView> Suggestions, bool CanManage, GapUploadView? LastUpload);
+    public sealed record GapAnalysisViewModel(IReadOnlyList<GapSuggestionView> Suggestions, bool CanManage, GapUploadView? LastUpload)
+    {
+        // US-189
+        public IReadOnlyList<GapQuestionView> Questions { get; init; } = [];
+        public bool CanAnswer { get; init; }
+    }
 }
