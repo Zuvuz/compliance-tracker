@@ -22,10 +22,13 @@ namespace ComplianceTracker.Application.Projects
         private readonly ComplianceQueries _compliance;
         private readonly IScanRepository _scans;
         private readonly ISbomRepository _sboms;
+        private readonly IProjectChecklistRepository _checklist; // US-047
 
         public PhaseGates(IProjectRepository projects, IFrameworkRepository frameworks, IClassificationRepository classifications,
-            IRiskRepository risks, CurrentMember member, ComplianceQueries compliance, IScanRepository scans, ISbomRepository sboms)
+            IRiskRepository risks, CurrentMember member, ComplianceQueries compliance, IScanRepository scans, ISbomRepository sboms,
+            IProjectChecklistRepository checklist)
         {
+            _checklist = checklist;
             _compliance = compliance;
             _scans = scans;
             _sboms = sboms;
@@ -38,51 +41,138 @@ namespace ComplianceTracker.Application.Projects
 
         // The Overview: the gate to the project's next phase, or null when its phase has none. Null for other organisations.
         public async Task<PhaseGate?> NextAsync(Guid projectId, CancellationToken cancellationToken = default)
+            => (await OverviewAsync(projectId, cancellationToken)).Gate;
+
+        // US-047: the gate to the next phase and the current phase's checklist, from one look-up of the facts
+        public async Task<(PhaseGate? Gate, PhaseChecklistView? Checklist)> OverviewAsync(Guid projectId, CancellationToken cancellationToken = default)
         {
             if (await _member.FindOrganizationAsync(cancellationToken) is not { } organization
                 || await _projects.GetAsync(organization.Id, projectId, cancellationToken) is not { } project
-                || project.IsClosed)
+                || project.IsOrganisationArea)
             {
-                return null;
+                return (null, null);
             }
 
-            return project.Phase switch
+            // The gate is shown for the move it has always been shown for: Planning and Design to Development, Development and
+            // Verification to release
+            LifecyclePhase? next = project.IsClosed ? null : project.Phase switch
             {
-                LifecyclePhase.Planning => await ForAsync(organization, project, LifecyclePhase.Development, cancellationToken),
-                LifecyclePhase.Development => await ForAsync(organization, project, LifecyclePhase.Released, cancellationToken),
+                LifecyclePhase.Planning or LifecyclePhase.Design => LifecyclePhase.Development,
+                LifecyclePhase.Development or LifecyclePhase.Verification => LifecyclePhase.Released,
                 _ => null
             };
+
+            // Only what the current phase's items and the gate need is looked up (US-139: the Overview stays within its queries)
+            var needs = BuiltInChecklist.All.Where(i => i.Phase >= project.Phase && i.Phase < (next ?? project.Phase + 1)).Select(i => i.Check).ToHashSet();
+            if (next == LifecyclePhase.Development)
+            {
+                needs.UnionWith([ChecklistCheck.Scope, ChecklistCheck.Classification, ChecklistCheck.Risks]);
+            }
+            else if (next == LifecyclePhase.Released)
+            {
+                needs.UnionWith([ChecklistCheck.Coverage, ChecklistCheck.Evidence, ChecklistCheck.Findings, ChecklistCheck.Sbom, ChecklistCheck.Support]);
+            }
+
+            var facts = await FactsAsync(organization, project, null, cancellationToken, needs);
+            var lines = ChecklistRules.Lines(BuiltInChecklist.For(facts.Frameworks), await _checklist.ListAsync(project.Id, cancellationToken), facts.Checklist);
+            var current = lines.Where(l => l.Item.Phase == project.Phase).ToList();
+            var checklist = new PhaseChecklistView(project.Phase,
+                current.Where(l => l.State != ChecklistState.NotChosen).ToList(),
+                current.Where(l => l.State == ChecklistState.NotChosen).ToList());
+            return (next is { } to ? Gate(project, to, facts, lines) : null, checklist);
         }
 
         // The gate between the project's phase and "to"; null when that move has none (e.g. back to an earlier phase).
         // US-072: "supportEndsOn" is a support end date sent with the release itself (US-025 R1).
+        // US-047 R5: the checklist items still missing in the phases the move leaves behind are listed with the gate; they warn
+        // and are logged, but need no reason.
         public async Task<PhaseGate?> ForAsync(Organization organization, Project project, LifecyclePhase to, CancellationToken cancellationToken = default,
             DateOnly? supportEndsOn = null)
-            => (project.Phase, to) switch
-            {
-                (LifecyclePhase.Planning, LifecyclePhase.Development) => new PhaseGate(ReadyForDevelopment, project.Phase, to,
-                    await ForDevelopmentAsync(organization, project, cancellationToken)),
-                (LifecyclePhase.Planning or LifecyclePhase.Development, LifecyclePhase.Released) => new PhaseGate(ReadyForRelease, project.Phase, to,
-                    await ForReleaseAsync(project, supportEndsOn, cancellationToken)),
-                _ => null
-            };
-
-        // US-072 R1: coverage, evidence, no open critical or high findings, an SBOM and a support period
-        private async Task<IReadOnlyList<GateCheck>> ForReleaseAsync(Project project, DateOnly? supportEndsOn, CancellationToken cancellationToken)
         {
-            var frameworks = (await _compliance.ForProjectAsync(project.Id, cancellationToken))?.Frameworks ?? [];
-            var findings = await _scans.ListFindingsAsync(project.Id, cancellationToken);
-            var scanned = (await _scans.ListAsync(project.Id, cancellationToken)).Count > 0;
-            var latestSbom = SbomService.Latest(await _sboms.ListAsync(project.Id, cancellationToken)).FirstOrDefault();
-            return ReleaseChecks(new ReleaseFacts(
-                frameworks.Count,
+            var facts = await FactsAsync(organization, project, supportEndsOn, cancellationToken);
+            var lines = ChecklistRules.Lines(BuiltInChecklist.For(facts.Frameworks), await _checklist.ListAsync(project.Id, cancellationToken), facts.Checklist);
+            return Gate(project, to, facts, lines);
+        }
+
+        private static PhaseGate? Gate(Project project, LifecyclePhase to, AllFacts facts, IReadOnlyList<ChecklistLine> lines)
+        {
+            PhaseGate? gate = null;
+            if (project.Phase == LifecyclePhase.Planning && to is LifecyclePhase.Design or LifecyclePhase.Development)
+            {
+                gate = new PhaseGate(ReadyForDevelopment, project.Phase, to, DevelopmentChecks(project, facts.Unclassified, facts.Checklist.Risks));
+            }
+            else if (project.Phase < LifecyclePhase.Released && to == LifecyclePhase.Released)
+            {
+                gate = new PhaseGate(ReadyForRelease, project.Phase, to, ReleaseChecks(facts.Release));
+            }
+
+            // What the old gate checks already lists is not listed twice
+            var missing = ChecklistRules.MissingBefore(lines, project.Phase, to)
+                .Where(l => gate is null || l.Item.Check is ChecklistCheck.Manual or ChecklistCheck.Retained)
+                .Select(l => $"{l.Item.Text} ({l.Item.Source})")
+                .ToList();
+            if (gate is null && missing.Count == 0)
+            {
+                return null;
+            }
+
+            return (gate ?? new PhaseGate($"Ready for {to}", project.Phase, to, [])) with { ChecklistMissing = missing };
+        }
+
+        private sealed record AllFacts(ChecklistFacts Checklist, ReleaseFacts Release, IReadOnlyList<string> Unclassified, IReadOnlyList<string> Frameworks);
+
+        // Everything the gates and the checklist are worked out from, looked up once
+        // "needs": what to look up; null for everything (a phase change)
+        private async Task<AllFacts> FactsAsync(Organization organization, Project project, DateOnly? supportEndsOn, CancellationToken cancellationToken,
+            IReadOnlySet<ChecklistCheck>? needs = null)
+        {
+            bool Needs(params ChecklistCheck[] checks) => needs is null || checks.Any(needs.Contains);
+            var classified = Needs(ChecklistCheck.Classification)
+                ? (await _classifications.ListAsync(project.Id, cancellationToken)).Select(c => c.FrameworkId).ToHashSet()
+                : null;
+            var unclassified = new List<string>();
+            var names = new List<string>();
+            foreach (var used in project.Frameworks)
+            {
+                if (await _frameworks.GetAvailableAsync(organization.Id, used.FrameworkId, cancellationToken) is { } framework)
+                {
+                    names.Add(FrameworkSlugs.Short(framework.Name));
+                    if (classified is not null && RegulationClasses.For(framework) is not null && !classified.Contains(framework.Id))
+                    {
+                        unclassified.Add(FrameworkSlugs.Short(framework.Name));
+                    }
+                }
+            }
+
+            var risks = Needs(ChecklistCheck.Risks) ? (await _risks.ListAsync(project.Id, cancellationToken)).Count : 0;
+            var frameworks = Needs(ChecklistCheck.Coverage, ChecklistCheck.Evidence)
+                ? (await _compliance.ForProjectAsync(project.Id, cancellationToken))?.Frameworks ?? []
+                : [];
+            var findings = Needs(ChecklistCheck.Findings) ? await _scans.ListFindingsAsync(project.Id, cancellationToken) : [];
+            var scanned = Needs(ChecklistCheck.Findings) && (await _scans.ListAsync(project.Id, cancellationToken)).Count > 0;
+            var latestSbom = Needs(ChecklistCheck.Sbom) ? SbomService.Latest(await _sboms.ListAsync(project.Id, cancellationToken)).FirstOrDefault() : null;
+            var release = new ReleaseFacts(
+                Needs(ChecklistCheck.Coverage, ChecklistCheck.Evidence) ? frameworks.Count : project.Frameworks.Count(),
                 frameworks.Sum(f => f.NotCovered),
                 frameworks.Sum(f => f.Requirements.Count(r => r.IsApplicable && !r.Requirement.IsRecommendation && r.IsCovered && !r.HasEvidence)),
                 scanned,
                 findings.Count(f => f.IsOpen && f.Severity == Domain.Scanning.FindingSeverity.Critical),
                 findings.Count(f => f.IsOpen && f.Severity == Domain.Scanning.FindingSeverity.High),
                 latestSbom?.ProductVersion,
-                project.SupportEndsOn ?? supportEndsOn));
+                project.SupportEndsOn ?? supportEndsOn);
+            var checklist = new ChecklistFacts(
+                !string.IsNullOrWhiteSpace(project.IntendedPurpose) && !string.IsNullOrWhiteSpace(project.Scope),
+                unclassified.ToHashSet(),
+                risks,
+                release.Frameworks,
+                release.NotCovered,
+                release.WithoutEvidence,
+                release.Scanned,
+                release.OpenCritical + release.OpenHigh,
+                release.SbomVersion is not null,
+                release.SupportEndsOn is not null,
+                project.RetainUntil is not null);
+            return new AllFacts(checklist, release, unclassified, names);
         }
 
         // What the release checks are worked out from
@@ -125,24 +215,6 @@ namespace ComplianceTracker.Application.Projects
                     ? new GateCheck("support", $"Supported until {ends:dd-MM-yyyy}", GateCheckState.Met)
                     : new GateCheck("support", "No support end date", GateCheckState.NotMet)
             ];
-        }
-
-        // US-071 R1: purpose and scope, a framework, a class under each regulation it follows, and a first risk
-        private async Task<IReadOnlyList<GateCheck>> ForDevelopmentAsync(Organization organization, Project project, CancellationToken cancellationToken)
-        {
-            var classified = (await _classifications.ListAsync(project.Id, cancellationToken)).Select(c => c.FrameworkId).ToHashSet();
-            var unclassified = new List<string>();
-            foreach (var used in project.Frameworks)
-            {
-                if (await _frameworks.GetAvailableAsync(organization.Id, used.FrameworkId, cancellationToken) is { } framework
-                    && RegulationClasses.For(framework) is not null
-                    && !classified.Contains(framework.Id))
-                {
-                    unclassified.Add(FrameworkSlugs.Short(framework.Name));
-                }
-            }
-
-            return DevelopmentChecks(project, unclassified, (await _risks.ListAsync(project.Id, cancellationToken)).Count);
         }
 
         // The checks themselves, from what was looked up; pure, so they can be tested without a database

@@ -398,6 +398,14 @@
                                 <option value="@phase">@phase</option>
                             }
                         </select>
+                        @if (Model.Checklist is { Missing.Count: > 0 } open)
+                        {
+                            @* US-047 R5: said clearly before the phase changes; it is allowed, and logged with what is missing *@
+                            <div class="alert alert-warning py-1 px-2 mb-1 w-100 small" id="checklist-warning" role="alert">
+                                <span class="fw-semibold">@open.Missing.Count @(open.Missing.Count == 1 ? "item is" : "items are") missing in @project.Phase:</span>
+                                @string.Join(", ", open.Missing.Select(m => m.Item.Text))
+                            </div>
+                        }
                         <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">Change phase</button>
                         @if (Model.NextGate is { IsMet: false } openGate)
                         {
@@ -422,6 +430,134 @@
                 }
             </div>
         </div>
+
+        @if (Model.Checklist is { } checklist)
+        {
+            @* US-047: the current phase's checklist for every regulation the project follows, each item with its regulation.
+               Ids and classes used by the tests: #checklist (data-phase), .checklist-item (data-key, data-state),
+               .checklist-text, .checklist-source, .checklist-note, form.checklist-change (hidden key and change), #checklist-optional *@
+            var canEditChecklist = canChangePhase && !project.IsClosed;
+            string? AutoFix(ChecklistCheck check) => check switch
+            {
+                ChecklistCheck.Scope => Url.Action("Edit", new { id = project.Id }),
+                ChecklistCheck.Classification => Url.Action("Details", new { id = project.Id }) + "#classification",
+                ChecklistCheck.Risks => Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks }),
+                ChecklistCheck.Coverage => Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Compliance, show = ComplianceFilters.NotCovered }),
+                ChecklistCheck.Evidence => Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Compliance }),
+                ChecklistCheck.Findings or ChecklistCheck.Sbom => Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Scans }),
+                ChecklistCheck.Support => Url.Action("Details", new { id = project.Id }) + "#support-period",
+                _ => null
+            };
+            <div class="card mb-3" id="checklist" data-phase="@checklist.Phase">
+                <div class="card-body">
+                    <h2 class="h6 card-title">Checklist for @checklist.Phase</h2>
+                    @if (checklist.Counted == 0)
+                    {
+                        <p class="small text-muted mb-1">Nothing to do in this phase for the regulations the project follows.</p>
+                    }
+                    else
+                    {
+                        var percent = (int)Math.Round(100.0 * checklist.Done / checklist.Counted);
+                        <div class="small mb-1" id="checklist-progress">@checklist.Done of @checklist.Counted done@(checklist.Missing.Count > 0 ? $", {checklist.Missing.Count} missing" : "")</div>
+                        <div class="progress mb-2" role="progressbar" aria-label="Checklist progress" aria-valuenow="@percent" aria-valuemin="0" aria-valuemax="100" style="height: .4rem">
+                            <div class="progress-bar @(checklist.Missing.Count == 0 ? "bg-success" : "bg-warning")" style="width: @percent%"></div>
+                        </div>
+                    }
+                    <ul class="list-unstyled small mb-0">
+                        @foreach (var line in checklist.Items)
+                        {
+                            var state = line.State.ToString();
+                            <li class="checklist-item border-top py-1" data-key="@line.Item.Key" data-state="@state">
+                                <span class="@(line.State switch { ChecklistState.Done => "text-success", ChecklistState.Missing => "text-danger", _ => "text-muted" })" aria-hidden="true">@(line.State switch { ChecklistState.Done => "✓", ChecklistState.Missing => "✗", _ => "–" })</span>
+                                @if (line.State == ChecklistState.Missing && AutoFix(line.Item.Check) is { } fix)
+                                {
+                                    <a href="@fix" class="checklist-text">@line.Item.Text</a>
+                                }
+                                else
+                                {
+                                    <span class="checklist-text @(line.State == ChecklistState.TurnedOff ? "text-decoration-line-through text-muted" : "")">@line.Item.Text</span>
+                                }
+                                <span class="badge text-bg-light border checklist-source">@line.Item.Source</span>
+                                <span class="visually-hidden">@state</span>
+                                @if (line.State == ChecklistState.TurnedOff)
+                                {
+                                    <div class="text-muted checklist-note">Turned off: @line.Entry?.OffReason</div>
+                                }
+                                else if (line.Entry is { Done: true } done)
+                                {
+                                    <div class="text-muted checklist-note">Done@(done.Comment is { } c ? $": {c}" : "")@(done.EvidenceUrl is { } url ? " · " : "")@if (done.EvidenceUrl is { } link) { <a href="@link" rel="noopener noreferrer" target="_blank">evidence</a> }</div>
+                                }
+                                @if (canEditChecklist)
+                                {
+                                    <div class="d-flex flex-wrap gap-1 mt-1">
+                                        @if (line.Item.Check == ChecklistCheck.Manual && line.State == ChecklistState.Missing)
+                                        {
+                                            <form asp-action="Checklist" method="post" class="d-flex flex-wrap gap-1 checklist-change" data-change="tick">
+                                                <input type="hidden" name="projectId" value="@project.Id" />
+                                                <input type="hidden" name="key" value="@line.Item.Key" />
+                                                <input type="hidden" name="change" value="tick" />
+                                                <input name="comment" maxlength="1000" class="form-control form-control-sm w-auto" placeholder="Comment (optional)" aria-label="Comment for @line.Item.Text" />
+                                                <input name="evidenceUrl" type="url" maxlength="2000" class="form-control form-control-sm w-auto" placeholder="Evidence link (optional)" aria-label="Evidence link for @line.Item.Text" />
+                                                <button type="submit" class="btn btn-sm btn-outline-success">Done</button>
+                                            </form>
+                                        }
+                                        @if (line.Item.Check == ChecklistCheck.Manual && line.State == ChecklistState.Done)
+                                        {
+                                            <form asp-action="Checklist" method="post" class="checklist-change" data-change="untick">
+                                                <input type="hidden" name="projectId" value="@project.Id" />
+                                                <input type="hidden" name="key" value="@line.Item.Key" />
+                                                <input type="hidden" name="change" value="untick" />
+                                                <button type="submit" class="btn btn-sm btn-link p-0">Not done</button>
+                                            </form>
+                                        }
+                                        @if (line.State == ChecklistState.TurnedOff)
+                                        {
+                                            <form asp-action="Checklist" method="post" class="checklist-change" data-change="on">
+                                                <input type="hidden" name="projectId" value="@project.Id" />
+                                                <input type="hidden" name="key" value="@line.Item.Key" />
+                                                <input type="hidden" name="change" value="on" />
+                                                <button type="submit" class="btn btn-sm btn-link p-0">Turn on again</button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <form asp-action="Checklist" method="post" class="d-flex flex-wrap gap-1 checklist-change" data-change="off">
+                                                <input type="hidden" name="projectId" value="@project.Id" />
+                                                <input type="hidden" name="key" value="@line.Item.Key" />
+                                                <input type="hidden" name="change" value="off" />
+                                                <input name="reason" maxlength="1000" class="form-control form-control-sm w-auto" placeholder="Why it does not apply" aria-label="Reason for turning off @line.Item.Text" required />
+                                                <button type="submit" class="btn btn-sm btn-link p-0 text-muted">Turn off</button>
+                                            </form>
+                                        }
+                                    </div>
+                                }
+                            </li>
+                        }
+                    </ul>
+                    @if (checklist.Optional.Count > 0 && canEditChecklist)
+                    {
+                        @* US-047 R9: tests the project can choose; off until chosen *@
+                        <details class="small mt-2" id="checklist-optional">
+                            <summary>Optional tests (@checklist.Optional.Count)</summary>
+                            <ul class="list-unstyled mb-0">
+                                @foreach (var line in checklist.Optional)
+                                {
+                                    <li class="checklist-item d-flex flex-wrap gap-1 align-items-center" data-key="@line.Item.Key" data-state="@line.State">
+                                        <span class="checklist-text">@line.Item.Text</span>
+                                        <form asp-action="Checklist" method="post" class="checklist-change" data-change="on">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="key" value="@line.Item.Key" />
+                                            <input type="hidden" name="change" value="on" />
+                                            <button type="submit" class="btn btn-sm btn-link p-0">Add to the checklist</button>
+                                        </form>
+                                    </li>
+                                }
+                            </ul>
+                        </details>
+                    }
+                </div>
+            </div>
+        }
 
         @* US-048 R3: open risks per level, each linking to the Risks tab filtered on it *@
         <div class="card mb-3">

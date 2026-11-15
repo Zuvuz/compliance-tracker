@@ -323,6 +323,13 @@ namespace ComplianceTracker.Domain.ActivityLog
         // the title and end date, e.g. "Hosting ApS: ISO/IEC 27001 certificate, valid until 01-06-2027".
         SupplierAdded,
         SupplierEvidenceAdded,
-        SupplierRemoved
+        SupplierRemoved,
+
+        // US-047: a lifecycle checklist item ticked, unticked, turned off or on. SubjectId points at the project; Details
+        // holds the item, its regulation and what happened, e.g. "Threat model made (CRA Art. 13(3)): done".
+        ChecklistItemChanged,
+
+        // US-047 R5: a phase change made while checklist items were missing; Details lists them
+        PhaseChangedWithItemsMissing
     }
 }

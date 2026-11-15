@@ -287,6 +287,8 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound();
             }
 
+            // US-071, US-047: the gate and the checklist from one look-up
+            var overview = activeTab is ProjectTabs.Overview ? await phaseGates.OverviewAsync(id, cancellationToken) : (null, null);
             return View(new ProjectDetailsViewModel(
                 project,
                 await _frameworks.ListAsync(cancellationToken),
@@ -336,7 +338,8 @@ namespace ComplianceTracker.Web.Controllers
                 WaitingForSignature = waitingForSignature,
                 Scans = scanOverview,
                 Sboms = sbomOverview,
-                NextGate = activeTab is ProjectTabs.Overview ? await phaseGates.NextAsync(id, cancellationToken) : null, // US-071
+                NextGate = overview.Gate, // US-071
+                Checklist = overview.Checklist, // US-047
                 Audits = await audits.ForProjectAsync(id, cancellationToken), // US-134
                 RiskDrafts = activeTab is ProjectTabs.Risks ? await riskDrafts.OpenAsync(id, cancellationToken) : [], // US-112
                 HasIso27001 = activeTab is ProjectTabs.Reports && project.IsOrganisationArea && await soa.ForOrganizationAsync(cancellationToken) is not null, // US-053
@@ -1506,6 +1509,34 @@ namespace ComplianceTracker.Web.Controllers
 
             Response.Headers["X-Content-Type-Options"] = "nosniff";
             return File(file.Content, "application/pdf", file.FileName);
+        }
+
+        // POST /Projects/Checklist: US-047 R4, R8, R9, one action for every change of a checklist item
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId")]
+        public async Task<IActionResult> Checklist(Guid projectId, string? key, string? change, string? comment, string? evidenceUrl, string? reason,
+            [FromServices] Application.Projects.PhaseChecklistService checklist, CancellationToken cancellationToken)
+        {
+            switch (change)
+            {
+                case "tick":
+                    await checklist.TickAsync(projectId, key ?? "", comment, evidenceUrl, cancellationToken);
+                    break;
+                case "untick":
+                    await checklist.UntickAsync(projectId, key ?? "", cancellationToken);
+                    break;
+                case "off":
+                    await checklist.TurnOffAsync(projectId, key ?? "", reason, cancellationToken);
+                    break;
+                case "on":
+                    await checklist.TurnOnAsync(projectId, key ?? "", cancellationToken);
+                    break;
+                default:
+                    throw new Domain.Common.DomainException("Choose what to do with the item");
+            }
+
+            return RedirectToAction(nameof(Details), null, new { id = projectId }, "checklist");
         }
 
         // GET /Projects/LockedReport/{id}?snapshotId=...: R3, for anyone in the organisation, also the Auditor

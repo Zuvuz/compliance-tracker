@@ -340,6 +340,9 @@ namespace ComplianceTracker.Web.Models
         // US-071: the gate to the project's next phase, on the Overview
         public Domain.Projects.PhaseGate? NextGate { get; init; }
 
+        // US-047: the current phase's checklist
+        public Application.Projects.PhaseChecklistView? Checklist { get; init; }
+
         // US-053: whether the organisation has ISO/IEC 27001, for the Statement of Applicability on the area's Reports tab
         public bool HasIso27001 { get; init; }
 

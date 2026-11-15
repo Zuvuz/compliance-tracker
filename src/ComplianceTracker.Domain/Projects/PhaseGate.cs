@@ -8,6 +8,10 @@ namespace ComplianceTracker.Domain.Projects
     {
         public const int MaxReasonLength = 1000;
 
+        // US-047 R5: the checklist items missing in the phases the move leaves behind, e.g. "Threat model made (CRA Art. 13(3))".
+        // They warn and are logged, but need no reason.
+        public IReadOnlyList<string> ChecklistMissing { get; init; } = [];
+
         // US-072 R4: a check that depends on something not built yet does not count
         public IReadOnlyList<GateCheck> NotMet => Checks.Where(c => c.State == GateCheckState.NotMet).ToList();
 
@@ -37,7 +41,11 @@ namespace ComplianceTracker.Domain.Projects
 
         // R3: what the log says, e.g. "Phase: Planning → Development, 1 check not met: Risk workshop next week"
         public string Describe(ProjectChange change, string? reason)
-            => IsMet ? $"{change}, all checks met" : $"{change}, {NotMet.Count} {(NotMet.Count == 1 ? "check" : "checks")} not met: {reason}";
+            => Checks.Count == 0 ? change.ToString()
+                : IsMet ? $"{change}, all checks met" : $"{change}, {NotMet.Count} {(NotMet.Count == 1 ? "check" : "checks")} not met: {reason}";
+
+        // US-047 R5: logged next to the phase change, e.g. "Verification → Released, missing: Support period set (CRA Art. 13(8))"
+        public string DescribeMissing() => $"{From} → {To}, missing: {string.Join(", ", ChecklistMissing)}";
 
         private static string Count(int count) => count == 1 ? "1 check is" : $"{count} checks are";
     }

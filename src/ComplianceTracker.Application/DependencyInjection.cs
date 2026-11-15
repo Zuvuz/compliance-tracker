@@ -56,6 +56,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<Scanning.SbomService>(); // US-079
             services.AddScoped<AiFeedbackService>();
             services.AddScoped<Projects.PhaseGates>(); // US-071
+            services.AddScoped<Projects.PhaseChecklistService>(); // US-047
             services.AddScoped<ActivityLog.ActivityLogExportService>(); // US-055
             services.AddScoped<Reports.StatementOfApplicabilityQueries>(); // US-053
             services.AddScoped<Audits.AuditService>(); // US-134
