@@ -32,6 +32,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             // US-142 R6
             builder.Property(o => o.Country).IsRequired().HasMaxLength(2).HasDefaultValue(Organization.DefaultCountry);
 
+            // US-183 R1
+            builder.Property(o => o.ReminderDaysBefore).HasDefaultValue(Domain.Reminders.ReminderKinds.DefaultDaysBefore);
+
             // The users belong to the organisation. The foreign key only exists in the database
             // (a "shadow property"), so the User class in the domain does not need it.
             builder.HasMany(o => o.Users)

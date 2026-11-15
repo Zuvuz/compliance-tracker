@@ -1,0 +1,54 @@
+@* US-183 R5: which reminders I get by e-mail; the reporting deadlines cannot be turned off. The organisation admin sets
+   the days before. Ids used by the tests: form#reminder-settings, input[name=on][value=…], #reminder-days, #reminders-saved,
+   #mail-not-configured. *@
+@model ComplianceTracker.Web.Controllers.RemindersViewModel
+@using ComplianceTracker.Domain.Reminders
+@{
+    ViewData["Title"] = "Reminders";
+}
+
+<h1 class="h3">Reminders</h1>
+<p class="text-muted">The tracker sends an e-mail before a deadline is missed. A mail only says what is due, when and where, never the content.</p>
+@if (!Model.MailIsConfigured)
+{
+    <div class="alert alert-info" id="mail-not-configured" role="status">No mail server is set up yet, so no reminders are sent. The operator sets it up (Mail:Host).</div>
+}
+@if (TempData["RemindersSaved"] is string saved)
+{
+    <div class="alert alert-success" id="reminders-saved" role="status">@saved</div>
+}
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+<form asp-action="Index" method="post" id="reminder-settings" class="card card-body">
+    <fieldset>
+        <legend class="h6">Send me reminders about</legend>
+        @foreach (var (kind, on) in Model.Kinds)
+        {
+            var id = $"reminder-{kind}";
+            <div class="form-check">
+                @if (ReminderKinds.CanTurnOff(kind))
+                {
+                    <input class="form-check-input" type="checkbox" name="on" value="@kind" id="@id" checked="@on" />
+                }
+                else
+                {
+                    <input class="form-check-input" type="checkbox" id="@id" checked disabled />
+                    <input type="hidden" name="on" value="@kind" />
+                }
+                <label class="form-check-label" for="@id">@ReminderKinds.Title(kind)@(ReminderKinds.CanTurnOff(kind) ? "" : " (always on: a missed report has legal consequences)")</label>
+            </div>
+        }
+    </fieldset>
+    @if (Model.CanSetDays)
+    {
+        <div class="mt-2">
+            <label for="reminder-days" class="form-label small">Days before a deadline (for the whole organisation)</label>
+            <input id="reminder-days" name="daysBefore" type="number" min="1" max="@ReminderKinds.MaxDaysBefore" value="@Model.DaysBefore" class="form-control form-control-sm w-auto" />
+        </div>
+    }
+    else
+    {
+        <p class="small text-muted mt-2 mb-0">Reminders come @Model.DaysBefore days before a deadline.</p>
+    }
+    <div class="mt-2"><button type="submit" class="btn btn-sm btn-primary">Save</button></div>
+</form>

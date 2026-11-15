@@ -25,6 +25,16 @@ namespace ComplianceTracker.Domain.Users
 
         public void SetGetStartedHidden(bool hidden) => HidesGetStarted = hidden;
 
+        // US-183 R5: the kinds of reminder the person has turned off, e.g. "EvidenceExpires;ApprovalWaiting"
+        public string RemindersOff { get; private set; } = "";
+
+        public bool HasTurnedOff(Reminders.ReminderKind kind)
+            => RemindersOff.Split(';', StringSplitOptions.RemoveEmptyEntries).Contains(kind.ToString());
+
+        // The reporting deadlines cannot be turned off (R5), so they are never stored as off
+        public void SetRemindersOff(IEnumerable<Reminders.ReminderKind> off)
+            => RemindersOff = string.Join(";", off.Where(Reminders.ReminderKinds.CanTurnOff).Distinct().OrderBy(k => k).Select(k => k.ToString()));
+
         // US-132: the member signs reports for the management (a permission given to the person, not a role)
         public bool SignsForManagement { get; internal set; }
 

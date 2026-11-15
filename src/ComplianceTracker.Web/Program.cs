@@ -84,6 +84,13 @@ builder.Services.AddHostedService<ScheduledWorkItemSync>();
 
 // US-128: the exploited-vulnerability lists, fetched once a day when the operator switches them on
 builder.Services.AddHostedService<ScheduledExploitedListRefresh>();
+// US-183: reminders by e-mail
+builder.Services.AddOptions<ReminderWorkerOptions>().BindConfiguration(ReminderWorkerOptions.Section);
+builder.Services.AddSingleton(provider => new ComplianceTracker.Application.Reminders.ReminderOptions
+{
+    BaseUrl = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ReminderWorkerOptions>>().Value.BaseUrl
+});
+builder.Services.AddHostedService<ReminderWorker>();
 
 // US-156: assesses again what needs action after the product changed
 builder.Services.AddSingleton<ComplianceTracker.Application.Ai.IReassessmentScopes, ReassessmentScopes>();

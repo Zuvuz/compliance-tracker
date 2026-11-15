@@ -1943,6 +1943,28 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Afvigelse:** der sendes endnu ingen påmindelse før en slutdato. Det kommer med påmindelserne i US-183.
 - **Fravalgt:** en portal, hvor underleverandøren selv uploader.
 
+### B126 – Påmindelser på e-mail før frister (US-183)
+
+- **Beslutning:**
+  - **Typer af påmindelser:**
+    - evidens, der udløber;
+    - audit-fund, der nærmer sig fristen (til fundets ansvarlige);
+    - godkendelser, der venter (til dem, der må godkende, undtagen den, der bad om det);
+    - frister for at indberette efter CRA og NIS2 (early warning, notification og final report);
+    - evidens fra underleverandører, der udløber (US-191).
+  - **Modtagere:** medlemmer med DecideCompliance. Ved indberetninger får den, der registrerede hændelsen, også besked.
+  - **Hvornår:** et baggrundsjob kører hver time, så en frist på 24 timer ikke overses. Påmindelser sendes et antal dage før fristen. Standard er 30 dage; organisation-admin vælger mellem 1 og 90. En frist, der allerede er overskredet, giver én påmindelse.
+  - **Én påmindelse pr. person, type, emne og frist** (tabellen `Reminders`). En ændret frist giver en ny.
+  - **Mailen** nævner kun typen, fristen, organisationen, projektet og et link. Den indeholder aldrig titler, indhold eller tekst fra user stories.
+  - **Når en mail fejler,** gemmes fejlen, og der prøves igen ved næste kørsel, højst 5 gange. Jobbet logger antallet af fejl.
+  - **Uden mailserver** (`Mail:Host` og `Mail:From`) laves og sendes intet, og siden "Reminders" siger det.
+  - **Mailserveren:** .NET's egen SMTP-klient, så der ikke skal installeres en ekstra pakke, og enhver SMTP-server kan bruges. Adgangskoden sættes uden for repo'et, fx `Mail__Password`.
+  - **Den enkeltes valg:** hver person vælger selv sine typer på siden "Reminders". Frister for indberetning kan ikke slås fra.
+- **Begrundelse:** Udløbet evidens, glemte fund og overskredne frister for indberetning er de huller, der koster mest i en audit. CRA art. 14 og NIS2 art. 23 kræver indberetning inden for 24 og 72 timer.
+- **Fravalgt:**
+  - SMS, Teams og Slack.
+  - At indberette til CSIRT/ENISA fra trackeren.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
