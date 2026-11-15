@@ -28,6 +28,8 @@ namespace ComplianceTracker.Infrastructure.Compliance
                 {
                     "application/pdf" => Pdf(content),
                     "text/plain" or "text/csv" or "text/markdown" => new UTF8Encoding(false, false).GetString(content),
+                    Domain.Mappings.EvidenceFile.WordContentType => Word(content), // US-188 R1
+                    Domain.Mappings.EvidenceFile.ExcelContentType => Excel(content),
                     _ when DiagramReaders.IsDiagram(contentType) => _diagrams.Read(contentType, content)?.Content?.Text(),
                     _ => null
                 };
@@ -38,6 +40,51 @@ namespace ComplianceTracker.Infrastructure.Compliance
                 // A PDF PdfPig cannot read is matched by its title only
                 return null;
             }
+        }
+
+        // US-188 R1: the paragraphs of a Word document, in order
+        private static string Word(byte[] content)
+        {
+            using var stream = new MemoryStream(content);
+            using var document = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(stream, false);
+            var text = new StringBuilder();
+            foreach (var paragraph in document.MainDocumentPart?.Document?.Body?.Descendants<DocumentFormat.OpenXml.Wordprocessing.Paragraph>() ?? [])
+            {
+                text.AppendLine(paragraph.InnerText);
+                if (text.Length > MaxCharacters)
+                {
+                    break;
+                }
+            }
+
+            return text.ToString();
+        }
+
+        // US-188 R1: the cells of an Excel workbook, a row per line, the shared texts looked up
+        private static string Excel(byte[] content)
+        {
+            using var stream = new MemoryStream(content);
+            using var book = DocumentFormat.OpenXml.Packaging.SpreadsheetDocument.Open(stream, false);
+            var shared = book.WorkbookPart?.SharedStringTablePart?.SharedStringTable?.Elements<DocumentFormat.OpenXml.Spreadsheet.SharedStringItem>()
+                .Select(s => s.InnerText).ToList() ?? [];
+            var text = new StringBuilder();
+            foreach (var sheet in book.WorkbookPart?.WorksheetParts ?? [])
+            {
+                foreach (var row in sheet.Worksheet?.Descendants<DocumentFormat.OpenXml.Spreadsheet.Row>() ?? [])
+                {
+                    text.AppendLine(string.Join(" | ", row.Elements<DocumentFormat.OpenXml.Spreadsheet.Cell>().Select(cell =>
+                        cell.DataType?.Value == DocumentFormat.OpenXml.Spreadsheet.CellValues.SharedString
+                            && int.TryParse(cell.CellValue?.Text, out var i) && i >= 0 && i < shared.Count
+                            ? shared[i]
+                            : cell.InlineString?.InnerText ?? cell.CellValue?.Text ?? "")));
+                    if (text.Length > MaxCharacters)
+                    {
+                        return text.ToString();
+                    }
+                }
+            }
+
+            return text.ToString();
         }
 
         private static string Pdf(byte[] content)

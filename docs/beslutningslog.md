@@ -1882,6 +1882,22 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Afvigelse:** "Next deadline" er blevet til "næste udløb af evidens". Fristerne for fund og indberetninger kommer med påmindelserne (US-183).
 - **Fravalgt:** at konsulenten selv opretter kunder. Det står som åbent spørgsmål i issuet.
 
+### B122 – NIS2 gap-analyse fra organisationens dokumenter (US-188)
+
+- **Beslutning:**
+  - **Siden "NIS2 gap analysis"** ligger under Organisation i topmenuen. US-189 og US-190 bygger videre på den.
+  - **Upload:** en ZIP eller flere filer, højst 200 filer og 200 MB ad gangen. Mapper i ZIP'en flades ud, så kun filnavnet bruges. Systemets egne filer (`__MACOSX`, `.DS_Store`) springes over.
+  - **Hver læsbar fil** bliver et af organisationens dokumenter (US-136): den gemmes én gang med SHA-256, har version v1, og typen gættes ud fra filnavnet (politik, procedure, risikotabel eller andet).
+  - **Word og Excel** (.docx og .xlsx) accepteres nu også som evidens. Filens indhold skal stemme overens med endelsen, og teksten læses med OpenXml.
+  - **Filer, der ikke kan læses,** står på listen med grunden: forkert format, over 10 MB, en ZIP i en ZIP eller en ødelagt ZIP.
+  - **Samme fil igen** genkendes på SHA-256 og gemmes ikke en gang til.
+  - **AI'ens forslag** laves som for dokumenter i dag (embeddings). Til hvert forslag gemmes den sætning fra dokumentet, der deler flest ord med kravet, og den vises som citat.
+  - **Kun forslag** tæller ikke. Et krav er først dækket, når en person godkender forslaget.
+- **Begrundelse:** Det meste af en gap-analyse er at finde ud af, hvilke dokumenter kunden allerede har. Det kan AI'en forberede, mens mennesket beslutter (AI Act art. 14).
+- **Fravalgt:**
+  - At lade sprogmodellen skrive begrundelsen. Det er langsomt med den lille lokale model, og et citat fra dokumentet kan efterprøves.
+  - At læse billeder med OCR.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

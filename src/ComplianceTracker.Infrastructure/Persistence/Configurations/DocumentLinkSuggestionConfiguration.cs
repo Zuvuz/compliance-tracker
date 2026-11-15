@@ -19,6 +19,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(s => s.DecidedRole).HasConversion<string>().HasMaxLength(50);
             builder.Property(s => s.RejectionReason).HasConversion<string>().HasMaxLength(50);
             builder.Property(s => s.Comment).HasMaxLength(1000);
+            builder.Property(s => s.Quote).HasMaxLength(DocumentLinkSuggestion.MaxQuoteLength); // US-188 R2
             builder.Ignore(s => s.IsPending);
 
             builder.HasOne<Organization>().WithMany().HasForeignKey(s => s.OrganizationId).OnDelete(DeleteBehavior.Cascade);

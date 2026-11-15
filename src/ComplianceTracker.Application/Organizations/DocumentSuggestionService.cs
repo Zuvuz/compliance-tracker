@@ -24,6 +24,9 @@ namespace ComplianceTracker.Application.Organizations
     // A pending suggestion as the Documents page shows it, e.g. ("NIS2", "Art. 21(2)(b)", "Incident handling", 0.82)
     public record DocumentSuggestionView(DocumentLinkSuggestion Suggestion, string Framework, string Title);
 
+    // US-188: a pending suggestion on the gap analysis page, with its document
+    public record GapSuggestionView(DocumentLinkSuggestion Suggestion, OrganisationDocument Document, string Framework, string Title);
+
     // US-136 R2: the local AI suggests which requirements an uploaded document proves, the same way as for a project's
     // evidence (US-059), over every framework the organisation uses (NIS2 in the organisation area, the CRA in the
     // projects …). The suggestion belongs to the document, so it is decided once; approving links the document, and it
@@ -129,6 +132,8 @@ namespace ComplianceTracker.Application.Organizations
                 {
                     var suggestion = DocumentLinkSuggestion.Create(organization.Id, document.Id, c.Candidate.FrameworkId, c.Candidate.Requirement.Code,
                         c.Score, rank++, _embeddings.Name, PromptVersion, Now, _limits.MinimumScoreForEvidence);
+                    // US-188 R2: the sentence that fits best, quoted as the reason
+                    suggestion.SetQuote(Passages.Best(text, MappingSuggestionService.RequirementText(c.Candidate.Requirement)));
 
                     // US-145 R4: a pair that was rejected before (and has changed since) says so
                     if (existing.Where(s => s.IsFor(c.Candidate.FrameworkId, c.Candidate.Requirement.Code) && s.Status == SuggestionStatus.Rejected)
@@ -244,6 +249,24 @@ namespace ComplianceTracker.Application.Organizations
                     g => (IReadOnlyList<DocumentSuggestionView>)g.OrderByDescending(x => x.Suggestion.Score)
                         .Select(x => new DocumentSuggestionView(x.Suggestion, x.Requirement.Framework, x.Requirement.Requirement.Title))
                         .ToList());
+        }
+
+        // US-188 R2, R3: the pending suggestions for one framework (e.g. NIS2), per requirement code, best first
+        public async Task<IReadOnlyList<GapSuggestionView>> PendingForAsync(Func<string, bool> framework, CancellationToken cancellationToken = default)
+        {
+            var pending = await PendingAsync(cancellationToken);
+            if (pending.Count == 0 || await _member.FindOrganizationAsync(cancellationToken) is not { } organization)
+            {
+                return [];
+            }
+
+            var documents = (await _documents.ListAsync(organization.Id, cancellationToken: cancellationToken)).ToDictionary(d => d.Id);
+            return pending.SelectMany(p => p.Value)
+                .Where(v => framework(v.Framework) && documents.ContainsKey(v.Suggestion.DocumentId))
+                .Select(v => new GapSuggestionView(v.Suggestion, documents[v.Suggestion.DocumentId], v.Framework, v.Title))
+                .OrderBy(v => v.Suggestion.RequirementCode, StringComparer.Ordinal)
+                .ThenByDescending(v => v.Suggestion.Score)
+                .ToList();
         }
 
         // "Needs attention": how many suggestions wait for a decision
