@@ -1,5 +1,7 @@
 @* US-059: the project's evidence, each stored once and linked to the requirements it proves, with the AI's suggestions.
    Ids and classes used by the tests: #evidence-upload (title, url, file, validUntil), #evidence-ai-unavailable,
+   US-154: the pickers (form.link-evidence, form.link-evidence-story) are on the evidence's own address, reached by
+   a.link-evidence-page; #back-to-evidence goes back to the list.
    #evidence-list with .evidence-item (data-title) holding .evidence-sha256, .evidence-expired,
    .evidence-requirement (data-code) with form .unlink-evidence, form .link-evidence (requirementIds),
    form .remove-project-evidence, .evidence-suggestion (data-code) with .suggestion-score, .ai-generated,
@@ -12,6 +14,9 @@
 @{
     var project = Model.Project;
     var tab = Model.EvidenceTab;
+    // US-154: one piece of evidence on its own address (/Projects/Details/{id}/evidence/{evidenceId}) shows the pickers
+    // for linking requirements and stories; the list shows a link to it instead of a picker on every card
+    var single = LightLists.EvidenceOf(Model.Sub);
     var canChange = !project.IsClosed && await Permissions.CanAsync(Permission.LinkWork);
 }
 
@@ -35,7 +40,11 @@
         else
         {
             <div id="evidence-list" class="d-flex flex-column gap-3">
-                @foreach (var row in tab.Evidence)
+                @if (single is not null)
+                {
+                    <p class="small mb-0"><a id="back-to-evidence" asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Evidence" asp-route-sub="">‹ All evidence</a></p>
+                }
+                @foreach (var row in tab.Evidence.Where(r => single is null || r.Evidence.Id == single))
                 {
                     var evidence = row.Evidence;
                     var foldKey = $"evidence:{evidence.Id}";
@@ -172,9 +181,13 @@
                                 }
                             </ul>
 
-                            @if (canChange && tab.Linkable.Count > 0)
+                            @if (canChange && tab.Linkable.Count > 0 && single is null)
                             {
-                                <details>
+                                <a class="small link-primary link-evidence-page" asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Evidence" asp-route-sub="@evidence.Id">+ Link requirement or story</a>
+                            }
+                            else if (canChange && tab.Linkable.Count > 0)
+                            {
+                                <details open>
                                     <summary class="small link-primary">+ Link requirement</summary>
                                     <form asp-action="LinkEvidence" method="post" class="d-flex flex-wrap gap-1 mt-1 link-evidence">
                                         <input type="hidden" name="projectId" value="@project.Id" />
@@ -225,10 +238,10 @@
                                     .OrderBy(w => w.Title, StringComparer.OrdinalIgnoreCase)
                                     .ToList();
                             }
-                            @if (canChange && linkableStories.Count > 0)
+                            @if (canChange && linkableStories.Count > 0 && single is not null)
                             {
-                                @* US-146 R5 *@
-                                <details>
+                                @* US-146 R5; US-154: on the evidence's own address *@
+                                <details open>
                                     <summary class="small link-primary">+ Link story</summary>
                                     <form asp-action="LinkEvidenceStory" method="post" class="d-flex flex-wrap gap-1 mt-1 link-evidence-story">
                                         <input type="hidden" name="projectId" value="@project.Id" />
