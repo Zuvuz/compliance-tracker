@@ -5166,6 +5166,61 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("Projects", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Projects.ProjectChecklistEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<bool>("Done")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("DoneAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DoneById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DoneRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("EvidenceUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("ItemKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("OffReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("TurnedOff")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("TurnedOn")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId", "ItemKey")
+                        .IsUnique();
+
+                    b.ToTable("ProjectChecklistEntries", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Projects.ProjectClassification", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7607,6 +7662,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("GitHub");
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Projects.ProjectChecklistEntry", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Projects.ProjectClassification", b =>

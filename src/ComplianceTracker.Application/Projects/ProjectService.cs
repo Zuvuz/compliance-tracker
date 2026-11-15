@@ -179,8 +179,17 @@ namespace ComplianceTracker.Application.Projects
 
             // The domain's own rules come first (e.g. "Set the support end date before release"); nothing is saved if the
             // gate then refuses
+            var before = project.Phase;
             await ApplyPhaseAsync(project, phase, supportEndsOn, supportReason, today, null, null, null, null, cancellationToken,
                 describe: gate is null ? null : change => gate.Describe(change, gate.Pass(gateReason)));
+
+            // US-047 R5: allowed, but logged with what was missing
+            if (gate is { ChecklistMissing.Count: > 0 } && project.Phase != before)
+            {
+                await _log.LogAsync(ActivityAction.PhaseChangedWithItemsMissing, project.Id, gate.DescribeMissing(), cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+
             return true;
         }
 

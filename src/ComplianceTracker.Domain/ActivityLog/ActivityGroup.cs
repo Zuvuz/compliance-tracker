@@ -45,7 +45,7 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.SuggestionRejectionUndone => ActivityGroup.Ai,
             ActivityAction.RiskMeasuresSuggested or ActivityAction.RiskMeasureSuggestionApproved
                 or ActivityAction.RiskMeasureSuggestionRejected => ActivityGroup.Risks,
-            ActivityAction.ProjectCreated or ActivityAction.ProjectUpdated or ActivityAction.ProjectPhaseChanged
+            ActivityAction.ProjectCreated or ActivityAction.ProjectUpdated or ActivityAction.ProjectPhaseChanged or ActivityAction.ChecklistItemChanged or ActivityAction.PhaseChangedWithItemsMissing
                 or ActivityAction.SupportPeriodSet
                 or ActivityAction.ProjectClassified
                 or ActivityAction.ProjectFrameworkAdded or ActivityAction.ProjectFrameworkRemoved

@@ -1965,6 +1965,22 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - SMS, Teams og Slack.
   - At indberette til CSIRT/ENISA fra trackeren.
 
+### B127 – Seks livsfaser med tjeklister pr. regulativ (US-047)
+
+- **Beslutning:**
+  - **Seks faser:** Planning, Design, Development, Verification, Released og EndOfSupport. Design og Verification er nye. Vedligehold hører under Released, fordi det er perioden, hvor produktet er på markedet og supporteres. Faserne gemmes som tekst, så eksisterende projekter beholder deres fase.
+  - **Tjekliste pr. fase:** et indbygget katalog med punkter for CRA, ISO/IEC 27001 og AI Act. Et punkt vises, når projektet følger dets regulativ. Hvert punkt har et mærke med regulativ og reference, fx "CRA Annex I Part II(1)". Punkter, der ligner hinanden i to regulativer, vises begge og afkrydses hver for sig.
+  - **To slags punkter:**
+    - **Automatiske**, som trackeren selv afgør ud fra sine data: scope, klassificering, risici, dækning, evidens, scanning, SBOM, supportperiode og opbevaring.
+    - **Manuelle**, som en person, der må redigere projektet, krydser af med en kommentar og et link til evidens.
+  - **Til- og fravalg:** et punkt kan slås fra med en begrundelse, og så tæller det ikke som manglende. Valgfrie tests (pentest, fuzzing, SAST, DAST og load test) er slået fra, indtil projektet vælger dem.
+  - **Faseskift med mangler** er tilladt. Formularen advarer tydeligt, og skiftet logges som `PhaseChangedWithItemsMissing` med det, der manglede. De eksisterende faseporte fra US-071 og US-072 virker som før (B89) og kræver stadig en begrundelse for deres egne tjek.
+  - **Rettigheder:** at ændre punkter kræver EditProjects.
+  - **Historik:** hver ændring logges som `ChecklistItemChanged`. Tabellen `ProjectChecklistEntries` gemmer den nuværende stand.
+  - **Forespørgsler:** oversigten henter kun de fakta, den aktuelle fase og porten skal bruge (US-139).
+- **Begrundelse:** CRA art. 13 og ISO/IEC 27001 A.8.25–A.8.29 stiller krav i hver fase. Med et mærke på hvert punkt kan man se, hvilket regulativ det kommer fra.
+- **Fravalgt:** at blokere et faseskift.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

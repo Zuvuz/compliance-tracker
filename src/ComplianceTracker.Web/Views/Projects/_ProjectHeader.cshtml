@@ -8,7 +8,9 @@
     var phaseBadge = project.Phase switch
     {
         ComplianceTracker.Domain.Projects.LifecyclePhase.Planning => "text-bg-info",
+        ComplianceTracker.Domain.Projects.LifecyclePhase.Design => "text-bg-info",
         ComplianceTracker.Domain.Projects.LifecyclePhase.Development => "text-bg-primary",
+        ComplianceTracker.Domain.Projects.LifecyclePhase.Verification => "text-bg-primary",
         ComplianceTracker.Domain.Projects.LifecyclePhase.Released => "text-bg-success",
         _ => "text-bg-secondary"
     };
