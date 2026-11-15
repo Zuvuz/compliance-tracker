@@ -116,6 +116,19 @@
                                 </div>
                                 <div class="text-muted mt-1">Without dates: the last 12 months.</div>
                             </form>
+                            @* US-178 R1: what an auditor asks for, checked before the package is made (a GET form, so it can be linked to) *@
+                            <form method="get" action="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Reports })#audit-check" class="small mt-1" id="check-audit-package">
+                                <input type="hidden" name="check" value="1" />
+                                @foreach (var framework in frameworks)
+                                {
+                                    <input type="hidden" name="frameworks" value="@FrameworkNames.Slug(framework.Framework.Name)" />
+                                }
+                                <button type="submit" class="btn btn-sm btn-link p-0">Check the package first</button>
+                            </form>
+                            @if (Model.AuditReadiness is { } readiness)
+                            {
+                                <partial name="_AuditReadiness" model="(project.Id, readiness)" />
+                            }
                         }
                         else if (report.Key == ComplianceTracker.Application.Reports.ProjectReports.StatementOfApplicability)
                         {
