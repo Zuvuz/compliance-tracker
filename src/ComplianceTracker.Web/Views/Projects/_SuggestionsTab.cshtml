@@ -55,7 +55,7 @@
                                     @switch (gap.Action)
                                     {
                                         case GapAction.AskTheAi when gap.RequirementId is { } requirementId:
-                                            <form asp-action="AskTheAi" method="post" class="ask-the-ai">
+                                            <form asp-action="AskTheAi" method="post" class="ask-the-ai" data-busy="Working… this can take a minute">
                                                 <input type="hidden" name="projectId" value="@project.Id" />
                                                 <input type="hidden" name="requirementId" value="@requirementId" />
                                                 <input type="hidden" name="sub" value="@gap.Sub" />

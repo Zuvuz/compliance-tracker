@@ -229,7 +229,7 @@
         @if (!all && !project.IsClosed && canLink && openStories.Count > 0 && active!.NotCovered > 0)
         {
             @* US-044 R3: only this framework's not-covered, applicable requirements *@
-            <form asp-action="SuggestForNotCovered" method="post" id="suggest-not-covered">
+            <form asp-action="SuggestForNotCovered" method="post" id="suggest-not-covered" data-busy="Working… this can take a minute">
                 <input type="hidden" name="projectId" value="@project.Id" />
                 <input type="hidden" name="frameworkId" value="@active.Framework.Id" />
                 <input type="hidden" name="sub" value="@activeSlug" />
@@ -239,7 +239,7 @@
         @if (!all && !project.IsClosed && canDecide && active!.NotCovered > 0)
         {
             @* US-155 R1, R2: the AI marks what applies and has no work yet; a person decides on each mark *@
-            <form asp-action="FindNeedsAction" method="post" id="find-needs-action">
+            <form asp-action="FindNeedsAction" method="post" id="find-needs-action" data-busy="Working… this can take a minute">
                 <input type="hidden" name="projectId" value="@project.Id" />
                 <input type="hidden" name="frameworkId" value="@active.Framework.Id" />
                 <input type="hidden" name="sub" value="@activeSlug" />
@@ -249,7 +249,7 @@
         @if (!all && !project.IsClosed && canDecide && active!.NotCovered > 0)
         {
             @* US-060 R6: the AI only suggests; a person accepts or rejects each one *@
-            <form asp-action="SuggestNotApplicable" method="post" id="suggest-not-applicable">
+            <form asp-action="SuggestNotApplicable" method="post" id="suggest-not-applicable" data-busy="Working… this can take a minute">
                 <input type="hidden" name="projectId" value="@project.Id" />
                 <input type="hidden" name="frameworkId" value="@active.Framework.Id" />
                 <input type="hidden" name="sub" value="@activeSlug" />

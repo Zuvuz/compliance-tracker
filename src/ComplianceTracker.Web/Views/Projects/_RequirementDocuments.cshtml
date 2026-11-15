@@ -33,7 +33,7 @@
 
     @if (canUpload)
     {
-        <form asp-action="UploadRequirementDocument" method="post" enctype="multipart/form-data" class="row g-2 mb-2" id="upload-requirement-document">
+        <form asp-action="UploadRequirementDocument" method="post" enctype="multipart/form-data" class="row g-2 mb-2" id="upload-requirement-document" data-busy="Uploading…">
             <input type="hidden" name="projectId" value="@project.Id" />
             <div class="col-md-5">
                 <input type="file" name="file" accept=".xlsx,.csv,.docx" class="form-control" aria-label="Requirement specification" />

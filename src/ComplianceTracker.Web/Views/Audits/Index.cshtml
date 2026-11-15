@@ -96,7 +96,7 @@
 @if (canRecord)
 {
     <h2 class="h6 mt-4">Record an audit</h2>
-    <form asp-action="Record" method="post" enctype="multipart/form-data" id="record-audit" class="card card-body small">
+    <form asp-action="Record" method="post" enctype="multipart/form-data" id="record-audit" class="card card-body small" data-busy="Uploading…">
         <input type="hidden" name="projectId" value="@project.Id" />
         <div class="row g-2">
             <div class="col-md-3"><label class="form-label">Kind</label>

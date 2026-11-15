@@ -11,7 +11,7 @@
     organisation. Do not write confidential data, and only add a screenshot that shows nothing confidential.
 </div>
 
-<form asp-action="Index" method="post" enctype="multipart/form-data" id="feedback-form" class="ct-form-narrow">
+<form asp-action="Index" method="post" enctype="multipart/form-data" id="feedback-form" class="ct-form-narrow" data-busy="Uploading…">
     <div asp-validation-summary="All" class="text-danger" role="alert"></div>
     <input type="hidden" asp-for="Page" />
 

@@ -124,7 +124,7 @@
         </form>
 
         @* US-106 R12: the AI suggests measures; a person approves each one *@
-        <form asp-action="SuggestMeasures" method="post" class="mt-2" id="suggest-measures">
+        <form asp-action="SuggestMeasures" method="post" class="mt-2" id="suggest-measures" data-busy="Working… this can take a minute">
             <input type="hidden" name="id" value="@risk.Id" />
             <button type="submit" class="btn btn-sm btn-outline-info">Suggest measures</button>
         </form>
@@ -146,7 +146,7 @@
                     @if (editable)
                     {
                         <div class="d-flex flex-wrap gap-1 mt-1">
-                            <form asp-action="ApproveMeasure" method="post" enctype="multipart/form-data" class="approve-measure d-flex flex-wrap align-items-start gap-1">
+                            <form asp-action="ApproveMeasure" method="post" enctype="multipart/form-data" class="approve-measure d-flex flex-wrap align-items-start gap-1" data-busy="Uploading…">
                                 <input type="hidden" name="id" value="@risk.Id" />
                                 <input type="hidden" name="suggestionId" value="@suggestion.Id" />
                                 <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>

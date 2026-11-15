@@ -50,7 +50,7 @@ else if (Model.From is { } from && Model.To is { } to)
 {
     @if (canDecide)
     {
-        <form asp-action="SuggestCrossMapping" method="post" class="mb-3" id="suggest-cross-mapping">
+        <form asp-action="SuggestCrossMapping" method="post" class="mb-3" id="suggest-cross-mapping" data-busy="Working… this can take a minute">
             <input type="hidden" name="from" value="@from.Version.Id" />
             <input type="hidden" name="to" value="@to.Version.Id" />
             <button type="submit" class="btn btn-sm btn-primary">Suggest matches</button>

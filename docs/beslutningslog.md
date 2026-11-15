@@ -1787,6 +1787,15 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - **Årsagen rettes:** siden skjuler ikke det, der stikker ud (ingen `overflow-x: hidden`).
 - **Begrundelse:** En vandret scrollbar på hver side gør siderne rodede og skjuler knapper til højre.
 - **Fravalgt:** at skjule scrollbaren, for så bliver indholdet klippet af.
+### B114 – AI-knapper viser, at de arbejder (US-170)
+
+- **Beslutning:**
+  - **Markering:** alle formularer, der spørger AI'en (handlingerne med `[AiRateLimit]`), får `data-busy="Working… this can take a minute"`, og uploads får `data-busy="Uploading…"`.
+  - **Scriptet** (`site.js`) viser teksten på formularens egne knapper og låser dem efter første tryk. Resten af siden kan stadig bruges, og knapperne virker igen, når man kommer tilbage til siden.
+  - **Uden JavaScript** virker alt som før, og serverens grænse for AI-kald (US-097) stopper stadig gentagelser.
+  - **Test:** `BusyFormTests` finder en AI- eller upload-formular uden markering.
+- **Begrundelse:** En lokal model er sekunder til minutter om at svare. Uden besked trykker man igen eller tror, den er gået i stå.
+- **Fravalgt:** at køre AI-kaldene i baggrunden, som er en større ændring til senere.
 
 ## Åbne spørgsmål til klassediagrammet
 

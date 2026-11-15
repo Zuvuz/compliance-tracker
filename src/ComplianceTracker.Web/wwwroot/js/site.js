@@ -100,3 +100,35 @@ document.querySelectorAll("[data-percent]").forEach(bar => {
 
     dialog.addEventListener("hidden.bs.modal", () => { pending = null; });
 })();
+
+// US-170: a form with data-busy (an AI action or an upload) shows that it works and cannot be sent twice. Only its own
+// submit buttons are disabled; the rest of the page stays usable. When the page is shown again (back button, bfcache),
+// the buttons work again. Without JavaScript the forms work as before; the server's rate limit still stops repeats.
+(() => {
+    const restore = form => form.querySelectorAll("button[type=submit][data-busy-text]").forEach(button => {
+        button.disabled = false;
+        button.textContent = button.dataset.busyText;
+        delete button.dataset.busyText;
+        form.removeAttribute("aria-busy");
+    });
+
+    document.addEventListener("submit", event => {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement) || !form.dataset.busy || event.defaultPrevented) return;
+        if (form.getAttribute("aria-busy") === "true") {
+            event.preventDefault(); // R1: the second press does nothing
+            return;
+        }
+
+        form.setAttribute("aria-busy", "true");
+        // Disabled after the browser has taken the button's value, so the form is still sent as clicked
+        setTimeout(() => form.querySelectorAll("button[type=submit]").forEach(button => {
+            button.dataset.busyText = button.textContent;
+            button.textContent = form.dataset.busy;
+            button.disabled = true;
+        }), 0);
+    });
+
+    // R3: back to a page that was left while it worked
+    window.addEventListener("pageshow", () => document.querySelectorAll("form[aria-busy=true]").forEach(restore));
+})();
