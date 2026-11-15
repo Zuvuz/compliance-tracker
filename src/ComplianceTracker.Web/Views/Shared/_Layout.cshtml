@@ -44,10 +44,11 @@
                             </li>
                             @* US-169 R1: Organisation holds the organisation's pages, so the top bar has at most 5 items *@
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle @Active("Organisation", "Documents", "Users", "Activity", "Settings")" id="nav-organisation" href="@Url.Action("Index", "Organisation")"
+                                <a class="nav-link dropdown-toggle @Active("Organisation", "Documents", "Users", "Activity", "Settings", "GapAnalysis")" id="nav-organisation" href="@Url.Action("Index", "Organisation")"
                                    role="button" data-bs-toggle="dropdown" aria-expanded="false">Organisation</a>
                                 <ul class="dropdown-menu" aria-labelledby="nav-organisation">
                                     <li><a class="dropdown-item" id="nav-organisation-overview" asp-area="" asp-controller="Organisation" asp-action="Index">Overview</a></li>
+                                    <li><a class="dropdown-item" id="nav-gap-analysis" asp-area="" asp-controller="GapAnalysis" asp-action="Index">NIS2 gap analysis</a></li>
                                     @* US-136 *@
                                     <li><a class="dropdown-item" id="nav-documents" asp-area="" asp-controller="Documents" asp-action="Index">Documents</a></li>
                                     @if (await Permissions.CanAsync(Permission.ManageMembers))

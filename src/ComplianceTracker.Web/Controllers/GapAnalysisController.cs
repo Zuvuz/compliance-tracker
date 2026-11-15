@@ -1,0 +1,78 @@
+using System.Text.Json;
+using ComplianceTracker.Application.Ai;
+using ComplianceTracker.Application.Common;
+using ComplianceTracker.Application.Organizations;
+using ComplianceTracker.Domain.Users;
+using ComplianceTracker.Web.Filters;
+using Microsoft.AspNetCore.Mvc;
+
+namespace ComplianceTracker.Web.Controllers
+{
+    // US-188: the NIS2 gap analysis, under "Organisation" in the top bar. The customer's documents are uploaded here (a ZIP
+    // or several files); the AI suggests the NIS2 requirements each covers, quoting the document; a person decides.
+    public class GapAnalysisController : Controller
+    {
+        // A ZIP of a customer's documents may be large; GapFiles limits what is read from it
+        private const long MaxRequestSize = GapFiles.MaxTotalBytes + 10 * 1024 * 1024;
+        private const int MaxResultLines = 100;
+        private const string ResultKey = "GapUpload";
+
+        private readonly GapAnalysisService _gap;
+        private readonly DocumentSuggestionService _suggestions;
+        private readonly CurrentMember _member;
+
+        public GapAnalysisController(GapAnalysisService gap, DocumentSuggestionService suggestions, CurrentMember member)
+        {
+            _gap = gap;
+            _suggestions = suggestions;
+            _member = member;
+        }
+
+        // GET /GapAnalysis
+        public async Task<IActionResult> Index(CancellationToken cancellationToken)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is null)
+            {
+                return RedirectToAction("Create", "Organizations");
+            }
+
+            ViewData["OrganisationArea"] = true;
+            return View(new GapAnalysisViewModel(
+                await _suggestions.PendingForAsync(IsNis2, cancellationToken),
+                await _member.CanAsync(Permission.ManageFrameworks, cancellationToken),
+                TempData[ResultKey] is string json ? JsonSerializer.Deserialize<GapUploadView>(json) : null));
+        }
+
+        // POST /GapAnalysis/Upload: R1, R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(MaxRequestSize)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaxRequestSize)]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> Upload(List<IFormFile>? files, CancellationToken cancellationToken)
+        {
+            var read = new List<(string, byte[])>();
+            foreach (var file in files ?? [])
+            {
+                using var memory = new MemoryStream();
+                await file.CopyToAsync(memory, cancellationToken);
+                read.Add((file.FileName, memory.ToArray()));
+            }
+
+            var result = await _gap.UploadAsync(read, cancellationToken);
+            TempData[ResultKey] = JsonSerializer.Serialize(new GapUploadView(result.Summary,
+                result.Files.Take(MaxResultLines).Select(f => new GapUploadLine(f.FileName, f.Outcome.ToString(), f.Note)).ToList(),
+                Math.Max(0, result.Files.Count - MaxResultLines)));
+            return RedirectToAction(nameof(Index));
+        }
+
+        // NIS2 itself, the Danish NIS2 law and the implementing regulation
+        private static bool IsNis2(string framework) => framework.StartsWith("NIS", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public sealed record GapUploadLine(string FileName, string Outcome, string Note);
+
+    public sealed record GapUploadView(string Summary, IReadOnlyList<GapUploadLine> Lines, int More);
+
+    public sealed record GapAnalysisViewModel(IReadOnlyList<GapSuggestionView> Suggestions, bool CanManage, GapUploadView? LastUpload);
+}

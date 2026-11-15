@@ -1,0 +1,123 @@
+@* US-188: the NIS2 gap analysis. 1: upload the customer's documents (a ZIP or several files). 2: the AI's suggestions per
+   NIS2 requirement, with the sentence of the document that fits, to approve or reject. Nothing counts until approved.
+   Ids and classes used by the tests: form#gap-upload, #gap-upload-result (#gap-upload-summary, rows with data-file and
+   data-outcome), #gap-suggestions rows with data-requirement and data-document, .gap-quote, and the approve/reject forms. *@
+@model ComplianceTracker.Web.Controllers.GapAnalysisViewModel
+@{
+    ViewData["Title"] = "NIS2 gap analysis";
+}
+
+<h1 class="h3">NIS2 gap analysis</h1>
+<p class="text-muted">
+    Upload the organisation's policies, procedures, reports and results. The AI suggests which NIS2 requirements each
+    document covers and quotes the sentence that fits; nothing counts until a person approves it. Check first that NIS2
+    applies, on the <a asp-controller="Organisation" asp-action="Index" asp-route-tab="nis2-scope">NIS2 scope</a> tab.
+</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+<section class="card mb-3">
+    <div class="card-body">
+        <h2 class="h5 card-title">1. Upload documents</h2>
+        @if (Model.CanManage)
+        {
+            <form asp-action="Upload" method="post" enctype="multipart/form-data" id="gap-upload" class="d-flex flex-wrap gap-2 align-items-end" data-busy="Uploading and reading…">
+                <div>
+                    <label for="gap-files" class="form-label small mb-1">Files or a ZIP file (PDF, Word, Excel, text, SARIF, JSON, diagrams; at most 200 files)</label>
+                    <input id="gap-files" name="files" type="file" multiple class="form-control form-control-sm" required />
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary">Upload</button>
+            </form>
+        }
+        else
+        {
+            <p class="small text-muted mb-0">Only those who manage frameworks can upload.</p>
+        }
+
+        @if (Model.LastUpload is { } upload)
+        {
+            <div id="gap-upload-result" class="mt-3">
+                <p class="small fw-semibold mb-1" id="gap-upload-summary" role="status">@upload.Summary</p>
+                <table class="table table-sm small mb-0">
+                    <thead><tr><th>File</th><th>Result</th></tr></thead>
+                    <tbody>
+                        @foreach (var line in upload.Lines)
+                        {
+                            <tr data-file="@line.FileName" data-outcome="@line.Outcome" class="@(line.Outcome == "NotRead" ? "table-warning" : "")">
+                                <td>@line.FileName</td>
+                                <td>@line.Note</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                @if (upload.More > 0)
+                {
+                    <p class="small text-muted">and @upload.More more</p>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+<section class="card mb-3">
+    <div class="card-body">
+        <h2 class="h5 card-title">2. The AI's suggestions</h2>
+        @if (Model.Suggestions.Count == 0)
+        {
+            <p class="small text-muted mb-0" id="gap-no-suggestions">No suggestions wait for a decision. The coverage per requirement is on the organisation's
+                <a asp-controller="Organisation" asp-action="Index" asp-route-tab="compliance">Compliance</a> tab.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle" id="gap-suggestions">
+                    <thead><tr><th>Requirement</th><th>Document</th><th>Why</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var view in Model.Suggestions)
+                        {
+                            <tr data-requirement="@view.Suggestion.RequirementCode" data-document="@view.Document.Title">
+                                <td><span class="fw-semibold">@view.Framework @view.Suggestion.RequirementCode</span><div class="small text-muted">@view.Title</div></td>
+                                <td><a asp-controller="Documents" asp-action="File" asp-route-id="@view.Document.Id">@view.Document.Title</a>
+                                    <div class="small text-muted">match @((int)Math.Round(view.Suggestion.Score * 100)) %</div></td>
+                                <td class="small">
+                                    @if (view.Suggestion.Quote is { } quote)
+                                    {
+                                        <q class="gap-quote">@quote</q>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">No sentence fits; matched on the document as a whole</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (Model.CanManage)
+                                    {
+                                        <div class="d-flex flex-wrap gap-1">
+                                            <form asp-controller="Documents" asp-action="ApproveSuggestion" method="post" class="approve-gap-suggestion">
+                                                <input type="hidden" name="suggestionId" value="@view.Suggestion.Id" />
+                                                <input type="hidden" name="back" value="gap" />
+                                                <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
+                                            </form>
+                                            <form asp-controller="Documents" asp-action="RejectSuggestion" method="post" class="d-flex flex-wrap gap-1 reject-gap-suggestion">
+                                                <input type="hidden" name="suggestionId" value="@view.Suggestion.Id" />
+                                                <input type="hidden" name="back" value="gap" />
+                                                <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason for rejecting @view.Suggestion.RequirementCode">
+                                                    <option value="">Reason…</option>
+                                                    @foreach (var reason in Enum.GetValues<ComplianceTracker.Domain.Mappings.RejectionReason>())
+                                                    {
+                                                        <option value="@reason">@reason</option>
+                                                    }
+                                                </select>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                            </form>
+                                        </div>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>

@@ -110,21 +110,25 @@ namespace ComplianceTracker.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Index))]
-        public async Task<IActionResult> ApproveSuggestion(Guid suggestionId, CancellationToken cancellationToken)
+        public async Task<IActionResult> ApproveSuggestion(Guid suggestionId, string? back, CancellationToken cancellationToken)
         {
             await _suggestions.ApproveAsync(suggestionId, cancellationToken);
-            return RedirectToAction(nameof(Index));
+            return Back(back);
         }
+
+        // US-188: a decision made on the gap analysis page returns there
+        private RedirectToActionResult Back(string? back)
+            => back == "gap" ? RedirectToAction("Index", "GapAnalysis") : RedirectToAction(nameof(Index));
 
         // POST /Documents/RejectSuggestion: US-136 R2, with a reason; the pair is never suggested again
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Index))]
         public async Task<IActionResult> RejectSuggestion(
-            Guid suggestionId, Domain.Mappings.RejectionReason? reason, string? comment, CancellationToken cancellationToken)
+            Guid suggestionId, Domain.Mappings.RejectionReason? reason, string? comment, string? back, CancellationToken cancellationToken)
         {
             await _suggestions.RejectAsync(suggestionId, reason, comment, cancellationToken);
-            return RedirectToAction(nameof(Index));
+            return Back(back);
         }
 
         // POST /Documents/UndoRejection: US-145 R6, the pair can be suggested again

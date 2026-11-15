@@ -149,6 +149,13 @@ namespace ComplianceTracker.Domain.Organizations
             Status = SuggestionStatus.RejectionUndone;
         }
 
+        // US-188 R2: the sentence of the document that fits the requirement best, shown as the reason; null when none fits
+        public const int MaxQuoteLength = 300;
+        public string? Quote { get; private set; }
+
+        public void SetQuote(string? quote)
+            => Quote = string.IsNullOrWhiteSpace(quote) ? null : quote.Length <= MaxQuoteLength ? quote : quote[..MaxQuoteLength];
+
         public void NoteEarlierRejection(string? note)
             => EarlierRejection = string.IsNullOrWhiteSpace(note) ? null : note.Length <= 300 ? note : note[..300];
 

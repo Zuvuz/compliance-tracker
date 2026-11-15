@@ -11,6 +11,9 @@ namespace ComplianceTracker.Domain.Mappings
         // ASVS V5.2.1: only accept files the app can handle
         public const long MaxSizeInBytes = 10 * 1024 * 1024;
 
+        public const string WordContentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        public const string ExcelContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
         // Extension → content type. Text types are checked to be UTF-8 text; the others by their first bytes.
         private static readonly Dictionary<string, string> ContentTypes = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -21,6 +24,10 @@ namespace ComplianceTracker.Domain.Mappings
             [".txt"] = "text/plain",
             [".csv"] = "text/csv",
             [".md"] = "text/markdown",
+
+            // US-188 R1: Word and Excel, the formats most policies and risk tables come in (both are ZIP files inside)
+            [".docx"] = WordContentType,
+            [".xlsx"] = ExcelContentType,
 
             // US-078 R5: a scan result (SARIF is JSON text)
             [".sarif"] = "application/sarif+json",
@@ -42,7 +49,9 @@ namespace ComplianceTracker.Domain.Mappings
         {
             ["application/pdf"] = Encoding.ASCII.GetBytes("%PDF-"),
             ["image/png"] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A],
-            ["image/jpeg"] = [0xFF, 0xD8, 0xFF]
+            ["image/jpeg"] = [0xFF, 0xD8, 0xFF],
+            [WordContentType] = [0x50, 0x4B, 0x03, 0x04],
+            [ExcelContentType] = [0x50, 0x4B, 0x03, 0x04]
         };
 
         // The cleaned file name, only used for display and downloads
@@ -79,7 +88,7 @@ namespace ComplianceTracker.Domain.Mappings
             // ASVS V5.2.2: both the extension and the content must agree, whatever the browser claims
             if (!ContentTypes.TryGetValue(Path.GetExtension(name), out var contentType) || !ContentMatches(contentType, content))
             {
-                throw new DomainException("Only PDF, PNG, JPG, TXT, CSV, Markdown, SARIF, JSON and diagram files (draw.io, Mermaid, PlantUML, BPMN, SVG) are allowed");
+                throw new DomainException("Only PDF, Word, Excel, PNG, JPG, TXT, CSV, Markdown, SARIF, JSON and diagram files (draw.io, Mermaid, PlantUML, BPMN, SVG) are allowed");
             }
 
             return new EvidenceFile(name, contentType, content);
