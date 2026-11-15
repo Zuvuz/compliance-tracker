@@ -38,8 +38,18 @@ namespace ComplianceTracker.Domain.Users
                 Permission.LinkWork, Permission.ManageRisks
             ],
             [UserRole.Developer] = [Permission.EditProjects, Permission.LinkWork, Permission.ManageRisks],
-            [UserRole.Auditor] = []
+            [UserRole.Auditor] = [],
+            // US-187: the consultant does the compliance work; members and settings stay with the organisation
+            [UserRole.Consultant] =
+            [
+                Permission.ManageFrameworks, Permission.DecideCompliance, Permission.EditProjects,
+                Permission.LinkWork, Permission.ManageRisks
+            ]
         };
+
+        // US-187 R1: the roles of people from outside the organisation. Only with these can a person who is already a
+        // member of an organisation join another one (B121).
+        public static bool IsExternal(UserRole role) => role is UserRole.Consultant or UserRole.Auditor;
 
         public static bool Can(UserRole role, Permission permission)
             => Table.TryGetValue(role, out var permissions) && permissions.Contains(permission);

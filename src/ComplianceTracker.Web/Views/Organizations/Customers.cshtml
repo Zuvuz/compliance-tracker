@@ -1,0 +1,37 @@
+@* US-187 R5: every organisation the signed-in person works in, with its coverage, open gaps and the next evidence that
+   expires. Ids and classes used by the tests: #my-customers rows with data-organisation, .customer-percent, .customer-gaps,
+   .customer-next and the switch form. *@
+@model IReadOnlyList<ComplianceTracker.Web.Security.CustomerSummary>
+@{
+    ViewData["Title"] = "My customers";
+}
+
+<h1 class="h3">My customers</h1>
+<p class="text-muted">The organisations you work in. Coverage counts the applicable requirements of all their projects.</p>
+
+<div class="table-responsive">
+    <table class="table table-sm align-middle" id="my-customers">
+        <thead>
+            <tr><th>Organisation</th><th>Your role</th><th>Projects</th><th>Covered</th><th>Open gaps</th><th>Next evidence expiry</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var customer in Model)
+            {
+                <tr data-organisation="@customer.Name">
+                    <td>@customer.Name</td>
+                    <td>@customer.Role</td>
+                    <td>@customer.Projects</td>
+                    <td class="customer-percent">@customer.Percent %</td>
+                    <td class="customer-gaps">@customer.Gaps</td>
+                    <td class="customer-next">@(customer.NextExpiry?.ToString("dd-MM-yyyy") ?? "None")</td>
+                    <td>
+                        <form asp-action="Switch" method="post" class="switch-organisation" data-organisation="@customer.Name">
+                            <input type="hidden" name="organizationId" value="@customer.OrganizationId" />
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Open</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -15,6 +15,7 @@ namespace ComplianceTracker.Application.Common
 
         private bool _looked;
         private Organization? _organization;
+        private IReadOnlyList<Organizations.Membership>? _memberships;
 
         public CurrentMember(ICurrentUser currentUser, IOrganizationRepository organizations)
         {
@@ -27,12 +28,23 @@ namespace ComplianceTracker.Application.Common
         {
             if (!_looked)
             {
-                _organization = await _organizations.GetByMemberAsync(_currentUser.Identity.ExternalId, cancellationToken);
+                // US-187 R2: the chosen organisation, but only where the person is a member; otherwise their own
+                var memberships = await MembershipsAsync(cancellationToken);
+                var chosen = Choose(memberships, _currentUser.ChosenOrganizationId);
+                _organization = chosen is null ? null : await _organizations.GetByIdAsync(chosen.OrganizationId, cancellationToken);
                 _looked = true;
             }
 
             return _organization;
         }
+
+        // US-187: the organisations the signed-in person is a member of, their own first
+        public async Task<IReadOnlyList<Organizations.Membership>> MembershipsAsync(CancellationToken cancellationToken = default)
+            => _memberships ??= await _organizations.ListMembershipsAsync(_currentUser.Identity.ExternalId, cancellationToken);
+
+        // US-187 R2: a chosen organisation the person is not a member of is ignored, so a changed cookie shows nothing new
+        public static Organizations.Membership? Choose(IReadOnlyList<Organizations.Membership> memberships, Guid? chosen)
+            => memberships.FirstOrDefault(m => m.OrganizationId == chosen) ?? memberships.FirstOrDefault();
 
         // The organisation and the user; use cases that change data need both
         public async Task<(Organization Organization, User User)> RequireAsync(CancellationToken cancellationToken = default)
@@ -65,6 +77,7 @@ namespace ComplianceTracker.Application.Common
         {
             _looked = false;
             _organization = null;
+            _memberships = null;
         }
     }
 }

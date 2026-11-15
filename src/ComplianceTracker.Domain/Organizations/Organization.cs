@@ -174,8 +174,8 @@ namespace ComplianceTracker.Domain.Organizations
 
         // ---------------------------------------------------------- Members and roles (US-009, US-010)
 
-        // US-009 R2, R5: a person joins through an invitation. A person is a member of one organisation only (B16);
-        // the caller checks the other organisations.
+        // US-009 R2, R5: a person joins through an invitation. A person is a member of one organisation, or more only
+        // with an external role (US-187, B121); the caller checks the other organisations.
         public User AddMember(UserIdentity identity, UserRole role)
         {
             if (_users.FirstOrDefault(u => u.ExternalId == identity.ExternalId) is { } known)

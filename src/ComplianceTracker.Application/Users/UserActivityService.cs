@@ -31,14 +31,14 @@ namespace ComplianceTracker.Application.Users
         // so the user cannot come from ICurrentUser and is passed in by the web app.
         public async Task RecordSignInAsync(string externalId, CancellationToken cancellationToken = default)
         {
-            var organization = await _organizations.GetByMemberAsync(externalId, cancellationToken);
-            if (organization is null)
+            // US-187 R3: a person in several organisations is logged in each of them
+            foreach (var membership in await _organizations.ListMembershipsAsync(externalId, cancellationToken))
             {
-                return; // see the class comment
+                var organization = await _organizations.GetByIdAsync(membership.OrganizationId, cancellationToken);
+                var user = organization!.Members.Single(u => u.ExternalId == externalId);
+                await _log.LogAsync(organization.Id, user.Id, ActivityAction.UserSignedIn, cancellationToken: cancellationToken);
             }
 
-            var user = organization.Members.Single(u => u.ExternalId == externalId);
-            await _log.LogAsync(organization.Id, user.Id, ActivityAction.UserSignedIn, cancellationToken: cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
@@ -46,14 +46,13 @@ namespace ComplianceTracker.Application.Users
         // so the user is passed in by the web app, like at sign-in.
         public async Task RecordSessionEndedAsync(string externalId, string reason, CancellationToken cancellationToken = default)
         {
-            var organization = await _organizations.GetByMemberAsync(externalId, cancellationToken);
-            if (organization is null)
+            foreach (var membership in await _organizations.ListMembershipsAsync(externalId, cancellationToken))
             {
-                return; // see the class comment
+                var organization = await _organizations.GetByIdAsync(membership.OrganizationId, cancellationToken);
+                var user = organization!.Users.Single(u => u.ExternalId == externalId);
+                await _log.LogAsync(organization.Id, user.Id, ActivityAction.UserSignedOut, reason, cancellationToken);
             }
 
-            var user = organization.Users.Single(u => u.ExternalId == externalId);
-            await _log.LogAsync(organization.Id, user.Id, ActivityAction.UserSignedOut, reason, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 

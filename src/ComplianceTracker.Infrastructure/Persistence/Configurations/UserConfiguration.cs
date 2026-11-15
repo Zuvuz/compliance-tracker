@@ -17,10 +17,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
 
             builder.Property(u => u.Name).IsRequired();
 
-            // Keycloak's "sub": required and unique among the members, so one sign-in identity can never belong to
-            // two members (ASVS V10.5.2). US-090: a removed member's row is kept, so the person can join another organisation.
+            // Keycloak's "sub": required and unique among an organisation's members, so one sign-in identity can never
+            // be two members of the same organisation (ASVS V10.5.2). US-187: the same person can be a member of several
+            // organisations with an external role (B121). US-090: a removed member's row is kept.
             builder.Property(u => u.ExternalId).IsRequired().HasMaxLength(255);
-            builder.HasIndex(u => u.ExternalId).IsUnique().HasFilter("\"RemovedAt\" IS NULL");
+            builder.HasIndex("OrganizationId", nameof(User.ExternalId)).IsUnique().HasFilter("\"RemovedAt\" IS NULL");
+            builder.HasIndex(u => u.ExternalId); // finds the person's organisations at every request
             builder.Ignore(u => u.IsActive);
 
             // US-096: existing members see the card until they hide it

@@ -1,6 +1,7 @@
 @* The shared frame around every page: menu at the top, the page itself in the middle (@RenderBody), footer at the bottom.
    US-064: the theme is in wwwroot/css/site.css (top bar .ct-topbar); the product name comes from Branding:ProductName. *@
 @inject Microsoft.Extensions.Options.IOptions<ComplianceTracker.Web.Models.BrandingOptions> Branding
+@inject ComplianceTracker.Application.Organizations.OrganizationQueries Organisations
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -86,6 +87,29 @@
                     <ul class="navbar-nav">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
+                            @* US-187: a person in several organisations switches here; the current one is marked *@
+                            var memberships = await Organisations.MembershipsAsync();
+                            if (memberships.Count > 1)
+                            {
+                                var chosen = (await Organisations.MineAsync())?.Id;
+                                <li class="nav-item dropdown" id="organisation-switcher">
+                                    <a class="nav-link dropdown-toggle" href="#" id="nav-switch-organisation" role="button" data-bs-toggle="dropdown" aria-expanded="false">@(memberships.FirstOrDefault(m => m.OrganizationId == chosen)?.Name)</a>
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-switch-organisation">
+                                        @foreach (var membership in memberships)
+                                        {
+                                            <li>
+                                                <form asp-controller="Organizations" asp-action="Switch" method="post" class="switch-organisation" data-organisation="@membership.Name">
+                                                    <input type="hidden" name="organizationId" value="@membership.OrganizationId" />
+                                                    <button type="submit" class="dropdown-item @(membership.OrganizationId == chosen ? "active" : "")"
+                                                            aria-current="@(membership.OrganizationId == chosen ? "true" : null)">@membership.Name <span class="small">(@ComplianceTracker.Domain.Users.RolePermissions.Title(membership.Role))</span></button>
+                                                </form>
+                                            </li>
+                                        }
+                                        <li><hr class="dropdown-divider" /></li>
+                                        <li><a class="dropdown-item" id="nav-my-customers" asp-controller="Organizations" asp-action="Customers">My customers</a></li>
+                                    </ul>
+                                </li>
+                            }
                             <li class="nav-item">
                                 <span class="nav-link" id="signed-in-user">@User.Identity.Name</span>
                             </li>

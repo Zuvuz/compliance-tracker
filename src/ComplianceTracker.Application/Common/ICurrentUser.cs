@@ -16,5 +16,9 @@ namespace ComplianceTracker.Application.Common
 
         // US-132 R2: when the person last signed in with Keycloak (not when the session was refreshed); null if unknown
         DateTime? SignedInAt => null;
+
+        // US-187: the organisation the person chose to work in, when they are a member of several; null for the default.
+        // Never trusted on its own: CurrentMember only uses it when the person is a member there.
+        Guid? ChosenOrganizationId => null;
     }
 }

@@ -23,6 +23,14 @@ namespace ComplianceTracker.Application.Organizations
                 ? await _organizations.FormerOrganizationNameAsync(_currentUser.Identity.ExternalId, cancellationToken)
                 : null;
 
+        // US-187: every organisation the person is a member of, for the switcher in the top bar
+        public Task<IReadOnlyList<Membership>> MembershipsAsync(CancellationToken cancellationToken = default)
+            => _member.MembershipsAsync(cancellationToken);
+
+        // US-187 R2: whether the person may switch to this organisation
+        public async Task<bool> IsMemberOfAsync(Guid organizationId, CancellationToken cancellationToken = default)
+            => (await _member.MembershipsAsync(cancellationToken)).Any(m => m.OrganizationId == organizationId);
+
         // The user's organisation, or null if they have not created one yet
         public Task<Organization?> MineAsync(CancellationToken cancellationToken = default)
             => _member.FindOrganizationAsync(cancellationToken);

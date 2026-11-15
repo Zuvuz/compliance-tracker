@@ -21,11 +21,13 @@ namespace ComplianceTracker.Specs.Support
         public Task<Organization?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
             => Task.FromResult(_items.FirstOrDefault(o => o.Id == id));
 
-        public Task<Organization?> GetByMemberAsync(string externalId, CancellationToken cancellationToken = default)
-            => Task.FromResult(_items.FirstOrDefault(o => o.Members.Any(u => u.ExternalId == externalId)));
-
         public Task<string?> FormerOrganizationNameAsync(string externalId, CancellationToken cancellationToken = default)
             => Task.FromResult(_items.FirstOrDefault(o => o.Users.Any(u => u.ExternalId == externalId && !u.IsActive))?.Name);
+
+        public Task<IReadOnlyList<Membership>> ListMembershipsAsync(string externalId, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<Membership>>(_items
+                .SelectMany(o => o.Members.Where(u => u.ExternalId == externalId).Select(u => new Membership(o.Id, o.Name, u.Role)))
+                .OrderBy(m => Domain.Users.RolePermissions.IsExternal(m.Role)).ThenBy(m => m.Name).ToList());
 
         public Task<IReadOnlyList<Organization>> ListAllAsync(CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<Organization>>(_items.ToList());
