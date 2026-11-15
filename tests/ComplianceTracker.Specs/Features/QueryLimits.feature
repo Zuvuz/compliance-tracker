@@ -21,11 +21,12 @@ Feature: Each page has a limit on database queries
     # The limits are just above what the pages made on 12-11-2026 (B96).
     # US-155: the traceability download reads the "needs action" marks too (one query): 50 -> 53.
     # US-159: the Risks tab reads the links behind each risk in five fixed queries: 13 -> 18.
+    # US-192: the Overview's checklist reads the organisation's own checklist items (one query): 52 -> 53.
     Then each page stays within its limit and does not grow with the data:
       | Page                  | Limit |
       | Dashboard             | 12    |
       | Projects              | 12    |
-      | Overview              | 52    |
+      | Overview              | 53    |
       | Compliance            | 54    |
       | Evidence              | 35    |
       | Risks                 | 18    |

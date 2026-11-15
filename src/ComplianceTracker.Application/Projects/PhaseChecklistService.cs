@@ -30,16 +30,18 @@ namespace ComplianceTracker.Application.Projects
     public class PhaseChecklistService
     {
         private readonly IProjectChecklistRepository _entries;
+        private readonly IOrganisationChecklistRepository _own; // US-192
         private readonly IProjectRepository _projects;
         private readonly CurrentMember _member;
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
 
-        public PhaseChecklistService(IProjectChecklistRepository entries, IProjectRepository projects, CurrentMember member, IActivityLogger log,
-            IUnitOfWork unitOfWork, TimeProvider clock)
+        public PhaseChecklistService(IProjectChecklistRepository entries, IOrganisationChecklistRepository own, IProjectRepository projects,
+            CurrentMember member, IActivityLogger log, IUnitOfWork unitOfWork, TimeProvider clock)
         {
             _entries = entries;
+            _own = own;
             _projects = projects;
             _member = member;
             _log = log;
@@ -92,7 +94,10 @@ namespace ComplianceTracker.Application.Projects
                 throw new DomainException("The project is at end of support and cannot change");
             }
 
-            var item = BuiltInChecklist.Find(key ?? "") ?? throw new DomainException("Checklist item not found");
+            // US-192 R4: the organisation's own items are ticked like the built-in ones
+            var item = BuiltInChecklist.Find(key ?? "")
+                ?? (await _own.ListAsync(organization.Id, cancellationToken)).FirstOrDefault(i => i.IsActive && i.Key == key && i.AppliesTo(project))?.AsItem()
+                ?? throw new DomainException("Checklist item not found");
             var entries = await _entries.ListAsync(project.Id, cancellationToken);
             var entry = entries.FirstOrDefault(e => e.ItemKey == item.Key);
             if (entry is null)
