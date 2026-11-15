@@ -1,11 +1,14 @@
 using ComplianceTracker.Application.Projects;
 using ComplianceTracker.Domain.Projects;
 using ComplianceTracker.Web.Filters;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ComplianceTracker.Web.Controllers
 {
-    // US-192: the organisation's checklists under "Organisation": the built-in items per phase and the organisation's own
+    // US-192: the organisation's checklists under "Organisation": the built-in items per phase and the organisation's own.
+    // Signed-in members only (also the FallbackPolicy); changing needs ManageFrameworks, checked in the use case.
+    [Authorize]
     public class ChecklistsController : Controller
     {
         private readonly OrganisationChecklistService _checklists;
