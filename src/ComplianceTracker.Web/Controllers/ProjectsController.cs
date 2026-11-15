@@ -1080,6 +1080,28 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
         }
 
+        // POST /Projects/SecurityEventRecordedInError: US-176 R1, R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.SecurityEvents)]
+        public async Task<IActionResult> SecurityEventRecordedInError(
+            Guid projectId, Guid eventId, string? reason, [FromServices] Application.Security.SecurityEventService events, CancellationToken cancellationToken)
+        {
+            await events.MarkRecordedInErrorAsync(projectId, eventId, reason, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.SecurityEvents });
+        }
+
+        // POST /Projects/UndoAcceptFinding: US-176 R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Scans)]
+        public async Task<IActionResult> UndoAcceptFinding(
+            Guid projectId, Guid findingId, [FromServices] Application.Scanning.ScanService scans, CancellationToken cancellationToken)
+        {
+            await scans.UndoAcceptFindingAsync(projectId, findingId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
+        }
+
         // POST /Projects/RecordSuggestedSecurityEvent: US-128 R1, the awareness time can be changed
         [HttpPost]
         [ValidateAntiForgeryToken]

@@ -22,7 +22,8 @@ namespace ComplianceTracker.Application.Reports
         {
             var all = risks.ToList();
             var open = Sorted(all.Where(r => r.Status != RiskStatus.Closed)).ToList();
-            var closed = all.Where(r => r.Status == RiskStatus.Closed).OrderByDescending(r => r.ClosedAt).ThenBy(r => r.Title, StringComparer.Ordinal).ToList();
+            // US-176 R3: a withdrawn risk was a mistake and is not reported
+            var closed = all.Where(r => r.Status == RiskStatus.Closed && !r.IsWithdrawn).OrderByDescending(r => r.ClosedAt).ThenBy(r => r.Title, StringComparer.Ordinal).ToList();
 
             var summary = new List<(string, string)>
             {

@@ -308,6 +308,46 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id });
         }
 
+        // POST /Risks/Withdraw: US-176 R1, R2
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "id")]
+        public async Task<IActionResult> Withdraw(Guid id, string? reason, CancellationToken cancellationToken)
+        {
+            await _service.WithdrawAsync(await ProjectOfAsync(id, cancellationToken), id, reason, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // POST /Risks/Reopen: US-176 R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "id")]
+        public async Task<IActionResult> Reopen(Guid id, string? reason, CancellationToken cancellationToken)
+        {
+            await _service.ReopenAsync(await ProjectOfAsync(id, cancellationToken), id, reason, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // POST /Risks/RemoveAction: US-176 R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "id")]
+        public async Task<IActionResult> RemoveAction(Guid id, Guid actionId, CancellationToken cancellationToken)
+        {
+            await _service.RemoveActionAsync(await ProjectOfAsync(id, cancellationToken), id, actionId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // POST /Risks/UnlinkAction: US-176 R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "id")]
+        public async Task<IActionResult> UnlinkAction(Guid id, Guid actionId, Guid linkId, CancellationToken cancellationToken)
+        {
+            await _service.UnlinkActionAsync(await ProjectOfAsync(id, cancellationToken), id, actionId, linkId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
         // POST /Risks/Review: R6
         [HttpPost]
         [ValidateAntiForgeryToken]

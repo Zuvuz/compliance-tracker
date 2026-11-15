@@ -167,6 +167,24 @@ namespace ComplianceTracker.Application.Risks
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        // US-176 R1, R2: a risk created by mistake; kept in the history, left out of the register and reports
+        public async Task WithdrawAsync(Guid projectId, Guid riskId, string? reason, CancellationToken cancellationToken = default)
+        {
+            var (_, _, project, risk) = await RiskAsync(projectId, riskId, cancellationToken);
+            risk.Withdraw(reason, Now);
+            await _log.LogAsync(ActivityAction.RiskWithdrawn, project.Id, $"{risk.Title}: {risk.ClosedReason}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-176 R1: accepted or closed by mistake; the same right as accepting and closing
+        public async Task ReopenAsync(Guid projectId, Guid riskId, string? reason, CancellationToken cancellationToken = default)
+        {
+            var (_, _, project, risk) = await RiskAsync(projectId, riskId, cancellationToken, Permission.DecideCompliance);
+            var change = risk.Reopen(reason);
+            await _log.LogAsync(ActivityAction.RiskReopened, project.Id, $"{risk.Title}: {change.OldValue} → open ({reason?.Trim()})", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
         // R6
         public async Task MarkReviewedAsync(Guid projectId, Guid riskId, CancellationToken cancellationToken = default)
         {
@@ -246,6 +264,25 @@ namespace ComplianceTracker.Application.Risks
             var action = risk.Action(actionId);
             risk.LinkAction(actionId, workItemId, evidenceId);
             await _log.LogAsync(ActivityAction.RiskActionLinked, project.Id, $"{risk.Title}: {action.Title} ↔ {name}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-176 R1: an action added by mistake
+        public async Task RemoveActionAsync(Guid projectId, Guid riskId, Guid actionId, CancellationToken cancellationToken = default)
+        {
+            var (_, _, project, risk) = await RiskAsync(projectId, riskId, cancellationToken);
+            var action = risk.RemoveAction(actionId);
+            await _log.LogAsync(ActivityAction.RiskActionRemoved, project.Id, $"{risk.Title}: {action.Title}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-176 R1: a story or evidence linked to an action by mistake
+        public async Task UnlinkActionAsync(Guid projectId, Guid riskId, Guid actionId, Guid linkId, CancellationToken cancellationToken = default)
+        {
+            var (_, _, project, risk) = await RiskAsync(projectId, riskId, cancellationToken);
+            var action = risk.Action(actionId);
+            risk.UnlinkAction(actionId, linkId);
+            await _log.LogAsync(ActivityAction.RiskActionUnlinked, project.Id, $"{risk.Title}: {action.Title}", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 

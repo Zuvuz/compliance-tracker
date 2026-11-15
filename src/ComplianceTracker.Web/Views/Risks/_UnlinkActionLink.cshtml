@@ -1,0 +1,8 @@
+@* US-176 R1: takes a story or evidence off a risk's action (a link made by mistake) *@
+@model (Guid RiskId, Guid ActionId, Guid LinkId)
+<form asp-controller="Risks" asp-action="UnlinkAction" method="post" class="d-inline unlink-risk-action-link">
+    <input type="hidden" name="id" value="@Model.RiskId" />
+    <input type="hidden" name="actionId" value="@Model.ActionId" />
+    <input type="hidden" name="linkId" value="@Model.LinkId" />
+    <button type="submit" class="btn btn-sm btn-link text-danger p-0 ms-1" aria-label="Remove the link">Remove</button>
+</form>

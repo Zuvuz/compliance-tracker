@@ -3,6 +3,7 @@
    #add-measure, #accept-risk, #close-risk, #review-risk, #edit-risk-link.
    US-111: #risk-actions with li.risk-action (data-title) holding .risk-action-status, .risk-action-owner, .risk-action-due,
    li.risk-action-link (data-kind), the forms .link-risk-action and .complete-risk-action; #add-risk-action; #no-risk-actions.
+   US-176: #withdraw-risk (reason), #reopen-risk (reason), form.remove-risk-action, form.unlink-risk-action-link.
    US-124: #risk-trace with li.trace-node (data-kind: measure-requirement, measure-story, action, story, requirement, evidence;
    data-name), nested as the thread goes; #no-trace. *@
 @using ComplianceTracker.Domain.Risks
@@ -12,6 +13,7 @@
     var project = Model.Project;
     var editable = !project.IsClosed && risk.Status != RiskStatus.Closed && await Permissions.CanAsync(Permission.ManageRisks);
     var canDecide = !project.IsClosed && risk.Status != RiskStatus.Closed && await Permissions.CanAsync(Permission.DecideCompliance);
+    var canReopen = !project.IsClosed && await Permissions.CanAsync(Permission.DecideCompliance); // US-176
     var canLinkWork = !project.IsClosed && await Permissions.CanAsync(Permission.LinkWork); // US-158 R5
     ViewData["Title"] = risk.Title;
 }
@@ -222,11 +224,21 @@
                             @if (link.WorkItemId is not null)
                             {
                                 var story = Model.WorkItemOf(link.WorkItemId);
-                                <li class="risk-action-link" data-kind="story">Story: @if (story is not null) { <a href="@story.Url" target="_blank" rel="noopener noreferrer">@story.Title</a> <span class="badge text-bg-light">@story.State</span> } else { <span>(user story removed)</span> }</li>
+                                <li class="risk-action-link" data-kind="story">Story: @if (story is not null) { <a href="@story.Url" target="_blank" rel="noopener noreferrer">@story.Title</a> <span class="badge text-bg-light">@story.State</span> } else { <span>(user story removed)</span> }
+                                    @if (editable && !action.IsDone)
+                                    {
+                                        <partial name="_UnlinkActionLink" model="(risk.Id, action.Id, link.Id)" />
+                                    }
+                                </li>
                             }
                             else
                             {
-                                <li class="risk-action-link" data-kind="evidence">Evidence: @Model.EvidenceTitle(link.EvidenceId)</li>
+                                <li class="risk-action-link" data-kind="evidence">Evidence: @Model.EvidenceTitle(link.EvidenceId)
+                                    @if (editable && !action.IsDone)
+                                    {
+                                        <partial name="_UnlinkActionLink" model="(risk.Id, action.Id, link.Id)" />
+                                    }
+                                </li>
                             }
                         }
                     </ul>
@@ -260,6 +272,12 @@
                             <input type="hidden" name="id" value="@risk.Id" />
                             <input type="hidden" name="actionId" value="@action.Id" />
                             <button type="submit" class="btn btn-sm btn-outline-success">Mark as done</button>
+                        </form>
+                        @* US-176 R1: an action added by mistake *@
+                        <form asp-action="RemoveAction" method="post" class="remove-risk-action" data-confirm="The action is removed from the risk.">
+                            <input type="hidden" name="id" value="@risk.Id" />
+                            <input type="hidden" name="actionId" value="@action.Id" />
+                            <button type="submit" class="btn btn-sm btn-link text-danger p-0">Remove action</button>
                         </form>
                     </div>
                 }
@@ -378,6 +396,15 @@
     }
 </section>
 
+@if (canReopen && risk.Status != RiskStatus.Open && !risk.IsWithdrawn)
+{
+    @* US-176 R1: accepted or closed by mistake *@
+    <form asp-action="Reopen" method="post" class="d-flex flex-wrap gap-1 mb-3" id="reopen-risk">
+        <input type="hidden" name="id" value="@risk.Id" />
+        <input name="reason" class="form-control form-control-sm w-auto" placeholder="Why it is open again" aria-label="Reason for reopening" />
+        <button type="submit" class="btn btn-outline-secondary btn-sm text-nowrap">Reopen risk</button>
+    </form>
+}
 @if (editable)
 {
     <section class="d-flex flex-wrap gap-4">
@@ -391,6 +418,15 @@
                 <input type="hidden" name="id" value="@risk.Id" />
                 <input name="reason" class="form-control form-control-sm" placeholder="Why the risk is accepted" aria-label="Reason for accepting" />
                 <button type="submit" class="btn btn-outline-warning btn-sm text-nowrap">Accept risk</button>
+            </form>
+        }
+        @if (risk.Status == RiskStatus.Open)
+        {
+            @* US-176 R1, R2: created by mistake *@
+            <form asp-action="Withdraw" method="post" data-confirm="The risk is withdrawn: it leaves the register and the reports, and stays in the history." data-confirm-final="true" class="d-flex flex-wrap gap-1" id="withdraw-risk">
+                <input type="hidden" name="id" value="@risk.Id" />
+                <input name="reason" class="form-control form-control-sm" placeholder="Why, e.g. created by mistake" aria-label="Reason for withdrawing" />
+                <button type="submit" class="btn btn-outline-danger btn-sm text-nowrap">Withdraw risk</button>
             </form>
         }
         @if (canDecide)

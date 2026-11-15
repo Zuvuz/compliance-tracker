@@ -5346,6 +5346,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<bool>("IsWithdrawn")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime?>("LastReviewedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -6094,6 +6097,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("RecordedById")
                         .HasColumnType("uuid");
+
+                    b.Property<bool>("RecordedInError")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("RecordedRole")
                         .HasMaxLength(50)

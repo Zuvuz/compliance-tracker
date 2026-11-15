@@ -72,13 +72,14 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.DocumentLinkSuggested or ActivityAction.DocumentLinkApproved
                 or ActivityAction.DocumentLinkRejected => ActivityGroup.Evidence,
             ActivityAction.RiskAdded or ActivityAction.RiskUpdated or ActivityAction.RiskReviewed or ActivityAction.RisksImported
-                or ActivityAction.RiskActionAdded or ActivityAction.RiskActionLinked or ActivityAction.RiskActionDone => ActivityGroup.Risks,
+                or ActivityAction.RiskActionAdded or ActivityAction.RiskActionLinked or ActivityAction.RiskActionDone
+                or ActivityAction.RiskWithdrawn or ActivityAction.RiskReopened or ActivityAction.RiskActionRemoved or ActivityAction.RiskActionUnlinked => ActivityGroup.Risks,
             ActivityAction.VulnerabilityRecorded or ActivityAction.IncidentRecorded or ActivityAction.SecurityReportSent
-                or ActivityAction.SecurityFixAvailable or ActivityAction.SecurityEventClosed
+                or ActivityAction.SecurityFixAvailable or ActivityAction.SecurityEventClosed or ActivityAction.SecurityEventRecordedInError
                 or ActivityAction.SecurityEventUpgraded or ActivityAction.SecurityEventDisclosed
                 or ActivityAction.SecurityEventSuggested or ActivityAction.SecurityEventSuggestionAccepted
                 or ActivityAction.SecurityEventSuggestionDismissed
-                or ActivityAction.ScanImported or ActivityAction.FindingAccepted or ActivityAction.SbomImported
+                or ActivityAction.ScanImported or ActivityAction.FindingAccepted or ActivityAction.FindingAcceptanceUndone or ActivityAction.SbomImported
                 or ActivityAction.ScanUploadTokenCreated or ActivityAction.ScanUploadTokenRevoked => ActivityGroup.SecurityEvents,
             ActivityAction.MappingsSuggested or ActivityAction.MappingApproved or ActivityAction.MappingRejected
                 or ActivityAction.AiFeedbackSharingChanged or ActivityAction.ProjectAiSharingChanged or ActivityAction.AiFeedbackExported

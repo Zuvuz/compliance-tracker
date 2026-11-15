@@ -206,6 +206,18 @@ namespace ComplianceTracker.Domain.Scanning
             return true;
         }
 
+        // US-176 R1: an acceptance made by mistake; the finding is open again
+        public void UndoAccept()
+        {
+            if (State != FindingState.Accepted)
+            {
+                throw new DomainException("The finding is not accepted");
+            }
+
+            State = FindingState.Open;
+            (AcceptedReason, AcceptedById, AcceptedAt) = (null, null, null);
+        }
+
         // R4
         public void Accept(string? reason, Guid userId, DateTime at)
         {
