@@ -1,0 +1,41 @@
+@* US-169 R3, R4: "To review": what waits for the signed-in member's decision, per project, each line linking to where it
+   is decided. Ids and classes used by the tests: #review-inbox, .review-project[data-project] with .review-item
+   (data-kind) and its a.review-open; #review-empty. *@
+@model IReadOnlyList<ComplianceTracker.Application.Review.ReviewItem>
+@using ComplianceTracker.Application.Review
+@using ComplianceTracker.Web.Controllers
+@{
+    ViewData["Title"] = "To review";
+}
+
+<h1 class="h3 mb-1">To review</h1>
+<p class="text-muted mb-4">What waits for your decision, across your projects. The AI only suggests; you decide each one.</p>
+
+@if (Model.Count == 0)
+{
+    <p class="text-muted" id="review-empty">Nothing waits for your decision right now.</p>
+}
+else
+{
+    <div id="review-inbox" class="d-flex flex-column gap-3">
+        @foreach (var project in Model.GroupBy(i => (i.ProjectId, i.ProjectName)))
+        {
+            <section class="card review-project" data-project="@project.Key.ProjectName">
+                <div class="card-body">
+                    <h2 class="h5 card-title">@project.Key.ProjectName <span class="badge text-bg-light border">@project.Sum(i => i.Count)</span></h2>
+                    <ul class="list-unstyled mb-0">
+                        @foreach (var item in project)
+                        {
+                            var (tab, show) = ReviewController.WhereDecided(item.Kind);
+                            <li class="review-item d-flex flex-wrap align-items-center gap-2 py-1 border-top" data-kind="@item.Kind">
+                                <span>@ReviewKinds.Title(item.Kind, item.Count)</span>
+                                <a class="ms-auto review-open" asp-controller="Projects" asp-action="Details" asp-route-id="@project.Key.ProjectId"
+                                   asp-route-tab="@(tab == ProjectTabs.Overview ? null : tab)" asp-route-show="@show">Open</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </section>
+        }
+    </div>
+}

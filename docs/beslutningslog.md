@@ -1820,6 +1820,21 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** Man skal kunne rette en fejl uden en admin og uden at efterlade forkerte data i rapporterne. Historikken bevares (ISO/IEC 27001 A.5.33 og A.8.15, CRA art. 14).
 - **Afvigelse:** at genåbne en accepteret risiko kræver ikke fire-øjne. Det gør risikoen åben og synlig igen og sænker ikke opmærksomheden.
 - **Senere:** at trække en scanning, en SBOM, testresultater eller en kravspecifikations-version tilbage. Det kræver, at fundene rulles tilbage pr. scanning, og ligger i US-177.
+### B117 – Enklere navigation og en "To review"-indbakke (US-169)
+
+- **Beslutning:**
+  - **Topbaren** har Projects, Frameworks, Organisation og "To review" (plus System for ejeren). Organisation er en menu med organisationens sider: Overview, Documents, Users, Activity og Settings.
+  - **Projektets 11 faner** ligger i 6 grupper:
+    - Overview (med NIS2 scope, Suggestions og Activity);
+    - Requirements (Compliance, Product requirements og Frameworks);
+    - Evidence, Risks og Reports;
+    - Security (Security events og Scans).
+  - **En gruppe med flere faner** er en menu og viser sine faner som en række under sig, når man står i den. Alle faner beholder deres adresse, så gamle links virker.
+  - **"To review"** viser pr. projekt alt, der venter på medlemmets beslutning, og kun det, medlemmet må beslutte. Det gælder AI-forslag, markeringer, udkast, tjek og godkendelser. Hver linje linker til der, hvor det besluttes. Lukkede projekter er udeladt.
+- **Begrundelse:** 11 faner og 8 menupunkter gjorde siderne svære at overskue. AI-forslagene var spredt på flere faner, så man nemt overså noget, der ventede på en person (AI Act art. 14).
+- **Fravalgt:**
+  - Antallet i topbaren, fordi det ville koste forespørgsler på hver side. Det står på "To review"-siden.
+  - At flytte fanernes indhold, som kommer med designreglerne (US-168).
 
 ## Åbne spørgsmål til klassediagrammet
 

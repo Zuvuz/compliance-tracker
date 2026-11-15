@@ -64,6 +64,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<Compliance.EvidenceCheckService>(); // US-038
             services.AddScoped<Ai.CrossMappingService>(); // US-037
             services.AddScoped<RiskDraftService>(); // US-112
+            services.AddScoped<Review.ReviewInbox>(); // US-169
             services.AddScoped<RiskBackingQueries>(); // US-159
             services.AddScoped<MeasureEvidenceService>(); // US-158
             services.AddScoped<RiskService>();

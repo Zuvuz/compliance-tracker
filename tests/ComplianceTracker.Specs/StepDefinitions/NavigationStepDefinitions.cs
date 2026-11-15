@@ -75,6 +75,6 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         private List<string> TopBarLinks()
-            => _web.Page!.QuerySelectorAll("#top-bar a.nav-link").Select(a => a.TextContent.Trim()).ToList();
+            => _web.Page!.QuerySelectorAll("#top-bar a.nav-link, #top-bar a.dropdown-item").Select(a => a.TextContent.Trim()).ToList();
     }
 }
