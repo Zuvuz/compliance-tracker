@@ -195,3 +195,82 @@
         }
     </div>
 </section>
+
+@* US-190: the status per measure, the action plan, and the locked reports. R5: a gap becomes a risk in the organisation
+   area with one click (the risk form, filled in). Ids and classes used by the tests: #report, #gap-status rows with
+   data-code (.gap-status, .gap-change), #gap-actions rows with data-code (.gap-priority, a.gap-make-risk), form#make-gap-report,
+   #gap-reports rows with data-sha256. *@
+<section class="card mb-3" id="report">
+    <div class="card-body">
+        <h2 class="h5 card-title">4. Gap report</h2>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle small" id="gap-status">
+                <thead><tr><th>Measure</th><th>Status</th><th>Maturity</th><th>Evidence</th><th>Since the last report</th></tr></thead>
+                <tbody>
+                    @foreach (var line in Model.Lines)
+                    {
+                        <tr data-code="@line.Code">
+                            <td><span class="fw-semibold">@line.Code</span></td>
+                            <td><span class="gap-status badge @(line.Status switch { ComplianceTracker.Application.Organizations.GapStatus.Met => "text-bg-success", ComplianceTracker.Application.Organizations.GapStatus.PartlyMet => "text-bg-warning", _ => "text-bg-danger" })">@ComplianceTracker.Application.Organizations.Nis2GapReport.Text(line.Status)</span></td>
+                            <td>@(line.Maturity is { } m ? ComplianceTracker.Domain.Organizations.Nis2Questions.Title(m) : "Not answered")</td>
+                            <td>@string.Join("; ", line.Evidence)</td>
+                            <td class="gap-change">@line.Change</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @{ var gaps = Model.Lines.Where(l => l.IsGap).OrderBy(l => l.Priority).ThenBy(l => l.Code, StringComparer.Ordinal).ToList(); }
+        <h3 class="h6 mt-3">Action plan (@gaps.Count)</h3>
+        @if (gaps.Count == 0)
+        {
+            <p class="small text-muted">No gaps.</p>
+        }
+        else
+        {
+            <table class="table table-sm align-middle small" id="gap-actions">
+                <thead><tr><th>Priority</th><th>Measure</th><th>Action</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var line in gaps)
+                    {
+                        <tr data-code="@line.Code">
+                            <td class="gap-priority">@line.Priority</td>
+                            <td>@line.Code</td>
+                            <td>@line.Action</td>
+                            <td>
+                                @if (Model.CanAddRisks)
+                                {
+                                    <a class="gap-make-risk btn btn-sm btn-outline-secondary" asp-controller="Risks" asp-action="Add" asp-route-projectId="@Model.AreaId"
+                                       asp-route-title="@($"NIS2 {line.Code}: {line.Action}")" asp-route-description="@($"Gap from the NIS2 gap analysis: {line.Question}")">Make it a risk</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <form asp-action="Report" method="post" id="make-gap-report" class="mt-2">
+            <button type="submit" class="btn btn-sm btn-primary">Make the gap report (PDF, locked)</button>
+            <span class="small text-muted ms-1">Management approves it by signing the field on the first page (NIS2 Art. 20(1)).</span>
+        </form>
+
+        @if (Model.Reports.Count > 0)
+        {
+            <table class="table table-sm small mt-3" id="gap-reports">
+                <thead><tr><th>Report</th><th>Made</th><th>SHA-256</th></tr></thead>
+                <tbody>
+                    @foreach (var report in Model.Reports)
+                    {
+                        <tr data-sha256="@report.Sha256">
+                            <td><a asp-controller="Projects" asp-action="LockedReport" asp-route-id="@Model.AreaId" asp-route-snapshotId="@report.Id">@report.Title</a></td>
+                            <td>@report.LockedAt.ToString("dd-MM-yyyy HH:mm")</td>
+                            <td><code class="text-break">@report.Sha256</code></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</section>

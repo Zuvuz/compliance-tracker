@@ -1909,6 +1909,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** Ikke alt står i dokumenter. Resten skal besvares på samme måde hver gang, så næste vurdering kan sammenlignes (ISO/IEC 27001 9.1).
 - **Fravalgt:** at sende spørgeskemaet til personer uden for trackeren.
 
+### B124 – NIS2 gap-rapport med handlingsplan (US-190)
+
+- **Beslutning:**
+  - **Status pr. foranstaltning:**
+    - **Opfyldt (Met):** godkendt evidens og modenhed 3 eller mere. Er spørgsmålet ikke besvaret, fordi evidensen var nok, tæller det også som opfyldt.
+    - **Delvist opfyldt (Partly met):** evidens med lavere modenhed, eller modenhed 2 eller mere uden evidens.
+    - **Mangler (Missing):** resten.
+  - **Handlingsplan:** et forslag til første handling for hver foranstaltning. Prioriteten er "High", når foranstaltningen mangler, eller når en åben høj risiko rammer kravet. Ellers er den "Medium". Kolonnerne til ansvarlig og frist står tomme, så de kan udfyldes.
+  - **Rapporten** er en låst PDF med SHA-256 (rapporttypen `nis2-gap`). Første side har felter til ledelsens godkendelse (navn, dato og underskrift, NIS2 art. 20(1)). Alle medlemmer kan lave den, også en Auditor.
+  - **Ændringer:** status for hver foranstaltning gemmes i rapportens Figures. Næste rapport og siden viser, hvad der er blevet bedre, det samme eller værre.
+  - **"Make it a risk":** åbner risikoformularen i organisationsområdet med titel og beskrivelse udfyldt.
+- **Afvigelse:** en handling kan ikke blive til en user story. Organisationsområdet har ingen user stories, så det bliver en risiko i stedet.
+- **Fravalgt:** rapporten som Word-fil. Det står som åbent spørgsmål i issuet.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

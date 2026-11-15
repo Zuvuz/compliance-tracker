@@ -104,6 +104,66 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Then("the question {string} cannot be answered")]
         public void ThenCannotBeAnswered(string code) => Assert.Null(Question(code).QuerySelector("form.answer-question"));
 
+        // US-190
+        [Given("I have made the NIS2 gap report")]
+        [When("I make the NIS2 gap report")]
+        public async Task WhenIMakeTheReport()
+        {
+            await _web.OpenAsync(Path);
+            await _web.PostFormAsync(_web.Page!.QuerySelector("form#make-gap-report")!.GetAttribute("action")!, new Dictionary<string, string>());
+        }
+
+        [When("I make the gap {string} a risk")]
+        public async Task WhenIMakeTheGapARisk(string code)
+        {
+            var link = _web.Page!.QuerySelector($"#gap-actions tr[data-code='{code}'] a.gap-make-risk")
+                ?? throw new Xunit.Sdk.XunitException($"'{code}' cannot be made a risk.");
+            await _web.OpenAsync(link.GetAttribute("href")!);
+        }
+
+        [Then("the measure {string} is {string}")]
+        public void ThenTheMeasureIs(string code, string status)
+            => Assert.Equal(status, StatusRow(code).QuerySelector(".gap-status")?.TextContent.Trim());
+
+        [Then("the measure {string} changed {string} since the last report")]
+        public async Task ThenTheMeasureChanged(string code, string change)
+        {
+            await _web.OpenAsync(Path);
+            Assert.Equal(change, StatusRow(code).QuerySelector(".gap-change")?.TextContent.Trim());
+        }
+
+        [Then("the action plan lists {string} with the priority {string}")]
+        public void ThenTheActionPlanLists(string code, string priority)
+            => Assert.Equal(priority, _web.Page!.QuerySelector($"#gap-actions tr[data-code='{code}'] .gap-priority")?.TextContent.Trim());
+
+        [Then("the action plan does not list {string}")]
+        public void ThenTheActionPlanDoesNotList(string code)
+            => Assert.Null(_web.Page!.QuerySelector($"#gap-actions tr[data-code='{code}']"));
+
+        [Then("the gap report is listed with a fingerprint")]
+        public async Task ThenTheReportIsListed()
+        {
+            await using var db = _web.CreateDbContext();
+            var sha = await db.ReportSnapshots.Where(r => r.Kind == "nis2-gap").Select(r => r.Sha256).SingleAsync();
+            await _web.OpenAsync(Path);
+            Assert.NotNull(_web.Page!.QuerySelector($"#gap-reports tr[data-sha256='{sha}']"));
+        }
+
+        [Then("the gap report's PDF says {string}")]
+        public async Task ThenThePdfSays(string text)
+        {
+            await _web.OpenAsync(Path);
+            var href = _web.Page!.QuerySelector("#gap-reports a")!.GetAttribute("href")!;
+            var bytes = await (await _web.Client.GetAsync(href)).Content.ReadAsByteArrayAsync();
+            using var pdf = UglyToad.PdfPig.PdfDocument.Open(bytes);
+            var all = string.Join(" ", pdf.GetPages().Select(p => string.Join(" ", p.GetWords().Select(w => w.Text))));
+            Assert.Contains(text, all);
+        }
+
+        [Then("the risk form is filled in with {string}")]
+        public void ThenTheRiskFormIsFilledIn(string title)
+            => Assert.StartsWith(title, _web.Page!.QuerySelector("input[name='Title']")?.GetAttribute("value") ?? "");
+
         // ---------------------------------------------------------- Then
 
         [Then("the gap upload says {string}")]
@@ -144,6 +204,10 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         // ---------------------------------------------------------- Helpers
+
+        private AngleSharp.Dom.IElement StatusRow(string code)
+            => _web.Page!.QuerySelector($"#gap-status tr[data-code='{code}']")
+               ?? throw new Xunit.Sdk.XunitException($"No measure '{code}' on {_web.CurrentPath}.");
 
         private AngleSharp.Dom.IElement Question(string code)
             => _web.Page!.QuerySelector($".gap-question[data-code='{code}']")
