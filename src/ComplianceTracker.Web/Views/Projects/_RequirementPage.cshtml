@@ -364,7 +364,7 @@
             @if (canLinkHere)
             {
                 <h3 class="h6 mt-3 mb-1">Link a user story</h3>
-                    <form asp-action="LinkRequirement" method="post" class="d-flex gap-1 mt-1 link-requirement">
+                    <form asp-action="LinkRequirement" method="post" class="d-flex flex-wrap gap-1 mt-1 link-requirement">
                         <input type="hidden" name="projectId" value="@project.Id" />
                         <input type="hidden" name="requirementId" value="@requirement.Id" />
                         <input type="hidden" name="sub" value="@sub" />
@@ -541,7 +541,7 @@
                     @if (pickable.Count > 0)
                     {
                         @* US-059 *@
-                        <form asp-action="LinkExistingEvidence" method="post" class="d-flex gap-1 mt-1 pick-evidence">
+                        <form asp-action="LinkExistingEvidence" method="post" class="d-flex flex-wrap gap-1 mt-1 pick-evidence">
                             <input type="hidden" name="projectId" value="@project.Id" />
                             <input type="hidden" name="requirementId" value="@requirement.Id" />
                             <input type="hidden" name="sub" value="@sub" />

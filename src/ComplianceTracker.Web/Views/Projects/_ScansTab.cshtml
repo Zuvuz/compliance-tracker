@@ -165,7 +165,7 @@
                             @if (canChange && requirements.Count > 0)
                             {
                                 @* R5: the scan as evidence for a requirement *@
-                                <form asp-action="ScanAsEvidence" method="post" class="d-flex gap-1 scan-as-evidence">
+                                <form asp-action="ScanAsEvidence" method="post" class="d-flex flex-wrap gap-1 scan-as-evidence">
                                     <input type="hidden" name="projectId" value="@project.Id" />
                                     <input type="hidden" name="scanId" value="@scan.Id" />
                                     <select name="requirementId" class="form-select form-select-sm" aria-label="Requirement the scan proves">
@@ -287,7 +287,7 @@
                                 @if (canChange && requirements.Count > 0)
                                 {
                                     @* R4: the SBOM as evidence, e.g. for CRA Annex I, Part II (1) *@
-                                    <form asp-action="SbomAsEvidence" method="post" class="d-flex gap-1 sbom-as-evidence">
+                                    <form asp-action="SbomAsEvidence" method="post" class="d-flex flex-wrap gap-1 sbom-as-evidence">
                                         <input type="hidden" name="projectId" value="@project.Id" />
                                         <input type="hidden" name="sbomId" value="@sbom.Id" />
                                         <select name="requirementId" class="form-select form-select-sm" aria-label="Requirement the SBOM proves">

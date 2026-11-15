@@ -101,7 +101,7 @@
     @if (editable && Model.Compliance is { } compliance)
     {
         @* R5: a requirement of the project, or one of its user stories *@
-        <form asp-action="AddMeasure" method="post" class="d-flex gap-2" id="add-measure">
+        <form asp-action="AddMeasure" method="post" class="d-flex flex-wrap gap-2" id="add-measure">
             <input type="hidden" name="id" value="@risk.Id" />
             <select name="measure" class="form-select form-select-sm" aria-label="Measure">
                 @foreach (var framework in compliance.Frameworks)
@@ -168,7 +168,7 @@
                                     </details>
                                 }
                             </form>
-                            <form asp-action="RejectMeasure" method="post" class="d-flex gap-1 reject-measure">
+                            <form asp-action="RejectMeasure" method="post" class="d-flex flex-wrap gap-1 reject-measure">
                                 <input type="hidden" name="id" value="@risk.Id" />
                                 <input type="hidden" name="suggestionId" value="@suggestion.Id" />
                                 <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason">
@@ -234,7 +234,7 @@
                 @if (editable && !action.IsDone)
                 {
                     <div class="d-flex flex-wrap gap-2 mt-1">
-                        <form asp-action="LinkAction" method="post" class="d-flex gap-1 link-risk-action">
+                        <form asp-action="LinkAction" method="post" class="d-flex flex-wrap gap-1 link-risk-action">
                             <input type="hidden" name="id" value="@risk.Id" />
                             <input type="hidden" name="actionId" value="@action.Id" />
                             <select name="target" class="form-select form-select-sm" aria-label="Story or evidence for @action.Title">

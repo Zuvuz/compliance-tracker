@@ -40,7 +40,7 @@
                 {
                     <td>
                         @* US-010 R2: earlier decisions keep the role the member had then *@
-                        <form asp-action="ChangeRole" method="post" data-confirm="The member's role, and what they may do, changes at once." class="d-flex gap-1 change-role">
+                        <form asp-action="ChangeRole" method="post" data-confirm="The member's role, and what they may do, changes at once." class="d-flex flex-wrap gap-1 change-role">
                             <input type="hidden" name="memberId" value="@user.Id" />
                             <select name="role" class="form-select form-select-sm" aria-label="New role for @user.Name">
                                 @foreach (var role in roles)
@@ -133,7 +133,7 @@
                 <input class="form-control mt-2" id="invitation-link" value="@link" readonly />
             </div>
         }
-        <form asp-action="CreateInvitation" method="post" class="d-flex gap-2 mb-3" id="create-invitation">
+        <form asp-action="CreateInvitation" method="post" class="d-flex flex-wrap gap-2 mb-3" id="create-invitation">
             <select name="role" class="form-select form-select-sm w-auto" aria-label="Role for the invited person">
                 @foreach (var role in roles)
                 {

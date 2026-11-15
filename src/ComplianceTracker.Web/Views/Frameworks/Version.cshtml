@@ -192,7 +192,7 @@ else
                         <td><textarea form="@formId" name="description" rows="1" class="form-control form-control-sm" aria-label="Description">@requirement.Description</textarea></td>
                         <td>
                             @* US-143 R5: the kind can be changed while the version is a draft *@
-                            <form asp-action="ChangeKind" method="post" class="d-flex gap-1 change-kind">
+                            <form asp-action="ChangeKind" method="post" class="d-flex flex-wrap gap-1 change-kind">
                                 <input type="hidden" name="versionId" value="@version.Id" />
                                 <input type="hidden" name="requirementId" value="@requirement.Id" />
                                 <select name="kind" class="form-select form-select-sm requirement-kind" aria-label="Kind">

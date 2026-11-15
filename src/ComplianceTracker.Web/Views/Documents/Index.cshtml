@@ -186,7 +186,7 @@
             @if (Model.CanManage)
             {
                 <div class="d-flex flex-wrap gap-2 mt-2">
-                    <form asp-action="Link" method="post" class="d-flex gap-1 link-document">
+                    <form asp-action="Link" method="post" class="d-flex flex-wrap gap-1 link-document">
                         <input type="hidden" name="documentId" value="@document.Id" />
                         <select name="requirement" class="form-select form-select-sm" aria-label="Requirement">
                             <option value="">Link to a requirement…</option>
