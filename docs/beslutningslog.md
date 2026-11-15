@@ -1796,6 +1796,14 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - **Test:** `BusyFormTests` finder en AI- eller upload-formular uden markering.
 - **Begrundelse:** En lokal model er sekunder til minutter om at svare. Uden besked trykker man igen eller tror, den er gået i stå.
 - **Fravalgt:** at køre AI-kaldene i baggrunden, som er en større ændring til senere.
+### B115 – Lette sider: under 150 KB med rigtige data (US-154)
+
+- **Beslutning:**
+  - **Evidens-fanen** gentager ikke længere en vælger med alle krav og alle stories på hvert kort. Det gav 488 KB. Vælgerne ligger på evidensens egen adresse, `/Projects/Details/{id}/evidence/{evidenceId}`, ligesom kravsiden (US-153).
+  - **Suggestions-fanen** viser de første 15 huller pr. kategori med "Show all n". Den var 187 KB.
+  - **Test:** et scenarie åbner alle sider og faner med realistiske data (30 stories, 12 risici, 20 evidens) og kræver under 150 KB pr. side og ingen lange vælgere gentaget pr. række.
+- **Begrundelse:** Siderne skal være hurtige for alle og blive ved med at være det, når et projekt vokser (ISO/IEC 27001 A.8.6).
+- **Fravalgt:** at hente vælgerne med JavaScript, når de åbnes. En egen adresse virker uden JavaScript og kan linkes til.
 
 ## Åbne spørgsmål til klassediagrammet
 
