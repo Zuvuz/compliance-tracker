@@ -1777,6 +1777,16 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - Betalte, hurtigere runners.
   - At springe dækningsmålingen over på PR'er.
+### B113 – Ingen side må være bredere end vinduet (US-167)
+
+- **Beslutning:**
+  - **Topbaren:** den foldede sig ud fra 576 px, men skal bruge cirka 880 px, mere med System og brugermenuen, og det gjorde hele siden bredere. Den folder sig nu ind i sin knap under 992 px (`navbar-expand-lg`), og punkterne ombrydes.
+  - **Rækker med vælgere** skal kunne ombryde (`flex-wrap`). En test i `ViewLayoutTests` finder de rækker, der ikke kan.
+  - **Vælgere og felter** vokser aldrig ud over deres række, og lange ord brydes.
+  - **Tabeller**, der er for brede på smalle skærme, scroller inde i sig selv og ikke i siden.
+  - **Årsagen rettes:** siden skjuler ikke det, der stikker ud (ingen `overflow-x: hidden`).
+- **Begrundelse:** En vandret scrollbar på hver side gør siderne rodede og skjuler knapper til højre.
+- **Fravalgt:** at skjule scrollbaren, for så bliver indholdet klippet af.
 
 ## Åbne spørgsmål til klassediagrammet
 
