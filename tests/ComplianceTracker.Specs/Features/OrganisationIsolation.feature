@@ -28,6 +28,8 @@ Feature: No organisation can reach another organisation's data
     And I have uploaded the policy "Access control policy" version "v1" with the content "Policy text v1"
     And I link the document "Access control policy" to "I.2(d)"
     And I have locked the traceability report of "Acme Portal" for "team"
+    And I have added the supplier "Hosting ApS" delivering "Hosting" with criticality "High" and the rule "NIS2 Art. 21(2)(d)"
+    And "Hosting ApS" has the evidence "ISO/IEC 27001 certificate" valid until "2027-10-01"
     And I have recorded the actively exploited vulnerability "CVE-2026-1234" for "Acme Portal", aware since "2026-11-01T08:00:00Z"
     And "Acme Portal" has version 1 of "kravspec.xlsx" with "REQ-001 Log in"
     And the framework "Security policy" has a draft with "A.5.15 Access control"

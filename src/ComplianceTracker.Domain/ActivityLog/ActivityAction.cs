@@ -317,6 +317,12 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-189: a NIS2 gap question was answered. SubjectId points at the organisation; Details holds the requirement and
         // the maturity, e.g. "Art. 21(2)(d): 1 – Ad hoc".
-        GapQuestionAnswered
+        GapQuestionAnswered,
+
+        // US-191: the organisation's suppliers. SubjectId points at the supplier; Details holds its name, and for evidence
+        // the title and end date, e.g. "Hosting ApS: ISO/IEC 27001 certificate, valid until 01-06-2027".
+        SupplierAdded,
+        SupplierEvidenceAdded,
+        SupplierRemoved
     }
 }

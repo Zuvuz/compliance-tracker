@@ -4925,6 +4925,106 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("Organizations", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Supplier", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("AddedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Contact")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Criticality")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Delivers")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("RemovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Rules")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.ToTable("Suppliers", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Organizations.SupplierEvidence", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("AddedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<long>("SizeInBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateOnly?>("ValidUntil")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SupplierId");
+
+                    b.ToTable("SupplierEvidence", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Projects.GapDismissal", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6589,6 +6689,20 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("SealedReportFiles", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.SupplierEvidenceFile", b =>
+                {
+                    b.Property<Guid>("EvidenceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("EvidenceId");
+
+                    b.ToTable("SupplierEvidenceFiles", (string)null);
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
                 {
                     b.Property<int>("Id")
@@ -7302,6 +7416,24 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Supplier", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Organizations.SupplierEvidence", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Organizations.Supplier", null)
+                        .WithMany("Evidence")
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Projects.GapDismissal", b =>
                 {
                     b.HasOne("ComplianceTracker.Domain.Users.User", null)
@@ -7979,6 +8111,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Infrastructure.Persistence.SupplierEvidenceFile", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Organizations.SupplierEvidence", null)
+                        .WithOne()
+                        .HasForeignKey("ComplianceTracker.Infrastructure.Persistence.SupplierEvidenceFile", "EvidenceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Audits.Audit", b =>
                 {
                     b.Navigation("Findings");
@@ -8009,6 +8150,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Organization", b =>
                 {
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Organizations.Supplier", b =>
+                {
+                    b.Navigation("Evidence");
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Projects.Project", b =>
