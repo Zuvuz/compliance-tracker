@@ -51,12 +51,14 @@ namespace ComplianceTracker.Application.Reports
         private readonly ICurrentUser _currentUser;
         private readonly TimeProvider _clock;
         private readonly StatementOfApplicabilityQueries _soa;
+        private readonly PhaseGates _gates; // US-194
 
         public ReportFiles(
             ProjectQueries projects, OrganizationQueries organizations, ComplianceQueries compliance, RiskQueries risks, ScanService scans,
             SecurityEventQueries events, TechnicalDocumentationQueries drafts, IPdfWriter pdf, IReportSnapshotRepository snapshots,
-            ICurrentUser currentUser, TimeProvider clock, StatementOfApplicabilityQueries soa)
+            ICurrentUser currentUser, TimeProvider clock, StatementOfApplicabilityQueries soa, PhaseGates gates)
         {
+            _gates = gates;
             _soa = soa;
             _snapshots = snapshots;
             _projects = projects;
@@ -134,7 +136,8 @@ namespace ComplianceTracker.Application.Reports
                     ? await LastManagementReportAsync(organization.Id, projectId, frameworks.Select(f => f.Framework.Name).Distinct().ToList(), cancellationToken)
                     : null
             };
-            var document = TraceabilityReport.Build(audience, project, frameworks, NameOf, _currentUser.Identity.Name, now, facts);
+            var lifecycle = await _gates.LifecycleAsync(projectId, compliance.Frameworks, cancellationToken); // US-194
+            var document = TraceabilityReport.Build(audience, project, frameworks, NameOf, _currentUser.Identity.Name, now, facts, lifecycle);
             return (document, project, organization, frameworks, now);
         }
 

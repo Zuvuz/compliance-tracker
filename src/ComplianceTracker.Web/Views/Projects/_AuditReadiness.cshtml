@@ -13,6 +13,7 @@
         ReadinessFix.Scans => Url.Action("Details", new { id = Model.ProjectId, tab = ProjectTabs.Scans }),
         ReadinessFix.ProjectEdit => Url.Action("Edit", new { id = Model.ProjectId }),
         ReadinessFix.Audits => Url.Action("Index", "Audits", new { projectId = Model.ProjectId }),
+        ReadinessFix.Overview => Url.Action("Details", new { id = Model.ProjectId }) + "#checklist",
         _ => null
     };
 }

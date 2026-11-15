@@ -24,13 +24,15 @@ namespace ComplianceTracker.Application.Projects
         private readonly ISbomRepository _sboms;
         private readonly IProjectChecklistRepository _checklist; // US-047
         private readonly IOrganisationChecklistRepository _own; // US-192
+        private readonly ActivityLog.IActivityLogRepository _log; // US-194
 
         public PhaseGates(IProjectRepository projects, IFrameworkRepository frameworks, IClassificationRepository classifications,
             IRiskRepository risks, CurrentMember member, ComplianceQueries compliance, IScanRepository scans, ISbomRepository sboms,
-            IProjectChecklistRepository checklist, IOrganisationChecklistRepository own)
+            IProjectChecklistRepository checklist, IOrganisationChecklistRepository own, ActivityLog.IActivityLogRepository log)
         {
             _checklist = checklist;
             _own = own;
+            _log = log;
             _compliance = compliance;
             _scans = scans;
             _sboms = sboms;
@@ -96,6 +98,24 @@ namespace ComplianceTracker.Application.Projects
             return Gate(project, to, facts, lines);
         }
 
+        // US-194: every phase's checklist and the phase changes, for the reports. "known" is the compliance a report has looked up
+        // already, so it is not looked up twice. Null for another organisation's project and for the organisation area.
+        public async Task<ProjectLifecycle?> LifecycleAsync(Guid projectId, IReadOnlyList<Compliance.FrameworkCompliance>? known = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is not { } organization
+                || await _projects.GetAsync(organization.Id, projectId, cancellationToken) is not { } project
+                || project.IsOrganisationArea)
+            {
+                return null;
+            }
+
+            var facts = await FactsAsync(organization, project, null, cancellationToken, known: known);
+            var lines = ChecklistRules.Lines(await ItemsAsync(organization, project, facts, cancellationToken), await _checklist.ListAsync(project.Id, cancellationToken), facts.Checklist);
+            string NameOf(Guid? id) => organization.Users.FirstOrDefault(u => u.Id == id)?.Name ?? "Unknown";
+            return new ProjectLifecycle(project.Phase, lines, LifecycleReport.History(await _log.ListAboutAsync(organization.Id, project.Id, cancellationToken), NameOf));
+        }
+
         // US-047 R2: the built-in items of the regulations the project follows; US-192 R3: and the organisation's own
         private async Task<IReadOnlyList<ChecklistItem>> ItemsAsync(Organization organization, Project project, AllFacts facts, CancellationToken cancellationToken)
             => [.. BuiltInChecklist.For(facts.Frameworks),
@@ -131,7 +151,7 @@ namespace ComplianceTracker.Application.Projects
         // Everything the gates and the checklist are worked out from, looked up once
         // "needs": what to look up; null for everything (a phase change)
         private async Task<AllFacts> FactsAsync(Organization organization, Project project, DateOnly? supportEndsOn, CancellationToken cancellationToken,
-            IReadOnlySet<ChecklistCheck>? needs = null)
+            IReadOnlySet<ChecklistCheck>? needs = null, IReadOnlyList<Compliance.FrameworkCompliance>? known = null)
         {
             bool Needs(params ChecklistCheck[] checks) => needs is null || checks.Any(needs.Contains);
             var classified = Needs(ChecklistCheck.Classification)
@@ -153,7 +173,7 @@ namespace ComplianceTracker.Application.Projects
 
             var risks = Needs(ChecklistCheck.Risks) ? (await _risks.ListAsync(project.Id, cancellationToken)).Count : 0;
             var frameworks = Needs(ChecklistCheck.Coverage, ChecklistCheck.Evidence)
-                ? (await _compliance.ForProjectAsync(project.Id, cancellationToken))?.Frameworks ?? []
+                ? known ?? (await _compliance.ForProjectAsync(project.Id, cancellationToken))?.Frameworks ?? []
                 : [];
             var findings = Needs(ChecklistCheck.Findings) ? await _scans.ListFindingsAsync(project.Id, cancellationToken) : [];
             var scanned = Needs(ChecklistCheck.Findings) && (await _scans.ListAsync(project.Id, cancellationToken)).Count > 0;

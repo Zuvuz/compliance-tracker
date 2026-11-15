@@ -79,13 +79,13 @@ namespace ComplianceTracker.Application.Reports
 
         public static ReportDocument Build(
             ReportAudience audience, Project project, IReadOnlyList<FrameworkCompliance> frameworks, Func<Guid, string> nameOf,
-            string downloadedBy, DateTime at, ManagementFacts facts)
+            string downloadedBy, DateTime at, ManagementFacts facts, Projects.ProjectLifecycle? lifecycle = null, Func<Guid?, string>? nameOf2 = null)
         {
             // R3: the Summary sheet
             var summary = new List<(string, string)>
             {
                 ("Project", project.Name),
-                ("Lifecycle phase", project.Phase.ToString()),
+                ("Lifecycle phase", lifecycle?.Summary ?? project.Phase.ToString()), // US-194 R1, R4
                 ("Regulations", string.Join(", ", frameworks.Select(f => $"{FrameworkSlugs.Short(f.Framework.Name)} v{f.Version.Number}"))),
                 ("For", Title(audience)),
                 ("Downloaded by", $"{downloadedBy}, {at.ToLocalTime():dd-MM-yyyy HH:mm}")
@@ -109,6 +109,14 @@ namespace ComplianceTracker.Application.Reports
             var sheets = frameworks
                 .Select(f => audience == ReportAudience.Auditor ? AuditorSheet(f, nameOf) : TeamSheet(f))
                 .ToList();
+
+            // US-194 R2, R3: the lifecycle checklist and the phase changes
+            if (lifecycle is not null)
+            {
+                sheets.Add(Projects.LifecycleReport.Sheet(lifecycle, nameOf2 ?? (id => id is { } v ? nameOf(v) : "Unknown")));
+                sheets.Add(Projects.LifecycleReport.HistorySheet(lifecycle));
+            }
+
             return new ReportDocument($"Traceability – {project.Name}", summary, sheets);
         }
 

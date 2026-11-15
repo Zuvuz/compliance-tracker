@@ -44,9 +44,12 @@ namespace ComplianceTracker.Application.Reports
         private readonly CurrentMember _member;
         private readonly TimeProvider _clock;
 
+        private readonly Projects.PhaseGates _gates; // US-194
+
         public TechnicalDocumentationQueries(
-            ProjectQueries projects, ComplianceQueries compliance, RiskQueries risks, CurrentMember member, TimeProvider clock)
+            ProjectQueries projects, ComplianceQueries compliance, RiskQueries risks, CurrentMember member, TimeProvider clock, Projects.PhaseGates gates)
         {
+            _gates = gates;
             _projects = projects;
             _compliance = compliance;
             _risks = risks;
@@ -140,6 +143,34 @@ namespace ComplianceTracker.Application.Reports
             Missing("describe the production and monitoring processes and how they are validated.");
 
             // ------------------------------------------------------------ 3 (R3, R4)
+            // US-194 R2, R3: where the product is in its life, what each phase's checklist says, and the phase changes
+            if (await _gates.LifecycleAsync(projectId, compliance.Frameworks, cancellationToken) is { } lifecycle)
+            {
+                string NameOf(Guid? id) => organization.Users.FirstOrDefault(u => u.Id == id)?.Name ?? "Unknown";
+                Add(DocumentBlockKind.Heading2, "Lifecycle and its checklists");
+                Add(DocumentBlockKind.Paragraph, $"Phase now: {lifecycle.Summary}.");
+                foreach (var phase in lifecycle.Lines.Where(l => l.State != Domain.Projects.ChecklistState.NotChosen).GroupBy(l => l.Item.Phase).OrderBy(g => g.Key))
+                {
+                    Add(DocumentBlockKind.Paragraph, $"{phase.Key}:");
+                    foreach (var line in phase)
+                    {
+                        var note = Projects.LifecycleReport.Note(line, NameOf);
+                        Add(DocumentBlockKind.Bullet, $"{line.Item.Text} ({line.Item.Source}): {Projects.LifecycleReport.State(line)}{(note.Length == 0 ? "" : $" – {note}")}");
+                    }
+                }
+
+                Add(DocumentBlockKind.Paragraph, "Phase changes:");
+                if (lifecycle.History.Count == 0)
+                {
+                    Add(DocumentBlockKind.Paragraph, "None recorded.");
+                }
+
+                foreach (var change in lifecycle.History)
+                {
+                    Add(DocumentBlockKind.Bullet, $"{change.At:dd-MM-yyyy} {change.Change} ({change.By}){(change.Missing is { } m ? $"; missing: {m}" : "")}");
+                }
+            }
+
             Add(DocumentBlockKind.Heading1, "3. Cybersecurity risk assessment");
             Add(DocumentBlockKind.Heading2, "Risks");
             if (risks.Count == 0)
