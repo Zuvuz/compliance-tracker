@@ -5,15 +5,28 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  # Hver nat kører det hele, også de langsomme tests mod en rigtig Keycloak, som en PR springer over
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
 
 # Mindste rettigheder: workflowet må kun læse koden
 permissions:
   contents: read
 
-jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
+# Et nyt push på samme PR afbryder den kørsel, der er i gang; main køres altid færdig
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+
+jobs:
+  # Hurtige tjek, der ikke kræver tests: hemmeligheder, docker-compose og sårbare pakker
+  checks:
+    runs-on: ubuntu-latest
     steps:
       - name: Hent koden
         uses: actions/checkout@v7
@@ -29,6 +42,13 @@ jobs:
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
+
+      - name: Genbrug NuGet-pakker
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.*.props', '.config/dotnet-tools.json') }}
+          restore-keys: nuget-${{ runner.os }}-
 
       - name: Tjek docker-compose.yml (US-013)
         # Pladsholdere, så "${...:?}" ikke stopper tjekket. Ingen rigtige kodeord i CI.
@@ -53,8 +73,59 @@ jobs:
           fi
           echo "No package has a known high or critical vulnerability"
 
+      - name: Test af dækningstjekket og opdelingen af tests (US-140)
+        run: python -m unittest discover -s build -p "test_*.py"
+
+  # Domæne- og unit-tests med testdækning (US-140)
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Genbrug NuGet-pakker
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.*.props', '.config/dotnet-tools.json') }}
+          restore-keys: nuget-${{ runner.os }}-
       - name: Byg
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build --configuration Release
+      - name: Kør domæne- og unit-tests med testdækning
+        run: |
+          for project in tests/ComplianceTracker.Domain.Tests tests/ComplianceTracker.UnitTests; do
+            dotnet test "$project" --no-build --configuration Release --settings coverlet.runsettings --collect "XPlat Code Coverage" --results-directory coverage
+          done
+      - name: Gem dækningen
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-unit
+          path: coverage
+          retention-days: 3
+
+  # Reqnroll-scenarierne i 4 parallelle dele med lige mange scenarier hver (build/test_shards.py), hver med sin egen
+  # Postgres-container. En PR springer de langsomme Keycloak-tests over; main og natten kører dem.
+  specs:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Genbrug NuGet-pakker
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.*.props', '.config/dotnet-tools.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+      - name: Byg
+        run: dotnet build --configuration Release
 
       - name: Giv testene plads til fil-overvågning
         # Hver test starter webappen, og den overvåger sine filer. Ubuntu-maskinen tillader kun 128 overvågere, så med
@@ -63,26 +134,52 @@ jobs:
           sudo sysctl -w fs.inotify.max_user_instances=8192
           sudo sysctl -w fs.inotify.max_user_watches=524288
 
-      - name: Kør tests med testdækning (US-140)
-        # coverlet (MIT) måler i alle tre testprojekter; hvad der tælles, står i coverlet.runsettings
+      - name: Kør del ${{ matrix.shard }} af scenarierne med testdækning
         env:
           DOTNET_USE_POLLING_FILE_WATCHER: "true"
-        run: >
-          dotnet test --no-build --configuration Release --verbosity normal
-          --settings coverlet.runsettings --collect "XPlat Code Coverage" --results-directory coverage
+        run: |
+          exclude=""
+          if [ "${{ github.event_name }}" = "pull_request" ]; then exclude="--exclude-category keycloak"; fi
+          filter=$(python build/test_shards.py ${{ matrix.shard }} 4 $exclude)
+          dotnet test tests/ComplianceTracker.Specs --no-build --configuration Release --verbosity normal \
+            --filter "$filter" --settings coverlet.runsettings --collect "XPlat Code Coverage" --results-directory coverage
+      - name: Gem dækningen
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-specs-${{ matrix.shard }}
+          path: coverage
+          retention-days: 3
 
-      - name: Test af dækningstjekket (US-140)
-        run: python -m unittest discover -s build -p "test_*.py"
+  # Samler dækningen fra alle dele, laver rapporten og tjekker minimumsgrænserne (US-140). Navnet er det, branch
+  # protection kræver.
+  build-and-test:
+    runs-on: ubuntu-latest
+    needs: [checks, unit, specs]
+    if: always()
+    steps:
+      - name: Stop, hvis et af de andre jobs fejlede
+        if: needs.checks.result != 'success' || needs.unit.result != 'success' || needs.specs.result != 'success'
+        run: |
+          echo "checks: ${{ needs.checks.result }}, unit: ${{ needs.unit.result }}, specs: ${{ needs.specs.result }}"
+          exit 1
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Hent dækningen fra alle dele
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage
 
       - name: HTML-rapport over testdækningen (US-140)
         # ReportGenerator (Apache-2.0) som lokalt dotnet-værktøj; ingen betalt tjeneste (R1)
-        if: always()
         run: |
           dotnet tool restore
           dotnet reportgenerator "-reports:coverage/**/coverage.cobertura.xml" -targetdir:coverage-report "-reporttypes:Html;TextSummary"
 
       - name: Gem dækningsrapporten (US-140)
-        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: coverage-report-${{ github.sha }}

@@ -1764,6 +1764,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At vurdere ved hver sidevisning.
   - At ændre en persons beslutning.
 
+### B118 – CI kører testene parallelt, og Keycloak-testene om natten
+
+- **Beslutning:**
+  - **Parallel kørsel:** Reqnroll-scenarierne køres i 4 parallelle jobs med lige mange scenarier hver. Fordelingen laves af `build/test_shards.py` ud fra de genererede feature-klasser, så den er ens hver gang.
+  - **Egne jobs:** domæne- og unit-testene kører i deres eget job, og de hurtige tjek (hemmeligheder, docker-compose, sårbare pakker) i et tredje.
+  - **Samling:** et sidste job, `build-and-test` (det navn branch protection kræver), henter dækningen fra alle jobs, laver rapporten og tjekker minimumsgrænserne som før.
+  - **Keycloak om natten:** en PR springer de langsomme tests mod en rigtig Keycloak over (`@keycloak`). Main og den natlige kørsel kl. 02 kører det hele.
+  - **Pakker og afbrydelse:** NuGet-pakkerne gemmes mellem kørsler, og et nyt push på samme PR afbryder den kørsel, der er i gang.
+  - **Fil-overvågning:** grænsen for overvågere hæves, og testene poller i stedet, fordi Ubuntu-maskinen ellers løb tør (128) og alle sider svarede 500.
+- **Begrundelse:** Én kørsel af alle tests tog 25-30 minutter. Parallelt tager den omtrent en fjerdedel, og det er gratis, fordi repoet er offentligt.
+- **Fravalgt:**
+  - Betalte, hurtigere runners.
+  - At springe dækningsmålingen over på PR'er.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
