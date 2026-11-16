@@ -2124,6 +2124,18 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - At signere erklæringen i trackeren. Producenten gør det uden for trackeren.
   - At gætte på adresse eller bemyndiget organ.
+### B139 – Restrisiko efter foranstaltningerne (US-165)
+
+- **Beslutning:**
+  - **Niveauet før foranstaltninger** (sandsynlighed × konsekvens) ændres aldrig af foranstaltningerne. Restrisikoen sættes af et menneske på risikosiden med "Set residual risk", og ændringen logges som `RiskResidualSet` med gammel og ny værdi.
+  - **Ikke højere:** restrisikoen kan ikke være højere end risikoen før foranstaltningerne. Det gælder også i redigeringsformularen.
+  - **Registeret** viser niveauet før og efter side om side, fx "High → Medium", og "–" uden restrisiko.
+  - **"Residual to set":** en åben risiko, der skal reduceres, og hvor hver foranstaltning har en user story eller evidens bag sig (US-159), markeres, så længe ingen restrisiko er sat. Den tælles under "Needs attention".
+  - **"Residual to review":** fjernes en foranstaltning, efter restrisikoen er sat, markeres den til gennemsyn, indtil den sættes igen.
+  - **AI-forslag (R6) er ikke bygget endnu.** Trackeren har ingen generel sprogmodel-port til det, og det må bygges som en story for sig.
+- **Begrundelse:** Risikoejeren tager stilling til restrisikoen, når behandlingen er på plads, og registeret viser, hvor meget den har sænket risikoen (ISO/IEC 27001 6.1.3 f og 8.3, CRA art. 13, stk. 2–3).
+- **Fravalgt:**
+  - At lade niveauet falde af sig selv, når foranstaltninger får evidens. En foranstaltning kan være dækket uden at virke.
 
 ## Åbne spørgsmål til klassediagrammet
 

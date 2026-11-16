@@ -376,6 +376,16 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id });
         }
 
+        // POST /Risks/SetResidual: US-165 R1, R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "id")]
+        public async Task<IActionResult> SetResidual(Guid id, int likelihood, int impact, CancellationToken cancellationToken)
+        {
+            await _service.SetResidualAsync(await ProjectOfAsync(id, cancellationToken), id, likelihood, impact, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
         // POST /Risks/RemoveMeasure
         [HttpPost]
         [ValidateAntiForgeryToken]

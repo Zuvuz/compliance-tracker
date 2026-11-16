@@ -38,6 +38,11 @@ namespace ComplianceTracker.Domain.Risks
         public int? ResidualLikelihood { get; private set; }
         public int? ResidualImpact { get; private set; }
 
+        // US-165 R5: measures were removed after the residual risk was set, so it should be looked at again
+        public bool ResidualToReview { get; private set; }
+
+        public const string ResidualTooHigh = "The residual risk cannot be higher than the risk before measures";
+
         // R3: a member of the organisation
         public Guid OwnerId { get; private set; }
         public RiskTreatment Treatment { get; private set; }
@@ -96,6 +101,28 @@ namespace ComplianceTracker.Domain.Risks
         public int Score => Likelihood * Impact;
         public RiskLevel Level => LevelOf(Score);
         public RiskLevel? ResidualLevel => ResidualLikelihood is { } l && ResidualImpact is { } i ? LevelOf(l * i) : null;
+
+        // US-165 R3: a risk to reduce whose measures are all backed (the caller says so, US-159), with no residual set yet
+        public bool ResidualToSet(bool measuresBacked)
+            => Status == RiskStatus.Open && Treatment == RiskTreatment.Reduce && _measures.Count > 0 && measuresBacked && ResidualLevel is null;
+
+        // US-165 R2: e.g. "2 × 3 (Medium)", or "–" without a residual
+        public string ResidualText => ResidualLikelihood is { } l && ResidualImpact is { } i ? $"{l} × {i} ({ResidualLevel})" : "–";
+
+        // US-165 R1, R4, R5: a person sets the residual risk after the measures. Returns the change, or null when nothing changed.
+        public ProjectChange? SetResidualRisk(int likelihood, int impact)
+        {
+            EnsureNotClosed();
+            if (ResidualLikelihood == likelihood && ResidualImpact == impact && !ResidualToReview)
+            {
+                return null;
+            }
+
+            var before = ResidualText;
+            SetResidual(likelihood, impact);
+            ResidualToReview = false;
+            return new ProjectChange("Residual risk", before, ResidualText);
+        }
 
         // R5: a risk to reduce with nothing linked yet
         public bool HasNoMeasures => Status == RiskStatus.Open && Treatment == RiskTreatment.Reduce && _measures.Count == 0;
@@ -274,6 +301,12 @@ namespace ComplianceTracker.Domain.Risks
             var measure = _measures.FirstOrDefault(m => m.Id == measureId)
                 ?? throw new DomainException("Measure not found");
             _measures.Remove(measure);
+
+            // US-165 R5: the residual was set with this measure in place
+            if (ResidualLevel is not null)
+            {
+                ResidualToReview = true;
+            }
         }
 
         // US-111 R1: the caller checks that the owner is a member of the organisation
@@ -359,6 +392,17 @@ namespace ComplianceTracker.Domain.Risks
             {
                 EnsureScale(l, "Residual likelihood");
                 EnsureScale(i, "Residual impact");
+
+                // US-165 R4
+                if (l * i > Likelihood * Impact)
+                {
+                    throw new DomainException(ResidualTooHigh);
+                }
+            }
+
+            if (likelihood != ResidualLikelihood || impact != ResidualImpact)
+            {
+                ResidualToReview = false;
             }
 
             ResidualLikelihood = likelihood;
