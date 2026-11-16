@@ -211,7 +211,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I create the audit package of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 24
-    await testRunner.ThenAsync("the audit package contains \"00-contents.txt\", \"01-traceability-cra.pdf\", \"02-comp" +
+    await testRunner.ThenAsync("the audit package contains \"00-contents.pdf\", \"01-traceability-cra.pdf\", \"02-comp" +
                         "liance-status.pdf\" and \"04-risk-assessment.pdf\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 25
@@ -401,21 +401,23 @@ namespace ComplianceTracker.Specs.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="Each requirement has a folder with a README that names its evidence")]
+        [global::Xunit.SkippableFactAttribute(DisplayName="The framework\'s dossier names each requirement\'s evidence")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Audit package for an external auditor")]
-        [global::Xunit.TraitAttribute("Description", "Each requirement has a folder with a README that names its evidence")]
+        [global::Xunit.TraitAttribute("Description", "The framework\'s dossier names each requirement\'s evidence")]
         [global::Xunit.TraitAttribute("Category", "US-179")]
+        [global::Xunit.TraitAttribute("Category", "US-197")]
         [global::Xunit.TraitAttribute("Category", "iso27001-A.5.33")]
         [global::Xunit.TraitAttribute("Category", "integration")]
-        public async global::System.Threading.Tasks.Task EachRequirementHasAFolderWithAREADMEThatNamesItsEvidence()
+        public async global::System.Threading.Tasks.Task TheFrameworksDossierNamesEachRequirementsEvidence()
         {
             string[] tagsOfScenario = new string[] {
                     "US-179",
+                    "US-197",
                     "iso27001-A.5.33",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "5";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Each requirement has a folder with a README that names its evidence", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The framework\'s dossier names each requirement\'s evidence", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 57
@@ -435,14 +437,20 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I create the audit package of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 59
-    await testRunner.ThenAsync("the audit package contains \"CRA/I.2(d)/README.txt\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the audit package contains \"CRA-dossier.pdf\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 60
-    await testRunner.AndAsync("the audit package\'s file \"CRA/I.2(d)/README.txt\" says \"File: evidence/MFA-config-" +
-                        "mfa.pdf\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the audit package\'s file \"CRA-dossier.pdf\" says \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 61
-    await testRunner.AndAsync("the audit package\'s file \"CRA/I.2(d)/README.txt\" says \"[US-004] Sign in\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the audit package\'s file \"CRA-dossier.pdf\" says \"evidence/MFA-config-mfa.pdf, SHA" +
+                        "-256\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 62
+    await testRunner.AndAsync("the audit package\'s file \"CRA-dossier.pdf\" says \"[US-004] Sign in\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 63
+    await testRunner.AndAsync("the audit package has 0 files under \"CRA/\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -463,7 +471,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A file on two requirements is stored once", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 64
+#line 66
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -476,22 +484,18 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 65
+#line 67
     await testRunner.GivenAsync("the evidence \"Access policy\" is linked to \"I.2(a)\" and \"I.2(b)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 66
+#line 68
     await testRunner.WhenAsync("I create the audit package of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 67
+#line 69
     await testRunner.ThenAsync("the audit package has 2 files under \"evidence/\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 68
-    await testRunner.AndAsync("the audit package\'s file \"CRA/I.2(a)/README.txt\" says \"File: evidence/Access-poli" +
-                        "cy-access-policy.pdf\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-#line 69
-    await testRunner.AndAsync("the audit package\'s file \"CRA/I.2(b)/README.txt\" says \"File: evidence/Access-poli" +
-                        "cy-access-policy.pdf\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line 70
+    await testRunner.AndAsync("the audit package\'s file \"CRA-dossier.pdf\" says \"evidence/Access-policy-access-po" +
+                        "licy.pdf\" 2 times", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -512,7 +516,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The index lists each requirement with its evidence and fingerprint", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 72
+#line 73
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -525,18 +529,18 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 73
+#line 74
     await testRunner.WhenAsync("I create the audit package of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 74
+#line 75
     await testRunner.ThenAsync("the audit package\'s index lists \"I.2(d)\" with \"evidence/MFA-config-mfa.pdf\" and t" +
                         "he SHA-256 of the evidence \"MFA config\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 75
+#line 76
     await testRunner.AndAsync("the audit package\'s file \"index.html\" says \"<a href=\'evidence/MFA-config-mfa.pdf\'" +
                         ">MFA config</a>\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 76
+#line 77
     await testRunner.AndAsync("the audit package\'s file \"index.html\" says no \"<script\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }

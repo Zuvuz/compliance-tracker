@@ -12,7 +12,7 @@ namespace ComplianceTracker.Application.Reports
     public record IndexRow(string Framework, string Code, string Title, string Text, string Status, string Folder,
         IReadOnlyList<string> Stories, IReadOnlyList<IndexEvidence> Evidence, int FailingTests, string? NotApplicableReason);
 
-    // US-179: the audit package sorted per framework and requirement: a folder with a README per requirement, and an index
+    // US-179: the audit package sorted per framework and requirement (US-197: a dossier per framework), and an index
     // as HTML (offline, no scripts) and Excel. Files are stored once under evidence/ and referred to from each requirement.
     // Pure, so the edge cases are tested on their own.
     public static class AuditPackageIndex
@@ -105,38 +105,7 @@ namespace ComplianceTracker.Application.Reports
             return text + (evidence.ValidUntil is { } until ? $", valid until {until:dd-MM-yyyy}" : "");
         }
 
-        // R2: the README of a requirement's folder
-        public static string Readme(IndexRow row)
-        {
-            var text = new StringBuilder();
-            text.AppendLine($"{row.Framework} {row.Code} – {row.Title}").AppendLine();
-            if (!string.IsNullOrWhiteSpace(row.Text))
-            {
-                text.AppendLine(row.Text.Trim()).AppendLine();
-            }
-
-            text.AppendLine($"Status: {row.Status}{(row.NotApplicableReason is { } why ? $" ({why})" : "")}");
-            if (row.FailingTests > 0)
-            {
-                text.AppendLine($"Failing tests: {row.FailingTests}");
-            }
-
-            text.AppendLine().AppendLine(row.Stories.Count == 0 ? "User stories: none" : "User stories:");
-            foreach (var story in row.Stories)
-            {
-                text.AppendLine($"  - {story}");
-            }
-
-            text.AppendLine().AppendLine(row.Evidence.Count == 0 ? "Evidence: none" : "Evidence:");
-            foreach (var evidence in row.Evidence)
-            {
-                text.AppendLine($"  - {evidence.Title}{(evidence.Expired ? " (expired)" : "")}");
-                text.AppendLine(evidence.Path is not null ? $"      File: {evidence.Path} (SHA-256 {evidence.Sha256})" : $"      Link: {evidence.Url}");
-                text.AppendLine($"      {evidence.Source}");
-            }
-
-            return text.ToString();
-        }
+        // US-197: the README of a requirement's folder (US-179 R2) is now the framework's dossier (RequirementDossier)
 
         // R4: one page that works offline: no scripts, no files from the internet; links are relative to the package
         public static string Html(string title, IReadOnlyList<IndexRow> rows)
@@ -151,13 +120,13 @@ namespace ComplianceTracker.Application.Reports
                 .Append(".status{white-space:nowrap}h2{margin-top:2rem}")
                 .Append("</style></head><body>");
             html.Append("<h1>").Append(E(title)).Append("</h1>");
-            html.Append("<p>Every requirement with its status and its evidence. A file is stored once; click it to open it. Each requirement's folder has a README with more.</p>");
+            html.Append("<p>Every requirement with its status and its evidence. A file is stored once; click it to open it. Each framework's dossier (a PDF) has every requirement with more.</p>");
             foreach (var framework in rows.GroupBy(r => r.Framework))
             {
                 html.Append("<h2>").Append(E(framework.Key)).Append("</h2><table><thead><tr><th>Code</th><th>Requirement</th><th>Status</th><th>Evidence</th></tr></thead><tbody>");
                 foreach (var row in framework)
                 {
-                    html.Append("<tr><td><a href='").Append(Href(row.Folder + "/README.txt")).Append("'>").Append(E(row.Code)).Append("</a></td>")
+                    html.Append("<tr><td><a href='").Append(Href(RequirementDossier.FileName(row.Framework))).Append("'>").Append(E(row.Code)).Append("</a></td>")
                         .Append("<td>").Append(E(row.Title)).Append("</td>")
                         .Append("<td class=\"status\">").Append(E(row.Status)).Append("</td><td>");
                     foreach (var evidence in row.Evidence)

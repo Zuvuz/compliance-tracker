@@ -53,8 +53,11 @@ namespace ComplianceTracker.Specs.StepDefinitions
             var response = await _web.Client.GetAsync($"/Projects/LockedReport/{snapshot.ProjectId}?snapshotId={snapshot.Id}");
             response.EnsureSuccessStatusCode();
             using var zip = new ZipArchive(new MemoryStream(await response.Content.ReadAsByteArrayAsync()), ZipArchiveMode.Read);
-            using var reader = new StreamReader(zip.GetEntry("00-check.txt")!.Open(), Encoding.UTF8);
-            Assert.Contains(text, await reader.ReadToEndAsync(), StringComparison.Ordinal);
+            // US-197: the check is a PDF
+            using var stream = zip.GetEntry("00-check.pdf")!.Open();
+            using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            Assert.Contains(text, AuditPackageStepDefinitions.Text("00-check.pdf", memory.ToArray()), StringComparison.Ordinal);
         }
 
         private IElement Check() => _web.Page!.QuerySelector("#audit-check") ?? throw new Xunit.Sdk.XunitException("The page shows no package check.");

@@ -277,7 +277,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I create the audit package of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 32
-    await testRunner.ThenAsync("the audit package contains \"00-check.txt\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the audit package contains \"00-check.pdf\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 33
     await testRunner.AndAsync("the package\'s check says \"[ ] Software bill of materials (Annex I, Part II (1)): " +

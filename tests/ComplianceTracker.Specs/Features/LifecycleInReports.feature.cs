@@ -197,14 +197,14 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I create the audit package of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 20
-    await testRunner.ThenAsync("the audit package\'s file \"lifecycle.txt\" says \"Design → Development\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the audit package\'s file \"lifecycle.pdf\" says \"Design -> Development\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 21
-    await testRunner.AndAsync("the audit package\'s file \"lifecycle.txt\" says \"missing: Essential requirements de" +
+    await testRunner.AndAsync("the audit package\'s file \"lifecycle.pdf\" says \"missing: Essential requirements de" +
                         "signed in\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 22
-    await testRunner.AndAsync("the audit package\'s file \"lifecycle.txt\" says \"[Missing] Threat model made – CRA " +
+    await testRunner.AndAsync("the audit package\'s file \"lifecycle.pdf\" says \"[Missing] Threat model made – CRA " +
                         "Art. 13(3)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }

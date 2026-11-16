@@ -105,22 +105,26 @@ public class AuditPackageIndexTests
         Assert.Equal("https://example.com/p", evidence.Url);
     }
 
-    // ---------------------------------------------------------- README (R2)
+    // ---------------------------------------------------------- The dossier (US-197 R1, R4; was the README of US-179 R2)
+
+    private static string Text(GeneratedDocument dossier) => string.Join("\n", dossier.Blocks.Select(b => b.Text));
 
     [Fact]
-    public void The_readme_names_the_status_the_evidence_and_where_it_comes_from()
+    public void The_dossier_names_the_status_the_evidence_and_where_it_comes_from()
     {
         var f = NewFramework("Security policy");
         var policy = Link("Access policy", new DateOnly(2027, 3, 1));
         var files = new Dictionary<Guid, (string, string)> { [policy.Evidence.Id] = ("evidence/Access-policy-a.pdf", "abc") };
-        var row = AuditPackageIndex.Rows([Compliance(f, Row(f, "SP-1", policy))], files).Single();
+        var rows = AuditPackageIndex.Rows([Compliance(f, Row(f, "SP-1", policy))], files);
 
-        var readme = AuditPackageIndex.Readme(row);
+        var dossier = RequirementDossier.Build("Security policy", "Acme Portal", rows, null, _ => "Anna", "Acme ApS", Monday);
 
-        Assert.Contains("Status: Not covered", readme);
-        Assert.Contains("File: evidence/Access-policy-a.pdf (SHA-256 abc)", readme);
-        Assert.Contains("Added 16-11-2026, valid until 01-03-2027", readme);
-        Assert.Contains("User stories: none", readme);
+        var text = Text(dossier);
+        Assert.Equal("Security policy-dossier.pdf", dossier.FileName);
+        Assert.Contains("Status: Not covered", text);
+        Assert.Contains("Access policy: evidence/Access-policy-a.pdf, SHA-256 abc. Added 16-11-2026, valid until 01-03-2027", text);
+        Assert.Contains("User stories: none", text);
+        Assert.Contains("sealed by Acme ApS", text);
     }
 
     [Fact]
@@ -129,11 +133,70 @@ public class AuditPackageIndexTests
         var f = NewFramework("Security policy");
         var row = new RequirementCoverage(f.LatestVersion.AddRequirement("SP-1", "T", null), [], "No hardware");
 
-        var readme = AuditPackageIndex.Readme(AuditPackageIndex.Rows([Compliance(f, row)], new Dictionary<Guid, (string, string)>()).Single());
+        var text = Text(RequirementDossier.Build("Security policy", "Acme Portal",
+            AuditPackageIndex.Rows([Compliance(f, row)], new Dictionary<Guid, (string, string)>()), null, _ => "", null, Monday));
 
-        Assert.Contains("Status: Not applicable (No hardware)", readme);
-        Assert.Contains("Evidence: none", readme);
+        Assert.Contains("Status: Not applicable (No hardware)", text);
+        Assert.Contains("Evidence: none", text);
+        Assert.Contains("Not sealed", text);
     }
+
+    [Fact]
+    public void A_framework_without_requirements_still_gets_a_dossier()
+    {
+        var text = Text(RequirementDossier.Build("Policy", "Acme Portal", [], null, _ => "", null, Monday));
+
+        Assert.Contains("The framework has no requirements.", text);
+        Assert.Contains("No lifecycle checklist items for this framework.", text);
+    }
+
+    [Fact]
+    public void A_requirement_with_many_pieces_of_evidence_lists_each()
+    {
+        var f = NewFramework("Security policy");
+        var evidence = Enumerable.Range(1, 30).Select(i => Link($"Proof {i}")).ToArray();
+
+        var dossier = RequirementDossier.Build("Security policy", "Acme Portal",
+            AuditPackageIndex.Rows([Compliance(f, Row(f, "SP-1", evidence))], new Dictionary<Guid, (string, string)>()), null, _ => "", null, Monday);
+
+        Assert.Equal(30, dossier.Blocks.Count(b => b.Kind == DocumentBlockKind.Bullet && b.Text.StartsWith("Proof ", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public void A_very_long_requirement_text_is_kept_whole()
+    {
+        var f = NewFramework("Security policy");
+        var long_ = string.Join(" ", Enumerable.Repeat("word", 2000));
+        var row = new RequirementCoverage(f.LatestVersion.AddRequirement("SP-1", "T", long_), []);
+
+        var dossier = RequirementDossier.Build("Security policy", "Acme Portal",
+            AuditPackageIndex.Rows([Compliance(f, row)], new Dictionary<Guid, (string, string)>()), null, _ => "", null, Monday);
+
+        Assert.Contains(dossier.Blocks, b => b.Text == long_);
+    }
+
+    [Theory]
+    [InlineData("CRA", "CRA", true)]
+    [InlineData("ISO/IEC 27001", "ISO/IEC 27001:2022", true)]
+    [InlineData("Customer requirements", "Customer requirements", true)]
+    [InlineData("Optional test", "CRA", false)]
+    [InlineData("AI Act", "CRA", false)]
+    public void A_checklist_item_belongs_to_its_framework(string regulation, string framework, bool belongs)
+        => Assert.Equal(belongs, RequirementDossier.Belongs(regulation, framework));
+
+    [Fact]
+    public void A_text_becomes_a_document_with_a_title_headings_and_bullets()
+    {
+        var document = RequirementDossier.FromText("00-check.pdf", "Audit check\n\nWhat is missing\n  [ ] SBOM\n  [x] Risks\nDone.\n");
+
+        Assert.Equal([DocumentBlockKind.Title, DocumentBlockKind.Heading2, DocumentBlockKind.Bullet, DocumentBlockKind.Bullet, DocumentBlockKind.Paragraph],
+            document.Blocks.Select(b => b.Kind));
+        Assert.Equal("[ ] SBOM", document.Blocks[2].Text);
+    }
+
+    [Fact]
+    public void An_empty_text_still_makes_a_document()
+        => Assert.Equal("x.pdf", Assert.Single(RequirementDossier.FromText("x.pdf", "  \n").Blocks).Text);
 
     // ---------------------------------------------------------- Index (R4)
 
@@ -151,7 +214,7 @@ public class AuditPackageIndexTests
         Assert.DoesNotContain("http", html.Replace("https://example.com", ""), StringComparison.Ordinal);
         Assert.Contains("&lt;script&gt;", html);
         Assert.Contains("href='evidence/x%20y.pdf'", html);
-        Assert.Contains("href='Security%20policy/A%281%29/README.txt'", html);
+        Assert.Contains("href='Security%20policy-dossier.pdf'", html); // US-197: the code opens the framework's dossier
     }
 
     [Fact]

@@ -2083,6 +2083,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - At sammenligne evidensfiler mellem pakker. Det står uden for US-198.
 
+### B136 – Revisionspakken som ét forseglet PDF-dossier pr. framework (US-197)
+
+- **Beslutning:**
+  - **Ét dossier pr. framework:** pakken har fx `CRA-dossier.pdf` med hvert krav: tekst, status, user stories, fejlende tests og evidens med titel, sti i pakken, SHA-256 og kilde. Til sidst kommer frameworkets punkter fra livscyklus-tjeklisten. Mapperne med `README.txt` (US-179) udgår; `index.html` og `index.xlsx` bliver, og koden i indekset åbner dossieret.
+  - **Pakkens egne tekster er PDF:** `00-contents.pdf`, `00-check.pdf` og `lifecycle.pdf` i stedet for `.txt`.
+  - **Segl:** har organisationen et gyldigt segl (US-132), forsegles hver PDF, pakken selv laver: dossierne, rapporterne, indholdsfortegnelsen, tjekket og livscyklussen. Det sker, før indholdsfortegnelsen skriver deres SHA-256. Uden segl laves de uforseglede, og indholdsfortegnelsen og dossieret siger det.
+  - **Evidensfilerne** lægges som de blev uploadet, under `evidence/`, med deres SHA-256.
+  - **Låste rapporter (US-198)** gemmes uforseglede i trackeren; pakken har de forseglede.
+- **Begrundelse:** En revisor læser ét dokument pr. framework og kan se, at det ikke er ændret, efter det blev lavet (ISO/IEC 27001 7.5.3 og A.5.33, CRA bilag VII, eIDAS art. 35–36).
+- **Fravalgt:**
+  - At signere selve ZIP-filen. Det er US-180.
+  - At konvertere de uploadede evidensfiler til PDF. Originalerne bevares.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

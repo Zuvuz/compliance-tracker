@@ -19,6 +19,9 @@ namespace ComplianceTracker.Application.Reports
     // One file of the package, or a part that is not in it and why (R6)
     public record PackagePart(string Path, byte[]? Content, string Description, string? NotIncluded = null)
     {
+        // US-197 R3: a PDF the package made itself (not an uploaded file), so it is sealed when the organisation has a seal
+        public bool Made { get; init; }
+
         public string? Sha256 => Content is null ? null : Convert.ToHexString(SHA256.HashData(Content)).ToLowerInvariant();
     }
 
@@ -45,13 +48,22 @@ namespace ComplianceTracker.Application.Reports
         private readonly AuditReadinessService _readiness; // US-178
         private readonly ISpreadsheetWriter _spreadsheets; // US-179
         private readonly Projects.PhaseGates _gates; // US-194
+        private readonly IPdfWriter _pdf; // US-197
+        private readonly IReportSealer _sealer; // US-197
+        private readonly IReportSigningRepository _signings; // US-197: the organisation's seal
+        private readonly ISecretProtector _secrets; // US-197
 
         public AuditPackageService(
             ReportFiles files, ProjectQueries projects, ComplianceQueries compliance, IEvidenceRepository evidence, IRequirementDocumentRepository documents,
             ISbomRepository sboms, AuditService audits, IActivityLogRepository log, IReportSnapshotRepository snapshots, CurrentMember member,
             IActivityLogger logger, IUnitOfWork unitOfWork, ICurrentUser currentUser, TimeProvider clock, AuditReadinessService readiness,
-            ISpreadsheetWriter spreadsheets, Projects.PhaseGates gates)
+            ISpreadsheetWriter spreadsheets, Projects.PhaseGates gates, IPdfWriter pdf, IReportSealer sealer, IReportSigningRepository signings,
+            ISecretProtector secrets)
         {
+            _pdf = pdf;
+            _sealer = sealer;
+            _signings = signings;
+            _secrets = secrets;
             _gates = gates;
             _spreadsheets = spreadsheets;
             _readiness = readiness;
@@ -111,28 +123,41 @@ namespace ComplianceTracker.Application.Reports
                 var slug = FrameworkSlugs.Slug(framework.Framework.Name);
                 var traceability = await _files.TraceabilityAsync(project.Id, ReportAudience.Auditor, slug, inPackage: true, cancellationToken);
                 AddReport(reports, traceability?.Pdf);
-                parts.Add(new PackagePart($"01-traceability-{slug}.pdf", traceability?.Pdf.Content, $"Traceability for an auditor, {FrameworkSlugs.Short(framework.Framework.Name)} (US-052)"));
+                parts.Add(new PackagePart($"01-traceability-{slug}.pdf", traceability?.Pdf.Content, $"Traceability for an auditor, {FrameworkSlugs.Short(framework.Framework.Name)} (US-052)") { Made = true });
             }
 
             var management = chosen.Count == 0 ? null : await _files.TraceabilityAsync(project.Id, ReportAudience.Management, chosen.Count == 1 ? FrameworkSlugs.Slug(chosen[0].Framework.Name) : null, inPackage: true, cancellationToken);
             AddReport(reports, management?.Pdf);
             parts.Add(new PackagePart("02-compliance-status.pdf", management?.Pdf.Content, "Compliance status: the management report (US-141)",
-                management is null ? "The project follows no framework" : null));
+                management is null ? "The project follows no framework" : null) { Made = true });
 
             var soa = await _files.StatementOfApplicabilityAsync(project.Id, cancellationToken);
             AddReport(reports, soa?.Pdf);
             parts.Add(new PackagePart("03-statement-of-applicability.pdf", soa?.Pdf.Content, "Statement of Applicability (US-053)",
-                soa is null ? "The organisation has no ISO/IEC 27001 framework" : null));
+                soa is null ? "The organisation has no ISO/IEC 27001 framework" : null) { Made = true });
 
             var risks = await _files.RiskAssessmentAsync(project.Id, cancellationToken);
             AddReport(reports, risks?.Pdf);
-            parts.Add(new PackagePart("04-risk-assessment.pdf", risks?.Pdf.Content, "Risk assessment (US-054)"));
+            parts.Add(new PackagePart("04-risk-assessment.pdf", risks?.Pdf.Content, "Risk assessment (US-054)") { Made = true });
 
-            // US-194 R2, R3: the lifecycle, every phase's checklist and the phase changes
-            if (await _gates.LifecycleAsync(project.Id, compliance.Frameworks, cancellationToken) is { } lifecycle)
+            var now = _clock.GetUtcNow().UtcDateTime;
+            string NameOf(Guid? id) => organization.Users.FirstOrDefault(u => u.Id == id)?.Name ?? "Unknown";
+            byte[] Pdf(GeneratedDocument document, string name)
+                => _pdf.FromDocument(document, new PdfHeader(organization.Name, project.Name, name, now, _currentUser.Identity.Name));
+
+            // US-197 R3, R4: the organisation's seal, when it has one that can be used now
+            var seal = await _signings.GetActiveSealAsync(organization.Id, cancellationToken);
+            if (seal?.WhyNotUsable(now) is not null)
             {
-                parts.Add(new PackagePart("lifecycle.txt", Encoding.UTF8.GetBytes(Projects.LifecycleReport.Text(project.Name, lifecycle,
-                    id => organization.Users.FirstOrDefault(u => u.Id == id)?.Name ?? "Unknown")), "The lifecycle phase, its checklists and the phase changes (US-194)"));
+                seal = null;
+            }
+
+            // US-194 R2, R3: the lifecycle, every phase's checklist and the phase changes. US-197 R2: as PDF.
+            var lifecycle = await _gates.LifecycleAsync(project.Id, compliance.Frameworks, cancellationToken);
+            if (lifecycle is not null)
+            {
+                parts.Add(new PackagePart("lifecycle.pdf", Pdf(RequirementDossier.FromText("lifecycle.pdf", Projects.LifecycleReport.Text(project.Name, lifecycle, NameOf)), "Lifecycle"),
+                    "The lifecycle phase, its checklists and the phase changes (US-194)") { Made = true });
             }
 
             parts.Add(new PackagePart($"05-activity-log-{start:yyyy-MM-dd}-to-{end:yyyy-MM-dd}.csv",
@@ -183,14 +208,16 @@ namespace ComplianceTracker.Application.Reports
                     + string.Concat(audit.Findings.Select(f => $"\n      Finding: {f.Title}, due {f.DueOn:dd-MM-yyyy}, {(f.IsOpen ? "open" : $"closed: {f.CloseReason}")}"))));
             }
 
-            var now = _clock.GetUtcNow().UtcDateTime;
             var title = $"Audit package – {project.Name}, {start:dd-MM-yyyy} – {end:dd-MM-yyyy}";
 
-            // US-179 R1, R2, R4: a folder per requirement with a README, and the index as HTML and Excel
+            // US-197 R1: one dossier per framework, instead of a folder with a README per requirement (US-179 R2).
+            // US-179 R4: the index as HTML and Excel stays.
             var rows = AuditPackageIndex.Rows(chosen, evidenceFiles);
-            foreach (var row in rows)
+            foreach (var framework in chosen.Select(f => FrameworkSlugs.Short(f.Framework.Name)).Distinct())
             {
-                parts.Add(new PackagePart($"{row.Folder}/README.txt", Encoding.UTF8.GetBytes(AuditPackageIndex.Readme(row)), $"{row.Framework} {row.Code}: status and evidence (US-179)"));
+                var dossier = RequirementDossier.Build(framework, project.Name, rows.Where(r => r.Framework == framework).ToList(), lifecycle, NameOf, seal?.Subject, now);
+                parts.Insert(0, new PackagePart(dossier.FileName, Pdf(dossier, $"{framework} dossier"),
+                    $"{framework}: every requirement with its status, stories and evidence, and the lifecycle checklist (US-197)") { Made = true });
             }
 
             if (rows.Count > 0)
@@ -199,12 +226,23 @@ namespace ComplianceTracker.Application.Reports
                 parts.Insert(0, new PackagePart(AuditPackageIndex.HtmlPath, Encoding.UTF8.GetBytes(AuditPackageIndex.Html(title, rows)), "Index of the requirements and their evidence; open it in a browser (US-179)"));
             }
 
-            var contents = Contents(title, organization.Name, project.Name, chosen.Select(f => f.Framework.Name).ToList(), start, end,
-                _currentUser.Identity.Name, now, parts, links);
-            // US-178 R3: what an auditor asks for and what is missing, in the package itself
+            // US-178 R3: what an auditor asks for and what is missing, in the package itself. US-197 R2: as PDF.
             var check = await _readiness.CheckAsync(project.Id, frameworks, cancellationToken);
-            var checkPart = new PackagePart("00-check.txt", Encoding.UTF8.GetBytes(check is null ? "No check" : AuditReadiness.Text(check, today)), "What an auditor asks for, and what is missing (US-178)");
-            var zip = Zip([new PackagePart("00-contents.txt", Encoding.UTF8.GetBytes(contents), "Contents"), checkPart, .. parts]);
+            parts.Insert(0, new PackagePart("00-check.pdf", Pdf(RequirementDossier.FromText("00-check.pdf", check is null ? "No check" : AuditReadiness.Text(check, today)), "Check"),
+                "What an auditor asks for, and what is missing (US-178)") { Made = true });
+
+            // US-197 R3: every PDF the package made is sealed before the contents list their SHA-256
+            parts = parts.Select(p => p.Made && seal is not null && p.Content is not null ? p with { Content = Seal(p, seal, organization.Name, now) } : p).ToList();
+
+            var contents = Contents(title, organization.Name, project.Name, chosen.Select(f => f.Framework.Name).ToList(), start, end,
+                _currentUser.Identity.Name, now, parts, links, RequirementDossier.SealNote(seal?.Subject));
+            var contentsPart = new PackagePart("00-contents.pdf", Pdf(RequirementDossier.FromText("00-contents.pdf", contents), "Contents"), "Contents") { Made = true };
+            if (seal is not null)
+            {
+                contentsPart = contentsPart with { Content = Seal(contentsPart, seal, organization.Name, now) };
+            }
+
+            var zip = Zip([contentsPart, .. parts]);
 
             // R3, R5: kept like a locked report; the fingerprint is logged
             var snapshot = ReportSnapshot.Lock(organization.Id, project.Id, Kind, title,
@@ -223,6 +261,13 @@ namespace ComplianceTracker.Application.Reports
             return snapshot;
         }
 
+        // US-197 R3: the organisation's seal over a PDF the package made; the seal page names the file and its fingerprint
+        private byte[] Seal(PackagePart part, Domain.Reports.OrganisationSeal seal, string organization, DateTime now)
+        {
+            var pfx = Convert.FromBase64String(_secrets.Unprotect(seal.ProtectedCertificate));
+            return _sealer.Seal(part.Content!, part.Path, part.Sha256!, [], pfx, _secrets.Unprotect(seal.ProtectedPassword), organization, now);
+        }
+
         // R2: without dates the last 12 months; one date alone reaches 12 months from it, not past today
         public static (DateOnly From, DateOnly To) Period(DateOnly? from, DateOnly? to, DateOnly today)
         {
@@ -238,7 +283,7 @@ namespace ComplianceTracker.Application.Reports
 
         // R1, R3, R6: the contents page: every file with its SHA-256, the links, and what is not included and why
         public static string Contents(string title, string organization, string project, IReadOnlyList<string> frameworks, DateOnly from, DateOnly to,
-            string madeBy, DateTime now, IReadOnlyList<PackagePart> parts, IReadOnlyList<string> links)
+            string madeBy, DateTime now, IReadOnlyList<PackagePart> parts, IReadOnlyList<string> links, string? sealNote = null)
         {
             var text = new StringBuilder();
             text.AppendLine(title).AppendLine();
@@ -247,7 +292,13 @@ namespace ComplianceTracker.Application.Reports
             text.AppendLine($"Frameworks:   {(frameworks.Count == 0 ? "None" : string.Join(", ", frameworks))}");
             text.AppendLine($"Period:       {from:dd-MM-yyyy} – {to:dd-MM-yyyy}");
             text.AppendLine($"Made:         {now.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture)} by {madeBy}");
-            text.AppendLine().AppendLine("The package's own SHA-256 is shown in the tracker and in its activity log; each file's is below.").AppendLine();
+            text.AppendLine().AppendLine("The package's own SHA-256 is shown in the tracker and in its activity log; each file's is below.");
+            if (sealNote is not null)
+            {
+                text.AppendLine(sealNote); // US-197 R4
+            }
+
+            text.AppendLine();
 
             text.AppendLine("Included");
             foreach (var part in parts.Where(p => p.Content is not null))
