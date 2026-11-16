@@ -287,3 +287,62 @@
         <button type="submit" class="btn btn-sm btn-outline-secondary">Check fingerprint</button>
     </form>
 </section>
+
+@* US-182: read-only access to this project for an external auditor, for at most 30 days. Only for those who may decide
+   compliance. Ids and classes used by the tests: #auditor-access, form#grant-auditor-access, #auditor-link,
+   #auditor-grants rows with data-email (data-state) and form.revoke-auditor-access. *@
+@if (await Permissions.CanAsync(ComplianceTracker.Domain.Users.Permission.DecideCompliance) && !Model.Project.IsClosed)
+{
+    var today = DateOnly.FromDateTime(Model.Now);
+    <section class="card mt-3" id="auditor-access">
+        <div class="card-body">
+            <h2 class="h5 card-title">External auditor access</h2>
+            <p class="small text-muted">Let an auditor read this project's requirements, evidence, reports and log in the tracker, instead of sending
+                files. Read only, at most 30 days, and everything the auditor opens is logged.</p>
+            @if (TempData["AuditorLink"] is string link)
+            {
+                <div class="alert alert-info small" role="status">
+                    @(TempData["AuditorMailed"] as string == "true" ? "The invitation was mailed. The link, if you want to send it yourself:" : "Send this link to the auditor (shown once):")
+                    <input class="form-control form-control-sm mt-1" id="auditor-link" value="@link" readonly aria-label="Link for the auditor" />
+                </div>
+            }
+            <form asp-action="GrantAuditorAccess" method="post" class="d-flex flex-wrap gap-2 align-items-end" id="grant-auditor-access">
+                <input type="hidden" name="projectId" value="@Model.Project.Id" />
+                <div><label for="auditor-email" class="form-label small mb-0">Auditor's e-mail</label>
+                    <input id="auditor-email" name="email" type="email" maxlength="320" class="form-control form-control-sm" required /></div>
+                <div><label for="auditor-from" class="form-label small mb-0">From</label>
+                    <input id="auditor-from" name="from" type="date" class="form-control form-control-sm" value="@today.ToString("yyyy-MM-dd")" required /></div>
+                <div><label for="auditor-until" class="form-label small mb-0">Until (at most 30 days)</label>
+                    <input id="auditor-until" name="until" type="date" class="form-control form-control-sm" value="@today.AddDays(13).ToString("yyyy-MM-dd")" required /></div>
+                <button type="submit" class="btn btn-sm btn-primary">Give access</button>
+            </form>
+            @if (Model.AuditorGrants.Count > 0)
+            {
+                <table class="table table-sm small mt-3 mb-0" id="auditor-grants">
+                    <thead><tr><th>Auditor</th><th>Period</th><th>State</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var grant in Model.AuditorGrants)
+                        {
+                            var state = grant.IsRevoked ? "Revoked" : today > grant.Until ? "Ended" : grant.MemberId is null ? "Invited" : grant.IsActiveOn(today) ? "Active" : "Not started";
+                            <tr data-email="@grant.Email" data-state="@state">
+                                <td>@grant.Email</td>
+                                <td>@grant.From.ToString("dd-MM-yyyy") – @grant.Until.ToString("dd-MM-yyyy")</td>
+                                <td>@state</td>
+                                <td>
+                                    @if (!grant.IsRevoked && today <= grant.Until)
+                                    {
+                                        <form asp-action="RevokeAuditorAccess" method="post" class="revoke-auditor-access" data-confirm="The auditor loses access at once.">
+                                            <input type="hidden" name="projectId" value="@Model.Project.Id" />
+                                            <input type="hidden" name="grantId" value="@grant.Id" />
+                                            <button type="submit" class="btn btn-sm btn-link text-danger p-0">Revoke</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </section>
+}

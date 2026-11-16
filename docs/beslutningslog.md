@@ -2019,6 +2019,18 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** Påmindelserne (US-183) virker kun med en dato. ISO/IEC 27001 kræver gennemgang med planlagte mellemrum (5.1, 7.5.3, 8.2).
 - **Afvigelse:** risici har ingen datoformular. Deres gennemgang følger stadig de faste 12 måneder (US-042).
 
+### B131 – Tidsbegrænset læseadgang for en ekstern auditor (US-182)
+
+- **Beslutning:**
+  - **Tildeling:** et medlem med DecideCompliance giver adgang på projektets Reports-fane. Adgangen gælder ét projekt, fra i dag eller senere, og højst 30 dage.
+  - **Invitationen:** tildelingen sker gennem en invitation (US-009) med rollen Auditor. Linket vises én gang og sendes også med mail, når en mailserver er sat op (US-183). Når auditoren tager imod, bliver medlemskabet låst til projektet og perioden (`OnlyProjectId`, `AccessFrom`, `AccessUntil` på brugeren).
+  - **Kun i perioden:** medlemskabet tæller kun i perioden. Bagefter siger trackeren "Your access to … has ended".
+  - **Låsningen:** et globalt filter i web-laget tillader kun GET-sider og -downloads på Projects og Audits med det tildelte projekts id. Forsiden og projektlisten fører til projektet, og alt andet giver 403. Hver side og download logges som `AuditorAccessUsed`. Rollen Auditor har i forvejen ingen rettigheder, så heller ikke use cases tillader ændringer.
+  - **Tilbagekaldelse** virker med det samme: medlemmet fjernes, og en invitation, der ikke er brugt, tilbagekaldes.
+  - **Topmenuen:** en låst auditor ser kun "Read-only audit access" i topmenuen.
+- **Begrundelse:** Auditoren kan se de levende data i stedet for ZIP-filer, og adgangen er begrænset, udløber af sig selv og logges (ISO/IEC 27001 A.5.15, A.5.18, A.8.15).
+- **Afvigelse:** beskeden efter udløb nævner organisationen, ikke projektet.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

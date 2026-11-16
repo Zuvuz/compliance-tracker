@@ -170,6 +170,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] Application.Audits.AuditService audits,
             [FromServices] Application.Risks.RiskDraftService riskDrafts,
             [FromServices] Application.Reports.AuditReadinessService readiness,
+            [FromServices] Application.Organizations.AuditorAccessService auditorAccess,
             [FromServices] Application.Risks.RiskBackingQueries riskBacking,
             [FromServices] Application.Ai.INeedsActionReassessmentRepository reassessments,
             [FromServices] Application.Security.SecurityEventSuggestionService suggestionService,
@@ -317,6 +318,7 @@ namespace ComplianceTracker.Web.Controllers
                 Sub = sub,
                 OpenRequirement = activeTab == ProjectTabs.Compliance ? req : null,
                 AuditReadiness = activeTab == ProjectTabs.Reports && check == "1" ? await readiness.CheckAsync(id, frameworks, cancellationToken) : null, // US-178
+                AuditorGrants = activeTab == ProjectTabs.Reports ? await auditorAccess.ForProjectAsync(id, cancellationToken) : [], // US-182
                 // US-156: the newest assessment asked for after a change
                 Reassessment = activeTab == ProjectTabs.Compliance ? await reassessments.LatestAsync(id, cancellationToken) : null,
                 Gaps = activeTab == ProjectTabs.Suggestions ? await gapFinder.ForProjectAsync(id, cancellationToken) : null,
@@ -1519,6 +1521,30 @@ namespace ComplianceTracker.Web.Controllers
 
             Response.Headers["X-Content-Type-Options"] = "nosniff";
             return File(file.Content, "application/pdf", file.FileName);
+        }
+
+        // POST /Projects/GrantAuditorAccess: US-182 R1, R4; the link is shown once (and mailed when a mail server is set up)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Reports)]
+        public async Task<IActionResult> GrantAuditorAccess(Guid projectId, string? email, DateOnly? from, DateOnly? until,
+            [FromServices] Application.Organizations.AuditorAccessService access, CancellationToken cancellationToken)
+        {
+            var result = await access.GrantAsync(projectId, email, from, until, cancellationToken);
+            TempData["AuditorLink"] = Url.Action("Accept", "Invitations", new { token = result.Token }, Request.Scheme);
+            TempData["AuditorMailed"] = result.Mailed ? "true" : "false";
+            return RedirectToAction(nameof(Details), null, new { id = projectId, tab = ProjectTabs.Reports }, "auditor-access");
+        }
+
+        // POST /Projects/RevokeAuditorAccess: US-182 R3, at once
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Reports)]
+        public async Task<IActionResult> RevokeAuditorAccess(Guid projectId, Guid grantId,
+            [FromServices] Application.Organizations.AuditorAccessService access, CancellationToken cancellationToken)
+        {
+            await access.RevokeAsync(projectId, grantId, cancellationToken);
+            return RedirectToAction(nameof(Details), null, new { id = projectId, tab = ProjectTabs.Reports }, "auditor-access");
         }
 
         // POST /Projects/Checklist: US-047 R4, R8, R9, one action for every change of a checklist item

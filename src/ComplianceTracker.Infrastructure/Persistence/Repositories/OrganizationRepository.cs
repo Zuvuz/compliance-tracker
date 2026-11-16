@@ -32,10 +32,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         // US-187: one query; the person's own organisation (a role that is not external) first, then by name
         public async Task<IReadOnlyList<Membership>> ListMembershipsAsync(string externalId, CancellationToken cancellationToken = default)
             => await _db.Organizations
-                .SelectMany(o => o.Users.Where(u => u.ExternalId == externalId && u.RemovedAt == null).Select(u => new { o.Id, o.Name, u.Role }))
+                .SelectMany(o => o.Users.Where(u => u.ExternalId == externalId && u.RemovedAt == null)
+                    .Select(u => new { o.Id, o.Name, u.Role, u.OnlyProjectId, u.AccessFrom, u.AccessUntil }))
                 .OrderBy(m => m.Role == UserRole.Consultant || m.Role == UserRole.Auditor)
                 .ThenBy(m => m.Name)
-                .Select(m => new Membership(m.Id, m.Name, m.Role))
+                .Select(m => new Membership(m.Id, m.Name, m.Role) { OnlyProjectId = m.OnlyProjectId, AccessFrom = m.AccessFrom, AccessUntil = m.AccessUntil })
                 .ToListAsync(cancellationToken);
 
         // US-090 R3: the organisation the person was last removed from

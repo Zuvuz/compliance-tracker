@@ -12,16 +12,35 @@ namespace ComplianceTracker.Application.Common
     {
         private readonly ICurrentUser _currentUser;
         private readonly IOrganizationRepository _organizations;
+        private readonly TimeProvider _clock;
 
         private bool _looked;
         private Organization? _organization;
-        private IReadOnlyList<Organizations.Membership>? _memberships;
+        private IReadOnlyList<Organizations.Membership>? _all;
 
-        public CurrentMember(ICurrentUser currentUser, IOrganizationRepository organizations)
+        public CurrentMember(ICurrentUser currentUser, IOrganizationRepository organizations, TimeProvider clock)
         {
             _currentUser = currentUser;
             _organizations = organizations;
+            _clock = clock;
         }
+
+        private DateOnly Today => DateOnly.FromDateTime(_clock.GetUtcNow().UtcDateTime);
+
+        // US-182: memberships whose limited access has ended or not begun, e.g. an auditor after the last day
+        public async Task<IReadOnlyList<Organizations.Membership>> ClosedMembershipsAsync(CancellationToken cancellationToken = default)
+            => (await AllMembershipsAsync(cancellationToken)).Where(m => !m.IsOpenOn(Today)).ToList();
+
+        // US-182: the one project the signed-in member may see in the chosen organisation, or null when not limited
+        public async Task<Guid?> OnlyProjectAsync(CancellationToken cancellationToken = default)
+        {
+            var organization = await FindOrganizationAsync(cancellationToken);
+            return organization is null ? null
+                : (await MembershipsAsync(cancellationToken)).FirstOrDefault(m => m.OrganizationId == organization.Id)?.OnlyProjectId;
+        }
+
+        private async Task<IReadOnlyList<Organizations.Membership>> AllMembershipsAsync(CancellationToken cancellationToken)
+            => _all ??= await _organizations.ListMembershipsAsync(_currentUser.Identity.ExternalId, cancellationToken);
 
         // The signed-in user's organisation, or null if they have not created one yet
         public async Task<Organization?> FindOrganizationAsync(CancellationToken cancellationToken = default)
@@ -38,9 +57,10 @@ namespace ComplianceTracker.Application.Common
             return _organization;
         }
 
-        // US-187: the organisations the signed-in person is a member of, their own first
+        // US-187: the organisations the signed-in person is a member of, their own first. US-182: an auditor's limited access
+        // counts only in its period.
         public async Task<IReadOnlyList<Organizations.Membership>> MembershipsAsync(CancellationToken cancellationToken = default)
-            => _memberships ??= await _organizations.ListMembershipsAsync(_currentUser.Identity.ExternalId, cancellationToken);
+            => (await AllMembershipsAsync(cancellationToken)).Where(m => m.IsOpenOn(Today)).ToList();
 
         // US-187 R2: a chosen organisation the person is not a member of is ignored, so a changed cookie shows nothing new
         public static Organizations.Membership? Choose(IReadOnlyList<Organizations.Membership> memberships, Guid? chosen)
@@ -77,7 +97,7 @@ namespace ComplianceTracker.Application.Common
         {
             _looked = false;
             _organization = null;
-            _memberships = null;
+            _all = null;
         }
     }
 }

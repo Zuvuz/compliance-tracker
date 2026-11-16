@@ -39,6 +39,7 @@ builder.Services
     {
         options.Filters.Add<DomainExceptionFilter>();
         options.Filters.Add<DomainErrorFromTempDataFilter>();
+        options.Filters.Add<ComplianceTracker.Web.Security.AuditorScopeFilter>(); // US-182
     })
     // The domain checks the input (US-029 R4); no page loads the browser-side validation scripts.
     // US-087: without it, the validation summary no longer renders a hidden <li style="display:none">,

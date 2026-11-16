@@ -60,6 +60,9 @@ namespace ComplianceTracker.Web.Controllers
 
             // US-090 R3
             ViewData["FormerOrganization"] = await _organizations.FormerOrganizationAsync(cancellationToken);
+
+            // US-182 R1: an auditor whose access has ended
+            ViewData["AccessEnded"] = (await _organizations.ClosedMembershipsAsync(cancellationToken)).FirstOrDefault()?.Name;
             return View(new CreateOrganizationViewModel());
         }
 

@@ -27,6 +27,10 @@ namespace ComplianceTracker.Application.Organizations
         public Task<IReadOnlyList<Membership>> MembershipsAsync(CancellationToken cancellationToken = default)
             => _member.MembershipsAsync(cancellationToken);
 
+        // US-182 R1: memberships whose limited access has ended (or not begun)
+        public Task<IReadOnlyList<Membership>> ClosedMembershipsAsync(CancellationToken cancellationToken = default)
+            => _member.ClosedMembershipsAsync(cancellationToken);
+
         // US-187 R2: whether the person may switch to this organisation
         public async Task<bool> IsMemberOfAsync(Guid organizationId, CancellationToken cancellationToken = default)
             => (await _member.MembershipsAsync(cancellationToken)).Any(m => m.OrganizationId == organizationId);

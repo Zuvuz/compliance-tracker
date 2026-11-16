@@ -34,7 +34,12 @@
                             => (organisationArea ? controllers.Contains("Organisation") : controllers.Contains(current)) ? "active fw-semibold" : "";
                     }
                     <ul class="navbar-nav flex-wrap flex-grow-1" id="top-bar">
-                        @if (signedIn)
+                        @if (signedIn && await Permissions.IsLimitedAsync())
+                        {
+                            @* US-182 R5: an external auditor reads one project only *@
+                            <li class="nav-item"><span class="nav-link" id="nav-auditor-access">Read-only audit access</span></li>
+                        }
+                        else if (signedIn)
                         {
                             <li class="nav-item">
                                 <a class="nav-link @Active("Projects", "Risks")" id="nav-projects" asp-area="" asp-controller="Projects" asp-action="Index">Projects</a>

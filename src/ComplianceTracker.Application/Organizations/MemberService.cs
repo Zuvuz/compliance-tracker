@@ -26,6 +26,7 @@ namespace ComplianceTracker.Application.Organizations
     {
         private readonly IOrganizationRepository _organizations;
         private readonly IInvitationRepository _invitations;
+        private readonly IAuditorGrantRepository _grants; // US-182
         private readonly ICurrentUser _currentUser;
         private readonly CurrentMember _member;
         private readonly IActivityLogger _log;
@@ -35,6 +36,7 @@ namespace ComplianceTracker.Application.Organizations
         public MemberService(
             IOrganizationRepository organizations,
             IInvitationRepository invitations,
+            IAuditorGrantRepository grants,
             ICurrentUser currentUser,
             CurrentMember member,
             IActivityLogger log,
@@ -43,6 +45,7 @@ namespace ComplianceTracker.Application.Organizations
         {
             _organizations = organizations;
             _invitations = invitations;
+            _grants = grants;
             _currentUser = currentUser;
             _member = member;
             _log = log;
@@ -139,6 +142,18 @@ namespace ComplianceTracker.Application.Organizations
 
             var user = organization.AddMember(identity, invitation.Role);
             invitation.MarkAccepted(user.Id, Now);
+
+            // US-182 R1: an auditor's grant limits the new member to its project and its dates
+            if (await _grants.GetByInvitationAsync(invitation.Id, cancellationToken) is { } grant)
+            {
+                if (grant.IsRevoked)
+                {
+                    throw new DomainException("The access has been revoked");
+                }
+
+                organization.LimitMember(user.Id, grant);
+                grant.Accepted(user.Id);
+            }
             await _log.LogAsync(organization.Id, user.Id, ActivityAction.InvitationAccepted, invitation.Id, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             _member.Reset();

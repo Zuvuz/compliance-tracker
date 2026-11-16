@@ -5,7 +5,15 @@ namespace ComplianceTracker.Application.Organizations
     // Storage for organisations and their members (implemented in Infrastructure, and in memory in the tests).
     // Repositories do not save on their own; that happens when IUnitOfWork.SaveChangesAsync is called.
     // US-187: one organisation the signed-in person is a member of
-    public sealed record Membership(Guid OrganizationId, string Name, Domain.Users.UserRole Role);
+    public sealed record Membership(Guid OrganizationId, string Name, Domain.Users.UserRole Role)
+    {
+        // US-182: an auditor's access limited to one project and a period
+        public Guid? OnlyProjectId { get; init; }
+        public DateOnly? AccessFrom { get; init; }
+        public DateOnly? AccessUntil { get; init; }
+
+        public bool IsOpenOn(DateOnly day) => AccessFrom is not { } from || (day >= from && day <= AccessUntil);
+    }
 
     public interface IOrganizationRepository
     {

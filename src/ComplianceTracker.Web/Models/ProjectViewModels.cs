@@ -340,6 +340,9 @@ namespace ComplianceTracker.Web.Models
         // US-071: the gate to the project's next phase, on the Overview
         public Domain.Projects.PhaseGate? NextGate { get; init; }
 
+        // US-182: the auditors given read-only access to the project (Reports tab)
+        public IReadOnlyList<Domain.Organizations.AuditorGrant> AuditorGrants { get; init; } = [];
+
         // US-047: the current phase's checklist
         public Application.Projects.PhaseChecklistView? Checklist { get; init; }
 
