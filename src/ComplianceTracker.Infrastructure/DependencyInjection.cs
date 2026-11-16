@@ -126,6 +126,7 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<Application.Reports.IReportSnapshotRepository, ReportSnapshotRepository>(); // US-050
             services.AddScoped<Application.Reports.IReportSigningRepository, ReportSigningRepository>(); // US-132
             services.AddSingleton<Application.Reports.IReportSealer, Reports.ReportSealer>();
+            services.AddSingleton<Application.Reports.IPackageSigner, Reports.PackageSigner>(); // US-180
             services.AddSingleton<Application.Scanning.IScanImporter, Scanning.SarifScanImporter>();
             services.AddScoped<Application.Scanning.ISbomRepository, SbomRepository>(); // US-079
             services.AddSingleton<Application.Scanning.ISbomImporter, Scanning.CycloneDxSbomImporter>();

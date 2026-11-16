@@ -1,0 +1,71 @@
+@* US-180: check an audit package without signing in. Ids used by the tests: form#verify-package (input file), #verify-error,
+   #verify-result[data-result=unchanged|changed|unsigned|invalid|problem] with #verify-maker and #verify-differences li[data-kind][data-path]. *@
+@using ComplianceTracker.Application.Reports
+@model ComplianceTracker.Web.Controllers.VerifyViewModel
+@{
+    ViewData["Title"] = "Verify an audit package";
+    var check = Model.Check;
+    var result = check is null ? null
+        : check.Problem is not null ? "problem"
+        : check.Unchanged ? "unchanged"
+        : check.Signed && !check.SignatureValid ? "invalid"
+        : check.Differences.Count > 0 ? "changed"
+        : "unsigned";
+}
+
+<h1 class="h3">Verify an audit package</h1>
+<p class="text-muted">Upload an audit package made by the tracker. It checks the organisation's signature and every file against the package's
+    manifest. The file is only read to check it; nothing is stored.</p>
+
+<form asp-action="Check" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 align-items-end mb-3" id="verify-package" data-busy="Checking…">
+    <div>
+        <label class="form-label small mb-0" for="verify-file">Audit package (.zip, at most @(PackageManifest.MaxSizeInBytes / 1024 / 1024) MB)</label>
+        <input type="file" name="file" id="verify-file" accept=".zip,application/zip" class="form-control" required />
+    </div>
+    <button type="submit" class="btn btn-primary">Check</button>
+</form>
+
+@if (Model.Error is { } error)
+{
+    <div class="alert alert-danger" id="verify-error" role="alert">@error</div>
+}
+
+@if (check is not null)
+{
+    <section id="verify-result" data-result="@result" class="alert @(result == "unchanged" ? "alert-success" : result == "unsigned" ? "alert-warning" : "alert-danger")" role="status">
+        @if (check.Problem is { } problem)
+        {
+            <strong>@problem</strong>
+        }
+        else
+        {
+            var manifest = check.Manifest!;
+            <div class="fw-semibold">
+                @(result switch
+                {
+                    "unchanged" => "Unchanged",
+                    "invalid" => "The signature is not valid: the manifest was changed or signed by someone else",
+                    "changed" => "Changed: the files differ from the manifest",
+                    _ => "Unsigned package: the files can be checked, the maker cannot"
+                })
+            </div>
+            <div id="verify-maker">
+                @manifest.Package · made by @(check.Signature?.Subject ?? manifest.Organisation) on @manifest.MadeAtUtc.ToLocalTime().ToString("dd-MM-yyyy") by @manifest.MadeBy
+                @if (!check.SignatureValid)
+                {
+                    <span class="text-muted">(as the manifest says; not confirmed by a signature)</span>
+                }
+            </div>
+            <div class="small">@manifest.Files.Count files in the manifest@(check.FilesMatch ? ", all unchanged" : "")</div>
+            @if (check.Differences.Count > 0)
+            {
+                <ul class="mb-0 mt-2" id="verify-differences">
+                    @foreach (var (kind, path) in check.Differences)
+                    {
+                        <li data-kind="@kind" data-path="@path">@kind: @path</li>
+                    }
+                </ul>
+            }
+        }
+    </section>
+}
