@@ -2136,6 +2136,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** Risikoejeren tager stilling til restrisikoen, når behandlingen er på plads, og registeret viser, hvor meget den har sænket risikoen (ISO/IEC 27001 6.1.3 f og 8.3, CRA art. 13, stk. 2–3).
 - **Fravalgt:**
   - At lade niveauet falde af sig selv, når foranstaltninger får evidens. En foranstaltning kan være dækket uden at virke.
+### B141 – Flere læsende kilder pr. projekt: GitHub, Azure DevOps og dokumenter (US-030, afløser B12)
+
+- **Beslutning:**
+  - **Kilder:** et projekt kan læse user stories fra en eller flere kilder på samme tid: GitHub, Azure DevOps (dev.azure.com) og uploadede dokumenter (US-032 til US-034). Hver work item viser sin kilde.
+  - **Kun læsning:** trackeren skriver aldrig tilbage. For Azure DevOps sendes kun GET og WIQL-forespørgsler, som kun læser.
+  - **Token:** tokens er skrivebeskyttede (Azure: "Work Items: Read") og gemmes krypteret pr. projekt med Data Protection (US-031). De vises aldrig igen og logges aldrig. Et token tjekkes med kilden, før noget gemmes.
+  - **Azure DevOps læses** med en WIQL-forespørgsel på typerne User Story, Product Backlog Item og Requirement, eventuelt under en area path, og derefter feltlæsning i portioner på 200. Acceptkriterierne og beskrivelsen er HTML og gøres til ren tekst. En story uden acceptkriterier springes over med årsagen. Closed, Done, Resolved og Removed tæller som lukket.
+  - **"Sync now"** og den planlagte synkronisering læser alle kilder, projektet er koblet til. Afviser Azure tokenet, beholdes work items, og siden siger "Sync failed: The token was refused by Azure DevOps".
+- **Begrundelse:** Teams bruger forskellige værktøjer, og mange har både en agil backlog og en kravspecifikation. Adaptermønstret (B11) gør hver ny kilde til en ny adapter (ISO/IEC 27001 A.8.26, A.8.24, A.5.17 og A.8.15).
+- **Fravalgt:**
+  - Tovejssynkronisering.
+  - Ét fælles token for hele trackeren.
+  - Azure DevOps Server on-premises og Entra ID-login. De står uden for US-030.
 
 ## Åbne spørgsmål til klassediagrammet
 

@@ -178,20 +178,20 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table3 = new global::Reqnroll.Table(new string[] {
                             "page",
                             "line"});
-                table1.AddRow(new string[] {
+                table3.AddRow(new string[] {
                             "1",
                             "5.1 Access control"});
-                table1.AddRow(new string[] {
+                table3.AddRow(new string[] {
                             "1",
                             "Access is granted by role."});
-                table1.AddRow(new string[] {
+                table3.AddRow(new string[] {
                             "2",
                             "Records are kept for five years."});
 #line 14
-    await testRunner.WhenAsync("I add the framework \"Security policy\" with a PDF of pages:", ((string)(null)), table1, "When ");
+    await testRunner.WhenAsync("I add the framework \"Security policy\" with a PDF of pages:", ((string)(null)), table3, "When ");
 #line hidden
 #line 19
     await testRunner.ThenAsync("the extraction check of \"Security policy\" shows \"1 requirements found · 1 of 2 pa" +
@@ -235,23 +235,23 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table2 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table4 = new global::Reqnroll.Table(new string[] {
                             "page",
                             "line"});
-                table2.AddRow(new string[] {
+                table4.AddRow(new string[] {
                             "1",
                             "5.1 Access control"});
-                table2.AddRow(new string[] {
+                table4.AddRow(new string[] {
                             "2",
                             "Background of the policy"});
-                table2.AddRow(new string[] {
+                table4.AddRow(new string[] {
                             "3",
                             "History of the policy"});
-                table2.AddRow(new string[] {
+                table4.AddRow(new string[] {
                             "4",
                             "5.2 Passwords"});
 #line 24
-    await testRunner.WhenAsync("I add the framework \"Security policy\" with a PDF of pages:", ((string)(null)), table2, "When ");
+    await testRunner.WhenAsync("I add the framework \"Security policy\" with a PDF of pages:", ((string)(null)), table4, "When ");
 #line hidden
 #line 30
     await testRunner.ThenAsync("the extraction check of \"Security policy\" shows a warning \"Check the extraction: " +
@@ -289,38 +289,38 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table3 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table5 = new global::Reqnroll.Table(new string[] {
                             "page",
                             "line"});
-                table3.AddRow(new string[] {
+                table5.AddRow(new string[] {
                             "1",
                             "Acme security policy"});
-                table3.AddRow(new string[] {
+                table5.AddRow(new string[] {
                             "1",
                             "5.1 Access control"});
-                table3.AddRow(new string[] {
+                table5.AddRow(new string[] {
                             "1",
                             "1"});
-                table3.AddRow(new string[] {
+                table5.AddRow(new string[] {
                             "2",
                             "Acme security policy"});
-                table3.AddRow(new string[] {
+                table5.AddRow(new string[] {
                             "2",
                             "5.2 Passwords"});
-                table3.AddRow(new string[] {
+                table5.AddRow(new string[] {
                             "2",
                             "2"});
-                table3.AddRow(new string[] {
+                table5.AddRow(new string[] {
                             "3",
                             "Acme security policy"});
-                table3.AddRow(new string[] {
+                table5.AddRow(new string[] {
                             "3",
                             "5.3 Backups"});
-                table3.AddRow(new string[] {
+                table5.AddRow(new string[] {
                             "3",
                             "Page 3 of 3"});
 #line 34
-    await testRunner.WhenAsync("I add the framework \"Security policy\" with a PDF of pages:", ((string)(null)), table3, "When ");
+    await testRunner.WhenAsync("I add the framework \"Security policy\" with a PDF of pages:", ((string)(null)), table5, "When ");
 #line hidden
 #line 45
     await testRunner.ThenAsync("the extraction check of \"Security policy\" shows \"All text is part of a requiremen" +
@@ -363,17 +363,17 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table4 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table6 = new global::Reqnroll.Table(new string[] {
                             "page",
                             "line"});
-                table4.AddRow(new string[] {
+                table6.AddRow(new string[] {
                             "1",
                             "5.14 Logging"});
-                table4.AddRow(new string[] {
+                table6.AddRow(new string[] {
                             "1",
                             "5.16 Backups"});
 #line 50
-    await testRunner.WhenAsync("I add the framework \"Security policy\" with a PDF of pages:", ((string)(null)), table4, "When ");
+    await testRunner.WhenAsync("I add the framework \"Security policy\" with a PDF of pages:", ((string)(null)), table6, "When ");
 #line hidden
 #line 54
     await testRunner.ThenAsync("the extraction check of \"Security policy\" shows \"5.15 may be missing (5.14 is fol" +
@@ -413,23 +413,23 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table5 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table7 = new global::Reqnroll.Table(new string[] {
                             "page",
                             "line"});
-                table5.AddRow(new string[] {
+                table7.AddRow(new string[] {
                             "1",
                             "5.1 Access control ....... 2"});
-                table5.AddRow(new string[] {
+                table7.AddRow(new string[] {
                             "1",
                             "5.2 Passwords ............ 3"});
-                table5.AddRow(new string[] {
+                table7.AddRow(new string[] {
                             "2",
                             "5.1 Access control"});
-                table5.AddRow(new string[] {
+                table7.AddRow(new string[] {
                             "2",
                             "Access is granted by role."});
 #line 58
-    await testRunner.WhenAsync("I add the framework \"Security policy\" with a PDF of pages:", ((string)(null)), table5, "When ");
+    await testRunner.WhenAsync("I add the framework \"Security policy\" with a PDF of pages:", ((string)(null)), table7, "When ");
 #line hidden
 #line 64
     await testRunner.ThenAsync("the extraction check of \"Security policy\" shows \"5.2 is in the table of contents " +
@@ -469,17 +469,17 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table6 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table8 = new global::Reqnroll.Table(new string[] {
                             "page",
                             "line"});
-                table6.AddRow(new string[] {
+                table8.AddRow(new string[] {
                             "1",
                             "5.1 Access control"});
-                table6.AddRow(new string[] {
+                table8.AddRow(new string[] {
                             "2",
                             "The supplier shall encrypt backups."});
 #line 68
-    await testRunner.WhenAsync("I add the framework \"Security policy\" with a PDF of pages:", ((string)(null)), table6, "When ");
+    await testRunner.WhenAsync("I add the framework \"Security policy\" with a PDF of pages:", ((string)(null)), table8, "When ");
 #line hidden
 #line 72
     await testRunner.ThenAsync("the extraction check of \"Security policy\" lists \"The supplier shall encrypt backu" +
@@ -522,32 +522,32 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table7 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table9 = new global::Reqnroll.Table(new string[] {
                             "page",
                             "line"});
-                table7.AddRow(new string[] {
+                table9.AddRow(new string[] {
                             "1",
                             "(1) Whereas products shall be secure."});
-                table7.AddRow(new string[] {
+                table9.AddRow(new string[] {
                             "2",
                             "Article 13"});
-                table7.AddRow(new string[] {
+                table9.AddRow(new string[] {
                             "2",
                             "Obligations of manufacturers"});
-                table7.AddRow(new string[] {
+                table9.AddRow(new string[] {
                             "2",
                             "1. Manufacturers shall ensure products are secure."});
-                table7.AddRow(new string[] {
+                table9.AddRow(new string[] {
                             "2",
                             "2. Manufacturers shall assess the risks:"});
-                table7.AddRow(new string[] {
+                table9.AddRow(new string[] {
                             "2",
                             "(a) during planning;"});
-                table7.AddRow(new string[] {
+                table9.AddRow(new string[] {
                             "2",
                             "(b) during design."});
 #line 77
-    await testRunner.WhenAsync("I add the framework \"Regulation\" with a PDF of pages:", ((string)(null)), table7, "When ");
+    await testRunner.WhenAsync("I add the framework \"Regulation\" with a PDF of pages:", ((string)(null)), table9, "When ");
 #line hidden
 #line 86
     await testRunner.ThenAsync("the draft of \"Regulation\" version 1 lists exactly \"Art. 13(1), Art. 13(2)(a), Art" +
@@ -591,17 +591,17 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table8 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table10 = new global::Reqnroll.Table(new string[] {
                             "page",
                             "line"});
-                table8.AddRow(new string[] {
+                table10.AddRow(new string[] {
                             "1",
                             "5.1 Access control"});
-                table8.AddRow(new string[] {
+                table10.AddRow(new string[] {
                             "2",
                             "The supplier shall encrypt backups."});
 #line 91
-    await testRunner.GivenAsync("I have added the framework \"Security policy\" with a PDF of pages:", ((string)(null)), table8, "Given ");
+    await testRunner.GivenAsync("I have added the framework \"Security policy\" with a PDF of pages:", ((string)(null)), table10, "Given ");
 #line hidden
 #line 95
     await testRunner.WhenAsync("I add the requirement \"5.2\" with the title \"Encryption\" and the description \"The " +
@@ -645,17 +645,17 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table9 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table11 = new global::Reqnroll.Table(new string[] {
                             "page",
                             "line"});
-                table9.AddRow(new string[] {
+                table11.AddRow(new string[] {
                             "1",
                             "5.1 Access control"});
-                table9.AddRow(new string[] {
+                table11.AddRow(new string[] {
                             "2",
                             "Background of the policy"});
 #line 100
-    await testRunner.GivenAsync("I have added the framework \"Security policy\" with a PDF of pages:", ((string)(null)), table9, "Given ");
+    await testRunner.GivenAsync("I have added the framework \"Security policy\" with a PDF of pages:", ((string)(null)), table11, "Given ");
 #line hidden
 #line 104
     await testRunner.WhenAsync("I activate version 1 of \"Security policy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");

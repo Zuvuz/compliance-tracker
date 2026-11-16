@@ -33,6 +33,9 @@ namespace ComplianceTracker.Application.Projects
 
         Task<IReadOnlyList<Guid>> ListIdsLinkedToGitHubAsync(CancellationToken cancellationToken = default);
 
+        // US-030 R7: every project of every organisation linked to Azure DevOps, for the scheduled check
+        Task<IReadOnlyList<Guid>> ListIdsLinkedToAzureDevOpsAsync(CancellationToken cancellationToken = default);
+
         Task<Project?> GetForSyncAsync(Guid projectId, CancellationToken cancellationToken = default);
     }
 }

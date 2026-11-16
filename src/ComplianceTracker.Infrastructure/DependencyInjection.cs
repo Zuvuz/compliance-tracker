@@ -171,6 +171,16 @@ namespace ComplianceTracker.Infrastructure
                 client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
             });
             services.AddTransient<IWorkItemSource>(provider => provider.GetRequiredService<GitHubWorkItemSource>());
+
+            // US-030: Azure Boards on dev.azure.com, read-only
+            services.AddHttpClient<AzureDevOpsWorkItemSource>(client =>
+            {
+                client.BaseAddress = new Uri("https://dev.azure.com/");
+                client.Timeout = TimeSpan.FromSeconds(20);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("compliance-tracker");
+                client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+            });
+            services.AddTransient<IWorkItemSource>(provider => provider.GetRequiredService<AzureDevOpsWorkItemSource>());
             services.AddTransient<IPullRequestReader>(provider => provider.GetRequiredService<GitHubWorkItemSource>()); // US-058
             services.AddTransient<IGitHubProjects>(provider => provider.GetRequiredService<GitHubWorkItemSource>()); // US-107
             services.AddTransient<Application.Scanning.IGitHubSecurityAlerts>(provider => provider.GetRequiredService<GitHubWorkItemSource>()); // US-121

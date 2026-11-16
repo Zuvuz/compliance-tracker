@@ -7820,6 +7820,92 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.OwnsOne("ComplianceTracker.Domain.Projects.AzureDevOpsLink", "AzureDevOps", b1 =>
+                        {
+                            b1.Property<Guid>("ProjectId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("AreaPath")
+                                .HasMaxLength(400)
+                                .HasColumnType("character varying(400)");
+
+                            b1.Property<DateTime>("ConnectedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<Guid>("ConnectedById")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("EncryptedToken")
+                                .IsRequired()
+                                .HasMaxLength(2000)
+                                .HasColumnType("character varying(2000)");
+
+                            b1.Property<string>("LastSyncError")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)");
+
+                            b1.Property<DateTime?>("LastSyncedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<string>("Organization")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)");
+
+                            b1.Property<string>("Project")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)");
+
+                            b1.Property<DateTime>("TokenChangedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.HasKey("ProjectId");
+
+                            b1.ToTable("Projects");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProjectId");
+
+                            b1.OwnsMany("ComplianceTracker.Domain.Projects.SkippedIssue", "Skipped", b2 =>
+                                {
+                                    b2.Property<int>("Id")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("integer");
+
+                                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b2.Property<int>("Id"));
+
+                                    b2.Property<Guid>("AzureDevOpsLinkProjectId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<string>("ExternalReference")
+                                        .IsRequired()
+                                        .HasMaxLength(200)
+                                        .HasColumnType("character varying(200)");
+
+                                    b2.Property<string>("Reason")
+                                        .IsRequired()
+                                        .HasMaxLength(200)
+                                        .HasColumnType("character varying(200)");
+
+                                    b2.Property<string>("Title")
+                                        .IsRequired()
+                                        .HasMaxLength(500)
+                                        .HasColumnType("character varying(500)");
+
+                                    b2.HasKey("Id");
+
+                                    b2.HasIndex("AzureDevOpsLinkProjectId");
+
+                                    b2.ToTable("AzureSkippedItems", (string)null);
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("AzureDevOpsLinkProjectId");
+                                });
+
+                            b1.Navigation("Skipped");
+                        });
+
                     b.OwnsOne("ComplianceTracker.Domain.Projects.GitHubLink", "GitHub", b1 =>
                         {
                             b1.Property<Guid>("ProjectId")
@@ -7911,6 +7997,8 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                             b1.Navigation("Skipped");
                         });
+
+                    b.Navigation("AzureDevOps");
 
                     b.Navigation("GitHub");
                 });

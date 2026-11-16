@@ -13,11 +13,12 @@ namespace ComplianceTracker.Application.WorkItems
     // US-031: a private repository is read with a read-only token, stored encrypted (ISecretProtector).
     // A sync adds new work items, updates changed ones and marks closed or removed ones; nothing is deleted (R8).
     // It runs when a member clicks "Sync now" (R5) and by itself at a fixed interval (R6, ScheduledSync).
-    public class WorkItemSyncService
+    public partial class WorkItemSyncService
     {
         private readonly IProjectRepository _projects;
         private readonly IWorkItemRepository _workItems;
         private readonly IWorkItemSource _github;
+        private readonly IWorkItemSource? _azure; // US-030
         private readonly IWorkItemNotifier _notifier;
         private readonly ISecretProtector _secrets;
         private readonly CurrentMember _member;
@@ -49,6 +50,7 @@ namespace ComplianceTracker.Application.WorkItems
             _projects = projects;
             _workItems = workItems;
             _github = sources.Single(s => s.Source == WorkItemSource.GitHub);
+            _azure = sources.SingleOrDefault(s => s.Source == WorkItemSource.AzureDevOps);
             _notifier = notifier;
             _secrets = secrets;
             _member = member;
@@ -234,11 +236,30 @@ namespace ComplianceTracker.Application.WorkItems
         }
 
         // R5: "Sync now" for the signed-in member's project
+        // US-030 R7, R11: every source the project is linked to (GitHub, Azure DevOps), one after the other
         public async Task<SyncResult> SyncNowAsync(Guid projectId, CancellationToken cancellationToken = default)
         {
-            var (_, user) = await _member.RequireAsync(Permission.LinkWork, cancellationToken);
-            var project = await LinkedProjectAsync(projectId, cancellationToken, Permission.LinkWork);
-            return await SyncAsync(project, user.Id, cancellationToken);
+            var (organization, user) = await _member.RequireAsync(Permission.LinkWork, cancellationToken);
+            var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
+                ?? throw new DomainException("Project not found");
+            if (project.GitHub is null && project.AzureDevOps is null)
+            {
+                throw new DomainException("Link the project to a GitHub repository or an Azure DevOps project first");
+            }
+
+            if (project.IsClosed)
+            {
+                throw new DomainException("A project at end of support cannot be changed");
+            }
+
+            var result = project.GitHub is null ? null : await SyncAsync(project, user.Id, cancellationToken);
+            if (project.AzureDevOps is not null)
+            {
+                var azure = await SyncAzureAsync(project, user.Id, cancellationToken);
+                result = result is null ? azure : result.Add(azure);
+            }
+
+            return result!;
         }
 
         // The member's own project, which must be linked to GitHub
@@ -273,6 +294,16 @@ namespace ComplianceTracker.Application.WorkItems
                     await SyncAsync(project, userId: null, cancellationToken);
                 }
             }
+
+            // US-030 R7
+            foreach (var projectId in await _projects.ListIdsLinkedToAzureDevOpsAsync(cancellationToken))
+            {
+                var project = await _projects.GetForSyncAsync(projectId, cancellationToken);
+                if (project?.AzureDevOps is not null && !project.IsClosed)
+                {
+                    await SyncAzureAsync(project, userId: null, cancellationToken);
+                }
+            }
         }
 
         private async Task<SyncResult> SyncAsync(Project project, Guid? userId, CancellationToken cancellationToken)
@@ -305,36 +336,7 @@ namespace ComplianceTracker.Application.WorkItems
                 return SyncResult.Failed(error.Message);
             }
 
-            // Add, update and mark (R4, R8). Matching on the reference, e.g. "Zuvuz/compliance-tracker#19".
-            var existing = (await _workItems.ListAsync(project.Id, WorkItemSource.GitHub, cancellationToken))
-                .ToDictionary(w => w.ExternalReference, StringComparer.OrdinalIgnoreCase);
-            var result = new SyncResult(Skipped: read.Skipped.Count);
-
-            foreach (var item in read.Items)
-            {
-                if (existing.Remove(item.ExternalReference, out var workItem))
-                {
-                    var wasClosed = workItem.State == WorkItemState.Closed;
-                    if (workItem.Update(item, now))
-                    {
-                        result = item.IsClosed && !wasClosed ? result with { Closed = result.Closed + 1 } : result with { Changed = result.Changed + 1 };
-                    }
-                }
-                else
-                {
-                    await _workItems.AddAsync(WorkItem.Create(project.Id, WorkItemSource.GitHub, item, now), cancellationToken);
-                    result = result with { Added = result.Added + 1 };
-                }
-            }
-
-            foreach (var gone in existing.Values)
-            {
-                if (gone.MarkRemoved())
-                {
-                    result = result with { Removed = result.Removed + 1 };
-                }
-            }
-
+            var result = await ApplyAsync(project, WorkItemSource.GitHub, read, now, cancellationToken);
             link.RecordSuccess(now, read.Skipped);
 
             // R10: a member's sync is always logged; a scheduled one only when it found changes, so the log is not flooded
@@ -371,6 +373,41 @@ namespace ComplianceTracker.Application.WorkItems
             return result;
         }
 
+        // Add, update and mark (R4, R8) the work items of one source. Matching on the reference, e.g. "Zuvuz/compliance-tracker#19".
+        private async Task<SyncResult> ApplyAsync(Project project, WorkItemSource source, WorkItemReadResult read, DateTime now, CancellationToken cancellationToken)
+        {
+            var existing = (await _workItems.ListAsync(project.Id, source, cancellationToken))
+                .ToDictionary(w => w.ExternalReference, StringComparer.OrdinalIgnoreCase);
+            var result = new SyncResult(Skipped: read.Skipped.Count);
+
+            foreach (var item in read.Items)
+            {
+                if (existing.Remove(item.ExternalReference, out var workItem))
+                {
+                    var wasClosed = workItem.State == WorkItemState.Closed;
+                    if (workItem.Update(item, now))
+                    {
+                        result = item.IsClosed && !wasClosed ? result with { Closed = result.Closed + 1 } : result with { Changed = result.Changed + 1 };
+                    }
+                }
+                else
+                {
+                    await _workItems.AddAsync(WorkItem.Create(project.Id, source, item, now), cancellationToken);
+                    result = result with { Added = result.Added + 1 };
+                }
+            }
+
+            foreach (var gone in existing.Values)
+            {
+                if (gone.MarkRemoved())
+                {
+                    result = result with { Removed = result.Removed + 1 };
+                }
+            }
+
+            return result;
+        }
+
         // US-031: the decrypted token, only for the request to GitHub
         private string? Token(GitHubLink link)
         {
@@ -398,6 +435,11 @@ namespace ComplianceTracker.Application.WorkItems
         public bool HasChanges => Added + Changed + Closed + Removed > 0;
 
         public static SyncResult Failed(string error) => new(Error: error);
+
+        // US-030 R11: two sources in one "Sync now"; a failure of either is kept
+        public SyncResult Add(SyncResult other)
+            => new(Added + other.Added, Changed + other.Changed, Closed + other.Closed, Removed + other.Removed, Skipped + other.Skipped,
+                Error is null ? other.Error : other.Error is null ? Error : $"{Error}; {other.Error}");
 
         public override string ToString()
             => Error ?? $"{Added} added, {Changed} changed, {Closed} closed, {Removed} removed, {Skipped} skipped";
