@@ -16,7 +16,8 @@ Feature: The audit package locks its reports and compares with the last package
   @US-198 @iso27001-A.5.33 @integration
   Scenario: The first package locks its reports and has nothing to compare with
     When I create the audit package of "Acme Portal"
-    Then the newest audit package has 3 locked reports under it on the Reports tab
+    # Traceability (CRA), the management report, the risk assessment and the CRA technical documentation (US-181)
+    Then the newest audit package has 4 locked reports under it on the Reports tab
     And the package's management report says "First package: nothing to compare with"
 
   @US-198 @iso27001-9.3 @integration

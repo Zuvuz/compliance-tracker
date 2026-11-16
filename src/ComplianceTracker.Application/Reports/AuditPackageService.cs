@@ -53,14 +53,16 @@ namespace ComplianceTracker.Application.Reports
         private readonly IReportSigningRepository _signings; // US-197: the organisation's seal
         private readonly ISecretProtector _secrets; // US-197
         private readonly IPackageSigner _packageSigner; // US-180
+        private readonly Projects.IClassificationRepository _classifications; // US-181
 
         public AuditPackageService(
             ReportFiles files, ProjectQueries projects, ComplianceQueries compliance, IEvidenceRepository evidence, IRequirementDocumentRepository documents,
             ISbomRepository sboms, AuditService audits, IActivityLogRepository log, IReportSnapshotRepository snapshots, CurrentMember member,
             IActivityLogger logger, IUnitOfWork unitOfWork, ICurrentUser currentUser, TimeProvider clock, AuditReadinessService readiness,
             ISpreadsheetWriter spreadsheets, Projects.PhaseGates gates, IPdfWriter pdf, IReportSealer sealer, IReportSigningRepository signings,
-            ISecretProtector secrets, IPackageSigner packageSigner)
+            ISecretProtector secrets, IPackageSigner packageSigner, Projects.IClassificationRepository classifications)
         {
+            _classifications = classifications;
             _packageSigner = packageSigner;
             _pdf = pdf;
             _sealer = sealer;
@@ -162,6 +164,23 @@ namespace ComplianceTracker.Application.Reports
                     "The lifecycle phase, its checklists and the phase changes (US-194)") { Made = true });
             }
 
+            // US-181 R1: a CRA project's package has the technical documentation and the declaration of conformity, as drafts
+            CraProduct? craProduct = null;
+            if (chosen.FirstOrDefault(f => ManagementPriorities.IsCra(f.Framework.Name)) is { } cra)
+            {
+                var technical = await _files.TechnicalDocumentationAsync(project.Id, cancellationToken);
+                AddReport(reports, technical?.Pdf);
+                parts.Add(new PackagePart(CraDeclaration.TechnicalDocumentationFileName, technical?.Pdf.Content,
+                    "CRA technical documentation, Annex VII (draft, US-056)", technical is null ? "The draft could not be made" : null) { Made = true });
+
+                var classCode = (await _classifications.ListAsync(project.Id, cancellationToken)).LastOrDefault(c => c.FrameworkId == cra.Framework.Id)?.Class;
+                var version = SbomService.Latest(await _sboms.ListAsync(project.Id, cancellationToken)).FirstOrDefault()?.ProductVersion;
+                craProduct = new CraProduct(project.Name, version, project.IntendedPurpose, organization.Name, organization.Cvr, organization.Country, classCode,
+                    chosen.Where(f => f != cra).Select(f => f.Framework.Name).ToList());
+                parts.Add(new PackagePart(CraDeclaration.FileName, Pdf(CraDeclaration.Build(craProduct), "EU declaration of conformity (draft)"),
+                    "CRA EU declaration of conformity, Annex V (draft, US-181)") { Made = true });
+            }
+
             parts.Add(new PackagePart($"05-activity-log-{start:yyyy-MM-dd}-to-{end:yyyy-MM-dd}.csv",
                 await ActivityCsvAsync(organization, project, start, end, cancellationToken), $"Activity log of the project, {start:dd-MM-yyyy} – {end:dd-MM-yyyy} (US-055)"));
 
@@ -230,7 +249,8 @@ namespace ComplianceTracker.Application.Reports
 
             // US-178 R3: what an auditor asks for and what is missing, in the package itself. US-197 R2: as PDF.
             var check = await _readiness.CheckAsync(project.Id, frameworks, cancellationToken);
-            parts.Insert(0, new PackagePart("00-check.pdf", Pdf(RequirementDossier.FromText("00-check.pdf", check is null ? "No check" : AuditReadiness.Text(check, today)), "Check"),
+            parts.Insert(0, new PackagePart("00-check.pdf", Pdf(RequirementDossier.FromText("00-check.pdf", (check is null ? "No check" : AuditReadiness.Text(check, today))
+                + (craProduct is null ? "" : Environment.NewLine + CraDeclaration.CheckText(craProduct))), "Check"),
                 "What an auditor asks for, and what is missing (US-178)") { Made = true });
 
             // US-197 R3: every PDF the package made is sealed before the contents list their SHA-256

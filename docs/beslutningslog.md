@@ -2108,6 +2108,23 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Tidsstempel fra en ekstern tjeneste. Det står uden for US-180.
   - At kontrollere certifikatets kæde. Seglet kan være organisationens eget certifikat.
 
+### B138 – CRA's tekniske dokumentation og EU-overensstemmelseserklæring i revisionspakken (US-181)
+
+- **Beslutning:**
+  - **Hvornår:** en pakke, der dækker CRA, har `CRA-technical-documentation.pdf` (udkastet fra US-056) og `CRA-declaration-of-conformity.pdf`. Andre pakker har ingen af dem. Den tekniske dokumentation låses også med pakken (US-198).
+  - **Erklæringen** følger bilag V punkt 1–8. Den udfyldes med produktets navn, version (den nyeste SBOM), formål, producentens navn, CVR og land, klassifikationen og de øvrige frameworks, projektet følger. Det, trackeren ikke kender, står som "To be completed", fx adressen, der ikke findes i trackeren endnu. Pakkens tjek (`00-check.pdf`) lister de manglende felter.
+  - **Procedure efter klasse (art. 32):**
+    - Default: modul A, eller B+C eller H.
+    - Vigtig klasse I: B+C eller H, eller harmoniserede standarder med modul A.
+    - Vigtig klasse II: B+C eller H, eller en europæisk cybersikkerhedscertificeringsordning.
+    - Kritisk: et europæisk cybersikkerhedscertifikat, hvor art. 8, stk. 1 kræver det; ellers som klasse II.
+    - Uden klassifikation: "To be completed: classify the product".
+  - **Aldrig signeret:** begge er markeret som udkast, der skal gennemgås og signeres af producenten, og signaturfeltet siger "not signed (draft)".
+- **Begrundelse:** En revisor eller myndighed får de dokumenter, CRA nævner, og producenten ser, hvad der mangler (CRA art. 28 og 31, bilag V og VII).
+- **Fravalgt:**
+  - At signere erklæringen i trackeren. Producenten gør det uden for trackeren.
+  - At gætte på adresse eller bemyndiget organ.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
