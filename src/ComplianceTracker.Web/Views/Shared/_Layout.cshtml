@@ -145,6 +145,11 @@
                 @* US-063 R4 *@
                 <div class="alert alert-success mt-3" id="feedback-thanks" role="status">@thanks</div>
             }
+            @if (TempData["NoReviewDate"] is string noDate)
+            {
+                @* US-195 R2 *@
+                <div class="alert alert-warning mt-3" id="no-review-date" role="alert">@noDate</div>
+            }
             @if (TempData["ApprovalRequested"] is string waits)
             {
                 @* US-135 R2 *@

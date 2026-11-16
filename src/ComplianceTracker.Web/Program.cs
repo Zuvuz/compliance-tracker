@@ -67,6 +67,7 @@ builder.Services.AddSingleton<ComplianceTracker.Infrastructure.Persistence.ICurr
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<CurrentPrincipal>();
 builder.Services.AddScoped<CustomerSummaries>(); // US-187
+builder.Services.AddScoped<ComplianceTracker.Web.Models.ReviewDateView>(); // US-195
 builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
 
 // US-010: lets pages hide what the member's role does not allow (the use cases check it anyway)

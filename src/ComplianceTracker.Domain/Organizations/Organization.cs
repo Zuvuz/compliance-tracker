@@ -31,6 +31,23 @@ namespace ComplianceTracker.Domain.Organizations
         // US-183 R1: how many days before a deadline the reminders are sent
         public int ReminderDaysBefore { get; private set; } = Reminders.ReminderKinds.DefaultDaysBefore;
 
+        // US-195 R3: the default months per kind of date; changing them changes no date already set
+        public int EvidenceValidityMonths { get; private set; } = ReviewDefaults.Standard.EvidenceValidity;
+        public int DocumentReviewMonths { get; private set; } = ReviewDefaults.Standard.DocumentReview;
+        public int SupplierEvidenceMonths { get; private set; } = ReviewDefaults.Standard.SupplierEvidence;
+        public int AuditCertificateMonths { get; private set; } = ReviewDefaults.Standard.AuditCertificate;
+
+        public ReviewDefaults ReviewDefaults => new(EvidenceValidityMonths, DocumentReviewMonths, SupplierEvidenceMonths, AuditCertificateMonths);
+
+        public void SetReviewDefaults(ReviewDefaults defaults)
+        {
+            var checkedDefaults = defaults.Checked();
+            EvidenceValidityMonths = checkedDefaults.EvidenceValidity;
+            DocumentReviewMonths = checkedDefaults.DocumentReview;
+            SupplierEvidenceMonths = checkedDefaults.SupplierEvidence;
+            AuditCertificateMonths = checkedDefaults.AuditCertificate;
+        }
+
         public void SetReminderDaysBefore(int days)
         {
             if (days < 1 || days > Reminders.ReminderKinds.MaxDaysBefore)

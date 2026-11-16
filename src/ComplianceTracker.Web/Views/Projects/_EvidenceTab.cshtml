@@ -408,8 +408,9 @@
                         <input name="file" type="file" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg,.txt,.csv,.md,.drawio,.mmd,.mermaid,.puml,.plantuml,.bpmn,.svg" aria-label="Or a file (max 10 MB)" />
                         <div class="d-flex gap-1 align-items-center">
                             <label class="small text-muted text-nowrap" for="evidence-valid-until">Valid until</label>
-                            <input name="validUntil" id="evidence-valid-until" type="date" class="form-control form-control-sm" />
+                            <input name="validUntil" id="evidence-valid-until" type="date" class="form-control form-control-sm" value="@(await ReviewDates.ValueAsync(ComplianceTracker.Domain.Organizations.ReviewDateKind.EvidenceValidity))" />
                         </div>
+                        <div class="small text-muted review-date-hint">@(await ReviewDates.HintAsync(ComplianceTracker.Domain.Organizations.ReviewDateKind.EvidenceValidity))</div>
                         <button type="submit" class="btn btn-sm btn-primary">Add evidence</button>
                         <p class="small text-muted mb-0">The local AI then suggests which requirements it proves. Nothing leaves your infrastructure.</p>
                     </form>

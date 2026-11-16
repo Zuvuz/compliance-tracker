@@ -87,7 +87,7 @@ else
                                         }
                                     </select>
                                     <input name="title" maxlength="200" class="form-control form-control-sm w-auto" placeholder="Title" aria-label="Title of the evidence for @supplier.Name" required />
-                                    <input name="validUntil" type="date" class="form-control form-control-sm w-auto" aria-label="Valid until" title="Valid until (optional)" />
+                                    <input name="validUntil" type="date" class="form-control form-control-sm w-auto" aria-label="Valid until" title="@(await ReviewDates.HintAsync(ComplianceTracker.Domain.Organizations.ReviewDateKind.SupplierEvidence))" value="@(await ReviewDates.ValueAsync(ComplianceTracker.Domain.Organizations.ReviewDateKind.SupplierEvidence))" />
                                     <input name="file" type="file" class="form-control form-control-sm w-auto" aria-label="File for @supplier.Name" required />
                                     <button type="submit" class="btn btn-sm btn-outline-primary">Add</button>
                                 </form>

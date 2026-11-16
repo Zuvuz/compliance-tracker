@@ -82,6 +82,15 @@ namespace ComplianceTracker.Application.Organizations
             _clock = clock;
         }
 
+        // US-195 R4: a review date in the past would never remind anyone
+        private void EnsureNotPast(DateOnly? date)
+        {
+            if (date is { } day && day < DateOnly.FromDateTime(Now))
+            {
+                throw new DomainException("The review date cannot be in the past");
+            }
+        }
+
         private DateTime Now => _clock.GetUtcNow().UtcDateTime;
 
         public async Task<OrganisationDocument> UploadAsync(
@@ -90,6 +99,7 @@ namespace ComplianceTracker.Application.Organizations
         {
             var (organization, user) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
             EnsureMember(organization, ownerId);
+            EnsureNotPast(reviewDueOn); // US-195 R4
             var file = EvidenceFile.Create(fileName, content);
 
             var document = OrganisationDocument.Create(organization.Id, kind, title, ownerId, version, file, reviewDueOn, user.Id, Now);

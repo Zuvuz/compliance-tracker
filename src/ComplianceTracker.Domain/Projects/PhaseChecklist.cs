@@ -216,7 +216,11 @@ namespace ComplianceTracker.Domain.Projects
 
     // What the tracker knows about the project for the automatic items (R4)
     public sealed record ChecklistFacts(bool ScopeDescribed, IReadOnlySet<string> Unclassified, int Risks, int Frameworks, int NotCovered,
-        int WithoutEvidence, bool Scanned, int OpenCriticalOrHigh, bool Sbom, bool SupportPeriod, bool Retained);
+        int WithoutEvidence, bool Scanned, int OpenCriticalOrHigh, bool Sbom, bool SupportPeriod, bool Retained)
+    {
+        // US-195: how many requirements are covered; "every covered requirement has evidence" needs at least one
+        public int Covered { get; init; }
+    }
 
     public sealed record ChecklistLine(ChecklistItem Item, ChecklistState State, ProjectChecklistEntry? Entry);
 
@@ -242,7 +246,7 @@ namespace ComplianceTracker.Domain.Projects
                 ChecklistCheck.Classification => !facts.Unclassified.Contains(item.Regulation),
                 ChecklistCheck.Risks => facts.Risks > 0,
                 ChecklistCheck.Coverage => facts.Frameworks > 0 && facts.NotCovered == 0,
-                ChecklistCheck.Evidence => facts.Frameworks > 0 && facts.WithoutEvidence == 0,
+                ChecklistCheck.Evidence => facts.Frameworks > 0 && facts.Covered > 0 && facts.WithoutEvidence == 0,
                 ChecklistCheck.Findings => facts.Scanned && facts.OpenCriticalOrHigh == 0,
                 ChecklistCheck.Sbom => facts.Sbom,
                 ChecklistCheck.Support => facts.SupportPeriod,

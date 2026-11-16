@@ -124,6 +124,22 @@
 
 @* US-142 R6: the EU country the organisation is established in, which decides the national laws (e.g. the Danish NIS2 law) *@
 <section id="organisation-country" class="mt-4">
+    @* US-195 R3: the default review dates the forms fill in. Ids used by the tests: form#set-review-defaults *@
+    <h2 class="h4" id="review-defaults">Review dates</h2>
+    <p class="text-muted small">The forms fill in a date this many months from today. Changing it does not change dates already set.</p>
+    <form asp-action="SetReviewDefaults" method="post" class="row g-2 align-items-end mb-4" id="set-review-defaults">
+        @foreach (var (kind, name) in new[] { (ReviewDateKind.EvidenceValidity, "evidenceValidity"), (ReviewDateKind.DocumentReview, "documentReview"),
+                                               (ReviewDateKind.SupplierEvidence, "supplierEvidence"), (ReviewDateKind.AuditCertificate, "auditCertificate") })
+        {
+            <div class="col-md-3">
+                <label for="default-@name" class="form-label small">@ReviewDefaults.Title(kind) (months)</label>
+                <input id="default-@name" name="@name" type="number" min="@ReviewDefaults.MinMonths" max="@ReviewDefaults.MaxMonths"
+                       value="@Model.ReviewDefaults.MonthsFor(kind)" class="form-control form-control-sm" required />
+            </div>
+        }
+        <div class="col-12"><button type="submit" class="btn btn-sm btn-primary">Save review dates</button></div>
+    </form>
+
     <h2 class="h4">Country</h2>
     <form asp-action="SetCountry" method="post" class="d-flex flex-wrap gap-2 align-items-center" id="set-country">
         <select name="country" class="form-select form-select-sm w-auto" aria-label="Country">

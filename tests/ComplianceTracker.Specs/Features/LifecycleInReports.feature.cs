@@ -302,7 +302,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I download the traceability matrix of \"Acme Portal\" as Excel for the management", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 36
-    await testRunner.ThenAsync("the summary says \"Lifecycle phase\" is \"Verification · 1 of 4 done\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the summary says \"Lifecycle phase\" is \"Verification · 0 of 4 done\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

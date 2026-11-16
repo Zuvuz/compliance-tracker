@@ -27,6 +27,7 @@ namespace ComplianceTracker.Web.Controllers
             ReviewKind.EvidenceSuggestions => (ProjectTabs.Evidence, null),
             ReviewKind.RiskDrafts or ReviewKind.MeasureSuggestions => (ProjectTabs.Risks, null),
             ReviewKind.SecurityEventSuggestions => (ProjectTabs.SecurityEvents, null),
+            ReviewKind.WithoutDate => (ProjectTabs.Evidence, null), // US-195
             _ => (ProjectTabs.Overview, null)
         };
     }

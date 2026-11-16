@@ -43,6 +43,11 @@ namespace ComplianceTracker.Web.Controllers
             var (name, content) = await ReadAsync(file, cancellationToken);
             var document = await _service.UploadAsync(kind, title, ownerId, version, name, content, reviewDueOn, cancellationToken);
             await SuggestAsync(document.Id, newVersion: false, cancellationToken); // US-136 R2
+            if (reviewDueOn is null)
+            {
+                TempData["NoReviewDate"] = Domain.Organizations.ReviewDefaults.NoDateWarning; // US-195 R2
+            }
+
             return RedirectToAction(nameof(Index));
         }
 

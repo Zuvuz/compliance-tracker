@@ -33,7 +33,7 @@ Feature: The lifecycle phase and its checklist in the reports
   Scenario: The management report shows the phase and how much is done
     Given "Acme Portal" is in the phase "Verification"
     When I download the traceability matrix of "Acme Portal" as Excel for the management
-    Then the summary says "Lifecycle phase" is "Verification · 1 of 4 done"
+    Then the summary says "Lifecycle phase" is "Verification · 0 of 4 done"
 
   @US-194 @integration
   Scenario: The audit check lists what is missing in the current phase

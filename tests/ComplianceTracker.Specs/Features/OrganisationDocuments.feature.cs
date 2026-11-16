@@ -400,16 +400,19 @@ namespace ComplianceTracker.Specs.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 50
-    await testRunner.GivenAsync("the time is \"2026-10-02T09:00:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+    await testRunner.GivenAsync("the time is \"2026-09-30T09:00:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 51
     await testRunner.AndAsync("I have uploaded the policy \"Access control policy\" version \"v1\" due for review on" +
                         " \"2026-10-01\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 52
-    await testRunner.ThenAsync("the Documents page says \"Access control policy is due for review\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.AndAsync("the time is \"2026-10-02T09:00:00Z\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 53
+    await testRunner.ThenAsync("the Documents page says \"Access control policy is due for review\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 54
     await testRunner.AndAsync("\"Needs attention\" of \"Acme Portal\" shows \"Access control policy is due for review" +
                         "\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
@@ -437,7 +440,7 @@ namespace ComplianceTracker.Specs.Features
                     "s", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 56
+#line 57
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -450,23 +453,23 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 57
+#line 58
     await testRunner.GivenAsync("I have uploaded the policy \"Access control policy\" version \"v1\" with the content " +
                         "\"Policy text v1\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 58
+#line 59
     await testRunner.AndAsync("I link the document \"Access control policy\" to \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 59
+#line 60
     await testRunner.ThenAsync("removing \"Access control policy\" asks to confirm that \"I.2(d)\" loses it", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 60
+#line 61
     await testRunner.WhenAsync("I remove the document \"Access control policy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 61
+#line 62
     await testRunner.ThenAsync("\"Acme Portal\" has no evidence \"Access control policy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 62
+#line 63
     await testRunner.AndAsync("the activity log for \"Acme ApS\" has \"OrganisationDocumentRemoved\" for \"Anna\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -490,7 +493,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A project that starts following the framework gets the document", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 65
+#line 66
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -503,20 +506,20 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 66
+#line 67
     await testRunner.GivenAsync("the project \"Acme Shop\" exists", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 67
+#line 68
     await testRunner.AndAsync("I have uploaded the policy \"Access control policy\" version \"v1\" with the content " +
                         "\"Policy text v1\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 68
+#line 69
     await testRunner.AndAsync("I link the document \"Access control policy\" to \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 69
+#line 70
     await testRunner.WhenAsync("I add \"CRA – Regulation (EU) 2024/2847\" to the project \"Acme Shop\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 70
+#line 71
     await testRunner.ThenAsync("\"Acme Shop\" has the evidence \"Access control policy\" for \"I.2(d)\" from the organi" +
                         "sation", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
@@ -539,7 +542,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("An unlinked document leaves the projects", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 73
+#line 74
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -552,17 +555,17 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 74
+#line 75
     await testRunner.GivenAsync("I have uploaded the policy \"Access control policy\" version \"v1\" with the content " +
                         "\"Policy text v1\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 75
+#line 76
     await testRunner.AndAsync("I link the document \"Access control policy\" to \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 76
+#line 77
     await testRunner.WhenAsync("I unlink the document \"Access control policy\" from \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 77
+#line 78
     await testRunner.ThenAsync("\"Acme Portal\" has no evidence \"Access control policy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -586,7 +589,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A developer cannot add documents", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 80
+#line 81
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -599,16 +602,16 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 81
+#line 82
     await testRunner.GivenAsync("\"Carl\" has joined \"Acme ApS\" as \"Developer\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 82
+#line 83
     await testRunner.AndAsync("I am signed in as \"Carl\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 83
+#line 84
     await testRunner.WhenAsync("I upload the policy \"Access control policy\" version \"v1\" for the organisation", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 84
+#line 85
     await testRunner.ThenAsync("I see the error \"Your role does not allow this\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }

@@ -28,6 +28,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public Task GivenIHaveUploadedThePolicy(string title, string version, string content) => UploadAsync(title, version, content, null);
 
         [Given("I have uploaded the policy {string} version {string} due for review on {string}")]
+        [When("I upload the policy {string} version {string} due for review on {string}")]
         public Task GivenIHaveUploadedThePolicyDue(string title, string version, string reviewOn) => UploadAsync(title, version, $"{title} text", reviewOn);
 
         [Given("I link the document {string} to {string}")]

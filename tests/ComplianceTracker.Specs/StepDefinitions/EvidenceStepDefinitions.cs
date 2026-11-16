@@ -29,6 +29,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // ---------------------------------------------------------- When
 
         [Given("I have added the evidence {string} with the link {string} to {string}")]
+        [Given("I add the evidence {string} with the link {string} to {string}")]
         [When("I add the evidence {string} with the link {string} to {string}")]
         public Task WhenIAddALink(string title, string url, string code)
             => AddAsync(code, title, url: url);

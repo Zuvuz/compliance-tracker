@@ -34,6 +34,7 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.Nis2ScopeChecked or ActivityAction.OrganisationCountryChanged
                 or ActivityAction.GapQuestionAnswered // US-189
                 or ActivityAction.OrganisationChecklistItemAdded or ActivityAction.OrganisationChecklistItemChanged or ActivityAction.OrganisationChecklistItemRemoved // US-192
+                or ActivityAction.ReviewDefaultsChanged // US-195
                 or ActivityAction.SupplierAdded or ActivityAction.SupplierEvidenceAdded or ActivityAction.SupplierRemoved // US-191
                 or ActivityAction.IndustryProfileChosen => ActivityGroup.Organisation,
             ActivityAction.CatalogImported or ActivityAction.CatalogActivated or ActivityAction.FrameworkEnabled
