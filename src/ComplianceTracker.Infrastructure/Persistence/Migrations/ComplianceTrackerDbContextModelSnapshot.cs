@@ -4932,6 +4932,18 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(36);
 
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly?>("ClosesOn")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("ClosingStartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ClosingStartedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Country")
                         .IsRequired()
                         .ValueGeneratedOnAdd()

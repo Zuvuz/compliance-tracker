@@ -39,6 +39,10 @@ namespace ComplianceTracker.Web.Background
                 {
                     using var scope = _scopes.CreateScope();
                     var run = await scope.ServiceProvider.GetRequiredService<ReminderService>().RunAsync(stoppingToken);
+
+                    // US-184 R3: organisations whose 30 days of closing are over
+                    using var closing = _scopes.CreateScope();
+                    await closing.ServiceProvider.GetRequiredService<Application.Organizations.OrganisationExitService>().CloseDueAsync(stoppingToken);
                     if (run.Failed > 0)
                     {
                         // R4: logged; the failed ones are tried again at the next run

@@ -16,6 +16,9 @@ namespace ComplianceTracker.Web.Security
 
         public Task<bool> CanAsync(Permission permission) => _member.CanAsync(permission);
 
+        // US-184: the day the organisation's data is deleted, when it is being closed
+        public async Task<DateOnly?> ClosesOnAsync() => (await _member.FindOrganizationAsync())?.ClosesOn;
+
         // US-182 R5: an external auditor limited to one project sees no organisation pages
         public async Task<bool> IsLimitedAsync() => await _member.OnlyProjectAsync() is not null;
 

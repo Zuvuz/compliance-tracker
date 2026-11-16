@@ -175,3 +175,37 @@
         <button type="submit" class="btn btn-sm btn-outline-primary">Upload seal</button>
     </form>
 </section>
+
+@* US-184: the organisation's way out, for the organisation admin. Ids used by the tests: #export-everything,
+   #close-organisation with form#start-closing or #closing-notice and form#undo-closing. *@
+@if (await Permissions.CanAsync(ComplianceTracker.Domain.Users.Permission.ManageMembers))
+{
+    <h2 class="h4 mt-4">Your data</h2>
+    <p class="text-muted small">All of the organisation's data as one ZIP file: every table as JSON and every stored file, each with its SHA-256.</p>
+    <a asp-action="Export" class="btn btn-sm btn-outline-primary" id="export-everything">Export everything</a>
+
+    <section class="card border-danger mt-4" id="close-organisation">
+        <div class="card-body">
+            <h2 class="h5 card-title text-danger">Close the organisation</h2>
+            @if (Model.IsClosing)
+            {
+                <p class="mb-2" id="closing-notice">The organisation is being closed. All its data is deleted on <strong>@Model.ClosesOn?.ToString("dd-MM-yyyy")</strong>
+                    unless you undo it before then. Export everything first.</p>
+                <form asp-action="UndoClosing" method="post" id="undo-closing">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">Undo closing</button>
+                </form>
+            }
+            else
+            {
+                <p class="small">Closing deletes all the organisation's data after @ComplianceTracker.Domain.Organizations.Organization.ClosingWaitDays days.
+                    Until then it can be undone. The members are told by mail. The activity log is kept, without names.</p>
+                <form asp-action="StartClosing" method="post" class="d-flex flex-wrap gap-2 align-items-end" id="start-closing"
+                      data-confirm="All data is deleted after 30 days unless you undo it.">
+                    <div><label for="confirm-name" class="form-label small mb-0">Type "@Model.Name" to confirm</label>
+                        <input id="confirm-name" name="confirmName" class="form-control form-control-sm" autocomplete="off" required /></div>
+                    <button type="submit" class="btn btn-sm btn-danger">Close the organisation</button>
+                </form>
+            }
+        </div>
+    </section>
+}

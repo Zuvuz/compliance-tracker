@@ -31,6 +31,74 @@ namespace ComplianceTracker.Domain.Organizations
         // US-183 R1: how many days before a deadline the reminders are sent
         public int ReminderDaysBefore { get; private set; } = Reminders.ReminderKinds.DefaultDaysBefore;
 
+        // US-184 R3: closing waits this long and can be undone until then
+        public const int ClosingWaitDays = 30;
+
+        public DateTime? ClosingStartedAt { get; private set; }
+        public Guid? ClosingStartedById { get; private set; }
+        public DateOnly? ClosesOn { get; private set; }
+        public DateTime? ClosedAt { get; private set; }
+
+        public bool IsClosing => ClosesOn is not null && ClosedAt is null;
+
+        public bool IsClosingDue(DateOnly today) => IsClosing && today >= ClosesOn;
+
+        public void StartClosing(Guid byId, DateOnly today)
+        {
+            if (_users.FirstOrDefault(u => u.Id == byId)?.Can(Permission.ManageMembers) != true)
+            {
+                throw new DomainException("Your role does not allow this");
+            }
+
+            if (IsClosing || ClosedAt is not null)
+            {
+                throw new DomainException("The organisation is already being closed");
+            }
+
+            ClosingStartedAt = today.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            ClosingStartedById = byId;
+            ClosesOn = today.AddDays(ClosingWaitDays);
+        }
+
+        public void UndoClosing(Guid byId)
+        {
+            if (_users.FirstOrDefault(u => u.Id == byId)?.Can(Permission.ManageMembers) != true)
+            {
+                throw new DomainException("Your role does not allow this");
+            }
+
+            if (!IsClosing)
+            {
+                throw new DomainException("The organisation is not being closed");
+            }
+
+            ClosingStartedAt = null;
+            ClosingStartedById = null;
+            ClosesOn = null;
+        }
+
+        // US-184 R3: after the data is deleted the organisation and its members are anonymised; the activity log stays
+        public void Close(DateTime at)
+        {
+            var mark = Id.ToString("N")[..7].ToUpperInvariant();
+            Name = $"Closed organisation {mark}";
+            Cvr = "X" + mark;
+            foreach (var user in _users)
+            {
+                if (user.IsActive)
+                {
+                    user.Remove(user.Id, at);
+                }
+
+                if (!user.IsErased)
+                {
+                    user.Pseudonymise();
+                }
+            }
+
+            ClosedAt = at;
+        }
+
         // US-195 R3: the default months per kind of date; changing them changes no date already set
         public int EvidenceValidityMonths { get; private set; } = ReviewDefaults.Standard.EvidenceValidity;
         public int DocumentReviewMonths { get; private set; } = ReviewDefaults.Standard.DocumentReview;

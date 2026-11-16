@@ -150,6 +150,11 @@
                 @* US-063 R4 *@
                 <div class="alert alert-success mt-3" id="feedback-thanks" role="status">@thanks</div>
             }
+            @if (signedIn && await Permissions.ClosesOnAsync() is { } closesOn)
+            {
+                @* US-184 R3: every member sees it until it is undone *@
+                <div class="alert alert-danger mt-3" id="organisation-closing" role="alert">This organisation is being closed: all its data is deleted on @closesOn.ToString("dd-MM-yyyy").</div>
+            }
             @if (TempData["NoReviewDate"] is string noDate)
             {
                 @* US-195 R2 *@

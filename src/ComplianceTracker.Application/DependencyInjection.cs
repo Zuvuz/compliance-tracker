@@ -60,6 +60,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<Projects.OrganisationChecklistService>(); // US-192
             services.AddScoped<Organizations.ReviewDefaultsService>(); // US-195
             services.AddScoped<Organizations.AuditorAccessService>(); // US-182
+            services.AddScoped<Organizations.OrganisationExitService>(); // US-184
             services.AddScoped<ActivityLog.ActivityLogExportService>(); // US-055
             services.AddScoped<Reports.StatementOfApplicabilityQueries>(); // US-053
             services.AddScoped<Audits.AuditService>(); // US-134
