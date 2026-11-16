@@ -497,6 +497,27 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.ProductRequirements });
         }
 
+        // POST /Projects/LinkAzureDevOps: US-030 R1–R3. Nothing is saved if Azure DevOps refuses the token.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.ProductRequirements)]
+        public async Task<IActionResult> LinkAzureDevOps(
+            Guid projectId, string? organization, string? project, string? areaPath, string? token, CancellationToken cancellationToken)
+        {
+            await _sync.LinkAzureDevOpsAsync(projectId, organization, project, areaPath, token, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.ProductRequirements });
+        }
+
+        // POST /Projects/UnlinkAzureDevOps: US-030 R3
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.ProductRequirements)]
+        public async Task<IActionResult> UnlinkAzureDevOps(Guid projectId, CancellationToken cancellationToken)
+        {
+            await _sync.UnlinkAzureDevOpsAsync(projectId, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.ProductRequirements });
+        }
+
         // POST /Projects/SyncNow: R5. A failed sync is shown on the page from the project's GitHub link.
         [HttpPost]
         [ValidateAntiForgeryToken]

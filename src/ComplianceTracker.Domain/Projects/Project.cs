@@ -61,6 +61,29 @@ namespace ComplianceTracker.Domain.Projects
         // US-018: the GitHub repository the project reads its user stories from, or null
         public GitHubLink? GitHub { get; private set; }
 
+        // US-030: the Azure DevOps project it also (or instead) reads its user stories from, or null (R11)
+        public AzureDevOpsLink? AzureDevOps { get; private set; }
+
+        // US-030 R1–R3: links or re-links the project; the caller has checked the token with Azure DevOps and encrypted it
+        public void LinkAzureDevOps(string organization, string project, string? areaPath, string encryptedToken, Guid userId, DateTime at)
+        {
+            EnsureOpen();
+            AzureDevOps = new AzureDevOpsLink(organization, project, areaPath, encryptedToken, userId, at);
+        }
+
+        // US-030 R3: removing the link removes the token; the work items read before are kept
+        public bool UnlinkAzureDevOps()
+        {
+            EnsureOpen();
+            if (AzureDevOps is null)
+            {
+                return false;
+            }
+
+            AzureDevOps = null;
+            return true;
+        }
+
         // US-104 R2: how the project describes its requirements. A new project starts with all of them, so nothing is
         // hidden before someone chooses; there is always at least one.
         public RequirementMethods RequirementMethods { get; private set; } = RequirementMethods.All;

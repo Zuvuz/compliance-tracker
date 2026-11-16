@@ -61,6 +61,7 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.ReportLocked or ActivityAction.ReportSignatureRequested or ActivityAction.ReportSigned
                 or ActivityAction.ReportSealed => ActivityGroup.Projects,
             ActivityAction.RepositoryConnected or ActivityAction.WorkItemsSynced or ActivityAction.AccessTokenChanged
+                or ActivityAction.AzureProjectConnected // US-030
                 or ActivityAction.RequirementDocumentUploaded => ActivityGroup.WorkItems,
             ActivityAction.RequirementLinked or ActivityAction.RequirementUnlinked or ActivityAction.RequirementMarkedNotApplicable
                 or ActivityAction.RequirementMarkedApplicable or ActivityAction.LinkReviewed or ActivityAction.ReportDownloaded or ActivityAction.ActivityLogExported or ActivityAction.ApplicabilitySuggested

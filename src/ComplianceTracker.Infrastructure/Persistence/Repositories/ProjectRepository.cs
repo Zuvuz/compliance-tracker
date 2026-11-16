@@ -41,6 +41,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         public Task<Project?> GetOrganisationAreaAsync(Guid organizationId, CancellationToken cancellationToken = default)
             => _db.Projects.FirstOrDefaultAsync(p => p.OrganizationId == organizationId && p.Kind == ProjectKind.Organisation, cancellationToken);
 
+        public async Task<IReadOnlyList<Guid>> ListIdsLinkedToAzureDevOpsAsync(CancellationToken cancellationToken = default)
+            => await _db.Projects
+                .Where(p => p.AzureDevOps != null)
+                .Select(p => p.Id)
+                .ToListAsync(cancellationToken);
+
         public async Task<IReadOnlyList<Guid>> ListIdsLinkedToGitHubAsync(CancellationToken cancellationToken = default)
             => await _db.Projects
                 .Where(p => p.GitHub != null)

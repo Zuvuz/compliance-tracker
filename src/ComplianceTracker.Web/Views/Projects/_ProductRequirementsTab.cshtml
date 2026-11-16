@@ -2,7 +2,8 @@
    a requirement specification (US-032, US-033) and use cases (US-034). Only the chosen methods are shown (R3).
    The list (_WorkItems) is fetched again when SignalR says it changed (US-018 R7).
    Ids used by the tests: #requirement-methods (input[name=methods]), .method-section[data-method], #project-work-items,
-   #link-github, #github-token, #token-status, #set-github-token. *@
+   #link-github, #github-token, #token-status, #set-github-token.
+   US-030: #azure-devops with form #link-azure (organization, project, areaPath, token), #azure-token-status, form #unlink-azure. *@
 @using ComplianceTracker.Domain.Projects
 @model ProjectDetailsViewModel
 @{
@@ -118,6 +119,47 @@
             </form>
         </div>
     }
+
+    @* US-030: user stories from Azure Boards (dev.azure.com), read-only, also next to GitHub (R11) *@
+    <div class="border-top pt-2 mt-2 mb-3" id="azure-devops">
+        <h3 class="h6">Azure DevOps</h3>
+        @if (project.AzureDevOps is { } azure)
+        {
+            <p class="small mb-1" id="linked-azure">
+                <a href="https://dev.azure.com/@azure.Organization/@Uri.EscapeDataString(azure.Project)/_boards" target="_blank" rel="noopener noreferrer">@azure.Address</a>
+                @if (azure.AreaPath is { } area)
+                {
+                    <text>, area <code>@area</code></text>
+                }
+                · <span id="azure-token-status">Token set (changed @azure.TokenChangedAt.ToLocalTime().ToString("dd-MM-yyyy"))</span>
+            </p>
+        }
+        @if (!project.IsClosed && await Permissions.CanAsync(Permission.EditProjects))
+        {
+            @* R1–R3: a read-only Personal Access Token (Work Items: Read), checked with Azure DevOps before anything is saved *@
+            <form asp-action="LinkAzureDevOps" method="post" class="row g-2 mb-1" id="link-azure">
+                <input type="hidden" name="projectId" value="@project.Id" />
+                <div class="col-md-2"><input name="organization" class="form-control" placeholder="Organisation" value="@project.AzureDevOps?.Organization" aria-label="Azure DevOps organisation" /></div>
+                <div class="col-md-2"><input name="project" class="form-control" placeholder="Project" value="@project.AzureDevOps?.Project" aria-label="Azure DevOps project" /></div>
+                <div class="col-md-3"><input name="areaPath" class="form-control" placeholder="Area path (optional)" value="@project.AzureDevOps?.AreaPath" aria-label="Area path" /></div>
+                <div class="col-md-3">
+                    @* type=password and autocomplete=off: the browser neither shows nor remembers it *@
+                    <input name="token" type="password" autocomplete="off" class="form-control"
+                           placeholder="@(project.AzureDevOps is null ? "Token (Work Items: Read)" : "New token (optional)")" aria-label="Azure DevOps token" />
+                </div>
+                <div class="col-md-2"><button type="submit" class="btn btn-outline-primary w-100">@(project.AzureDevOps is null ? "Link" : "Save")</button></div>
+            </form>
+            @if (project.AzureDevOps is not null)
+            {
+                <form asp-action="UnlinkAzureDevOps" method="post" class="d-inline" id="unlink-azure"
+                      data-confirm="The token is removed and the tracker stops reading Azure DevOps. The work items read before are kept.">
+                    <input type="hidden" name="projectId" value="@project.Id" />
+                    <button type="submit" class="btn btn-sm btn-link text-danger p-0">Remove the Azure DevOps link</button>
+                </form>
+            }
+            <p class="small text-muted mb-0">Reads work items of type User Story, Product Backlog Item and Requirement. The tracker never writes to Azure DevOps.</p>
+        }
+    </div>
     </div>
     }
 

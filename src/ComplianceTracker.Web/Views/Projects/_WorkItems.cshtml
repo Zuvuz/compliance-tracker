@@ -10,11 +10,23 @@
 @{
     var project = Model.Project;
     var link = project.GitHub;
+    var azure = project.AzureDevOps; // US-030
 }
 
-@if (link is null)
+@if (link is null && azure is null)
 {
     <p class="text-muted" id="not-linked">Link a public GitHub repository to read the project's user stories.</p>
+}
+else if (link is null)
+{
+    @* US-030: only Azure DevOps; "Sync now" reads every linked source *@
+    @if (!project.IsClosed)
+    {
+        <form asp-controller="Projects" asp-action="SyncNow" method="post" id="sync-now" class="mb-2">
+            <input type="hidden" name="projectId" value="@project.Id" />
+            <button type="submit" class="btn btn-primary">Sync now</button>
+        </form>
+    }
 }
 else
 {
@@ -45,6 +57,31 @@ else
             <summary class="small">@link.Skipped.Count skipped</summary>
             <ul class="small mb-0">
                 @foreach (var skipped in link.Skipped)
+                {
+                    <li class="skipped-issue" data-reference="@skipped.ExternalReference">@skipped.ExternalReference @skipped.Title: Skipped: @skipped.Reason</li>
+                }
+            </ul>
+        </details>
+    }
+}
+
+@if (azure is not null)
+{
+    @* US-030 R7, R8: the Azure DevOps source, its last sync and what it skipped *@
+    <p class="small text-muted mb-2" id="azure-sync">
+        Azure DevOps <a href="https://dev.azure.com/@azure.Organization/@Uri.EscapeDataString(azure.Project)/_boards" target="_blank" rel="noopener noreferrer">@azure.Address</a> ·
+        <span id="azure-last-synced">Last synced: @(azure.LastSyncedAt?.ToLocalTime().ToString("dd-MM-yyyy HH:mm") ?? "never")</span>
+    </p>
+    @if (azure.LastSyncError is { } azureError)
+    {
+        <div class="alert alert-warning" id="azure-sync-error">Sync failed: @azureError</div>
+    }
+    @if (azure.Skipped.Count > 0)
+    {
+        <details class="mb-3" id="azure-skipped">
+            <summary class="small">@azure.Skipped.Count skipped in Azure DevOps</summary>
+            <ul class="small mb-0">
+                @foreach (var skipped in azure.Skipped)
                 {
                     <li class="skipped-issue" data-reference="@skipped.ExternalReference">@skipped.ExternalReference @skipped.Title: Skipped: @skipped.Reason</li>
                 }
@@ -86,7 +123,7 @@ else
                     }
                     else
                     {
-                        <a class="work-item-link" href="@item.Url" target="_blank" rel="noopener noreferrer">@item.ExternalReference on GitHub</a>
+                        <a class="work-item-link" href="@item.Url" target="_blank" rel="noopener noreferrer">@item.ExternalReference on @(item.Source == WorkItemSource.AzureDevOps ? "Azure DevOps" : "GitHub")</a>
                     }
                     @if (!string.IsNullOrEmpty(item.Labels))
                     {

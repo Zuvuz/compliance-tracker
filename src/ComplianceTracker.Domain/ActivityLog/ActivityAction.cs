@@ -52,6 +52,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         // A project's GitHub token was set, replaced or removed (US-031). Details never holds the token.
         AccessTokenChanged,
 
+        // US-030: a project was linked to an Azure DevOps project. SubjectId points at the project; Details holds e.g.
+        // "acme/Portal (area Portal\Web)". The token is never logged.
+        AzureProjectConnected,
+
         // A user story was linked to a requirement, or the link was removed (US-021).
         // SubjectId points at the project; Details holds e.g. "SP-1 ↔ [US-004] Sign in".
         RequirementLinked,

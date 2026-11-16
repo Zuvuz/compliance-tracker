@@ -98,7 +98,8 @@ namespace ComplianceTracker.Domain.WorkItems
         {
             var state = item.IsClosed ? WorkItemState.Closed : WorkItemState.Open;
             var changed = Title != item.Title || Rules != item.Rules || Examples != item.Examples
-                || Gherkin != item.Gherkin || Labels != item.Labels || Url != item.Url || State != state;
+                || Gherkin != item.Gherkin || Labels != item.Labels || Url != item.Url || State != state
+                || Description != item.Description || AcceptanceCriteria != item.AcceptanceCriteria;
 
             Title = item.Title;
             Rules = item.Rules;
@@ -107,6 +108,8 @@ namespace ComplianceTracker.Domain.WorkItems
             Labels = item.Labels;
             Url = item.Url;
             State = state;
+            Description = item.Description; // US-030
+            AcceptanceCriteria = item.AcceptanceCriteria;
             LastSyncedAt = at;
             return changed;
         }
@@ -171,7 +174,12 @@ namespace ComplianceTracker.Domain.WorkItems
         string Examples,
         string Gherkin,
         string Labels,
-        bool IsClosed);
+        bool IsClosed)
+    {
+        // US-030 R5: a source with a description and acceptance criteria of its own (Azure DevOps); empty for GitHub
+        public string Description { get; init; } = "";
+        public string AcceptanceCriteria { get; init; } = "";
+    }
 
     // US-032: one requirement as a requirement specification has it, e.g. ("REQ-012", "Log in", "...", "...").
     // US-034: or a use case with its sections; its acceptance criteria are the steps and postconditions (R5).
@@ -184,7 +192,10 @@ namespace ComplianceTracker.Domain.WorkItems
         GitHub,
 
         // US-032: an uploaded requirement specification
-        Document
+        Document,
+
+        // US-030: Azure Boards on dev.azure.com
+        AzureDevOps
     }
 
     // Decision B02: the development method is not modelled, but the kind of work item is

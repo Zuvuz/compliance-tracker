@@ -32,9 +32,10 @@ namespace ComplianceTracker.Specs.Support
         // github: the pretend GitHub the app reads user stories from (US-018); without one, an empty one
         // ai: the pretend local AI (US-020); without one, a new one
         // exploited: the pretend exploited-vulnerability lists and the operator's switch (US-128); without one, none is on
-        public static TestApp WithTestSignIn(string connectionString, TimeProvider clock, IDictionary<string, string?>? overrides = null, FakeGitHub? github = null, FakeAi? ai = null, DatabaseRace? race = null, FakeExploitedLists? exploited = null)
+        public static TestApp WithTestSignIn(string connectionString, TimeProvider clock, IDictionary<string, string?>? overrides = null, FakeGitHub? github = null, FakeAi? ai = null, DatabaseRace? race = null, FakeExploitedLists? exploited = null, FakeAzureDevOps? azure = null)
         {
             github ??= new FakeGitHub();
+            azure ??= new FakeAzureDevOps(); // US-030
             ai ??= new FakeAi();
             var settings = new Dictionary<string, string?>
             {
@@ -72,6 +73,9 @@ namespace ComplianceTracker.Specs.Support
 
                 // US-018: the GitHub adapter talks to the pretend GitHub instead of api.github.com
                 services.AddHttpClient<GitHubWorkItemSource>().ConfigurePrimaryHttpMessageHandler(github.CreateHandler);
+
+                // US-030: the Azure DevOps adapter talks to the pretend dev.azure.com
+                services.AddHttpClient<ComplianceTracker.Infrastructure.WorkItems.AzureDevOpsWorkItemSource>().ConfigurePrimaryHttpMessageHandler(azure.CreateHandler);
 
                 // US-063: issues made from feedback go to the pretend GitHub too
                 services.AddHttpClient<ComplianceTracker.Infrastructure.Feedback.GitHubFeedbackIssueWriter>()

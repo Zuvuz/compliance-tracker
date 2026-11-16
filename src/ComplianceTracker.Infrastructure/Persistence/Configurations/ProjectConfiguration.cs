@@ -97,6 +97,27 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
                 });
                 link.Navigation(l => l.Skipped).HasField("_skipped").UsePropertyAccessMode(PropertyAccessMode.Field);
             });
+
+            // US-030: the Azure DevOps link, in the Projects table (columns AzureDevOps_Organization, ...); only the encrypted token
+            builder.OwnsOne(p => p.AzureDevOps, link =>
+            {
+                link.Property(l => l.Organization).HasMaxLength(50).IsRequired();
+                link.Property(l => l.Project).HasMaxLength(64).IsRequired();
+                link.Property(l => l.AreaPath).HasMaxLength(AzureDevOpsLink.MaxAreaPathLength);
+                link.Property(l => l.EncryptedToken).HasMaxLength(2000).IsRequired();
+                link.Property(l => l.LastSyncError).HasMaxLength(500);
+                link.Ignore(l => l.Address);
+                link.OwnsMany(l => l.Skipped, skipped =>
+                {
+                    skipped.ToTable("AzureSkippedItems");
+                    skipped.Property<int>("Id");
+                    skipped.HasKey("Id");
+                    skipped.Property(i => i.ExternalReference).HasMaxLength(200).IsRequired();
+                    skipped.Property(i => i.Title).HasMaxLength(500).IsRequired();
+                    skipped.Property(i => i.Reason).HasMaxLength(200).IsRequired();
+                });
+                link.Navigation(l => l.Skipped).HasField("_skipped").UsePropertyAccessMode(PropertyAccessMode.Field);
+            });
         }
     }
 }

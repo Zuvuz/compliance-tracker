@@ -178,18 +178,18 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table10 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table12 = new global::Reqnroll.Table(new string[] {
                             "line"});
-                table10.AddRow(new string[] {
+                table12.AddRow(new string[] {
                             "Annex A"});
-                table10.AddRow(new string[] {
+                table12.AddRow(new string[] {
                             "A.5.15 Access control"});
-                table10.AddRow(new string[] {
+                table12.AddRow(new string[] {
                             "Rules to control access shall be established."});
-                table10.AddRow(new string[] {
+                table12.AddRow(new string[] {
                             "A.5.16 Identity management"});
 #line 14
-    await testRunner.WhenAsync("I add the framework \"ISO/IEC 27001\" with a PDF containing:", ((string)(null)), table10, "When ");
+    await testRunner.WhenAsync("I add the framework \"ISO/IEC 27001\" with a PDF containing:", ((string)(null)), table12, "When ");
 #line hidden
 #line 20
     await testRunner.ThenAsync("the draft of \"ISO/IEC 27001\" version 1 lists \"A.5.15\" and \"A.5.16\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -229,20 +229,20 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table11 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table13 = new global::Reqnroll.Table(new string[] {
                             "line"});
-                table11.AddRow(new string[] {
+                table13.AddRow(new string[] {
                             "A.5.15 Access control .................. 12"});
-                table11.AddRow(new string[] {
+                table13.AddRow(new string[] {
                             "A.5.16 Identity management ............. 13"});
-                table11.AddRow(new string[] {
+                table13.AddRow(new string[] {
                             "A.5.15 Access control"});
-                table11.AddRow(new string[] {
+                table13.AddRow(new string[] {
                             "Rules to control access shall be established."});
-                table11.AddRow(new string[] {
+                table13.AddRow(new string[] {
                             "A.5.16 Identity management"});
 #line 25
-    await testRunner.WhenAsync("I add the framework \"ISO/IEC 27001\" with a PDF containing:", ((string)(null)), table11, "When ");
+    await testRunner.WhenAsync("I add the framework \"ISO/IEC 27001\" with a PDF containing:", ((string)(null)), table13, "When ");
 #line hidden
 #line 32
     await testRunner.ThenAsync("the draft of \"ISO/IEC 27001\" version 1 lists \"A.5.15\" and \"A.5.16\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");

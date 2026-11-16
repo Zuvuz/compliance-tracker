@@ -19,7 +19,8 @@ namespace ComplianceTracker.Application.WorkItems
     // Token: the decrypted read-only token for a private repository (US-031), or null. Never logged or shown.
     // US-107: with ProjectNumber, Location is the organisation and only that GitHub Project's issues are read; the label
     // is not used, as the project itself decides what belongs to it.
-    public record WorkItemQuery(string Location, string Label, string? Token = null, int? ProjectNumber = null)
+    // US-030: for Azure DevOps, Location is "organisation/project" and AreaPath limits the read to an area (and those under it).
+    public record WorkItemQuery(string Location, string Label, string? Token = null, int? ProjectNumber = null, string? AreaPath = null)
     {
         // A record prints all its values; this one must never print the token
         public override string ToString()

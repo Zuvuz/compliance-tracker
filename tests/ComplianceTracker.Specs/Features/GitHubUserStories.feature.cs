@@ -119,32 +119,32 @@ namespace ComplianceTracker.Specs.Features
 #line 11
     await testRunner.AndAsync("the project \"Acme Portal\" exists", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-            global::Reqnroll.Table table12 = new global::Reqnroll.Table(new string[] {
+            global::Reqnroll.Table table14 = new global::Reqnroll.Table(new string[] {
                         "number",
                         "title",
                         "labels",
                         "follows template",
                         "state"});
-            table12.AddRow(new string[] {
+            table14.AddRow(new string[] {
                         "19",
                         "[US-003] Create organisation via web UI",
                         "user-story",
                         "yes",
                         "open"});
-            table12.AddRow(new string[] {
+            table14.AddRow(new string[] {
                         "40",
                         "Fix typo",
                         "bug",
                         "no",
                         "open"});
-            table12.AddRow(new string[] {
+            table14.AddRow(new string[] {
                         "41",
                         "[US-099] Draft without rules",
                         "user-story",
                         "no",
                         "open"});
 #line 12
-    await testRunner.AndAsync("the GitHub repository \"Zuvuz/compliance-tracker\" has these issues:", ((string)(null)), table12, "And ");
+    await testRunner.AndAsync("the GitHub repository \"Zuvuz/compliance-tracker\" has these issues:", ((string)(null)), table14, "And ");
 #line hidden
         }
         
