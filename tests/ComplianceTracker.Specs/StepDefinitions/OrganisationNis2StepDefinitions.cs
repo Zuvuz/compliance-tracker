@@ -114,10 +114,11 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // ---------------------------------------------------------- Then
 
         [Then("I see the organisation area of {string} with the tabs {string}, {string}, {string} and {string}")]
-        public void ThenISeeTheOrganisationArea(string organisation, string first, string second, string third, string fourth)
+        public async Task ThenISeeTheOrganisationArea(string organisation, string first, string second, string third, string fourth)
         {
             Assert.Contains(organisation, _web.Page!.QuerySelector("#organisation-area-title")?.TextContent ?? "");
-            var tabs = _web.Page.QuerySelectorAll("#project-nav a[data-tab]").Select(a => a.TextContent.Trim()).ToList();
+            // #52: every group's tabs, opening each group like a user
+            var tabs = (await ProjectNav.AllTabsAsync(_web)).Select(t => t.Title).ToList();
             Assert.All(new[] { first, second, third, fourth }, t => Assert.Contains(t, tabs));
             // Only what makes sense for the organisation (no product requirements, scans or security events yet)
             Assert.DoesNotContain("Product requirements", tabs);

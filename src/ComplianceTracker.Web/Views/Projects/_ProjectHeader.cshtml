@@ -57,8 +57,8 @@ else
 </div>
 }
 
-@* US-169 R2: at most 6 groups; a group with several tabs opens a menu and shows its tabs as a row below when it is the
-   current one. Every tab keeps its own address and data-tab. *@
+@* US-169 R2: at most 6 groups; a group with several tabs links to its first tab and shows its tabs as a row below when it is
+   the current one (#52: no menu, so the tabs are not shown twice). Every tab keeps its own address and data-tab. *@
 @{
     var groups = ProjectTabs.GroupsFor(project);
     var currentGroup = groups.FirstOrDefault(g => g.Tabs.Any(t => t.Slug == Model.Tab));
@@ -78,15 +78,9 @@ else
             }
             else
             {
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle @(isCurrent ? "active" : "")" data-group="@group.Title" href="@TabUrl(group.Tabs[0].Slug)"
-                       role="button" data-bs-toggle="dropdown" aria-expanded="false">@group.Title</a>
-                    <ul class="dropdown-menu">
-                        @foreach (var (slug, title) in group.Tabs)
-                        {
-                            <li><a class="dropdown-item" data-tab="@slug" href="@TabUrl(slug)">@title</a></li>
-                        }
-                    </ul>
+                @* #52: no menu; the group opens its first tab and its tabs show as the row below *@
+                <li class="nav-item">
+                    <a class="nav-link @(isCurrent ? "active" : "")" data-group="@group.Title" aria-current="@(isCurrent ? "page" : null)" href="@TabUrl(group.Tabs[0].Slug)">@group.Title</a>
                 </li>
             }
         }

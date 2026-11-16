@@ -2,7 +2,7 @@
    The Compliance tab is a light overview (_RequirementSummaryRow.cshtml); every action on a requirement is here, and
    after it this page is shown again (the forms send "req"). Layout: back link, a header with code, title, status and
    one primary action ("Add evidence"), the requirement's text, then user stories, evidence, and what waits for a
-   decision. "More" holds Ask the AI and Not applicable.
+   decision. "More" holds Ask the AI; "Not applicable" is next to it (#52).
    Ids and classes used by the tests: article.requirement-row.requirement-page[data-code] (data-detail="true"),
    #back-to-requirements, #primary-action, #requirement-more, and the classes of the earlier stories, kept as they
    were on the row: requirement-code, requirement-title, linked-story, unlink-requirement, evidence, evidence-title,
@@ -126,7 +126,7 @@
             </div>
         </div>
         <div class="d-flex flex-wrap align-items-start gap-2">
-            @if (canAddEvidence || canMarkHere)
+            @if (canAddEvidence)
             {
                 @* R5: the other actions under "More" *@
                 <details class="requirement-more" id="requirement-more">
@@ -143,32 +143,33 @@
                                         <button type="submit" class="btn btn-sm btn-outline-info py-0" title="The local AI looks for stories and evidence that meet this requirement, and drafts a story when nothing does.">Ask the AI</button>
                                     </form>
                                 }
-                                @if (canMarkHere)
-                                {
-                                    <details>
-                                        <summary class="btn btn-sm btn-outline-secondary py-0">Not applicable</summary>
-                                        <form asp-action="MarkNotApplicable" method="post" class="d-flex flex-column gap-1 mt-1 mark-not-applicable">
-                                            <input type="hidden" name="projectId" value="@project.Id" />
-                                            <input type="hidden" name="requirementId" value="@requirement.Id" />
-                                            <input type="hidden" name="sub" value="@sub" />
-                                            <input type="hidden" name="req" value="@requirement.Code" />
-                                            <input name="reason" class="form-control form-control-sm" placeholder="Reason, e.g. from the risk assessment" aria-label="Why @requirement.Code does not apply" />
-                                            @if (Model.ProjectRisks.Count > 0)
-                                            {
-                                                @* R14: a risk as the justification (CRA Art. 13(3)) *@
-                                                <select name="riskId" class="form-select form-select-sm" aria-label="Risk that justifies it">
-                                                    <option value="">No risk named</option>
-                                                    @foreach (var risk in Model.ProjectRisks)
-                                                    {
-                                                        <option value="@risk.Id">@risk.Title (@risk.Level)</option>
-                                                    }
-                                                </select>
-                                            }
-                                            <button type="submit" class="btn btn-sm btn-outline-secondary align-self-start">Mark</button>
-                                        </form>
-                                    </details>
-                                }
                     </div>
+                </details>
+            }
+            @* #52: "Not applicable" is a button of its own, so a requirement that does not apply is skipped quickly *@
+            @if (canMarkHere)
+            {
+                <details class="not-applicable-action" id="not-applicable-action">
+                    <summary class="btn btn-outline-secondary">Not applicable</summary>
+                    <form asp-action="MarkNotApplicable" method="post" class="d-flex flex-column gap-1 mt-1 mark-not-applicable">
+                        <input type="hidden" name="projectId" value="@project.Id" />
+                        <input type="hidden" name="requirementId" value="@requirement.Id" />
+                        <input type="hidden" name="sub" value="@sub" />
+                        <input type="hidden" name="req" value="@requirement.Code" />
+                        <input name="reason" class="form-control form-control-sm" placeholder="Reason, e.g. from the risk assessment" aria-label="Why @requirement.Code does not apply" />
+                        @if (Model.ProjectRisks.Count > 0)
+                        {
+                            @* R14: a risk as the justification (CRA Art. 13(3)) *@
+                            <select name="riskId" class="form-select form-select-sm" aria-label="Risk that justifies it">
+                                <option value="">No risk named</option>
+                                @foreach (var risk in Model.ProjectRisks)
+                                {
+                                    <option value="@risk.Id">@risk.Title (@risk.Level)</option>
+                                }
+                            </select>
+                        }
+                        <button type="submit" class="btn btn-sm btn-outline-secondary align-self-start">Mark</button>
+                    </form>
                 </details>
             }
             @if (canAddEvidence)
@@ -211,13 +212,17 @@
             @if (!project.IsClosed && Model.CanDecide)
             {
                 <div class="d-flex flex-wrap align-items-start gap-2 mt-2">
-                    <form asp-action="CreateStoryForNeedsAction" method="post" class="create-story-for-needs-action" data-busy="Working… this can take a minute">
-                        <input type="hidden" name="projectId" value="@project.Id" />
-                        <input type="hidden" name="markId" value="@mark.Id" />
-                        <input type="hidden" name="sub" value="@sub" />
-                        <input type="hidden" name="req" value="@requirement.Code" />
-                        <button type="submit" class="btn btn-sm btn-outline-primary">Create story</button>
-                    </form>
+                    @if (!project.IsOrganisationArea)
+                    {
+                        @* #52: the organisation area has no user stories, so no "Create story" there *@
+                        <form asp-action="CreateStoryForNeedsAction" method="post" class="create-story-for-needs-action" data-busy="Working… this can take a minute">
+                            <input type="hidden" name="projectId" value="@project.Id" />
+                            <input type="hidden" name="markId" value="@mark.Id" />
+                            <input type="hidden" name="sub" value="@sub" />
+                            <input type="hidden" name="req" value="@requirement.Code" />
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Create story</button>
+                        </form>
+                    }
                     <details class="dismiss-needs-action-menu">
                         <summary class="btn btn-sm btn-outline-secondary">Not needed</summary>
                         <form asp-action="DismissNeedsAction" method="post" class="d-flex flex-column gap-1 mt-1 dismiss-needs-action">

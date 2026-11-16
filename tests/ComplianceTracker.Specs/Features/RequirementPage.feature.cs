@@ -280,8 +280,10 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.ThenAsync("I am on the page of \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 32
-    await testRunner.AndAsync("the page has the primary action \"Add evidence\" and the actions \"Ask the AI\" and \"" +
-                        "Not applicable\" under \"More\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the page has the primary action \"Add evidence\" and next to it \"Not applicable\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 33
+    await testRunner.AndAsync("the action \"Ask the AI\" is under \"More\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -302,7 +304,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("After an action the same requirement is shown", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 35
+#line 36
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -315,14 +317,14 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 36
+#line 37
     await testRunner.WhenAsync("I add the evidence \"Access policy\" with the link \"https://example.com/policy\" to " +
                         "\"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 37
+#line 38
     await testRunner.ThenAsync("I am on the page of \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 38
+#line 39
     await testRunner.AndAsync("the row \"I.2(d)\" shows the evidence \"Access policy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -344,7 +346,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("An error from an action is shown on the requirement\'s page", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 41
+#line 42
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -357,13 +359,13 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 42
+#line 43
     await testRunner.WhenAsync("I add the evidence \"Access policy\" with the link \"not a link\" to \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 43
+#line 44
     await testRunner.ThenAsync("I am on the page of \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 44
+#line 45
     await testRunner.AndAsync("the page shows an error", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -385,7 +387,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A requirement that does not exist is not found", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 47
+#line 48
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -398,10 +400,10 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 48
+#line 49
     await testRunner.WhenAsync("I open the address of \"X.99\" in \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 49
+#line 50
     await testRunner.ThenAsync("the page is not found", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -423,7 +425,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The Compliance tab stays light with realistic data", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 52
+#line 53
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -436,17 +438,17 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 53
+#line 54
     await testRunner.GivenAsync("\"Acme Portal\" has 30 user stories, 12 risks and 20 pieces of evidence on its requ" +
                         "irements", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 54
+#line 55
     await testRunner.WhenAsync("I open the \"CRA\" sub-tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 55
+#line 56
     await testRunner.ThenAsync("the page is under 150 KB", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 56
+#line 57
     await testRunner.AndAsync("the overview has no forms in its rows", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }

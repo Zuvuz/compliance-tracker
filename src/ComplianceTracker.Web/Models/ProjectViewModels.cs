@@ -158,6 +158,7 @@ namespace ComplianceTracker.Web.Models
         public const string NotApplicable = "not-applicable";
         public const string NeedsReview = "needs-review";
         public const string NeedsAction = "needs-action"; // US-155
+        public const string WithoutEvidence = "without-evidence"; // #52
 
         // US-144 R13: the sub-tab with every framework's requirements
         public const string AllSub = "all";
@@ -169,6 +170,7 @@ namespace ComplianceTracker.Web.Models
             (All, "All"),
             (NotCovered, "Not covered"),
             (NeedsAction, "Needs action"),
+            (WithoutEvidence, "Without evidence"),
             (HasSuggestions, "Has suggestions"),
             (NotApplicable, "Not applicable"),
             (NeedsReview, "Needs review"),
@@ -188,6 +190,8 @@ namespace ComplianceTracker.Web.Models
             NotApplicable => !row.IsApplicable,
             NeedsReview => row.NeedsReview,
             NeedsAction => row.NeedsAction is not null,
+            // #52: applies and has no evidence that counts, whether or not a story covers it
+            WithoutEvidence => row.IsApplicable && !row.Requirement.IsRecommendation && !row.HasEvidence,
             _ => true
         };
     }

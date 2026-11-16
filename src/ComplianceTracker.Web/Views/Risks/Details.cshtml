@@ -74,6 +74,37 @@
 
 <section class="mb-4">
     <h2 class="h5">Measures</h2>
+    @if (editable && Model.Compliance is { } compliance)
+    {
+        @* #52: adding comes before the list. R5: a requirement of the project, or one of its user stories *@
+        <form asp-action="AddMeasure" method="post" class="d-flex flex-wrap gap-2" id="add-measure">
+            <input type="hidden" name="id" value="@risk.Id" />
+            <select name="measure" class="form-select form-select-sm" aria-label="Measure">
+                @foreach (var framework in compliance.Frameworks)
+                {
+                    <optgroup label="@FrameworkNames.Short(framework.Framework.Name)">
+                        @foreach (var row in framework.Requirements.Where(r => r.IsApplicable))
+                        {
+                            <option value="requirement:@row.Requirement.Id">@row.Requirement.Code @row.Requirement.Title</option>
+                        }
+                    </optgroup>
+                }
+                <optgroup label="User stories">
+                    @foreach (var story in compliance.WorkItems.Where(w => w.State != ComplianceTracker.Domain.WorkItems.WorkItemState.Removed))
+                    {
+                        <option value="story:@story.Id">@story.Title</option>
+                    }
+                </optgroup>
+            </select>
+            <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Link measure</button>
+        </form>
+
+        @* US-106 R12: the AI suggests measures; a person approves each one *@
+        <form asp-action="SuggestMeasures" method="post" class="mt-2 mb-3" id="suggest-measures" data-busy="Working… this can take a minute">
+            <input type="hidden" name="id" value="@risk.Id" />
+            <button type="submit" class="btn btn-sm btn-outline-info">Suggest measures</button>
+        </form>
+    }
     @if (risk.Measures.Count == 0)
     {
         <p class="text-muted">@(risk.Treatment == RiskTreatment.Reduce ? "No measures yet" : "None")</p>
@@ -100,37 +131,6 @@
             </li>
         }
     </ul>
-    @if (editable && Model.Compliance is { } compliance)
-    {
-        @* R5: a requirement of the project, or one of its user stories *@
-        <form asp-action="AddMeasure" method="post" class="d-flex flex-wrap gap-2" id="add-measure">
-            <input type="hidden" name="id" value="@risk.Id" />
-            <select name="measure" class="form-select form-select-sm" aria-label="Measure">
-                @foreach (var framework in compliance.Frameworks)
-                {
-                    <optgroup label="@FrameworkNames.Short(framework.Framework.Name)">
-                        @foreach (var row in framework.Requirements.Where(r => r.IsApplicable))
-                        {
-                            <option value="requirement:@row.Requirement.Id">@row.Requirement.Code @row.Requirement.Title</option>
-                        }
-                    </optgroup>
-                }
-                <optgroup label="User stories">
-                    @foreach (var story in compliance.WorkItems.Where(w => w.State != ComplianceTracker.Domain.WorkItems.WorkItemState.Removed))
-                    {
-                        <option value="story:@story.Id">@story.Title</option>
-                    }
-                </optgroup>
-            </select>
-            <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Link measure</button>
-        </form>
-
-        @* US-106 R12: the AI suggests measures; a person approves each one *@
-        <form asp-action="SuggestMeasures" method="post" class="mt-2" id="suggest-measures" data-busy="Working… this can take a minute">
-            <input type="hidden" name="id" value="@risk.Id" />
-            <button type="submit" class="btn btn-sm btn-outline-info">Suggest measures</button>
-        </form>
-    }
     @if (TempData["MeasureMessage"] is string measureMessage)
     {
         <p class="small text-muted mt-1" id="measure-message" role="status">@measureMessage</p>
