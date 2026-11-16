@@ -29,6 +29,8 @@
     var reviewDue = openRisks.Count(r => r.IsReviewDue(Model.Now));
     // US-159 R4: serious risks with nothing behind them (no measures, or measures without a story or evidence)
     var seriousWithoutMeasures = openRisks.Count(r => Model.RiskBacking.GetValueOrDefault(r.Id)?.NothingBehind == true);
+    // US-165 R3, R5: residual risks to set or to look at again
+    var residualToSet = openRisks.Count(r => Model.RiskBacking.GetValueOrDefault(r.Id)?.ResidualToSet == true || r.ResidualToReview);
     var linkedStories = frameworks.SelectMany(f => f.Requirements).SelectMany(r => r.Links).Select(l => l.WorkItem.Id).ToHashSet();
     var doneNotLinked = Model.WorkItems.Count(w => w.State == WorkItemState.Closed && !linkedStories.Contains(w.Id));
 
@@ -141,6 +143,10 @@
     {
         attention.Add((Plural(seriousWithoutMeasures, "High or Critical risk with nothing behind it", "High or Critical risks with nothing behind them"),
             Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks, nothing = "1" })!));
+    }
+    if (residualToSet > 0)
+    {
+        attention.Add((Plural(residualToSet, "risk whose residual risk is to be set", "risks whose residual risk is to be set"), RisksUrl()));
     }
     // US-111 R7
     var overdueActions = openRisks.Sum(r => r.OverdueActions(DateOnly.FromDateTime(Model.Now)));

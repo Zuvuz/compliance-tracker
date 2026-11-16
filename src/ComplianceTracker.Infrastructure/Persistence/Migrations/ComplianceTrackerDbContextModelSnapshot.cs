@@ -5822,6 +5822,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<int?>("ResidualLikelihood")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("ResidualToReview")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)

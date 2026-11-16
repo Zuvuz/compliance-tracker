@@ -1,6 +1,7 @@
 @* US-042: the project's risk register, a 5×5 matrix of the open risks, and filters.
    Ids and classes used by the tests: #add-risk-link, #risk-filter, #risk-matrix with cells data-likelihood / data-impact,
-   #risks-table rows risk-row (data-title) with risk-level, risk-status, risk-flags, and #no-risks. *@
+   #risks-table rows risk-row (data-title) with risk-level, risk-status, risk-flags, and #no-risks.
+   US-165: .risk-residual next to the level ("→ Medium" or "→ –"), and the flags .residual-to-set and .residual-to-review. *@
 @using ComplianceTracker.Domain.Risks
 @model ProjectDetailsViewModel
 @{
@@ -190,7 +191,18 @@
                         @foreach (var risk in Model.Risks)
                         {
                             <tr class="risk-row" data-title="@risk.Title">
-                                <td><span class="risk-level badge @Badge(risk.Level)">@risk.Level</span></td>
+                                <td class="text-nowrap">
+                                    <span class="risk-level badge @Badge(risk.Level)">@risk.Level</span>
+                                    @* US-165 R2: the level before and after the measures *@
+                                    <span class="risk-residual small" title="Residual risk after the measures">→ @if (risk.ResidualLevel is { } residual)
+                                        {
+                                            <span class="badge @Badge(residual)">@residual</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">–</span>
+                                        }</span>
+                                </td>
                                 <td>
                                     <a class="risk-link" asp-controller="Risks" asp-action="Details" asp-route-id="@risk.Id">@risk.Title</a>
                                     <div class="risk-flags small">
@@ -198,6 +210,16 @@
                                         {
                                             @* US-159 R2 *@
                                             <span class="badge text-bg-danger nothing-behind" title="An open High or Critical risk to reduce without measures, or whose measures have no story or evidence">Nothing behind it</span>
+                                        }
+                                        @if (Model.RiskBacking.GetValueOrDefault(risk.Id)?.ResidualToSet == true)
+                                        {
+                                            @* US-165 R3 *@
+                                            <span class="badge text-bg-warning residual-to-set" title="Every measure is backed by a story or evidence: set the risk left after them">Residual to set</span>
+                                        }
+                                        @if (risk.ResidualToReview && risk.Status != ComplianceTracker.Domain.Risks.RiskStatus.Closed)
+                                        {
+                                            @* US-165 R5 *@
+                                            <span class="badge text-bg-warning residual-to-review" title="Measures were removed after the residual risk was set">Residual to review</span>
                                         }
                                         @if (risk.HasNoMeasures)
                                         {

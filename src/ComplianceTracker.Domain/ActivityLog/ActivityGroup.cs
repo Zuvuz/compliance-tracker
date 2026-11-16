@@ -80,6 +80,7 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.DocumentLinkSuggested or ActivityAction.DocumentLinkApproved
                 or ActivityAction.DocumentLinkRejected => ActivityGroup.Evidence,
             ActivityAction.RiskAdded or ActivityAction.RiskUpdated or ActivityAction.RiskReviewed or ActivityAction.RisksImported
+                or ActivityAction.RiskResidualSet // US-165
                 or ActivityAction.RiskActionAdded or ActivityAction.RiskActionLinked or ActivityAction.RiskActionDone
                 or ActivityAction.RiskWithdrawn or ActivityAction.RiskReopened or ActivityAction.RiskActionRemoved or ActivityAction.RiskActionUnlinked => ActivityGroup.Risks,
             ActivityAction.VulnerabilityRecorded or ActivityAction.IncidentRecorded or ActivityAction.SecurityReportSent

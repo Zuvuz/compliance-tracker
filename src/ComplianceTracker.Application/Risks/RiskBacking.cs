@@ -12,6 +12,9 @@ namespace ComplianceTracker.Application.Risks
     {
         public static readonly RiskBacking None = new(0, 0, 0, false);
 
+        // US-165 R3: the risk's residual should be set now (every measure is backed and no residual is set)
+        public bool ResidualToSet { get; init; }
+
         // e.g. "2 measures · 1 story · 3 evidence"
         public string Text => $"{Measures} {(Measures == 1 ? "measure" : "measures")} · {Stories} {(Stories == 1 ? "story" : "stories")} · {Evidence} evidence";
     }
@@ -37,6 +40,13 @@ namespace ComplianceTracker.Application.Risks
 
     public static class RiskBackings
     {
+        // US-165 R3: every measure has something behind it: a requirement with a story or evidence, or a story that is not removed
+        public static bool MeasuresBacked(Risk risk, ProjectLinks links)
+            => risk.Measures.Count > 0 && risk.Measures.All(m =>
+                m.RequirementId is { } requirement
+                    ? links.StoriesOfRequirement[requirement].Any(links.Stories.Contains) || links.EvidenceOfRequirement[requirement].Any()
+                    : m.WorkItemId is { } story && links.Stories.Contains(story));
+
         // R1–R3. Through a measure that is a requirement: the stories linked to it and its evidence. Through a measure that
         // is a story: the story and the evidence on it. And the stories and evidence linked to the risk's actions.
         public static RiskBacking For(Risk risk, ProjectLinks links)
@@ -85,7 +95,7 @@ namespace ComplianceTracker.Application.Risks
             // R2, R3: only an open, serious risk to reduce can have nothing behind it
             var serious = risk.Status == RiskStatus.Open && risk.Treatment == RiskTreatment.Reduce && risk.Level >= RiskLevel.High;
             var nothing = serious && (risk.Measures.Count == 0 || (stories.Count == 0 && evidence.Count == 0));
-            return new RiskBacking(risk.Measures.Count, stories.Count, evidence.Count, nothing);
+            return new RiskBacking(risk.Measures.Count, stories.Count, evidence.Count, nothing) { ResidualToSet = risk.ResidualToSet(MeasuresBacked(risk, links)) };
         }
 
         public static IReadOnlyDictionary<Guid, RiskBacking> For(IEnumerable<Risk> risks, ProjectLinks links)

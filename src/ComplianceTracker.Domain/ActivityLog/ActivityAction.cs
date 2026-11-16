@@ -357,6 +357,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         ChecklistItemsSuggested,
         ChecklistSuggestionRejected,
 
+        // US-165: a person set the residual risk after the measures. SubjectId points at the project; Details holds the
+        // risk and the old and new residual, e.g. "Account takeover: Residual risk: – → 2 × 3 (Medium)".
+        RiskResidualSet,
+
         // US-196 R5: an Admin changed the last day of an external member's access. SubjectId points at the member.
         MemberAccessChanged
     }

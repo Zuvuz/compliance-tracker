@@ -43,11 +43,39 @@
 <dl class="row">
     <dt class="col-sm-3">Likelihood × impact</dt>
     <dd class="col-sm-9">@risk.Likelihood × @risk.Impact = @risk.Score (@risk.Level)</dd>
-    @if (risk.ResidualLevel is { } residual)
-    {
-        <dt class="col-sm-3">Residual risk</dt>
-        <dd class="col-sm-9">@risk.ResidualLikelihood × @risk.ResidualImpact (@residual)</dd>
-    }
+    @* US-165 R1, R2: the level before the measures never changes by itself; the residual is set by a person *@
+    <dt class="col-sm-3">Residual risk</dt>
+    <dd class="col-sm-9" id="risk-residual">@risk.ResidualText@(risk.ResidualToReview ? " – to review: measures were removed after it was set" : "")
+        @if (editable)
+        {
+            <details class="mt-1" id="set-residual-menu" open="@(risk.ResidualToReview)">
+                <summary class="btn btn-sm btn-outline-secondary">Set residual risk</summary>
+                <form asp-action="SetResidual" method="post" class="d-flex flex-wrap align-items-end gap-2 mt-1" id="set-residual">
+                    <input type="hidden" name="id" value="@risk.Id" />
+                    <div>
+                        <label class="form-label small mb-0" for="residual-likelihood">Likelihood after the measures</label>
+                        <select name="likelihood" id="residual-likelihood" class="form-select form-select-sm w-auto">
+                            @for (var n = 1; n <= 5; n++)
+                            {
+                                <option value="@n" selected="@(n == (risk.ResidualLikelihood ?? risk.Likelihood))">@n</option>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label small mb-0" for="residual-impact">Impact after the measures</label>
+                        <select name="impact" id="residual-impact" class="form-select form-select-sm w-auto">
+                            @for (var n = 1; n <= 5; n++)
+                            {
+                                <option value="@n" selected="@(n == (risk.ResidualImpact ?? risk.Impact))">@n</option>
+                            }
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Set</button>
+                    <div class="small text-muted w-100">It cannot be higher than @risk.Likelihood × @risk.Impact = @risk.Score.</div>
+                </form>
+            </details>
+        }
+    </dd>
     <dt class="col-sm-3">Owner</dt>
     <dd class="col-sm-9" id="risk-owner">@Model.OwnerOf(risk.OwnerId)</dd>
     <dt class="col-sm-3">Treatment</dt>

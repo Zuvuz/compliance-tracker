@@ -218,6 +218,17 @@ namespace ComplianceTracker.Application.Risks
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        // US-165 R1, R4: a person sets the residual risk after the measures; the old and new residual are logged
+        public async Task SetResidualAsync(Guid projectId, Guid riskId, int likelihood, int impact, CancellationToken cancellationToken = default)
+        {
+            var (_, _, project, risk) = await RiskAsync(projectId, riskId, cancellationToken);
+            if (risk.SetResidualRisk(likelihood, impact) is { } change)
+            {
+                await _log.LogAsync(ActivityAction.RiskResidualSet, project.Id, $"{risk.Title}: {change}", cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+        }
+
         public async Task RemoveMeasureAsync(Guid projectId, Guid riskId, Guid measureId, CancellationToken cancellationToken = default)
         {
             var (organization, _, project, risk) = await RiskAsync(projectId, riskId, cancellationToken);
