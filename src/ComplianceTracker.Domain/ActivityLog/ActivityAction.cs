@@ -339,6 +339,12 @@ namespace ComplianceTracker.Domain.ActivityLog
         OrganisationChecklistItemRemoved,
 
         // US-195 R3: the organisation's default review dates changed; Details holds the months, e.g. "Evidence 12, documents 12, ..."
-        ReviewDefaultsChanged
+        ReviewDefaultsChanged,
+
+        // US-182: an external auditor's read-only access to one project. SubjectId points at the project; Details holds the
+        // e-mail and the period, or for "used" the page or file opened, e.g. "downloaded Access policy.pdf".
+        AuditorAccessGranted,
+        AuditorAccessUsed,
+        AuditorAccessRevoked
     }
 }

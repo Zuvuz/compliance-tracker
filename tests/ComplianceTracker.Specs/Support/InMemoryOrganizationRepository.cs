@@ -26,7 +26,7 @@ namespace ComplianceTracker.Specs.Support
 
         public Task<IReadOnlyList<Membership>> ListMembershipsAsync(string externalId, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<Membership>>(_items
-                .SelectMany(o => o.Members.Where(u => u.ExternalId == externalId).Select(u => new Membership(o.Id, o.Name, u.Role)))
+                .SelectMany(o => o.Members.Where(u => u.ExternalId == externalId).Select(u => new Membership(o.Id, o.Name, u.Role) { OnlyProjectId = u.OnlyProjectId, AccessFrom = u.AccessFrom, AccessUntil = u.AccessUntil }))
                 .OrderBy(m => Domain.Users.RolePermissions.IsExternal(m.Role)).ThenBy(m => m.Name).ToList());
 
         public Task<IReadOnlyList<Organization>> ListAllAsync(CancellationToken cancellationToken = default)

@@ -40,7 +40,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
             ["mappingId"] = "The fixture has no cross-mapping (that needs the pretend AI's vectors and two frameworks); CrossMapping.feature tests it (US-037)",
             ["markId"] = "The fixture has no \"needs action\" mark (that needs the pretend AI's answer); NeedsAction.feature tests it (US-155)",
             ["checkId"] = "The fixture has no evidence check (that needs the pretend AI's answer); EvidenceCheck.feature tests it (US-038)",
-            ["requestId"] = "The fixture has no framework activation waiting for approval (that needs an import from EUR-Lex); CompleteRequirements.feature tests it (US-137)"
+            ["requestId"] = "The fixture has no framework activation waiting for approval (that needs an import from EUR-Lex); CompleteRequirements.feature tests it (US-137)",
+            ["grantId"] = "The fixture has no auditor grant (a grant starts today or later, and the fixture's date is not set); AuditorAccess.feature tests revoking (US-182)"
         };
 
         // Pages the own member gets "not found" for, because the fixture has nothing there yet, and why. They are still

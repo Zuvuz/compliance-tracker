@@ -255,6 +255,32 @@ namespace ComplianceTracker.Domain.Organizations
             return new ProjectChange("Signs for the management", signs ? "No" : "Yes", signs ? "Yes" : "No");
         }
 
+        // US-182: the auditor who accepted a grant may only read that project, in its period
+        public void LimitMember(Guid memberId, AuditorGrant grant)
+        {
+            var member = Members.FirstOrDefault(u => u.Id == memberId) ?? throw new DomainException("Member not found");
+            if (member.Role != UserRole.Auditor)
+            {
+                throw new DomainException("Only an auditor's access is limited to a project");
+            }
+
+            member.LimitTo(grant.ProjectId, grant.From, grant.Until);
+        }
+
+        // US-182 R3, R4: a member who may decide compliance ends an auditor's limited access at once
+        public User EndAuditorAccess(Guid memberId, Guid endedById, DateTime at)
+        {
+            if (_users.FirstOrDefault(u => u.Id == endedById)?.Can(Permission.DecideCompliance) != true)
+            {
+                throw new DomainException("Your role does not allow this");
+            }
+
+            var member = Members.FirstOrDefault(u => u.Id == memberId && u.IsLimitedToProject)
+                ?? throw new DomainException("Member not found");
+            member.Remove(endedById, at);
+            return member;
+        }
+
         // US-090 R1, R2: an Admin removes a member. The member is kept, so their name stays on what they did (R4).
         public User RemoveMember(Guid memberId, Guid removedById, DateTime at)
         {

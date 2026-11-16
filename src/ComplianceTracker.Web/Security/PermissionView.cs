@@ -16,6 +16,9 @@ namespace ComplianceTracker.Web.Security
 
         public Task<bool> CanAsync(Permission permission) => _member.CanAsync(permission);
 
+        // US-182 R5: an external auditor limited to one project sees no organisation pages
+        public async Task<bool> IsLimitedAsync() => await _member.OnlyProjectAsync() is not null;
+
         // US-091 R5: whether the member may check the activity log's chain (Admins and Auditors)
         public async Task<bool> CanCheckActivityLogAsync()
             => await _member.FindOrganizationAsync() is not null

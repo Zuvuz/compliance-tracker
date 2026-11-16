@@ -80,6 +80,7 @@ namespace ComplianceTracker.Specs.Support
                 DELETE FROM "SupplierEvidenceFiles";
                 DELETE FROM "SupplierEvidence";
                 DELETE FROM "Suppliers";
+                DELETE FROM "AuditorGrants";
                 DELETE FROM "Invitations";
                 DELETE FROM "ApprovalRequests";
                 DELETE FROM "OrganisationDocumentFiles";

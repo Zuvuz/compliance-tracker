@@ -35,6 +35,20 @@ namespace ComplianceTracker.Domain.Users
         public void SetRemindersOff(IEnumerable<Reminders.ReminderKind> off)
             => RemindersOff = string.Join(";", off.Where(Reminders.ReminderKinds.CanTurnOff).Distinct().OrderBy(k => k).Select(k => k.ToString()));
 
+        // US-182: an external auditor's member row is limited to one project and a period; null for everyone else
+        public Guid? OnlyProjectId { get; private set; }
+        public DateOnly? AccessFrom { get; private set; }
+        public DateOnly? AccessUntil { get; private set; }
+
+        public bool IsLimitedToProject => OnlyProjectId is not null;
+
+        internal void LimitTo(Guid projectId, DateOnly from, DateOnly until)
+        {
+            OnlyProjectId = projectId;
+            AccessFrom = from;
+            AccessUntil = until;
+        }
+
         // US-132: the member signs reports for the management (a permission given to the person, not a role)
         public bool SignsForManagement { get; internal set; }
 

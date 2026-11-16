@@ -11,6 +11,11 @@
 
 <h1>Create organisation</h1>
 
+@* US-182 R1: an external auditor whose read-only access has ended *@
+@if (ViewData["AccessEnded"] is string ended)
+{
+    <div class="alert alert-info" id="access-ended" role="status">Your access to @ended has ended.</div>
+}
 @if (ViewData["FormerOrganization"] is string former)
 {
     @* US-090 R3: a removed member who signs in again *@
