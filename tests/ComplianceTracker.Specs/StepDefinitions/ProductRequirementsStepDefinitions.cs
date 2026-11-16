@@ -109,12 +109,12 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // ---------------------------------------------------------- Then
 
         [Then("the project has the tab {string}")]
-        public void ThenTheProjectHasTheTab(string title)
-            => Assert.Contains(title, TabTitles());
+        public async Task ThenTheProjectHasTheTab(string title)
+            => Assert.Contains(title, await TabTitlesAsync());
 
         [Then("it has no tab {string}")]
-        public void ThenItHasNoTab(string title)
-            => Assert.DoesNotContain(title, TabTitles());
+        public async Task ThenItHasNoTab(string title)
+            => Assert.DoesNotContain(title, await TabTitlesAsync());
 
         [Then("I am on the {string} tab of {string}")]
         public async Task ThenIAmOnTheTab(string title, string project)
@@ -175,8 +175,9 @@ namespace ComplianceTracker.Specs.StepDefinitions
             _web.Page = await WebScenario.ParseAsync(_web.Response);
         }
 
-        private IEnumerable<string> TabTitles()
-            => _web.Page!.QuerySelectorAll("#project-nav a[data-tab]").Select(a => a.TextContent.Trim());
+        // #52: every group's tabs, opening each group like a user
+        private async Task<IEnumerable<string>> TabTitlesAsync()
+            => (await ProjectNav.AllTabsAsync(_web)).Select(t => t.Title);
 
         private IReadOnlyList<string> Sections()
             => _web.Page!.QuerySelectorAll(".method-section").Select(s => s.GetAttribute("data-method")!).ToList();
