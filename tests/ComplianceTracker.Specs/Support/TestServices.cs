@@ -110,6 +110,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<ComplianceTracker.Application.Reports.IReportSnapshotRepository, ReportSnapshotRepository>(); // US-050
                 services.AddScoped<ComplianceTracker.Application.Reports.IReportSigningRepository, ReportSigningRepository>(); // US-132
                 services.AddSingleton<ComplianceTracker.Application.Reports.IReportSealer, ComplianceTracker.Infrastructure.Reports.ReportSealer>();
+                services.AddSingleton<ComplianceTracker.Application.Reports.IPackageSigner, ComplianceTracker.Infrastructure.Reports.PackageSigner>(); // US-180
                 services.AddSingleton<ComplianceTracker.Application.Reports.IPdfWriter, ComplianceTracker.Infrastructure.Reports.PdfPigReportWriter>(); // US-131
                 services.AddSingleton<ComplianceTracker.Application.Scanning.IScanImporter, ComplianceTracker.Infrastructure.Scanning.SarifScanImporter>();
                 services.AddScoped<ComplianceTracker.Application.Scanning.ISbomRepository, SbomRepository>(); // US-079

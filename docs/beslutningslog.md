@@ -2096,6 +2096,18 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At signere selve ZIP-filen. Det er US-180.
   - At konvertere de uploadede evidensfiler til PDF. Originalerne bevares.
 
+### B137 – En signeret revisionspakke, som modtageren kan kontrollere (US-180)
+
+- **Beslutning:**
+  - **Manifest:** hver pakke har `manifest.json` med hver fils sti og SHA-256 samt pakken, organisationen, projektet, hvem der lavede den og hvornår. Stierne er dem, filerne har i ZIP-filen.
+  - **Signatur:** har organisationen et gyldigt segl (US-132), signeres manifestet som en løsrevet CMS-signatur (PKCS #7, SHA-256) i `manifest.json.p7s`. Den kan også kontrolleres med OpenSSL uden trackeren. Uden segl er pakken usigneret, og indholdsfortegnelsen siger det.
+  - **Kontrolsiden:** "Verify an audit package" kræver ikke login. Filen læses i hukommelsen og gemmes ikke. Pakker over 200 MB, og pakker der pakker sig ud til mere end 2 GB, afvises. Den fælles grænse for uploads pr. IP-adresse gælder (US-097).
+  - **Resultat:** "Unchanged" kun når signaturen er gyldig og alle filer passer. Ellers vises hver fil, der er ændret, mangler eller er kommet til. Siden viser, hvem der har signeret, efter certifikatet, ikke efter manifestets eget navn.
+- **Begrundelse:** En revisor eller myndighed kan stole på pakken uden at spørge organisationen om hver fil (ISO/IEC 27001 A.5.33 og A.8.24, CRA art. 13 og bilag VII).
+- **Fravalgt:**
+  - Tidsstempel fra en ekstern tjeneste. Det står uden for US-180.
+  - At kontrollere certifikatets kæde. Seglet kan være organisationens eget certifikat.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

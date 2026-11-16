@@ -12,4 +12,6 @@
         <a class="btn btn-primary btn-lg" asp-controller="Account" asp-action="Login">Sign in</a>
     </p>
     <p class="text-muted">New here? Choose "Register" on the sign-in page, and create your organisation afterwards.</p>
+    @* US-180: for the receiver of an audit package, without an account *@
+    <p class="small"><a asp-controller="Verify" asp-action="Index" id="verify-link">Verify an audit package</a></p>
 </div>

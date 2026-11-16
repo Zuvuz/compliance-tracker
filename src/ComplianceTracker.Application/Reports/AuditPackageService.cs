@@ -52,14 +52,16 @@ namespace ComplianceTracker.Application.Reports
         private readonly IReportSealer _sealer; // US-197
         private readonly IReportSigningRepository _signings; // US-197: the organisation's seal
         private readonly ISecretProtector _secrets; // US-197
+        private readonly IPackageSigner _packageSigner; // US-180
 
         public AuditPackageService(
             ReportFiles files, ProjectQueries projects, ComplianceQueries compliance, IEvidenceRepository evidence, IRequirementDocumentRepository documents,
             ISbomRepository sboms, AuditService audits, IActivityLogRepository log, IReportSnapshotRepository snapshots, CurrentMember member,
             IActivityLogger logger, IUnitOfWork unitOfWork, ICurrentUser currentUser, TimeProvider clock, AuditReadinessService readiness,
             ISpreadsheetWriter spreadsheets, Projects.PhaseGates gates, IPdfWriter pdf, IReportSealer sealer, IReportSigningRepository signings,
-            ISecretProtector secrets)
+            ISecretProtector secrets, IPackageSigner packageSigner)
         {
+            _packageSigner = packageSigner;
             _pdf = pdf;
             _sealer = sealer;
             _signings = signings;
@@ -235,14 +237,27 @@ namespace ComplianceTracker.Application.Reports
             parts = parts.Select(p => p.Made && seal is not null && p.Content is not null ? p with { Content = Seal(p, seal, organization.Name, now) } : p).ToList();
 
             var contents = Contents(title, organization.Name, project.Name, chosen.Select(f => f.Framework.Name).ToList(), start, end,
-                _currentUser.Identity.Name, now, parts, links, RequirementDossier.SealNote(seal?.Subject));
+                _currentUser.Identity.Name, now, parts, links, RequirementDossier.SealNote(seal?.Subject) + " " + ManifestNote(seal is not null));
             var contentsPart = new PackagePart("00-contents.pdf", Pdf(RequirementDossier.FromText("00-contents.pdf", contents), "Contents"), "Contents") { Made = true };
             if (seal is not null)
             {
                 contentsPart = contentsPart with { Content = Seal(contentsPart, seal, organization.Name, now) };
             }
 
-            var zip = Zip([contentsPart, .. parts]);
+            // US-180 R1, R2: manifest.json with every file's SHA-256 (the paths as they are in the ZIP), signed with the seal
+            var files = PackageManifest.Read(Zip([contentsPart, .. parts]));
+            var manifest = PackageManifest.Create(title, organization.Name, project.Name, _currentUser.Identity.Name, now, seal is not null,
+                files.Select(f => (f.Key, f.Value)));
+            var manifestJson = PackageManifest.ToJson(manifest);
+            List<PackagePart> signature = [new PackagePart(PackageManifest.ManifestPath, manifestJson, "Every file with its SHA-256 (US-180)")];
+            if (seal is not null)
+            {
+                var (pfx, password) = Certificate(seal);
+                signature.Add(new PackagePart(PackageManifest.SignaturePath, _packageSigner.Sign(manifestJson, pfx, password, now),
+                    "The organisation's signature over manifest.json (US-180)"));
+            }
+
+            var zip = Zip([contentsPart, .. parts, .. signature]);
 
             // R3, R5: kept like a locked report; the fingerprint is logged
             var snapshot = ReportSnapshot.Lock(organization.Id, project.Id, Kind, title,
@@ -264,9 +279,18 @@ namespace ComplianceTracker.Application.Reports
         // US-197 R3: the organisation's seal over a PDF the package made; the seal page names the file and its fingerprint
         private byte[] Seal(PackagePart part, Domain.Reports.OrganisationSeal seal, string organization, DateTime now)
         {
-            var pfx = Convert.FromBase64String(_secrets.Unprotect(seal.ProtectedCertificate));
-            return _sealer.Seal(part.Content!, part.Path, part.Sha256!, [], pfx, _secrets.Unprotect(seal.ProtectedPassword), organization, now);
+            var (pfx, password) = Certificate(seal);
+            return _sealer.Seal(part.Content!, part.Path, part.Sha256!, [], pfx, password, organization, now);
         }
+
+        private (byte[] Pfx, string Password) Certificate(Domain.Reports.OrganisationSeal seal)
+            => (Convert.FromBase64String(_secrets.Unprotect(seal.ProtectedCertificate)), _secrets.Unprotect(seal.ProtectedPassword));
+
+        // US-180 R2: what the contents say about the manifest
+        public static string ManifestNote(bool signed)
+            => signed
+                ? "manifest.json lists every file with its SHA-256 and is signed (manifest.json.p7s); the receiver can check the package on the tracker's \"Verify an audit package\" page."
+                : "Unsigned package: the files can be checked against manifest.json, the maker cannot.";
 
         // R2: without dates the last 12 months; one date alone reaches 12 months from it, not past today
         public static (DateOnly From, DateOnly To) Period(DateOnly? from, DateOnly? to, DateOnly today)
