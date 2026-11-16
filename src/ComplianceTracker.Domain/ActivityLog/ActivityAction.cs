@@ -355,6 +355,9 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-193: the AI's checklist items for a framework the organisation uploaded. SubjectId points at the organisation.
         ChecklistItemsSuggested,
-        ChecklistSuggestionRejected
+        ChecklistSuggestionRejected,
+
+        // US-196 R5: an Admin changed the last day of an external member's access. SubjectId points at the member.
+        MemberAccessChanged
     }
 }

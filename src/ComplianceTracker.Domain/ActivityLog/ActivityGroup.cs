@@ -27,7 +27,7 @@ namespace ComplianceTracker.Domain.ActivityLog
             ActivityAction.MemberRoleChanged or ActivityAction.InvitationCreated or ActivityAction.InvitationRevoked
                 or ActivityAction.InvitationAccepted or ActivityAction.MemberRemoved
                 or ActivityAction.PersonalDataExported or ActivityAction.PersonalDataErased
-                or ActivityAction.MemberSignsForManagementChanged
+                or ActivityAction.MemberSignsForManagementChanged or ActivityAction.MemberAccessChanged // US-196
                 or ActivityAction.AuditorAccessGranted or ActivityAction.AuditorAccessUsed or ActivityAction.AuditorAccessRevoked => ActivityGroup.Members, // US-182
             ActivityAction.OrganizationCreated or ActivityAction.FeedbackSent or ActivityAction.FeedbackIssueCreated
                 or ActivityAction.FeedbackDismissed

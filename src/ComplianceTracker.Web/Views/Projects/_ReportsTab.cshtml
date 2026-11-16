@@ -299,6 +299,7 @@
             <h2 class="h5 card-title">External auditor access</h2>
             <p class="small text-muted">Let an auditor read this project's requirements, evidence, reports and log in the tracker, instead of sending
                 files. Read only, at most 30 days, and everything the auditor opens is logged.</p>
+            <p class="small" id="invite-from-users">Consultants and auditors can also be invited with an end date on the <a asp-controller="Users" asp-action="Index" asp-fragment="invitations">Users page</a>.</p>
             @if (TempData["AuditorLink"] is string link)
             {
                 <div class="alert alert-info small" role="status">

@@ -1,5 +1,7 @@
 using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
+using ComplianceTracker.Application.Projects;
+using ComplianceTracker.Application.Reminders;
 using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Domain.Organizations;
@@ -21,12 +23,18 @@ namespace ComplianceTracker.Application.Organizations
     // What an invitation link shows before it is accepted
     public record InvitationPreview(string OrganizationName, UserRole Role, string? Problem);
 
+    // US-196 R1: the link (shown once to the admin), and whether it was also mailed to the invitee
+    public sealed record InvitationResult(string Token, bool Mailed);
+
     // US-009 and US-010: members, their roles and invitations. Only the organisation admin (ManageMembers).
     public class MemberService
     {
         private readonly IOrganizationRepository _organizations;
         private readonly IInvitationRepository _invitations;
         private readonly IAuditorGrantRepository _grants; // US-182
+        private readonly IProjectRepository _projects; // US-196
+        private readonly IMailSender _mail; // US-196
+        private readonly ReminderOptions _links; // US-196
         private readonly ICurrentUser _currentUser;
         private readonly CurrentMember _member;
         private readonly IActivityLogger _log;
@@ -37,6 +45,9 @@ namespace ComplianceTracker.Application.Organizations
             IOrganizationRepository organizations,
             IInvitationRepository invitations,
             IAuditorGrantRepository grants,
+            IProjectRepository projects,
+            IMailSender mail,
+            ReminderOptions links,
             ICurrentUser currentUser,
             CurrentMember member,
             IActivityLogger log,
@@ -46,6 +57,9 @@ namespace ComplianceTracker.Application.Organizations
             _organizations = organizations;
             _invitations = invitations;
             _grants = grants;
+            _projects = projects;
+            _mail = mail;
+            _links = links;
             _currentUser = currentUser;
             _member = member;
             _log = log;
@@ -77,15 +91,84 @@ namespace ComplianceTracker.Application.Organizations
 
         // US-009 R1, R6: a random token; only its SHA-256 is stored. Returns the token, which is shown once.
         public async Task<string> CreateInvitationAsync(UserRole role, CancellationToken cancellationToken = default)
+            => (await CreateInvitationAsync(role, email: null, accessUntil: null, onlyProjectId: null, cancellationToken)).Token;
+
+        // US-196 R1, R2: the invitee's e-mail, and for a consultant or an auditor an end date and (auditor) one project.
+        // The link is mailed at once when a mail server is set up (US-183), and always shown once to the admin.
+        public async Task<InvitationResult> CreateInvitationAsync(UserRole role, string? email, DateOnly? accessUntil, Guid? onlyProjectId,
+            CancellationToken cancellationToken = default)
         {
             var (organization, user) = await _member.RequireAsync(Permission.ManageMembers, cancellationToken);
-            var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)).Replace('+', '-').Replace('/', '_').TrimEnd('=');
+            Domain.Projects.Project? project = null;
+            if (onlyProjectId is { } projectId)
+            {
+                project = await _projects.GetAsync(organization.Id, projectId, cancellationToken);
+                if (project is null || project.IsOrganisationArea)
+                {
+                    throw new DomainException("Choose one of the organisation's projects");
+                }
+            }
 
-            var invitation = Invitation.Create(organization.Id, role, Hash(token), user.Id, Now);
+            var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)).Replace('+', '-').Replace('/', '_').TrimEnd('=');
+            var invitation = Invitation.Create(organization.Id, role, Hash(token), user.Id, Now, email, accessUntil, onlyProjectId);
+
+            // The same person is not invited twice at a time: the first link would still work
+            if (invitation.Email is { } address
+                && (await _invitations.ListAsync(organization.Id, cancellationToken)).Any(i => i.IsUsable(Now) && i.Email == address))
+            {
+                throw new DomainException($"An invitation to {address} is already open; revoke it first");
+            }
+
             await _invitations.AddAsync(invitation, cancellationToken);
-            await _log.LogAsync(ActivityAction.InvitationCreated, invitation.Id, RolePermissions.Title(role), cancellationToken);
+            await _log.LogAsync(ActivityAction.InvitationCreated, invitation.Id, Describe(invitation, project), cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
-            return token;
+
+            var mailed = false;
+            if (invitation.Email is { } to && _mail.IsConfigured)
+            {
+                try
+                {
+                    var path = AuditorAccessService.LinkPath(token);
+                    var link = string.IsNullOrWhiteSpace(_links.BaseUrl) ? path : _links.BaseUrl.TrimEnd('/') + path;
+                    await _mail.SendAsync(to, $"Invitation to {organization.Name}",
+                        $"{organization.Name} invites you as {RolePermissions.Title(role)}{Limits(invitation, project)}.\n\n"
+                        + $"Sign in with {to} and accept: {link}\n\n"
+                        + $"The link works once and for {Invitation.ValidDays} days.", cancellationToken);
+                    mailed = true;
+                }
+                catch (Exception error) when (error is not OperationCanceledException)
+                {
+                    mailed = false; // the link is shown to the admin, who can send it
+                }
+            }
+
+            return new InvitationResult(token, mailed);
+        }
+
+        // e.g. "Consultant · carl@advisor.example · until 31-12-2026"
+        public static string Describe(Invitation invitation, Domain.Projects.Project? project)
+            => string.Join(" · ", new[]
+            {
+                RolePermissions.Title(invitation.Role),
+                invitation.Email,
+                invitation.AccessUntil is { } until ? $"until {until:dd-MM-yyyy}" : null,
+                project is null ? null : $"only {project.Name}"
+            }.Where(p => p is not null));
+
+        private static string Limits(Invitation invitation, Domain.Projects.Project? project)
+            => (project is null ? "" : $" for {project.Name} only")
+               + (invitation.AccessUntil is { } until ? $", until {until:dd-MM-yyyy}" : "");
+
+        // US-196 R5: an Admin changes the last day of a consultant's or an auditor's access
+        public async Task SetAccessUntilAsync(Guid memberId, DateOnly until, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.ManageMembers, cancellationToken);
+            var change = organization.SetAccessUntil(memberId, until, user.Id, DateOnly.FromDateTime(Now));
+            if (change is not null)
+            {
+                await _log.LogAsync(ActivityAction.MemberAccessChanged, memberId, change.ToString(), cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
         }
 
         // US-009 R4
@@ -113,6 +196,7 @@ namespace ComplianceTracker.Application.Organizations
             try
             {
                 invitation.EnsureUsable(Now);
+                invitation.EnsureFor(_currentUser.Identity.Email); // US-196 R4
                 problem = Refusal(await _organizations.ListMembershipsAsync(_currentUser.Identity.ExternalId, cancellationToken), invitation);
             }
             catch (DomainException error)
@@ -130,6 +214,7 @@ namespace ComplianceTracker.Application.Organizations
             var invitation = await _invitations.GetByTokenHashAsync(Hash(token ?? ""), cancellationToken)
                 ?? throw new DomainException("The invitation was not found");
             invitation.EnsureUsable(Now);
+            invitation.EnsureFor(identity.Email); // US-196 R4
 
             // B16, B121: one organisation per person, more only with an external role (US-187 R1)
             if (Refusal(await _organizations.ListMembershipsAsync(identity.ExternalId, cancellationToken), invitation) is { } refusal)
@@ -153,6 +238,11 @@ namespace ComplianceTracker.Application.Organizations
 
                 organization.LimitMember(user.Id, grant);
                 grant.Accepted(user.Id);
+            }
+            else
+            {
+                // US-196 R2, R3: the invitation's end date and project, from today
+                organization.LimitMember(user.Id, invitation, DateOnly.FromDateTime(Now));
             }
             await _log.LogAsync(organization.Id, user.Id, ActivityAction.InvitationAccepted, invitation.Id, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);

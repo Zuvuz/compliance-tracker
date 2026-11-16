@@ -1,7 +1,8 @@
 @* Users (US-045, in the top bar): the members of the organisation and their roles (US-010), and invitations (US-009).
    The first three columns are checked by the tests: name, e-mail, role.
    Ids and classes used by the tests: #organisation-users rows with data-member, change-role and remove-member forms (US-090),
-   #create-invitation, #invitation-link, #open-invitations rows with revoke-invitation forms. *@
+   #create-invitation, #invitation-link, #open-invitations rows with revoke-invitation forms.
+   US-196: #create-invitation has email, accessUntil and onlyProjectId; #invitation-mailed; .access-until and form.set-access-until on a row. *@
 @using ComplianceTracker.Domain.Organizations
 @model MembersViewModel
 @{
@@ -35,7 +36,17 @@
             <tr data-member="@user.Name">
                 <td>@user.Name</td>
                 <td>@user.Email</td>
-                <td title="@RolePermissions.Title(user.Role)">@user.Role</td>
+                <td title="@RolePermissions.Title(user.Role)">@user.Role
+                    @if (user.AccessUntil is { } until && until != DateOnly.MaxValue)
+                    {
+                        @* US-196 R3: the access ends by itself after this day *@
+                        <div class="small text-muted access-until">until @until.ToString("dd-MM-yyyy")</div>
+                    }
+                    @if (user.OnlyProjectId is { } onlyProject)
+                    {
+                        <div class="small text-muted only-project">only @(Model.Projects.FirstOrDefault(p => p.Id == onlyProject)?.Name ?? "one project")</div>
+                    }
+                </td>
                 @if (canManage)
                 {
                     <td>
@@ -56,6 +67,16 @@
                             <input type="hidden" name="signs" value="@(user.SignsForManagement ? "false" : "true")" />
                             <button type="submit" class="btn btn-sm btn-link p-0">@(user.SignsForManagement ? "Signs for the management · stop" : "Let sign for the management")</button>
                         </form>
+                        @if (RolePermissions.IsExternal(user.Role))
+                        {
+                            @* US-196 R5: change the last day of access; removing the member ends it at once *@
+                            <form asp-action="SetAccessUntil" method="post" class="d-flex flex-wrap gap-1 mt-1 set-access-until">
+                                <input type="hidden" name="memberId" value="@user.Id" />
+                                <input type="date" name="accessUntil" class="form-control form-control-sm w-auto" min="@Model.Today.ToString("yyyy-MM-dd")"
+                                       value="@(user.AccessUntil is { } current && current != DateOnly.MaxValue ? current.ToString("yyyy-MM-dd") : "")" aria-label="Access until for @user.Name" />
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">Set end date</button>
+                            </form>
+                        }
                     </td>
                     <td>
                         @* US-090 R1: asks once more before the member is removed *@
@@ -124,7 +145,11 @@
 @if (canManage)
 {
     <section id="invitations">
-        <h2 class="h5">Invite a colleague</h2>
+        <h2 class="h5">Invite a person</h2>
+        @if (TempData["InvitationMailed"] is string mailedTo)
+        {
+            <div class="alert alert-info" id="invitation-mailed" role="status">The link was mailed to @mailedTo.</div>
+        }
         @if (TempData["InvitationLink"] is string link)
         {
             @* US-009 R6: shown once; only its hash is stored *@
@@ -133,25 +158,48 @@
                 <input class="form-control mt-2" id="invitation-link" value="@link" readonly />
             </div>
         }
-        <form asp-action="CreateInvitation" method="post" class="d-flex flex-wrap gap-2 mb-3" id="create-invitation">
-            <select name="role" class="form-select form-select-sm w-auto" aria-label="Role for the invited person">
-                @foreach (var role in roles)
-                {
-                    <option value="@role" selected="@(role == UserRole.Developer)">@RolePermissions.Title(role)</option>
-                }
-            </select>
-            <button type="submit" class="btn btn-sm btn-primary">Create invitation link</button>
+        @* US-196: the e-mail gets the link at once; Consultant and Auditor can have an end date, an auditor one project *@
+        <form asp-action="CreateInvitation" method="post" class="d-flex flex-wrap align-items-end gap-2 mb-3" id="create-invitation">
+            <div>
+                <label class="form-label small mb-0" for="invite-email">E-mail</label>
+                <input type="email" name="email" id="invite-email" class="form-control form-control-sm" maxlength="@Invitation.MaxEmailLength" required placeholder="name@example.com" />
+            </div>
+            <div>
+                <label class="form-label small mb-0" for="invite-role">Role</label>
+                <select name="role" id="invite-role" class="form-select form-select-sm w-auto">
+                    @foreach (var role in roles)
+                    {
+                        <option value="@role" selected="@(role == UserRole.Developer)">@RolePermissions.Title(role)</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="form-label small mb-0" for="invite-until">Access until <span class="text-muted">(consultant, auditor)</span></label>
+                <input type="date" name="accessUntil" id="invite-until" class="form-control form-control-sm w-auto" min="@Model.Today.ToString("yyyy-MM-dd")" />
+            </div>
+            <div>
+                <label class="form-label small mb-0" for="invite-project">Only the project <span class="text-muted">(auditor)</span></label>
+                <select name="onlyProjectId" id="invite-project" class="form-select form-select-sm w-auto">
+                    <option value="">Every project</option>
+                    @foreach (var project in Model.Projects)
+                    {
+                        <option value="@project.Id">@project.Name</option>
+                    }
+                </select>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">Invite</button>
         </form>
 
         @if (Model.Invitations.Count > 0)
         {
             <table class="table table-sm" id="open-invitations">
-                <thead><tr><th>Role</th><th>Created</th><th>Expires</th><th></th></tr></thead>
+                <thead><tr><th>Role</th><th>To</th><th>Created</th><th>Expires</th><th></th></tr></thead>
                 <tbody>
                     @foreach (var invitation in Model.Invitations)
                     {
                         <tr data-role="@invitation.Role">
                             <td>@RolePermissions.Title(invitation.Role)</td>
+                            <td class="invitation-email">@(invitation.Email ?? "Anyone with the link")@(invitation.AccessUntil is { } until ? $" · until {until:dd-MM-yyyy}" : "")</td>
                             <td>@invitation.CreatedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
                             <td>@invitation.ExpiresAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
                             <td>

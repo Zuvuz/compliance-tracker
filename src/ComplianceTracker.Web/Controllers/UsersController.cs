@@ -30,7 +30,8 @@ namespace ComplianceTracker.Web.Controllers
 
         // GET /Users
         [HttpGet]
-        public async Task<IActionResult> Index(CancellationToken cancellationToken)
+        public async Task<IActionResult> Index([FromServices] Application.Projects.ProjectQueries projects, [FromServices] TimeProvider clock,
+            CancellationToken cancellationToken)
         {
             var organization = await _organizations.MineAsync(cancellationToken);
             if (organization is null)
@@ -43,7 +44,11 @@ namespace ComplianceTracker.Web.Controllers
                 return Forbid(); // US-045 R2
             }
 
-            return View(new MembersViewModel(organization, await _memberQueries.OpenInvitationsAsync(cancellationToken)));
+            return View(new MembersViewModel(organization, await _memberQueries.OpenInvitationsAsync(cancellationToken))
+            {
+                Projects = (await projects.ListAsync(cancellationToken)).Where(p => !p.IsOrganisationArea).OrderBy(p => p.Name).ToList(),
+                Today = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime)
+            });
         }
 
         // GET /Users/MyData: US-095 R2, for every member (not only those who manage members)
@@ -102,13 +107,36 @@ namespace ComplianceTracker.Web.Controllers
         }
 
         // POST /Users/CreateInvitation: US-009 R1. The link is shown once (only its hash is stored).
+        // US-196: with the invitee's e-mail (the link is mailed at once), and for Consultant / Auditor an end date and a project.
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Index))]
-        public async Task<IActionResult> CreateInvitation(UserRole role, CancellationToken cancellationToken)
+        public async Task<IActionResult> CreateInvitation(UserRole role, string? email, DateOnly? accessUntil, Guid? onlyProjectId,
+            CancellationToken cancellationToken)
         {
-            var token = await _members.CreateInvitationAsync(role, cancellationToken);
-            TempData["InvitationLink"] = Url.Action("Accept", "Invitations", new { token }, Request.Scheme);
+            var external = RolePermissions.IsExternal(role);
+            var result = await _members.CreateInvitationAsync(role, email, external ? accessUntil : null,
+                role == UserRole.Auditor ? onlyProjectId : null, cancellationToken);
+            TempData["InvitationLink"] = Url.Action("Accept", "Invitations", new { token = result.Token }, Request.Scheme);
+            if (result.Mailed)
+            {
+                TempData["InvitationMailed"] = email?.Trim();
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST /Users/SetAccessUntil: US-196 R5, the last day of a consultant's or an auditor's access
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> SetAccessUntil(Guid memberId, DateOnly? accessUntil, CancellationToken cancellationToken)
+        {
+            if (accessUntil is not { } until)
+            {
+                throw new Domain.Common.DomainException("Choose the last day of access");
+            }
+
+            await _members.SetAccessUntilAsync(memberId, until, cancellationToken);
             return RedirectToAction(nameof(Index));
         }
 

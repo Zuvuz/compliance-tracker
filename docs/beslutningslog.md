@@ -2060,6 +2060,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At lade sprogmodellen formulere punktet. Kravets titel kan rettes ved godkendelsen.
   - At foreslå automatisk ved hver upload. Man beder selv om forslag.
 
+### B134 – Invitation med e-mail og slutdato fra Users-siden (US-196)
+
+- **Beslutning:**
+  - **Ét sted:** alle invitationer laves på Users-siden med e-mail og rolle. For konsulent og revisor kan man sætte en slutdato, og for revisor også ét projekt. Linket sendes med det samme, når der er en mailserver (US-183), og vises altid én gang for admin.
+  - **Kun den inviterede:** en invitation med e-mail kan kun bruges af den, der er logget ind med den e-mail. E-mailen gemmes med små bogstaver.
+  - **Adgangen slutter af sig selv:** den starter den dag, invitationen accepteres, og slutter efter slutdatoen, som revisoradgangen i US-182. Admin kan flytte slutdatoen på Users-siden; ændringen logges. En medarbejderrolle har ingen slutdato, og et rolleskift til en medarbejderrolle fjerner den.
+  - **Samme person to gange:** en ny invitation til en e-mail, der allerede har en åben invitation, afvises, indtil den første er trukket tilbage.
+  - **Gamle links:** invitationer uden e-mail (fra før US-196) virker som før. Formularen kræver e-mail.
+- **Begrundelse:** Adgang gives ét sted, til en navngiven person, og en ekstern persons adgang slutter af sig selv (ISO/IEC 27001 A.5.15, A.5.16, A.5.18 og A.5.19).
+- **Fravalgt:**
+  - At gøre e-mail obligatorisk i domænet. Det ville ugyldiggøre åbne links fra før US-196.
+  - At lade medarbejdere få en slutdato. Det står som et åbent spørgsmål i US-196.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
