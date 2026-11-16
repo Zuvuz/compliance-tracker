@@ -76,8 +76,13 @@ namespace ComplianceTracker.Application.Reports
         // US-120: for one reader, for all regulations or one (sub is its slug)
         public async Task<(ReportDocument Document, ReportFile Pdf)?> TraceabilityAsync(
             Guid projectId, ReportAudience audience, string? sub, CancellationToken cancellationToken = default)
+            => await TraceabilityAsync(projectId, audience, sub, inPackage: false, cancellationToken);
+
+        // US-198: inPackage when the report is made for an audit package
+        public async Task<(ReportDocument Document, ReportFile Pdf)?> TraceabilityAsync(
+            Guid projectId, ReportAudience audience, string? sub, bool inPackage, CancellationToken cancellationToken = default)
         {
-            if (await BuildTraceabilityAsync(projectId, audience, sub, cancellationToken) is not { } built)
+            if (await BuildTraceabilityAsync(projectId, audience, sub, inPackage, cancellationToken) is not { } built)
             {
                 return null;
             }
@@ -94,11 +99,11 @@ namespace ComplianceTracker.Application.Reports
         // US-141: the report model only, for the Excel file, so Excel and PDF are made by the same code (R8)
         public async Task<ReportDocument?> TraceabilityDocumentAsync(
             Guid projectId, ReportAudience audience, string? sub, CancellationToken cancellationToken = default)
-            => (await BuildTraceabilityAsync(projectId, audience, sub, cancellationToken))?.Document;
+            => (await BuildTraceabilityAsync(projectId, audience, sub, inPackage: false, cancellationToken))?.Document;
 
         private async Task<(ReportDocument Document, Domain.Projects.Project Project, Domain.Organizations.Organization Organization,
             IReadOnlyList<FrameworkCompliance> Frameworks, DateTime Now)?> BuildTraceabilityAsync(
-            Guid projectId, ReportAudience audience, string? sub, CancellationToken cancellationToken)
+            Guid projectId, ReportAudience audience, string? sub, bool inPackage, CancellationToken cancellationToken)
         {
             var project = await _projects.GetAsync(projectId, cancellationToken);
             var organization = await _organizations.MineAsync(cancellationToken);
@@ -133,23 +138,25 @@ namespace ComplianceTracker.Application.Reports
             {
                 HighRisks = highRisks,
                 Last = audience == ReportAudience.Management
-                    ? await LastManagementReportAsync(organization.Id, projectId, frameworks.Select(f => f.Framework.Name).Distinct().ToList(), cancellationToken)
-                    : null
+                    ? await LastManagementReportAsync(organization.Id, projectId, frameworks.Select(f => f.Framework.Name).Distinct().ToList(), inPackage, cancellationToken)
+                    : null,
+                InPackage = inPackage
             };
             var lifecycle = await _gates.LifecycleAsync(projectId, compliance.Frameworks, cancellationToken); // US-194
             var document = TraceabilityReport.Build(audience, project, frameworks, NameOf, _currentUser.Identity.Name, now, facts, lifecycle);
             return (document, project, organization, frameworks, now);
         }
 
-        // US-141 R3: the newest locked management report of the project with exactly these regulations
+        // US-141 R3: the newest locked management report of the project with exactly these regulations.
+        // US-198 R2, R4: for an audit package, the newest that shares a regulation, also one locked with an earlier package.
         private async Task<LastManagementReport?> LastManagementReportAsync(
-            Guid organizationId, Guid projectId, IReadOnlyList<string> regulations, CancellationToken cancellationToken)
+            Guid organizationId, Guid projectId, IReadOnlyList<string> regulations, bool inPackage, CancellationToken cancellationToken)
         {
             foreach (var snapshot in (await _snapshots.ListAsync(organizationId, projectId, cancellationToken)).OrderByDescending(s => s.LockedAt))
             {
                 if (snapshot.Kind.StartsWith("traceability:management:", StringComparison.Ordinal)
                     && ManagementPriorities.ParseFigures(snapshot.Figures) is { } figures
-                    && ManagementPriorities.SameRegulations(figures, regulations))
+                    && (inPackage ? ManagementPriorities.SharesRegulations(figures, regulations) : ManagementPriorities.SameRegulations(figures, regulations)))
                 {
                     return new LastManagementReport(snapshot.LockedAt, figures);
                 }

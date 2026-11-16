@@ -64,6 +64,9 @@ namespace ComplianceTracker.Application.Reports
 
         // US-141 R3: the newest locked management report with the same regulations; null when there is none
         public LastManagementReport? Last { get; init; }
+
+        // US-198: the report is made for an audit package, which compares with the last package
+        public bool InPackage { get; init; }
     }
 
     // US-120: the traceability matrix (US-052) for one reader, built from the same data as the Compliance tab, so the

@@ -2072,6 +2072,16 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - At gøre e-mail obligatorisk i domænet. Det ville ugyldiggøre åbne links fra før US-196.
   - At lade medarbejdere få en slutdato. Det står som et åbent spørgsmål i US-196.
+### B135 – Revisionspakken låser sine rapporter og sammenligner med den forrige pakke (US-198)
+
+- **Beslutning:**
+  - **Låst med pakken:** når en revisionspakke laves, låses hver rapport i den også (US-050) med sit fingeraftryk. Det gælder sporbarhed pr. framework, ledelsesrapporten, Statement of Applicability og risikovurderingen. Rapporten peger på pakken og vises under den på Reports-fanen, ikke igen for sig selv.
+  - **Since last:** ledelsesrapporten i pakken sammenligner med den nyeste tidligere låste ledelsesrapport, der deler mindst ét regulativ. Det kan også være en fra en tidligere pakke. Uden en tidligere står der "First package: nothing to compare with".
+  - **Nyt og fjernet:** et framework, der er kommet til siden sidst, står som "New". Et, der ikke længere følges, står som "No longer followed".
+  - **Uden for pakken** gælder US-141 som før: kun en rapport med præcis de samme regulativer sammenlignes.
+- **Begrundelse:** Ændringen siden sidste revision vises uden ekstra trin, og hver rapport i en pakke bevares uændret (ISO/IEC 27001 9.2, 9.3 og A.5.33).
+- **Fravalgt:**
+  - At sammenligne evidensfiler mellem pakker. Det står uden for US-198.
 
 ## Åbne spørgsmål til klassediagrammet
 
