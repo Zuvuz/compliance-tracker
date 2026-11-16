@@ -59,8 +59,12 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             await using var db = _web.CreateDbContext();
             var sha = await db.Evidence.Where(e => e.Title == evidence).Select(e => e.Sha256).SingleAsync();
-            var lines = (await ContentsAsync()).Split('\n').Select(l => l.Trim()).ToList();
-            Assert.Equal($"SHA-256 {sha}", lines[lines.IndexOf(path) + 2]);
+            // US-197: the contents are a PDF; the path is followed by its description and its SHA-256
+            var contents = await ContentsAsync();
+            var at = contents.IndexOf(path + " ", StringComparison.Ordinal);
+            Assert.True(at >= 0, $"The contents do not list {path}.");
+            Assert.Equal(at + path.Length, contents.IndexOf(" ", at, StringComparison.Ordinal));
+            Assert.Contains($"SHA-256 {sha}", contents[at..Math.Min(contents.Length, at + 400)], StringComparison.Ordinal);
         }
 
         [Then("the audit package's contents say {string}")]
@@ -69,11 +73,31 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // US-179
         [Then("the audit package's file {string} says {string}")]
         public async Task ThenTheFileSays(string path, string text)
-            => Assert.Contains(text, Encoding.UTF8.GetString(await FileAsync(path)), StringComparison.Ordinal);
+            => Assert.Contains(text, Text(path, await FileAsync(path)), StringComparison.Ordinal);
 
         [Then("the audit package's file {string} says no {string}")]
         public async Task ThenTheFileSaysNo(string path, string text)
-            => Assert.DoesNotContain(text, Encoding.UTF8.GetString(await FileAsync(path)), StringComparison.OrdinalIgnoreCase);
+            => Assert.DoesNotContain(text, Text(path, await FileAsync(path)), StringComparison.OrdinalIgnoreCase);
+
+        // US-197: a file on two requirements is named in the dossier for each
+        [Then("the audit package's file {string} says {string} {int} times")]
+        public async Task ThenTheFileSaysTimes(string path, string text, int times)
+        {
+            var content = Text(path, await FileAsync(path));
+            Assert.Equal(times, (content.Length - content.Replace(text, "", StringComparison.Ordinal).Length) / text.Length);
+        }
+
+        // US-197: the package's own texts are PDFs; their words are read in order, joined by spaces
+        public static string Text(string path, byte[] content)
+        {
+            if (!path.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                return Encoding.UTF8.GetString(content);
+            }
+
+            using var pdf = UglyToad.PdfPig.PdfDocument.Open(content);
+            return string.Join(" ", pdf.GetPages().Select(p => string.Join(" ", p.GetWords().Select(w => w.Text))));
+        }
 
         [Then("the audit package has {int} file(s) under {string}")]
         public async Task ThenHasFilesUnder(int count, string folder)
@@ -149,11 +173,14 @@ namespace ComplianceTracker.Specs.StepDefinitions
             return _files;
         }
 
+        // US-197: one file of the newest package, for other steps
+        public Task<byte[]> PackageFileAsync(string path) => FileAsync(path);
+
         private async Task<byte[]> FileAsync(string path)
             => (await FilesAsync()).TryGetValue(path, out var file) ? file
                 : throw new Xunit.Sdk.XunitException($"The package has no '{path}'; it has {string.Join(", ", (await FilesAsync()).Keys)}.");
 
-        private async Task<string> ContentsAsync() => Encoding.UTF8.GetString((await FilesAsync())["00-contents.txt"]);
+        private async Task<string> ContentsAsync() => Text("00-contents.pdf", await FileAsync("00-contents.pdf"));
 
         private async Task<Guid> ProjectIdAsync(string project)
         {

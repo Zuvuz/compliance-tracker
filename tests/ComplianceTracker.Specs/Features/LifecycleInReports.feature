@@ -17,9 +17,9 @@ Feature: The lifecycle phase and its checklist in the reports
     Given "Acme Portal" is in the phase "Design"
     And I change the phase of "Acme Portal" to "Development"
     When I create the audit package of "Acme Portal"
-    Then the audit package's file "lifecycle.txt" says "Design → Development"
-    And the audit package's file "lifecycle.txt" says "missing: Essential requirements designed in"
-    And the audit package's file "lifecycle.txt" says "[Missing] Threat model made – CRA Art. 13(3)"
+    Then the audit package's file "lifecycle.pdf" says "Design -> Development"
+    And the audit package's file "lifecycle.pdf" says "missing: Essential requirements designed in"
+    And the audit package's file "lifecycle.pdf" says "[Missing] Threat model made – CRA Art. 13(3)"
 
   @US-194 @iso27001-9.2 @integration
   Scenario: The traceability workbook has the checklist with turned-off items and their reason

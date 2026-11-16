@@ -21,7 +21,7 @@ Feature: Audit package for an external auditor
     Given I upload the CycloneDX SBOM "sbom.cdx.json" with 3 components for version "2.1.0"
     And an audit of "Acme Portal" found "Access reviews not documented" for "Anna" due "2026-12-31"
     When I create the audit package of "Acme Portal"
-    Then the audit package contains "00-contents.txt", "01-traceability-cra.pdf", "02-compliance-status.pdf" and "04-risk-assessment.pdf"
+    Then the audit package contains "00-contents.pdf", "01-traceability-cra.pdf", "02-compliance-status.pdf" and "04-risk-assessment.pdf"
     And the audit package contains "evidence/MFA-config-mfa.pdf"
     And the audit package contains "sbom/2.1.0-sbom.cdx.json"
     And the audit package contains "05-activity-log-2025-11-12-to-2026-11-12.csv"
@@ -50,23 +50,24 @@ Feature: Audit package for an external auditor
     When "Bo" creates the audit package of "Acme Portal"
     Then the project "Acme Portal" has 1 audit package
 
-  # US-179: the package sorted per requirement. Each applicable requirement has a folder with a README; a file is stored
-  # once under evidence/ and referred to from every requirement it proves; an index lists everything as HTML and Excel.
+  # US-179: a file is stored once under evidence/ and referred to from every requirement it proves; an index lists
+  # everything as HTML and Excel. US-197: each framework's dossier (a PDF) has every requirement with its evidence.
 
-  @US-179 @iso27001-A.5.33 @integration
-  Scenario: Each requirement has a folder with a README that names its evidence
+  @US-179 @US-197 @iso27001-A.5.33 @integration
+  Scenario: The framework's dossier names each requirement's evidence
     When I create the audit package of "Acme Portal"
-    Then the audit package contains "CRA/I.2(d)/README.txt"
-    And the audit package's file "CRA/I.2(d)/README.txt" says "File: evidence/MFA-config-mfa.pdf"
-    And the audit package's file "CRA/I.2(d)/README.txt" says "[US-004] Sign in"
+    Then the audit package contains "CRA-dossier.pdf"
+    And the audit package's file "CRA-dossier.pdf" says "I.2(d)"
+    And the audit package's file "CRA-dossier.pdf" says "evidence/MFA-config-mfa.pdf, SHA-256"
+    And the audit package's file "CRA-dossier.pdf" says "[US-004] Sign in"
+    And the audit package has 0 files under "CRA/"
 
   @US-179 @integration
   Scenario: A file on two requirements is stored once
     Given the evidence "Access policy" is linked to "I.2(a)" and "I.2(b)"
     When I create the audit package of "Acme Portal"
     Then the audit package has 2 files under "evidence/"
-    And the audit package's file "CRA/I.2(a)/README.txt" says "File: evidence/Access-policy-access-policy.pdf"
-    And the audit package's file "CRA/I.2(b)/README.txt" says "File: evidence/Access-policy-access-policy.pdf"
+    And the audit package's file "CRA-dossier.pdf" says "evidence/Access-policy-access-policy.pdf" 2 times
 
   @US-179 @integration
   Scenario: The index lists each requirement with its evidence and fingerprint
