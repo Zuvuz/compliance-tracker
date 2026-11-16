@@ -13,7 +13,10 @@ namespace ComplianceTracker.Specs.StepDefinitions
         private static readonly Dictionary<(string File, string Rule), string> Reviewed = new()
         {
             [("src/ComplianceTracker.Web/wwwroot/js/work-items.js", "innerHTML")] =
-                "Inserts the work item list from the tracker's own page (/Projects/WorkItems), which Razor has already encoded (US-018 R7)"
+                "Inserts the work item list from the tracker's own page (/Projects/WorkItems), which Razor has already encoded (US-018 R7)",
+            [("src/ComplianceTracker.Infrastructure/Persistence/OrganisationData.cs", "raw SQL")] =
+                "Exports and deletes a whole organisation (US-184): table and column names come only from the EF model, never from a user; "
+                + "the organisation's id is always a parameter (@org)"
         };
 
         private List<SourceFile> _files = [];

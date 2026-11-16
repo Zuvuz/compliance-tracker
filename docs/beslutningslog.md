@@ -2031,6 +2031,22 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** Auditoren kan se de levende data i stedet for ZIP-filer, og adgangen er begrænset, udløber af sig selv og logges (ISO/IEC 27001 A.5.15, A.5.18, A.8.15).
 - **Afvigelse:** beskeden efter udløb nævner organisationen, ikke projektet.
 
+### B132 – Eksport af alle data og lukning af organisationen (US-184)
+
+- **Beslutning:**
+  - **Eksport:** "Export everything" under Settings, kun for organisation-admin. Det giver én ZIP-fil:
+    - hver tabel, der hører til organisationen, som JSON (`data/`);
+    - hver gemt fil for sig (`files/<tabel>/<id>-<kolonne>`);
+    - en indholdsside med SHA-256 for hver fil.
+    Tabellerne findes ud fra EF-modellen: en række hører til organisationen gennem dens id, et af dens projekter eller en fremmednøgle til en række, der gør. Så glemmes en ny tabel aldrig. En nøgle til Users bruges kun, når intet andet fører til organisationen.
+  - **Lukning:** organisation-admin skriver organisationens navn for at bekræfte. Medlemmerne får en mail, når en mailserver er sat op. Alle medlemmer ser en rød besked med datoen. Lukningen kan fortrydes i 30 dage.
+  - **Efter de 30 dage** sletter det timelige job alle organisationens data i én transaktion. Organisationens række og medlemmerne anonymiseres i stedet for at blive slettet, fordi den beskyttede aktivitetslog (US-091) peger på dem og bevares uden navne.
+  - **Låste rapporter** (US-050) kan stadig aldrig ændres. Triggeren tillader nu kun sletning, når transaktionen navngiver netop den organisation, der lukkes (`ct.closing_organisation`).
+  - **Indbyggede frameworks og andre organisationer** røres aldrig.
+- **Begrundelse:** GDPR art. 17 og 20 og ISO/IEC 27001 A.5.34 og A.8.10. En kunde, der stopper, skal kunne få sine data med og have dem slettet.
+- **Afvigelse:** mens lukningen står på, kan der stadig ændres i data. Den røde besked advarer om lukningen.
+- **Backups:** se docs/backup-og-gendannelse.md.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

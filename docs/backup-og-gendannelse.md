@@ -92,3 +92,10 @@ Gendannelsen testes automatisk i hver CI-kørsel (`BackupAndRestore.feature`) me
 | Version | Dato | Ændring |
 | --- | --- | --- |
 | 0.1 | 2026-11-03 | Første udgave (US-014) |
+
+## Når en organisation lukkes (US-184)
+
+- **Data i databasen:** 30 dage efter at en organisation-admin har startet lukningen, sletter trackeren alle organisationens data. Organisationen og dens medlemmer anonymiseres. Aktivitetsloggen bevares uden navne.
+- **Backups:** de backups, der allerede findes, indeholder stadig organisationens data, indtil de bliver for gamle og slettes efter den opbevaringstid, der er beskrevet ovenfor.
+- **Gendannelse:** en backup, der er taget før lukningen, må ikke lægges tilbage for den lukkede organisation. Skal en hel database gendannes efter en lukning, skal lukningen køre igen bagefter. Det sker af sig selv ved næste kørsel af det timelige job, fordi organisationen stadig står som lukket.
+

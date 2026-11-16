@@ -345,6 +345,12 @@ namespace ComplianceTracker.Domain.ActivityLog
         // e-mail and the period, or for "used" the page or file opened, e.g. "downloaded Access policy.pdf".
         AuditorAccessGranted,
         AuditorAccessUsed,
-        AuditorAccessRevoked
+        AuditorAccessRevoked,
+
+        // US-184: the organisation's way out. Details holds the export's SHA-256, or the day the data is deleted.
+        OrganisationExported,
+        OrganisationClosingStarted,
+        OrganisationClosingUndone,
+        OrganisationClosed
     }
 }

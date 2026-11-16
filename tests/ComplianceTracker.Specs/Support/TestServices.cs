@@ -95,6 +95,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<ComplianceTracker.Application.Projects.IProjectChecklistRepository, ProjectChecklistRepository>(); // US-047
                 services.AddScoped<ComplianceTracker.Application.Projects.IOrganisationChecklistRepository, OrganisationChecklistRepository>(); // US-192
                 services.AddScoped<ComplianceTracker.Application.Organizations.IAuditorGrantRepository, AuditorGrantRepository>(); // US-182
+                services.AddScoped<ComplianceTracker.Application.Organizations.IOrganisationData, ComplianceTracker.Infrastructure.Persistence.OrganisationData>(); // US-184
                 services.AddSingleton<ComplianceTracker.Application.Reminders.IMailSender>(new FakeMail { IsConfigured = false });
                 services.AddSingleton(new ComplianceTracker.Application.Reminders.ReminderOptions());
                 services.AddScoped<ComplianceTracker.Application.Organizations.IDocumentLinkSuggestionRepository, DocumentLinkSuggestionRepository>(); // US-136 R2

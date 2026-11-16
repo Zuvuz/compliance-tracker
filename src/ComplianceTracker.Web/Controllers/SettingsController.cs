@@ -76,6 +76,36 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Index), null, null, "review-defaults");
         }
 
+        // GET /Settings/Export: US-184 R1, R2, every piece of the organisation's data as one ZIP
+        [HttpGet]
+        public async Task<IActionResult> Export([FromServices] Application.Organizations.OrganisationExitService exit, CancellationToken cancellationToken)
+        {
+            var export = await exit.ExportAsync(cancellationToken);
+            Response.Headers["X-Content-SHA256"] = export.Sha256;
+            return File(export.Content, "application/zip", export.FileName);
+        }
+
+        // POST /Settings/StartClosing: US-184 R3, R4, with the name typed to confirm
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> StartClosing(string? confirmName, [FromServices] Application.Organizations.OrganisationExitService exit,
+            CancellationToken cancellationToken)
+        {
+            await exit.StartClosingAsync(confirmName, cancellationToken);
+            return RedirectToAction(nameof(Index), null, null, "close-organisation");
+        }
+
+        // POST /Settings/UndoClosing: US-184 R3
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> UndoClosing([FromServices] Application.Organizations.OrganisationExitService exit, CancellationToken cancellationToken)
+        {
+            await exit.UndoClosingAsync(cancellationToken);
+            return RedirectToAction(nameof(Index), null, null, "close-organisation");
+        }
+
         // POST /Settings/SetCountry: US-142 R6
         [HttpPost]
         [ValidateAntiForgeryToken]
