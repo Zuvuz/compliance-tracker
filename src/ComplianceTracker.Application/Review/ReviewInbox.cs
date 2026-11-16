@@ -21,7 +21,10 @@ namespace ComplianceTracker.Application.Review
         RiskDrafts,
         MeasureSuggestions,
         SecurityEventSuggestions,
-        Approvals
+        Approvals,
+
+        // US-195 R5: evidence, documents and supplier evidence without a review date or end date
+        WithoutDate
     }
 
     // One line of the inbox: a kind in a project and how many wait
@@ -48,6 +51,7 @@ namespace ComplianceTracker.Application.Review
             ReviewKind.RiskDrafts => Plural(count, "AI risk draft", "AI risk drafts"),
             ReviewKind.MeasureSuggestions => Plural(count, "AI measure suggestion", "AI measure suggestions"),
             ReviewKind.SecurityEventSuggestions => Plural(count, "suggested security event", "suggested security events"),
+            ReviewKind.WithoutDate => Plural(count, "item without a review date", "items without a review date"),
             _ => Plural(count, "approval", "approvals")
         };
 
@@ -70,12 +74,19 @@ namespace ComplianceTracker.Application.Review
         private readonly ISecurityEventSuggestionRepository _events;
         private readonly ApprovalService _approvals;
         private readonly CurrentMember _member;
+        private readonly IEvidenceRepository _allEvidence; // US-195
+        private readonly Organizations.IOrganisationDocumentRepository _documents;
+        private readonly Organizations.ISupplierRepository _suppliers;
 
         public ReviewInbox(IProjectRepository projects, IMappingSuggestionRepository stories, INeedsActionSuggestionRepository needsAction,
             IApplicabilitySuggestionRepository applicability, IEvidenceCheckRepository checks, IStoryDraftRepository drafts,
             IEvidenceLinkSuggestionRepository evidence, IRiskDraftRepository riskDrafts, IRiskMeasureSuggestionRepository measures,
-            ISecurityEventSuggestionRepository events, ApprovalService approvals, CurrentMember member)
+            ISecurityEventSuggestionRepository events, ApprovalService approvals, CurrentMember member, IEvidenceRepository allEvidence,
+            Organizations.IOrganisationDocumentRepository documents, Organizations.ISupplierRepository suppliers)
         {
+            _allEvidence = allEvidence;
+            _documents = documents;
+            _suppliers = suppliers;
             _projects = projects;
             _stories = stories;
             _needsAction = needsAction;
@@ -129,6 +140,20 @@ namespace ComplianceTracker.Application.Review
                 await AddAsync(ReviewKind.RiskDrafts, async () => (await _riskDrafts.ListAsync(project.Id, cancellationToken)).Count(d => d.IsOpen));
                 await AddAsync(ReviewKind.MeasureSuggestions, async () => (await _measures.ListAsync(project.Id, cancellationToken)).Count(s => s.IsPending));
                 await AddAsync(ReviewKind.SecurityEventSuggestions, async () => (await _events.ListAsync(project.Id, cancellationToken)).Count(s => s.IsPending));
+                // US-195 R5: what has no date; the organisation area also counts its documents and its suppliers' evidence
+                await AddAsync(ReviewKind.WithoutDate, async () =>
+                {
+                    var count = (await _allEvidence.ListActiveAsync(project.Id, cancellationToken)).Count(e => e.ValidUntil is null && e.OrganisationDocumentId is null);
+                    if (project.IsOrganisationArea)
+                    {
+                        count += (await _documents.ListAsync(organization.Id, cancellationToken: cancellationToken)).Count(d => d.IsActive && d.ReviewDueOn is null);
+                        count += (await _suppliers.ListAsync(organization.Id, cancellationToken))
+                            .Where(s => s.IsActive && s.Criticality != Domain.Organizations.SupplierCriticality.Low)
+                            .Sum(s => s.Evidence.Count(e => e.ValidUntil is null));
+                    }
+
+                    return count;
+                });
                 var approvals = (await _approvals.ForProjectAsync(project.Id, cancellationToken)).Count(a => a.CanApprove);
                 if (approvals > 0)
                 {

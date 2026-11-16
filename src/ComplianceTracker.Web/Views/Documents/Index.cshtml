@@ -210,7 +210,7 @@
                     </form>
                     <form asp-action="Review" method="post" class="d-flex gap-1 review-document">
                         <input type="hidden" name="documentId" value="@document.Id" />
-                        <input type="date" name="nextReviewOn" class="form-control form-control-sm" aria-label="Next review" />
+                        <input type="date" name="nextReviewOn" class="form-control form-control-sm" aria-label="Next review" value="@(await ReviewDates.ValueAsync(ComplianceTracker.Domain.Organizations.ReviewDateKind.DocumentReview))" />
                         <button type="submit" class="btn btn-sm btn-outline-secondary">Reviewed</button>
                     </form>
                     @* R5: the confirmation names the requirements that lose the evidence *@
@@ -247,7 +247,8 @@
                 }
             </select>
         </div>
-        <div class="col-md-2"><input type="date" name="reviewDueOn" class="form-control" aria-label="Review by" title="Review by" /></div>
+        <div class="col-md-2"><input type="date" name="reviewDueOn" class="form-control" aria-label="Review by" title="Review by" value="@(await ReviewDates.ValueAsync(ComplianceTracker.Domain.Organizations.ReviewDateKind.DocumentReview))" />
+            <div class="small text-muted review-date-hint">@(await ReviewDates.HintAsync(ComplianceTracker.Domain.Organizations.ReviewDateKind.DocumentReview))</div></div>
         <div class="col-md-2"><input type="file" name="file" class="form-control" aria-label="File" /></div>
         <div class="col-12"><button type="submit" class="btn btn-primary">Add document</button></div>
     </form>

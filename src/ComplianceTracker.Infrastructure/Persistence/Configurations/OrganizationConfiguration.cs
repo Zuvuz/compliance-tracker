@@ -35,6 +35,13 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             // US-183 R1
             builder.Property(o => o.ReminderDaysBefore).HasDefaultValue(Domain.Reminders.ReminderKinds.DefaultDaysBefore);
 
+            // US-195 R3
+            builder.Property(o => o.EvidenceValidityMonths).HasDefaultValue(ReviewDefaults.Standard.EvidenceValidity);
+            builder.Property(o => o.DocumentReviewMonths).HasDefaultValue(ReviewDefaults.Standard.DocumentReview);
+            builder.Property(o => o.SupplierEvidenceMonths).HasDefaultValue(ReviewDefaults.Standard.SupplierEvidence);
+            builder.Property(o => o.AuditCertificateMonths).HasDefaultValue(ReviewDefaults.Standard.AuditCertificate);
+            builder.Ignore(o => o.ReviewDefaults);
+
             // The users belong to the organisation. The foreign key only exists in the database
             // (a "shadow property"), so the User class in the domain does not need it.
             builder.HasMany(o => o.Users)

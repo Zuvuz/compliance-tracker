@@ -19,7 +19,8 @@ namespace ComplianceTracker.Application.Reports
         Scans,         // the SBOM
         ProjectEdit,   // support period, vulnerability contact
         Audits,
-        Overview       // US-194: the project's lifecycle checklist
+        Overview,      // US-194: the project's lifecycle checklist
+        Evidence       // US-195: the Evidence tab
     }
 
     // One line of the check: what an auditor asks for, whether it is there, and where it is fixed
@@ -63,6 +64,15 @@ namespace ComplianceTracker.Application.Reports
         public const int NamedRequirements = 10;
 
         public static bool IsIso27001(Framework framework) => framework.Name.Contains("27001", StringComparison.Ordinal);
+
+        // US-195 R5: evidence without an end date never reminds anyone
+        public static FrameworkReadiness Dates(int withoutDate)
+            => new("Review dates", "review-dates",
+            [
+                new ReadinessLine("Evidence has an end date", withoutDate == 0,
+                    withoutDate == 0 ? "Every piece of evidence has one" : $"{withoutDate} {(withoutDate == 1 ? "piece has" : "pieces have")} no end date",
+                    ReadinessFix.Evidence)
+            ]);
 
         // US-194 R5: the current phase's checklist as one more group, e.g. "Lifecycle: 2 items missing in Verification"
         public static FrameworkReadiness Lifecycle(Projects.ProjectLifecycle lifecycle)
@@ -178,11 +188,13 @@ namespace ComplianceTracker.Application.Reports
         private readonly AuditService _audits;
         private readonly TimeProvider _clock;
         private readonly Projects.PhaseGates _gates; // US-194
+        private readonly IEvidenceRepository _evidence; // US-195
 
         public AuditReadinessService(ProjectQueries projects, ComplianceQueries compliance, ISbomRepository sboms, IRiskRepository risks,
-            AuditService audits, TimeProvider clock, Projects.PhaseGates gates)
+            AuditService audits, TimeProvider clock, Projects.PhaseGates gates, IEvidenceRepository evidence)
         {
             _gates = gates;
+            _evidence = evidence;
             _projects = projects;
             _compliance = compliance;
             _sboms = sboms;
@@ -212,6 +224,8 @@ namespace ComplianceTracker.Application.Reports
                 (await _risks.ListAsync(project.Id, cancellationToken)).Count(r => r.Status != RiskStatus.Closed),
                 audits?.All.Select(a => (DateOnly?)a.HeldOn).Max());
             var check = AuditReadiness.Check(chosen, facts, DateOnly.FromDateTime(_clock.GetUtcNow().UtcDateTime));
+            var withoutDate = (await _evidence.ListActiveAsync(project.Id, cancellationToken)).Count(e => e.ValidUntil is null && e.OrganisationDocumentId is null);
+            check = check with { Frameworks = [.. check.Frameworks, AuditReadiness.Dates(withoutDate)] }; // US-195 R5
 
             // US-194 R5: the current phase's checklist items that are missing
             return await _gates.LifecycleAsync(project.Id, compliance.Frameworks, cancellationToken) is { } lifecycle

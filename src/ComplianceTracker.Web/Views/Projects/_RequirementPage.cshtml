@@ -533,7 +533,7 @@
                         <input name="file" type="file" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg,.txt,.csv,.md" aria-label="Or a file (max 10 MB)" />
                         <div class="d-flex gap-1 align-items-center">
                             <label class="text-muted text-nowrap" for="valid-until-@requirement.Id">Valid until</label>
-                            <input name="validUntil" id="valid-until-@requirement.Id" type="date" class="form-control form-control-sm" />
+                            <input name="validUntil" id="valid-until-@requirement.Id" type="date" class="form-control form-control-sm" value="@(await ReviewDates.ValueAsync(ComplianceTracker.Domain.Organizations.ReviewDateKind.EvidenceValidity))" title="@(await ReviewDates.HintAsync(ComplianceTracker.Domain.Organizations.ReviewDateKind.EvidenceValidity))" />
                             <button type="submit" class="btn btn-sm btn-primary text-nowrap">Add</button>
                         </div>
                     </form>

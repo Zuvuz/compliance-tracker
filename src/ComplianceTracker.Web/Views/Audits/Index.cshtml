@@ -117,7 +117,7 @@
             <div class="col-md-3"><input name="certificateNumber" maxlength="200" class="form-control form-control-sm" placeholder="Number" aria-label="Certificate number" /></div>
             <div class="col-md-3"><input name="certificateIssuer" maxlength="200" class="form-control form-control-sm" placeholder="Issuer" aria-label="Certificate issuer" /></div>
             <div class="col-md-3"><input type="date" name="certificateValidFrom" class="form-control form-control-sm" aria-label="Valid from" /></div>
-            <div class="col-md-3"><input type="date" name="certificateValidTo" class="form-control form-control-sm" aria-label="Valid to" /></div>
+            <div class="col-md-3"><input type="date" name="certificateValidTo" class="form-control form-control-sm" aria-label="Valid to" title="@(await ReviewDates.HintAsync(ComplianceTracker.Domain.Organizations.ReviewDateKind.AuditCertificate))" /></div>
             <div class="col-12 fw-semibold mt-2">Findings</div>
             @for (var i = 0; i < 5; i++)
             {

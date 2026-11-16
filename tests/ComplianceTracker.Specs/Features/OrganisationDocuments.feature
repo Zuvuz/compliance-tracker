@@ -47,8 +47,9 @@ Feature: The organisation's documents as shared evidence
 
   @US-136 @iso27001-7.5.2 @integration
   Scenario: A policy due for review needs attention
-    Given the time is "2026-10-02T09:00:00Z"
+    Given the time is "2026-09-30T09:00:00Z"
     And I have uploaded the policy "Access control policy" version "v1" due for review on "2026-10-01"
+    And the time is "2026-10-02T09:00:00Z"
     Then the Documents page says "Access control policy is due for review"
     And "Needs attention" of "Acme Portal" shows "Access control policy is due for review"
 

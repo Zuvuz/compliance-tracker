@@ -2007,6 +2007,18 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - **Forespørgsler:** sporbarhedsrapporten genbruger den overholdelse, den allerede har slået op. Resten er faste forespørgsler, så grænsen er hævet fra 53 til 63 (US-139).
 - **Begrundelse:** Ledelse og auditor skal kunne se, hvor produktet er i sin livscyklus, og hvad der manglede, da det gik videre (CRA Annex VII, ISO/IEC 27001 9.2 og 9.3).
 
+### B130 – Standarddatoer for gennemgang og gyldighed (US-195)
+
+- **Beslutning:**
+  - **Standardværdier pr. slags dato** ligger på organisationen i måneder: evidens 12, politikker og procedurer 12, evidens fra underleverandører 12 og audit-certifikater 36. Organisation-admin retter dem under Settings, fra 1 til 60 måneder. En ændring rører ikke datoer, der allerede er sat.
+  - **Formularerne** udfylder datoen som i dag plus standarden og viser standarden som hint. Det gælder evidens på evidensfanen og på kravets side, nye dokumenter og gennemgang af dokumenter samt evidens fra underleverandører. Certifikatet på en audit er valgfrit, så dets dato vises kun som hint og udfyldes ikke.
+  - **Uden dato:** man kan godt gemme uden dato, men får advarslen "No review date: it will never remind anyone".
+  - **Overblik:** "To review" har en linje "Without a date" pr. projekt. I organisationsområdet tæller den også dokumenter og evidens fra underleverandører med kritikalitet High eller Medium. Audit-tjekket har linjen "Evidence has an end date".
+  - **Gennemgangsdato i fortiden:** en sådan dato for et dokument afvises, fordi den aldrig ville minde nogen om noget.
+  - **Rettelse i tjeklisten (US-047):** punktet "Every covered requirement has evidence" tæller først som gjort, når mindst ét krav er dækket.
+- **Begrundelse:** Påmindelserne (US-183) virker kun med en dato. ISO/IEC 27001 kræver gennemgang med planlagte mellemrum (5.1, 7.5.3, 8.2).
+- **Afvigelse:** risici har ingen datoformular. Deres gennemgang følger stadig de faste 12 måneder (US-042).
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

@@ -65,6 +65,17 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Index), null, null, "industry-profile");
         }
 
+        // POST /Settings/SetReviewDefaults: US-195 R3, the organisation admin only (checked in the use case)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> SetReviewDefaults(int evidenceValidity, int documentReview, int supplierEvidence, int auditCertificate,
+            [FromServices] Application.Organizations.ReviewDefaultsService defaults, CancellationToken cancellationToken)
+        {
+            await defaults.SaveAsync(new Domain.Organizations.ReviewDefaults(evidenceValidity, documentReview, supplierEvidence, auditCertificate), cancellationToken);
+            return RedirectToAction(nameof(Index), null, null, "review-defaults");
+        }
+
         // POST /Settings/SetCountry: US-142 R6
         [HttpPost]
         [ValidateAntiForgeryToken]

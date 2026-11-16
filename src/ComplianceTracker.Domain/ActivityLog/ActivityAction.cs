@@ -336,6 +336,9 @@ namespace ComplianceTracker.Domain.ActivityLog
         // text and the source, e.g. "Design: Architecture review held (Own policy)".
         OrganisationChecklistItemAdded,
         OrganisationChecklistItemChanged,
-        OrganisationChecklistItemRemoved
+        OrganisationChecklistItemRemoved,
+
+        // US-195 R3: the organisation's default review dates changed; Details holds the months, e.g. "Evidence 12, documents 12, ..."
+        ReviewDefaultsChanged
     }
 }

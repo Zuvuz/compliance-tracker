@@ -198,7 +198,10 @@ namespace ComplianceTracker.Application.Projects
                 release.OpenCritical + release.OpenHigh,
                 release.SbomVersion is not null,
                 release.SupportEndsOn is not null,
-                project.RetainUntil is not null);
+                project.RetainUntil is not null)
+            {
+                Covered = frameworks.Sum(f => f.Covered)
+            };
             return new AllFacts(checklist, release, unclassified, names);
         }
 

@@ -83,7 +83,7 @@ public class LifecycleReportTests
 
         var lifecycle = Lifecycle(LifecyclePhase.Verification, off);
 
-        Assert.Equal("Verification · 1 of 3 done", lifecycle.Summary); // "every covered requirement has evidence" holds with nothing covered
+        Assert.Equal("Verification · 0 of 3 done", lifecycle.Summary); // US-195: "every covered requirement has evidence" needs something covered
     }
 
     [Fact]

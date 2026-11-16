@@ -61,6 +61,10 @@ namespace ComplianceTracker.Web.Controllers
             using var memory = new MemoryStream();
             await file.CopyToAsync(memory, cancellationToken);
             await _suppliers.AddEvidenceAsync(supplierId, kind, title, validUntil, file.FileName, memory.ToArray(), cancellationToken);
+            if (validUntil is null)
+            {
+                TempData["NoReviewDate"] = Domain.Organizations.ReviewDefaults.NoDateWarning; // US-195 R2
+            }
             return RedirectToAction(nameof(Index), null, $"supplier-{supplierId}");
         }
 

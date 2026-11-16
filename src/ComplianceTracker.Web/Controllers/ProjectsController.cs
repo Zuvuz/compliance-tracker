@@ -589,6 +589,11 @@ namespace ComplianceTracker.Web.Controllers
                 await _compliance.AddEvidenceLinkAsync(projectId, requirementId, title ?? "", url ?? "", validUntil, cancellationToken);
             }
 
+            if (validUntil is null)
+            {
+                TempData["NoReviewDate"] = Domain.Organizations.ReviewDefaults.NoDateWarning; // US-195 R2
+            }
+
             return BackToCompliance(projectId, sub);
         }
 
@@ -687,6 +692,11 @@ namespace ComplianceTracker.Web.Controllers
             {
                 // US-105 R3: nothing reached the limit, so nothing weak is shown
                 TempData["EvidenceAiUnavailable"] = "No requirement looks like a match; link it by hand.";
+            }
+
+            if (validUntil is null)
+            {
+                TempData["NoReviewDate"] = Domain.Organizations.ReviewDefaults.NoDateWarning; // US-195 R2
             }
 
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
