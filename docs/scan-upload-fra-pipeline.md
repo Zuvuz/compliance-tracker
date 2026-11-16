@@ -64,3 +64,21 @@ GitHub's egne runners kan kun nå en tracker, der er tilgængelig fra internette
 | 429 | Mere end 30 uploads i timen med samme token. Prøv igen om en time (`Retry-After`). |
 
 API'et bruger ingen cookies og intet antiforgery-token. Det tager kun imod bearer-tokenet. Oprettelse og spærring af tokens logges med navnet, aldrig selve tokenet. Hver upload logges som en scanningsimport med tokenets navn.
+
+## SBOM fra pipelinen (US-148)
+
+Det samme token kan sende produktets SBOM (CycloneDX 1.4 eller nyere, eller SPDX 2.3 JSON) til `.../sboms`. `version` er påkrævet, og `commit` er valgfri. Uden version afvises SBOM'en med 400 "Send the product version".
+
+```bash
+syft dir:. -o cyclonedx-json=sbom.cdx.json
+curl --fail-with-body \
+  -H "Authorization: Bearer $TRACKER_TOKEN" \
+  -F "file=@sbom.cdx.json" \
+  -F "version=2.3.1" \
+  -F "commit=$(git rev-parse HEAD)" \
+  https://tracker.example/api/projects/<projekt-id>/sboms
+```
+
+Trivy kan også lave SBOM'en: `trivy fs --format cyclonedx --output sbom.cdx.json .`. Svarene er de samme som for scanninger. 415 betyder, at filen ikke er CycloneDX eller SPDX. SBOM-listen på fanen Scans viser "Pipeline (tokenets navn)".
+
+Er projektet koblet til et GitHub-repository, kan trackeren også hente GitHubs SBOM fra dependency graph med **Fetch SBOM from GitHub**. Den gemmes under versionen "GitHub (default branch)" og hentes også med den planlagte synkronisering, højst én gang i døgnet.

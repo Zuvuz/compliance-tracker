@@ -35,6 +35,9 @@ namespace ComplianceTracker.Specs.Support
         public Dictionary<string, List<FakeAlert>> DependabotAlerts { get; } = new(StringComparer.OrdinalIgnoreCase);
         public HashSet<string> DependabotOff { get; } = new(StringComparer.OrdinalIgnoreCase);
 
+        // US-148: each repository's SBOM from the dependency graph (an SPDX 2.3 document); none means 404
+        public Dictionary<string, byte[]> Sboms { get; } = new(StringComparer.OrdinalIgnoreCase);
+
         public List<FakeIssue> Repository(string name)
         {
             if (!_repositories.TryGetValue(name, out var issues))
@@ -92,6 +95,17 @@ namespace ComplianceTracker.Specs.Support
                 if (request.Method == HttpMethod.Post && path is ["graphql"])
                 {
                     return GraphQl(request);
+                }
+
+                // US-148: repos/{owner}/{name}/dependency-graph/sbom answers {"sbom": {…SPDX…}}
+                if (request.Method == HttpMethod.Get && path is ["repos", var sbomOwner, var sbomName, "dependency-graph", "sbom"])
+                {
+                    return Sboms.TryGetValue($"{sbomOwner}/{sbomName}", out var spdx)
+                        ? new HttpResponseMessage(HttpStatusCode.OK)
+                        {
+                            Content = new StringContent("{\"sbom\":" + Encoding.UTF8.GetString(spdx) + "}", Encoding.UTF8, "application/json")
+                        }
+                        : new HttpResponseMessage(HttpStatusCode.NotFound) { Content = new StringContent("{\"message\":\"Not Found\"}") };
                 }
 
                 // US-121: repos/{owner}/{name}/code-scanning/alerts and repos/{owner}/{name}/dependabot/alerts?state=…&page=…

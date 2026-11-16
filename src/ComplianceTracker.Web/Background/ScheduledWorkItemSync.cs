@@ -37,6 +37,9 @@ namespace ComplianceTracker.Web.Background
 
                     // US-121 R6: the security alerts of the linked repositories, with the same schedule
                     await scope.ServiceProvider.GetRequiredService<Application.Scanning.ScanService>().FetchAllFromGitHubAsync(stoppingToken);
+
+                    // US-148 R4: GitHub's SBOM, at most once a day per project
+                    await scope.ServiceProvider.GetRequiredService<Application.Scanning.SbomService>().FetchAllFromGitHubAsync(stoppingToken);
                 }
                 catch (Exception error) when (error is not OperationCanceledException)
                 {

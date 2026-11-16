@@ -1031,6 +1031,24 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
         }
 
+        // POST /Projects/FetchSbomFromGitHub: US-148 R3, R8
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Scans)]
+        public async Task<IActionResult> FetchSbomFromGitHub(
+            Guid projectId, [FromServices] Application.Scanning.SbomService sboms, CancellationToken cancellationToken)
+        {
+            var (sbom, unavailable) = await sboms.FetchFromGitHubAsync(projectId, cancellationToken);
+            if (sbom is not null)
+            {
+                TempData["ScanImported"] = sbom.Summary;
+                return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans, sbom = sbom.ProductVersion });
+            }
+
+            TempData["SbomUnavailable"] = unavailable;
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
+        }
+
         // POST /Projects/UploadSbom: US-079 R1, R2, R7. The SBOM is for one product version.
         [HttpPost]
         [ValidateAntiForgeryToken]

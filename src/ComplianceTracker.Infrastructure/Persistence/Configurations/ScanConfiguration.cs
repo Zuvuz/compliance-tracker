@@ -46,8 +46,16 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(s => s.Sha256).IsRequired().HasMaxLength(64);
             builder.Ignore(s => s.Summary);
             builder.HasOne<Project>().WithMany().HasForeignKey(s => s.ProjectId).OnDelete(DeleteBehavior.Restrict);
-            builder.HasOne<User>().WithMany().HasForeignKey(s => s.UploadedById).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<User>().WithMany().HasForeignKey(s => s.UploadedById).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
             builder.HasIndex(s => new { s.ProjectId, s.ImportedAt });
+
+            // US-148: where it came from, and a pipeline's token and commit
+            builder.Property(s => s.Source).HasConversion<string>().HasMaxLength(30).HasDefaultValue(SbomSource.Upload).HasSentinel(SbomSource.Upload);
+            builder.Property(s => s.UploadTokenName).HasMaxLength(100);
+            builder.Property(s => s.CommitSha).HasMaxLength(40);
+            builder.Ignore(s => s.SourceText);
+            builder.HasOne<ScanUploadToken>().WithMany().HasForeignKey(s => s.UploadTokenId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+            builder.HasIndex(s => new { s.UploadTokenId, s.ImportedAt });
             builder.HasMany(s => s.Components).WithOne().HasForeignKey(c => c.SbomId).OnDelete(DeleteBehavior.Cascade);
             builder.Navigation(s => s.Components).HasField("_components").UsePropertyAccessMode(PropertyAccessMode.Field);
         }

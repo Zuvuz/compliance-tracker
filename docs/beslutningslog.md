@@ -2136,6 +2136,16 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** Risikoejeren tager stilling til restrisikoen, når behandlingen er på plads, og registeret viser, hvor meget den har sænket risikoen (ISO/IEC 27001 6.1.3 f og 8.3, CRA art. 13, stk. 2–3).
 - **Fravalgt:**
   - At lade niveauet falde af sig selv, når foranstaltninger får evidens. En foranstaltning kan være dækket uden at virke.
+### B140 – SBOM'en kommer af sig selv fra pipelinen eller GitHub (US-148)
+
+- **Beslutning:**
+  - **Pipeline:** `POST /api/projects/{id}/sboms` med projektets upload-token fra US-122. Det samme token virker til scanninger og SBOM'er og har sin egen grænse på 30 pr. time for SBOM'er. Versionen er påkrævet, og commit er valgfri. Et forkert eller spærret token giver 401, og intet gemmes.
+  - **GitHub:** "Fetch SBOM from GitHub" på fanen Scans læser `GET /repos/{owner}/{repo}/dependency-graph/sbom` (SPDX 2.3) med projektets GitHub-token, kun læsning (B12). Den gemmes under versionen "GitHub (default branch)", så en ny hentning erstatter den viste (US-079 R2). Den planlagte synkronisering henter den højst én gang i døgnet pr. projekt. Har repositoriet ingen dependency graph, siger fanen det, og intet ændres.
+  - **Kilde:** hver SBOM har sin kilde (Upload, Pipeline med tokenets navn, eller GitHub), og en pipelines commit gemmes. Importen logges som `SbomImported`, af systemet, når den kommer fra en pipeline eller fra den planlagte synkronisering.
+- **Begrundelse:** Hver udgivelse får en opdateret SBOM uden manuelle trin (CRA bilag I, del II, punkt 1, og bilag VII; ISO/IEC 27001 A.5.21 og A.8.25).
+- **Fravalgt:**
+  - Et eget token kun til SBOM'er. Det samme token er lettere at drive, og det kan stadig kun uploade.
+
 ### B141 – Flere læsende kilder pr. projekt: GitHub, Azure DevOps og dokumenter (US-030, afløser B12)
 
 - **Beslutning:**
@@ -2149,7 +2159,6 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Tovejssynkronisering.
   - Ét fælles token for hele trackeren.
   - Azure DevOps Server on-premises og Entra ID-login. De står uden for US-030.
-
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

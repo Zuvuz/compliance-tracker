@@ -21,7 +21,26 @@ namespace ComplianceTracker.Domain.Scanning
         public string FileName { get; private set; } = "";
         public string Sha256 { get; private set; } = "";
         public DateTime ImportedAt { get; private set; }
-        public Guid UploadedById { get; private set; }
+
+        // Null when the system imported it: a pipeline with a token or GitHub (US-148)
+        public Guid? UploadedById { get; private set; }
+
+        // US-148 R5: where it came from; for a pipeline the token (and its name, kept for the list) and the commit
+        public SbomSource Source { get; private set; } = SbomSource.Upload;
+        public Guid? UploadTokenId { get; private set; }
+        public string? UploadTokenName { get; private set; }
+        public string? CommitSha { get; private set; }
+
+        // US-148 R3: the version an SBOM from GitHub's dependency graph is stored for
+        public const string GitHubVersion = "GitHub (default branch)";
+
+        // R5: e.g. "Upload", "Pipeline (GitHub Actions)" or "GitHub"
+        public string SourceText => Source switch
+        {
+            SbomSource.CiUpload => $"Pipeline ({UploadTokenName})",
+            SbomSource.GitHub => "GitHub",
+            _ => "Upload"
+        };
 
         public IReadOnlyList<SbomComponent> Components => _components;
 
@@ -33,7 +52,7 @@ namespace ComplianceTracker.Domain.Scanning
 
         // R1, R2: the importer has read the file; the caller checks the format
         public static Sbom Create(Guid projectId, string? productVersion, string format, string? fileName, byte[] content,
-            IEnumerable<SbomComponentRead> components, Guid userId, DateTime at)
+            IEnumerable<SbomComponentRead> components, Guid? userId, DateTime at, SbomSource source = SbomSource.Upload)
         {
             if (content.Length == 0)
             {
@@ -64,7 +83,8 @@ namespace ComplianceTracker.Domain.Scanning
                 FileName = Cut(Path.GetFileName(string.IsNullOrWhiteSpace(fileName) ? "sbom.json" : fileName), 255),
                 Sha256 = Convert.ToHexString(SHA256.HashData(content)).ToLowerInvariant(),
                 ImportedAt = at,
-                UploadedById = userId
+                UploadedById = userId,
+                Source = source
             };
 
             // R3: the same component (package URL, or name and version) is listed once
@@ -79,6 +99,29 @@ namespace ComplianceTracker.Domain.Scanning
         }
 
         internal static string Cut(string text, int max) => text.Length <= max ? text : text[..max];
+
+        // US-148 R1, R2: what a pipeline sent: its token and, optionally, the commit (a Git SHA of 7 to 40 hex characters)
+        public void FromPipeline(Guid tokenId, string tokenName, string? commit)
+        {
+            var sha = string.IsNullOrWhiteSpace(commit) ? null : commit.Trim().ToLowerInvariant();
+            if (sha is not null && (sha.Length is < 7 or > 40 || !sha.All(Uri.IsHexDigit)))
+            {
+                throw new DomainException("The commit must be a Git SHA of 7 to 40 hex characters");
+            }
+
+            Source = SbomSource.CiUpload;
+            UploadTokenId = tokenId;
+            UploadTokenName = Cut(tokenName, 100);
+            CommitSha = sha;
+        }
+    }
+
+    // US-148 R5
+    public enum SbomSource
+    {
+        Upload,
+        CiUpload,
+        GitHub
     }
 
     // US-079 R3: one component as listed in the SBOM

@@ -6244,6 +6244,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("CommitSha")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -6270,7 +6274,21 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
-                    b.Property<Guid>("UploadedById")
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasDefaultValue("Upload");
+
+                    b.Property<Guid?>("UploadTokenId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UploadTokenName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("UploadedById")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -6278,6 +6296,8 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasIndex("UploadedById");
 
                     b.HasIndex("ProjectId", "ImportedAt");
+
+                    b.HasIndex("UploadTokenId", "ImportedAt");
 
                     b.ToTable("Sboms", (string)null);
                 });
@@ -8320,11 +8340,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ComplianceTracker.Domain.Scanning.ScanUploadToken", null)
+                        .WithMany()
+                        .HasForeignKey("UploadTokenId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ComplianceTracker.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UploadedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Scanning.SbomComponent", b =>

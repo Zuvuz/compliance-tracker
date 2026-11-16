@@ -68,6 +68,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddSingleton<IPullRequestReader>(provider => (GitHubWorkItemSource)provider.GetRequiredService<IWorkItemSource>());
                 services.AddSingleton<IGitHubProjects>(provider => (GitHubWorkItemSource)provider.GetRequiredService<IWorkItemSource>()); // US-107
                 services.AddSingleton<ComplianceTracker.Application.Scanning.IGitHubSecurityAlerts>(provider => (GitHubWorkItemSource)provider.GetRequiredService<IWorkItemSource>()); // US-121
+                services.AddSingleton<ComplianceTracker.Application.Scanning.IGitHubSbom>(provider => (GitHubWorkItemSource)provider.GetRequiredService<IWorkItemSource>()); // US-148
                 services.AddSingleton<IEvidenceTextReader, ComplianceTracker.Infrastructure.Compliance.EvidenceTextReader>();
                 // US-149: one reader per diagram format
                 services.AddSingleton<ComplianceTracker.Application.Compliance.IDiagramReader, ComplianceTracker.Infrastructure.Compliance.DrawioDiagramReader>();

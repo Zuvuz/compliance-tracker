@@ -66,6 +66,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
             await _db.Sboms.AddAsync(sbom, cancellationToken);
             await _db.SbomFiles.AddAsync(new SbomFile(sbom.Id, content), cancellationToken);
         }
+
+        // US-148
+        public Task<int> CountByTokenSinceAsync(Guid tokenId, DateTime since, CancellationToken cancellationToken = default)
+            => _db.Sboms.CountAsync(s => s.UploadTokenId == tokenId && s.ImportedAt >= since, cancellationToken);
     }
 
     // EF Core implementation of IScanUploadTokenRepository (US-122)

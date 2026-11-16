@@ -30,7 +30,21 @@ namespace ComplianceTracker.Application.Scanning
         Task<byte[]?> GetContentAsync(Guid sbomId, CancellationToken cancellationToken = default);
 
         Task AddAsync(Sbom sbom, byte[] content, CancellationToken cancellationToken = default);
+
+        // US-148: how many SBOMs a token sent since a time (the limit per hour, as for scans)
+        Task<int> CountByTokenSinceAsync(Guid tokenId, DateTime since, CancellationToken cancellationToken = default);
     }
+
+    // US-148 R3, R8: GitHub's SBOM of a repository from its dependency graph (SPDX 2.3 JSON), or why there is none
+    public interface IGitHubSbom
+    {
+        Task<GitHubSbomRead> ReadAsync(string repository, string? token, CancellationToken cancellationToken = default);
+    }
+
+    public sealed record GitHubSbomRead(byte[]? Content, string? Unavailable);
+
+    // US-148: how a pipeline's SBOM went; the API turns it into the HTTP status
+    public sealed record PipelineSbomResult(PipelineUploadStatus Status, string Message, Sbom? Sbom = null);
 
     // One component on the page, with the open findings that name it (R6)
     public record SbomComponentView(SbomComponent Component, IReadOnlyList<Finding> OpenFindings)
@@ -53,6 +67,9 @@ namespace ComplianceTracker.Application.Scanning
     {
         private readonly IProjectRepository _projects;
         private readonly ISbomRepository _sboms;
+        private readonly IScanUploadTokenRepository _tokens; // US-148
+        private readonly IGitHubSbom _github; // US-148
+        private readonly ISecretProtector _secrets; // US-148
         private readonly IScanRepository _scans;
         private readonly IEnumerable<ISbomImporter> _importers;
         private readonly CurrentMember _member;
@@ -61,8 +78,12 @@ namespace ComplianceTracker.Application.Scanning
         private readonly TimeProvider _clock;
 
         public SbomService(IProjectRepository projects, ISbomRepository sboms, IScanRepository scans, IEnumerable<ISbomImporter> importers,
-            CurrentMember member, IActivityLogger log, IUnitOfWork unitOfWork, TimeProvider clock)
+            CurrentMember member, IActivityLogger log, IUnitOfWork unitOfWork, TimeProvider clock,
+            IScanUploadTokenRepository tokens, IGitHubSbom github, ISecretProtector secrets)
         {
+            _tokens = tokens;
+            _github = github;
+            _secrets = secrets;
             _projects = projects;
             _sboms = sboms;
             _scans = scans;
@@ -89,16 +110,194 @@ namespace ComplianceTracker.Application.Scanning
                 throw new DomainException("The SBOM is larger than 50 MB");
             }
 
-            var importer = _importers.FirstOrDefault(i => i.CanRead(fileName, content))
-                ?? throw new DomainException("Only CycloneDX (1.4 or newer) and SPDX 2.3 JSON files can be uploaded");
-            var read = importer.Read(content);
-
-            var sbom = Sbom.Create(project.Id, productVersion, read.Format, fileName, content, read.Components, user.Id, _clock.GetUtcNow().UtcDateTime);
-            await _sboms.AddAsync(sbom, content, cancellationToken);
-            await _log.LogAsync(ActivityAction.SbomImported, project.Id, $"{sbom.Summary} ({sbom.FileName})", cancellationToken);
+            var sbom = await ImportAsync(project, user.Id, productVersion, fileName, content, SbomSource.Upload, null, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return sbom;
         }
+
+        public const string NotValid = "The token is not valid for this project";
+        public const string Unsupported = "Only CycloneDX (1.4 or newer) and SPDX 2.3 JSON files can be uploaded";
+
+        // US-148 R1, R2, R6, R7: a pipeline sends the SBOM with the project's upload token (US-122). The file is read only
+        // after the token and the size are checked. Nothing is stored when the token is not valid.
+        public async Task<PipelineSbomResult> UploadFromPipelineAsync(
+            Guid projectId, string? secret, string? fileName, long length, Func<CancellationToken, Task<byte[]>>? read,
+            string? version, string? commit, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(secret) || !secret.StartsWith(ScanUploadToken.Prefix, StringComparison.Ordinal))
+            {
+                return new(PipelineUploadStatus.Unauthorized, NotValid);
+            }
+
+            var token = await _tokens.FindByHashAsync(ScanUploadToken.HashOf(secret.Trim()), cancellationToken);
+            if (token is null || !token.Allows(projectId) || await _projects.GetForSyncAsync(projectId, cancellationToken) is not { } project)
+            {
+                return new(PipelineUploadStatus.Unauthorized, NotValid);
+            }
+
+            if (project.IsClosed)
+            {
+                return new(PipelineUploadStatus.Invalid, "A project at end of support cannot be changed");
+            }
+
+            if (ScanUploadToken.LimitReached(await _sboms.CountByTokenSinceAsync(token.Id, Now.AddHours(-1), cancellationToken)))
+            {
+                return new(PipelineUploadStatus.TooManyRequests, $"At most {ScanUploadToken.MaxUploadsPerHour} uploads per hour with one token");
+            }
+
+            if (string.IsNullOrWhiteSpace(version))
+            {
+                return new(PipelineUploadStatus.Invalid, "Send the product version");
+            }
+
+            if (read is null || length <= 0)
+            {
+                return new(PipelineUploadStatus.Invalid, "Send the SBOM as the form field \"file\"");
+            }
+
+            if (length > Sbom.MaxSizeInBytes)
+            {
+                return new(PipelineUploadStatus.TooLarge, "The SBOM is larger than 50 MB");
+            }
+
+            var content = await read(cancellationToken);
+            var name = string.IsNullOrWhiteSpace(fileName) ? "sbom.json" : fileName;
+            if (!_importers.Any(i => i.CanRead(name, content)))
+            {
+                return new(PipelineUploadStatus.UnsupportedFormat, Unsupported);
+            }
+
+            Sbom sbom;
+            try
+            {
+                sbom = await ImportAsync(project, null, version, name, content, SbomSource.CiUpload, (token, commit), cancellationToken);
+            }
+            catch (DomainException error)
+            {
+                return new(PipelineUploadStatus.Invalid, error.Message);
+            }
+
+            token.Used(Now);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return new(PipelineUploadStatus.Created, sbom.Summary, sbom);
+        }
+
+        // US-148 R3, R8: "Fetch SBOM from GitHub" on the Scans tab. Returns what was imported, or why nothing was.
+        public async Task<(Sbom? Sbom, string? Unavailable)> FetchFromGitHubAsync(Guid projectId, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.LinkWork, cancellationToken);
+            var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
+                ?? throw new DomainException("Project not found");
+            if (project.IsClosed)
+            {
+                throw new DomainException("A project at end of support cannot be changed");
+            }
+
+            var result = await FetchAsync(project, user.Id, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return result;
+        }
+
+        // US-148 R4: with the scheduled GitHub sync, at most once a day per project, without a user. One project failing
+        // does not stop the others.
+        public async Task FetchAllFromGitHubAsync(CancellationToken cancellationToken = default)
+        {
+            foreach (var projectId in await _projects.ListIdsLinkedToGitHubAsync(cancellationToken))
+            {
+                var project = await _projects.GetForSyncAsync(projectId, cancellationToken);
+                if (project?.GitHub is not { IsProject: false } || project.IsClosed)
+                {
+                    continue;
+                }
+
+                var last = (await _sboms.ListAsync(project.Id, cancellationToken)).Where(s => s.Source == SbomSource.GitHub).Max(s => (DateTime?)s.ImportedAt);
+                if (!DueForGitHub(last, Now))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    await FetchAsync(project, userId: null, cancellationToken);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+                }
+                catch (DomainException)
+                {
+                    // e.g. a token that can no longer be read; the button on the Scans tab shows why
+                }
+            }
+        }
+
+        // R4: once a day
+        public static bool DueForGitHub(DateTime? lastFetch, DateTime now) => lastFetch is not { } last || now - last >= TimeSpan.FromDays(1);
+
+        private async Task<(Sbom? Sbom, string? Unavailable)> FetchAsync(Domain.Projects.Project project, Guid? userId, CancellationToken cancellationToken)
+        {
+            if (project.GitHub is not { IsProject: false } link)
+            {
+                throw new DomainException("Link the project to a GitHub repository first");
+            }
+
+            string? token;
+            try
+            {
+                token = link.EncryptedToken is null ? null : _secrets.Unprotect(link.EncryptedToken);
+            }
+            catch (SecretUnreadableException)
+            {
+                throw new DomainException("The stored token can no longer be read. Enter it again");
+            }
+
+            GitHubSbomRead read;
+            try
+            {
+                read = await _github.ReadAsync(link.Repository, token, cancellationToken);
+            }
+            catch (WorkItems.WorkItemSourceException error)
+            {
+                throw new DomainException(error.Message);
+            }
+
+            if (read.Content is not { } content)
+            {
+                return (null, read.Unavailable ?? $"GitHub has no dependency graph for {link.Repository}");
+            }
+
+            var sbom = await ImportAsync(project, userId, Sbom.GitHubVersion, $"github-{link.Repository.Replace('/', '-')}.spdx.json", content,
+                SbomSource.GitHub, null, cancellationToken);
+            return (sbom, null);
+        }
+
+        // R7: one import for every source, logged by the member or, for a pipeline or the scheduled sync, by the system
+        private async Task<Sbom> ImportAsync(Domain.Projects.Project project, Guid? userId, string? version, string fileName, byte[] content,
+            SbomSource source, (ScanUploadToken Token, string? Commit)? pipeline, CancellationToken cancellationToken)
+        {
+            var importer = _importers.FirstOrDefault(i => i.CanRead(fileName, content)) ?? throw new DomainException(Unsupported);
+            var read = importer.Read(content);
+
+            var sbom = Sbom.Create(project.Id, version, read.Format, fileName, content, read.Components, userId, Now, source);
+            if (pipeline is { } sent)
+            {
+                sbom.FromPipeline(sent.Token.Id, sent.Token.Name, sent.Commit);
+            }
+
+            await _sboms.AddAsync(sbom, content, cancellationToken);
+            var details = source == SbomSource.Upload
+                ? $"{sbom.Summary} ({sbom.FileName})"
+                : $"{sbom.Summary} ({sbom.SourceText}{(sbom.CommitSha is { } sha ? $", commit {sha[..Math.Min(7, sha.Length)]}" : "")}, {sbom.FileName})";
+            if (userId is null)
+            {
+                await _log.LogSystemAsync(project.OrganizationId, ActivityAction.SbomImported, project.Id, details, cancellationToken);
+            }
+            else
+            {
+                await _log.LogAsync(ActivityAction.SbomImported, project.Id, details, cancellationToken);
+            }
+
+            return sbom;
+        }
+
+        private DateTime Now => _clock.GetUtcNow().UtcDateTime;
 
         // The SBOM section of the Scans tab (every member); "version" picks the shown SBOM, else the newest.
         // Null for other organisations' projects.
