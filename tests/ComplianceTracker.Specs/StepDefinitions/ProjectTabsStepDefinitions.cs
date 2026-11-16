@@ -25,9 +25,13 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task WhenIOpenTheTab(string tabTitle, string projectName)
         {
             await _web.OpenAsync($"/Projects/Details/{await ProjectIdAsync(projectName)}");
-            var link = Tabs().FirstOrDefault(a => a.TextContent.Trim() == tabTitle)
-                ?? throw new Xunit.Sdk.XunitException($"The project page has no tab '{tabTitle}'.");
-            await _web.OpenAsync(link.GetAttribute("href")!);
+            // #52: a tab of another group is found by opening that group
+            var link = (await ProjectNav.AllTabsAsync(_web)).FirstOrDefault(t => t.Title == tabTitle);
+            if (link == default)
+            {
+                throw new Xunit.Sdk.XunitException($"The project page has no tab '{tabTitle}'.");
+            }
+            await _web.OpenAsync(link.Href);
         }
 
         // R6: an address typed or shared directly; {id} is the project's id

@@ -50,6 +50,7 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             var me = organization.Users.FirstOrDefault(u => u.ExternalId == User.FindFirst("sub")?.Value);
+            ViewData["OrganisationArea"] = project.IsOrganisationArea; // #52: the top bar marks "Organisation"
             return View(new RiskFormModel { ProjectId = project.Id, ProjectName = project.Name, OwnerId = me?.Id ?? Guid.Empty, Title = title, Description = description });
         }
 
@@ -200,6 +201,7 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound();
             }
 
+            ViewData["OrganisationArea"] = project.IsOrganisationArea; // #52: the top bar marks "Organisation"
             return View(RiskFormModel.From(risk, project.Name));
         }
 
@@ -224,6 +226,7 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound();
             }
 
+            ViewData["OrganisationArea"] = project.IsOrganisationArea; // #52: the top bar marks "Organisation"
             return View(new RiskPageViewModel(risk, project, organization,
                 await _compliance.ForProjectAsync(project.Id, cancellationToken), _clock.GetUtcNow().UtcDateTime)
             {

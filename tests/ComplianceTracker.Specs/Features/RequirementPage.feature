@@ -29,7 +29,8 @@ Feature: The requirement page
   Scenario: A requirement opens on its own page with its actions
     When I open the requirement "I.2(d)" from the overview
     Then I am on the page of "I.2(d)"
-    And the page has the primary action "Add evidence" and the actions "Ask the AI" and "Not applicable" under "More"
+    And the page has the primary action "Add evidence" and next to it "Not applicable"
+    And the action "Ask the AI" is under "More"
 
   @US-153 @integration
   Scenario: After an action the same requirement is shown
