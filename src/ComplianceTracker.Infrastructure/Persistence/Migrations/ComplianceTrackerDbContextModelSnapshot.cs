@@ -4658,14 +4658,24 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("AcceptedById")
                         .HasColumnType("uuid");
 
+                    b.Property<DateOnly?>("AccessUntil")
+                        .HasColumnType("date");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)");
+
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("OnlyProjectId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid");

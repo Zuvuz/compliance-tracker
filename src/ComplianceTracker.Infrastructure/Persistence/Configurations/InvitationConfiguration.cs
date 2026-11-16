@@ -16,6 +16,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(i => i.Role).HasConversion<string>().HasMaxLength(50);
             builder.Property(i => i.TokenHash).IsRequired().HasMaxLength(64);
             builder.HasIndex(i => i.TokenHash).IsUnique();
+            builder.Property(i => i.Email).HasMaxLength(Invitation.MaxEmailLength); // US-196
 
             builder.HasOne<Organization>().WithMany().HasForeignKey(i => i.OrganizationId).OnDelete(DeleteBehavior.Restrict);
             builder.HasOne<User>().WithMany().HasForeignKey(i => i.CreatedById).OnDelete(DeleteBehavior.Restrict);

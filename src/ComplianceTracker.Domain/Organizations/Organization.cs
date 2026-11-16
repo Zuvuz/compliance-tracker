@@ -335,6 +335,49 @@ namespace ComplianceTracker.Domain.Organizations
             member.LimitTo(grant.ProjectId, grant.From, grant.Until);
         }
 
+        // US-196 R2, R3: the limits of an accepted invitation; a member invited again gets the new invitation's limits.
+        // The access starts on the day it is accepted and ends after its end date; without an end date it does not end.
+        public void LimitMember(Guid memberId, Invitation invitation, DateOnly today)
+        {
+            var member = Members.FirstOrDefault(u => u.Id == memberId) ?? throw new DomainException("Member not found");
+            if (invitation.AccessUntil is null && invitation.OnlyProjectId is null)
+            {
+                member.LimitTo(null, null, null);
+                return;
+            }
+
+            member.LimitTo(invitation.OnlyProjectId, today, invitation.AccessUntil ?? DateOnly.MaxValue);
+        }
+
+        // US-196 R5: an Admin changes the last day of a consultant's or an auditor's access. Returns the change, or null.
+        public ProjectChange? SetAccessUntil(Guid memberId, DateOnly until, Guid changedById, DateOnly today)
+        {
+            if (_users.FirstOrDefault(u => u.Id == changedById)?.Can(Permission.ManageMembers) != true)
+            {
+                throw new DomainException("Your role does not allow this");
+            }
+
+            var member = Members.FirstOrDefault(u => u.Id == memberId) ?? throw new DomainException("Member not found");
+            if (!RolePermissions.IsExternal(member.Role))
+            {
+                throw new DomainException("An end date is only for a consultant or an auditor");
+            }
+
+            if (until < today)
+            {
+                throw new DomainException("The end date must be today or later");
+            }
+
+            if (member.AccessUntil == until)
+            {
+                return null;
+            }
+
+            var before = member.AccessUntil is { } old && old != DateOnly.MaxValue ? old.ToString("dd-MM-yyyy") : "No end date";
+            member.LimitTo(member.OnlyProjectId, member.AccessFrom is { } from && from <= today ? from : today, until);
+            return new ProjectChange("Access until", before, until.ToString("dd-MM-yyyy"));
+        }
+
         // US-182 R3, R4: a member who may decide compliance ends an auditor's limited access at once
         public User EndAuditorAccess(Guid memberId, Guid endedById, DateTime at)
         {
@@ -421,6 +464,11 @@ namespace ComplianceTracker.Domain.Organizations
 
             var change = new ProjectChange(member.Name, RolePermissions.Title(member.Role), RolePermissions.Title(role));
             member.Role = role;
+            if (!RolePermissions.IsExternal(role))
+            {
+                member.LimitTo(null, null, null); // US-196 R2: an employee role has no end date or project limit
+            }
+
             return change;
         }
 
