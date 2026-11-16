@@ -351,6 +351,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         OrganisationExported,
         OrganisationClosingStarted,
         OrganisationClosingUndone,
-        OrganisationClosed
+        OrganisationClosed,
+
+        // US-193: the AI's checklist items for a framework the organisation uploaded. SubjectId points at the organisation.
+        ChecklistItemsSuggested,
+        ChecklistSuggestionRejected
     }
 }

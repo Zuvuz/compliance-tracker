@@ -75,6 +75,7 @@ namespace ComplianceTracker.Specs.Support
                 """
                 DELETE FROM "Reminders";
                 DELETE FROM "ProjectChecklistEntries";
+                DELETE FROM "ChecklistSuggestions";
                 DELETE FROM "OrganisationChecklistItems";
                 DELETE FROM "GapAnswers";
                 DELETE FROM "SupplierEvidenceFiles";

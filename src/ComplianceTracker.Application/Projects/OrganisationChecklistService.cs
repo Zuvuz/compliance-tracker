@@ -19,7 +19,11 @@ namespace ComplianceTracker.Application.Projects
 
     // The Checklists page: per phase the built-in items (read only) and the organisation's own
     public sealed record OrganisationChecklistsView(IReadOnlyList<ChecklistItem> BuiltIn, IReadOnlyList<OrganisationChecklistItem> Own,
-        IReadOnlyList<(Guid Id, string Name)> Frameworks, bool CanManage);
+        IReadOnlyList<(Guid Id, string Name)> Frameworks, bool CanManage)
+    {
+        // US-193: the frameworks the organisation uploaded itself, which the AI can suggest checklist items for
+        public IReadOnlyList<(Guid Id, string Name)> OwnFrameworks { get; init; } = [];
+    }
 
     public class OrganisationChecklistService
     {
@@ -46,11 +50,15 @@ namespace ComplianceTracker.Application.Projects
         public async Task<OrganisationChecklistsView> ViewAsync(CancellationToken cancellationToken = default)
         {
             var (organization, user) = await _member.RequireAsync(cancellationToken);
-            var frameworks = (await _frameworks.ListAsync(organization.Id, cancellationToken))
-                .Select(f => (f.Id, FrameworkSlugs.Short(f.Name))).OrderBy(f => f.Item2, StringComparer.OrdinalIgnoreCase).ToList();
+            var all = await _frameworks.ListAsync(organization.Id, cancellationToken);
+            var frameworks = all.Select(f => (f.Id, FrameworkSlugs.Short(f.Name))).OrderBy(f => f.Item2, StringComparer.OrdinalIgnoreCase).ToList();
             return new OrganisationChecklistsView(BuiltInChecklist.All,
                 (await _items.ListAsync(organization.Id, cancellationToken)).Where(i => i.IsActive).OrderBy(i => i.Phase).ThenBy(i => i.Text).ToList(),
-                frameworks, user.Can(Permission.ManageFrameworks));
+                frameworks, user.Can(Permission.ManageFrameworks))
+            {
+                OwnFrameworks = all.Where(f => f.OwnerOrganizationId == organization.Id)
+                    .Select(f => (f.Id, FrameworkSlugs.Short(f.Name))).OrderBy(f => f.Item2, StringComparer.OrdinalIgnoreCase).ToList()
+            };
         }
 
         // R1, R2, R6

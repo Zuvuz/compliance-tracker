@@ -92,6 +92,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<Domain.Projects.ProjectChecklistEntry> ProjectChecklistEntries => Set<Domain.Projects.ProjectChecklistEntry>(); // US-047
         public DbSet<Domain.Projects.OrganisationChecklistItem> OrganisationChecklistItems => Set<Domain.Projects.OrganisationChecklistItem>(); // US-192
         public DbSet<AuditorGrant> AuditorGrants => Set<AuditorGrant>(); // US-182
+        public DbSet<Domain.Projects.ChecklistSuggestion> ChecklistSuggestions => Set<Domain.Projects.ChecklistSuggestion>(); // US-193
         public DbSet<SupplierEvidenceFile> SupplierEvidenceFiles => Set<SupplierEvidenceFile>();
         public DbSet<DocumentLinkSuggestion> DocumentLinkSuggestions => Set<DocumentLinkSuggestion>(); // US-136 R2
 
