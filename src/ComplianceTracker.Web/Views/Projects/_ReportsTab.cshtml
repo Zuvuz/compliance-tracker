@@ -3,6 +3,7 @@
    cannot be made, .report-unavailable (R3). Traceability: form #reports-traceability-download (audience, format, sub).
    Technical documentation: a#reports-technical-documentation. Every role can download; downloads are logged (R4).
    US-050: form.lock-report (report, audience, sub) for DecideCompliance, #locked-reports with li.locked-report (data-title)
+   (US-198: ul.locked-package-reports with li.package-report under a package)
    holding a.locked-report-download and .locked-report-sha256, form #check-fingerprint (file), #fingerprint-result. *@
 @model ProjectDetailsViewModel
 @{
@@ -185,15 +186,30 @@
     else
     {
         <ul class="list-unstyled" id="locked-reports">
-            @foreach (var item in Model.LockedReports)
+            @* US-198 R1: a report locked with an audit package is listed under the package *@
+            @foreach (var item in Model.LockedReports.Where(r => r.Snapshot.PackageId is null))
             {
                 var snapshot = item.Snapshot;
+                var packageReports = Model.LockedReports.Where(r => r.Snapshot.PackageId == snapshot.Id).ToList();
                 <li class="locked-report border-bottom py-2" data-title="@snapshot.Title">
                     <a class="locked-report-download fw-semibold" asp-action="LockedReport" asp-route-id="@project.Id" asp-route-snapshotId="@snapshot.Id">@snapshot.Title</a>
                     <div class="small text-muted">
                         Locked @snapshot.LockedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm") by <span class="locked-by">@item.LockedBy@(snapshot.LockedRole is { } role ? $" ({ComplianceTracker.Domain.Users.RolePermissions.Title(role)})" : "")</span>
                         · <span class="locked-report-sha256 font-monospace" title="SHA-256 @snapshot.Sha256">SHA-256 @snapshot.Sha256</span>
                     </div>
+                    @if (packageReports.Count > 0)
+                    {
+                        <div class="small text-muted mt-1">The reports in the package, locked with it:</div>
+                        <ul class="small mb-0 locked-package-reports">
+                            @foreach (var report in packageReports)
+                            {
+                                <li class="package-report" data-title="@report.Snapshot.Title">
+                                    <a asp-action="LockedReport" asp-route-id="@project.Id" asp-route-snapshotId="@report.Snapshot.Id">@report.Snapshot.Title</a>
+                                    · <span class="font-monospace package-report-sha256" title="SHA-256 @report.Snapshot.Sha256">SHA-256 @report.Snapshot.Sha256[..12]…</span>
+                                </li>
+                            }
+                        </ul>
+                    }
                     @if (snapshot.Kind.StartsWith("traceability:management:", StringComparison.Ordinal) && !project.IsClosed
                          && await Permissions.CanAsync(ComplianceTracker.Domain.Users.Permission.LinkWork) && Model.Compliance is { } reportCompliance)
                     {

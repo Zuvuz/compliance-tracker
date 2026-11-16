@@ -31,12 +31,15 @@ namespace ComplianceTracker.Domain.Reports
         // US-141 R3: the coverage per regulation a locked management report was made from, as JSON; null for other reports
         public string? Figures { get; private set; }
 
+        // US-198 R1: the audit package this report was locked with; null for a report locked on its own
+        public Guid? PackageId { get; private set; }
+
         // For EF Core only
         private ReportSnapshot() { }
 
         public static ReportSnapshot Lock(
             Guid organizationId, Guid? projectId, string kind, string title, string fileName, string contentType, byte[] content,
-            Guid lockedById, UserRole? role, DateTime at, string? figures = null)
+            Guid lockedById, UserRole? role, DateTime at, string? figures = null, Guid? packageId = null)
         {
             if (content.Length == 0)
             {
@@ -62,7 +65,8 @@ namespace ComplianceTracker.Domain.Reports
                 LockedById = lockedById,
                 LockedRole = role,
                 LockedAt = at,
-                Figures = string.IsNullOrWhiteSpace(figures) ? null : figures.Trim()
+                Figures = string.IsNullOrWhiteSpace(figures) ? null : figures.Trim(),
+                PackageId = packageId
             };
         }
 

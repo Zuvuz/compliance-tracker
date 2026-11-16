@@ -71,6 +71,14 @@ namespace ComplianceTracker.Application.Reports
             _clock = clock;
         }
 
+        private static void AddReport(List<ReportFile> reports, ReportFile? report)
+        {
+            if (report is not null)
+            {
+                reports.Add(report);
+            }
+        }
+
         // R1–R5: for every member, also the Auditor (R4). "frameworks" are slugs; none means all the project follows.
         public async Task<ReportSnapshot> CreateAsync(Guid projectId, IReadOnlyCollection<string>? frameworks, DateOnly? from, DateOnly? to,
             CancellationToken cancellationToken = default)
@@ -90,6 +98,7 @@ namespace ComplianceTracker.Application.Reports
             }
 
             var parts = new List<PackagePart>();
+            var reports = new List<ReportFile>(); // US-198 R1: locked with the package
 
             // The reports, made now like a download
             if (chosen.Count == 0)
@@ -100,19 +109,23 @@ namespace ComplianceTracker.Application.Reports
             foreach (var framework in chosen)
             {
                 var slug = FrameworkSlugs.Slug(framework.Framework.Name);
-                var traceability = await _files.TraceabilityAsync(project.Id, ReportAudience.Auditor, slug, cancellationToken);
+                var traceability = await _files.TraceabilityAsync(project.Id, ReportAudience.Auditor, slug, inPackage: true, cancellationToken);
+                AddReport(reports, traceability?.Pdf);
                 parts.Add(new PackagePart($"01-traceability-{slug}.pdf", traceability?.Pdf.Content, $"Traceability for an auditor, {FrameworkSlugs.Short(framework.Framework.Name)} (US-052)"));
             }
 
-            var management = chosen.Count == 0 ? null : await _files.TraceabilityAsync(project.Id, ReportAudience.Management, chosen.Count == 1 ? FrameworkSlugs.Slug(chosen[0].Framework.Name) : null, cancellationToken);
+            var management = chosen.Count == 0 ? null : await _files.TraceabilityAsync(project.Id, ReportAudience.Management, chosen.Count == 1 ? FrameworkSlugs.Slug(chosen[0].Framework.Name) : null, inPackage: true, cancellationToken);
+            AddReport(reports, management?.Pdf);
             parts.Add(new PackagePart("02-compliance-status.pdf", management?.Pdf.Content, "Compliance status: the management report (US-141)",
                 management is null ? "The project follows no framework" : null));
 
             var soa = await _files.StatementOfApplicabilityAsync(project.Id, cancellationToken);
+            AddReport(reports, soa?.Pdf);
             parts.Add(new PackagePart("03-statement-of-applicability.pdf", soa?.Pdf.Content, "Statement of Applicability (US-053)",
                 soa is null ? "The organisation has no ISO/IEC 27001 framework" : null));
 
             var risks = await _files.RiskAssessmentAsync(project.Id, cancellationToken);
+            AddReport(reports, risks?.Pdf);
             parts.Add(new PackagePart("04-risk-assessment.pdf", risks?.Pdf.Content, "Risk assessment (US-054)"));
 
             // US-194 R2, R3: the lifecycle, every phase's checklist and the phase changes
@@ -197,6 +210,14 @@ namespace ComplianceTracker.Application.Reports
             var snapshot = ReportSnapshot.Lock(organization.Id, project.Id, Kind, title,
                 $"audit-package-{FrameworkSlugs.Slug(project.Name)}-{today:yyyy-MM-dd}.zip", "application/zip", zip, user.Id, user.Role, now);
             await _snapshots.AddAsync(snapshot, zip, cancellationToken);
+
+            // US-198 R1: every report in the package is locked too, with its fingerprint, and listed under the package
+            foreach (var report in reports)
+            {
+                var locked = ReportSnapshot.Lock(organization.Id, project.Id, report.Kind, report.Title, report.FileName, report.ContentType,
+                    report.Content, user.Id, user.Role, now, report.Figures, snapshot.Id);
+                await _snapshots.AddAsync(locked, report.Content, cancellationToken);
+            }
             await _logger.LogAsync(ActivityAction.AuditPackageCreated, project.Id, $"{title}: SHA-256 {snapshot.Sha256}", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return snapshot;

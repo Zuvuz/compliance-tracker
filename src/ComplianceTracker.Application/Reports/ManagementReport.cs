@@ -20,6 +20,9 @@ namespace ComplianceTracker.Application.Reports
         public const int MaxGaps = 10;
         public const string NothingToDecide = "Nothing needs a decision right now";
         public const string NoLockedReport = "No locked report to compare with";
+        public const string FirstPackage = "First package: nothing to compare with"; // US-198 R3
+        public const string New = "New"; // US-198 R4
+        public const string NoLongerFollowed = "No longer followed"; // US-198 R4
 
         // The sections in their fixed order (R1); each is a sheet in Excel and a heading in the PDF (R8)
         public static readonly IReadOnlyList<string> Sections =
@@ -42,11 +45,17 @@ namespace ComplianceTracker.Application.Reports
             => total <= 0 ? 0 : (int)Math.Round(100.0 * Math.Clamp(covered, 0, total) / total, MidpointRounding.AwayFromZero);
 
         // R3: e.g. "↑ +3 since 01-11-2026"
-        public static string SinceLast(string regulation, int percent, LastManagementReport? last)
+        // US-198 R3, R4: in an audit package, "First package" without an earlier one, and "New" for a regulation added since
+        public static string SinceLast(string regulation, int percent, LastManagementReport? last, bool inPackage = false)
         {
-            if (last is null || !last.Percents.TryGetValue(regulation, out var before))
+            if (last is null)
             {
-                return NoLockedReport;
+                return inPackage ? FirstPackage : NoLockedReport;
+            }
+
+            if (!last.Percents.TryGetValue(regulation, out var before))
+            {
+                return inPackage ? New : NoLockedReport;
             }
 
             var date = last.LockedAt.ToLocalTime().ToString("dd-MM-yyyy", CultureInfo.InvariantCulture);
@@ -86,6 +95,14 @@ namespace ComplianceTracker.Application.Reports
         // R3: "the same regulations" means the same set of framework names, in any order
         public static bool SameRegulations(IReadOnlyDictionary<string, int> figures, IEnumerable<string> regulations)
             => figures.Keys.ToHashSet(StringComparer.Ordinal).SetEquals(regulations);
+
+        // US-198 R2, R4: an audit package compares with the newest earlier report that shares at least one regulation
+        public static bool SharesRegulations(IReadOnlyDictionary<string, int> figures, IEnumerable<string> regulations)
+            => regulations.Any(figures.ContainsKey);
+
+        // US-198 R4: the regulations of the earlier report that are no longer followed, by name
+        public static IReadOnlyList<string> NoLongerFollowedSince(LastManagementReport? last, IEnumerable<string> regulations)
+            => last is null ? [] : last.Percents.Keys.Except(regulations, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal).ToList();
 
         // R4: at most five points, most serious first; "Nothing needs a decision right now" when there are none
         public static IReadOnlyList<string> Points(IReadOnlyList<FrameworkCompliance> frameworks, ManagementFacts facts)
@@ -172,8 +189,14 @@ namespace ComplianceTracker.Application.Reports
             {
                 var (light, style) = Light(f.Covered, f.Total);
                 var coverage = f.Total == 0 ? "No requirements yet" : $"{f.Percent} % ({f.Covered} of {f.Total})";
-                return new ReportRow([FrameworkSlugs.Short(f.Framework.Name), light, coverage, SinceLast(f.Framework.Name, f.Percent, facts.Last)], style);
+                return new ReportRow([FrameworkSlugs.Short(f.Framework.Name), light, coverage, SinceLast(f.Framework.Name, f.Percent, facts.Last, facts.InPackage)], style);
             }).ToList();
+            if (facts.InPackage)
+            {
+                // US-198 R4
+                status.AddRange(NoLongerFollowedSince(facts.Last, frameworks.Select(f => f.Framework.Name))
+                    .Select(name => new ReportRow([FrameworkSlugs.Short(name), "", "", NoLongerFollowed], ReportStatus.Muted)));
+            }
 
             var points = Points(frameworks, facts).Select(p => new ReportRow([p], ReportStatus.Normal)).ToList();
 
