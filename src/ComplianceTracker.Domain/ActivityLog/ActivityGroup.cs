@@ -38,6 +38,7 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.ReviewDefaultsChanged // US-195
                 or ActivityAction.OrganisationExported or ActivityAction.OrganisationClosingStarted or ActivityAction.OrganisationClosingUndone
                 or ActivityAction.OrganisationClosed // US-184
+                or ActivityAction.ChecklistItemsSuggested or ActivityAction.ChecklistSuggestionRejected // US-193
                 or ActivityAction.SupplierAdded or ActivityAction.SupplierEvidenceAdded or ActivityAction.SupplierRemoved // US-191
                 or ActivityAction.IndustryProfileChosen => ActivityGroup.Organisation,
             ActivityAction.CatalogImported or ActivityAction.CatalogActivated or ActivityAction.FrameworkEnabled

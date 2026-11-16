@@ -2047,6 +2047,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Afvigelse:** mens lukningen står på, kan der stadig ændres i data. Den røde besked advarer om lukningen.
 - **Backups:** se docs/backup-og-gendannelse.md.
 
+### B133 – Tjeklistepunkter for frameworks, trackeren ikke kender i forvejen (US-193)
+
+- **Beslutning:**
+  - **Forslag:** for et framework, som organisationen selv har uploadet, sammenligner AI'en hvert krav i den aktive version med en kort beskrivelse af hver af de seks faser. Den bruger de samme embeddings som de øvrige forslag. Den bedste fase over grænsen for evidens-forslag (US-105) bliver et forslag med kravets titel som tekst. Krav, der ikke passer til nogen fase, springes over.
+  - **Godkendelse:** et menneske godkender med den fase og tekst, det vælger, eller afviser (AI Act art. 14). Et godkendt forslag bliver et af organisationens egne punkter (US-192) med framework og kravkode som kilde, fx "Customer requirements SR-12". Det vises i de projekter, der følger frameworket.
+  - **Ny version:** når man beder om forslag igen, fjernes de punkter, hvis krav er forsvundet i den nyeste version, og kun nye krav foreslås. Et afvist forslag foreslås ikke igen.
+  - **Indbyggede frameworks** (CRA, ISO/IEC 27001, AI Act) har deres egne punkter fra US-047 og får ikke forslag.
+  - **Siden:** alt ligger på Checklists-siden.
+- **Begrundelse:** Alle frameworks, et projekt følger, skal kunne komme med i faserne (ISO/IEC 27001 A.5.31 og A.8.25).
+- **Fravalgt:**
+  - At lade sprogmodellen formulere punktet. Kravets titel kan rettes ved godkendelsen.
+  - At foreslå automatisk ved hver upload. Man beder selv om forslag.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

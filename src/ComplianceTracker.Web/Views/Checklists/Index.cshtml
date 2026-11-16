@@ -39,6 +39,64 @@
     </form>
 }
 
+@* US-193: checklist items for the frameworks the organisation uploaded itself, suggested by the AI and decided here.
+   Ids and classes used by the tests: #checklist-suggestions, form.suggest-checklist-items[data-framework],
+   .checklist-suggestion[data-code] with form.approve-checklist-suggestion and form.reject-checklist-suggestion, #checklist-ai *@
+@{ var pendingSuggestions = ViewData["ChecklistSuggestions"] as IReadOnlyList<ComplianceTracker.Application.Projects.ChecklistSuggestionView> ?? []; }
+@if (Model.CanManage && (Model.OwnFrameworks.Count > 0 || pendingSuggestions.Count > 0))
+{
+    <section class="card mb-3" id="checklist-suggestions">
+        <div class="card-body">
+            <h2 class="h5 card-title">Checklist items from your own frameworks</h2>
+            <p class="small text-muted">The AI suggests which requirements are lifecycle activities and in which phase. You decide; an approved
+                item is shown with the framework and the requirement's code. Asking again removes items whose requirement is gone.</p>
+            @if (TempData["ChecklistAi"] is string ai)
+            {
+                <div class="alert alert-info py-1 small" id="checklist-ai" role="status">@ai</div>
+            }
+            <div class="d-flex flex-wrap gap-2 mb-2">
+                @foreach (var (id, name) in Model.OwnFrameworks)
+                {
+                    <form asp-action="Suggest" method="post" class="suggest-checklist-items" data-framework="@name" data-busy="Asking the AI…">
+                        <input type="hidden" name="frameworkId" value="@id" />
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Suggest items for @name</button>
+                    </form>
+                }
+            </div>
+            @if (pendingSuggestions.Count > 0)
+            {
+                <ul class="list-unstyled small mb-0">
+                    @foreach (var view in pendingSuggestions)
+                    {
+                        var suggestion = view.Suggestion;
+                        <li class="checklist-suggestion border-top py-1" data-code="@suggestion.RequirementCode">
+                            <span class="badge text-bg-light border">@view.Framework @suggestion.RequirementCode</span>
+                            <span class="text-muted">match @((int)Math.Round(suggestion.Score * 100)) %</span>
+                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                <form asp-action="ApproveSuggestion" method="post" class="d-flex flex-wrap gap-1 approve-checklist-suggestion">
+                                    <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                    <select name="phase" class="form-select form-select-sm w-auto" aria-label="Phase for @suggestion.RequirementCode">
+                                        @foreach (var phase in Enum.GetValues<LifecyclePhase>())
+                                        {
+                                            <option value="@phase" selected="@(phase == suggestion.Phase)">@phase</option>
+                                        }
+                                    </select>
+                                    <input name="text" maxlength="300" value="@suggestion.Text" class="form-control form-control-sm w-auto flex-grow-1" aria-label="Text for @suggestion.RequirementCode" required />
+                                    <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
+                                </form>
+                                <form asp-action="RejectSuggestion" method="post" class="reject-checklist-suggestion">
+                                    <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                    <button type="submit" class="btn btn-sm btn-link text-muted p-0">Reject</button>
+                                </form>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </section>
+}
+
 <div id="checklists">
     @foreach (var phase in Enum.GetValues<LifecyclePhase>())
     {
