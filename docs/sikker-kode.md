@@ -20,6 +20,7 @@ Listen ligger i `InjectionGuardrailsStepDefinitions.Reviewed`. En ny undtagelse 
 | Fil | Regel | Hvorfor det er sikkert |
 |---|---|---|
 | `src/ComplianceTracker.Web/wwwroot/js/work-items.js` | `innerHTML` | Indsætter listen over work items fra trackerens egen side (`/Projects/WorkItems`), som Razor allerede har kodet (US-018 R7) |
+| `src/ComplianceTracker.Infrastructure/Persistence/OrganisationData.cs` | raw SQL | Eksporterer og sletter en hel organisation (US-184). Navne på tabeller og kolonner kommer kun fra EF-modellen, aldrig fra en bruger, og organisationens id er altid en parameter (`@org`) |
 
 ## R7: Prompt injection
 
