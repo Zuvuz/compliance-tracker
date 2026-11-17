@@ -124,6 +124,42 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.DoesNotContain(absent, labels);
         }
 
+        // #52: a measure on a risk's page
+        [Then("the measure {string} says {string} and offers {string}")]
+        public void ThenTheMeasureSays(string measure, string behind, string action)
+        {
+            var item = Measure(measure);
+            Assert.Equal(behind, item.QuerySelector(".measure-behind")?.TextContent.Trim());
+            Assert.Equal(action, item.QuerySelector("a.measure-add-evidence")?.TextContent.Trim());
+        }
+
+        [Then("the measure {string} says {string} and leads to {string}")]
+        public void ThenTheStoryMeasureSays(string measure, string behind, string code)
+        {
+            var item = Measure(measure);
+            Assert.Equal(behind, item.QuerySelector(".measure-behind")?.TextContent.Trim());
+            Assert.Contains(code, item.QuerySelectorAll("a.measure-story-requirement").Select(a => a.TextContent.Trim()));
+        }
+
+        [When("I follow the measure {string}")]
+        public async Task WhenIFollowTheMeasure(string measure)
+        {
+            var link = Measure(measure).QuerySelector("a.measure-link") ?? throw new Xunit.Sdk.XunitException($"'{measure}' leads nowhere.");
+            await _web.OpenAsync(link.GetAttribute("href")!);
+        }
+
+        [Then("the page leads back to the risk {string}")]
+        public async Task ThenThePageLeadsBack(string title)
+        {
+            var back = _web.Page!.QuerySelector("a#back-to-risk") ?? throw new Xunit.Sdk.XunitException("No way back to the risk.");
+            await _web.OpenAsync(back.GetAttribute("href")!);
+            Assert.Equal(title, _web.Page!.QuerySelector("#risk-title")?.TextContent.Trim());
+        }
+
+        private IElement Measure(string measure)
+            => _web.Page!.QuerySelectorAll("#risk-measures li.risk-measure").FirstOrDefault(li => (li.GetAttribute("data-measure") ?? "").StartsWith(measure, StringComparison.Ordinal))
+               ?? throw new Xunit.Sdk.XunitException($"The risk has no measure '{measure}'.");
+
         private IElement Document(string title)
             => _web.Page!.QuerySelectorAll("li.organisation-document").FirstOrDefault(d => d.GetAttribute("data-title") == title)
                ?? throw new Xunit.Sdk.XunitException($"The page {_web.CurrentPath} has no document '{title}'.");

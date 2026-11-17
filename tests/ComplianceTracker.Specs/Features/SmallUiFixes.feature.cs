@@ -129,7 +129,7 @@ namespace ComplianceTracker.Specs.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/SmallUiFixes.feature.ndjson", 9);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/SmallUiFixes.feature.ndjson", 11);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -423,19 +423,19 @@ namespace ComplianceTracker.Specs.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="The organisation area has no \"Create story\" for a requirement that needs action")]
+        [global::Xunit.SkippableFactAttribute(DisplayName="A measure leads on to its requirement and back to the risk")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Small fixes to the pages (#52)")]
-        [global::Xunit.TraitAttribute("Description", "The organisation area has no \"Create story\" for a requirement that needs action")]
+        [global::Xunit.TraitAttribute("Description", "A measure leads on to its requirement and back to the risk")]
         [global::Xunit.TraitAttribute("Category", "issue-52")]
         [global::Xunit.TraitAttribute("Category", "integration")]
-        public async global::System.Threading.Tasks.Task TheOrganisationAreaHasNoCreateStoryForARequirementThatNeedsAction()
+        public async global::System.Threading.Tasks.Task AMeasureLeadsOnToItsRequirementAndBackToTheRisk()
         {
             string[] tagsOfScenario = new string[] {
                     "issue-52",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "6";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The organisation area has no \"Create story\" for a requirement that needs action", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A measure leads on to its requirement and back to the risk", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 56
@@ -452,20 +452,130 @@ namespace ComplianceTracker.Specs.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 57
+    await testRunner.GivenAsync("the project \"Acme Portal\" has the user story \"[US-004] Sign in\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 58
+    await testRunner.AndAsync("the user story \"[US-004] Sign in\" is linked to the requirement \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 59
+    await testRunner.AndAsync("the risk \"Account takeover\" exists in \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 60
+    await testRunner.AndAsync("the risk \"Account takeover\" has the requirement \"I.2(d)\" as a measure", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 61
+    await testRunner.WhenAsync("I open the risk \"Account takeover\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 62
+    await testRunner.ThenAsync("the measure \"I.2(d)\" says \"1 story · 0 evidence\" and offers \"Add evidence\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 63
+    await testRunner.WhenAsync("I follow the measure \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 64
+    await testRunner.ThenAsync("I am on the page of \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 65
+    await testRunner.AndAsync("the page leads back to the risk \"Account takeover\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="A story measure shows the requirements it covers")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Small fixes to the pages (#52)")]
+        [global::Xunit.TraitAttribute("Description", "A story measure shows the requirements it covers")]
+        [global::Xunit.TraitAttribute("Category", "issue-52")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task AStoryMeasureShowsTheRequirementsItCovers()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "issue-52",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "7";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A story measure shows the requirements it covers", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 68
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 5
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 69
+    await testRunner.GivenAsync("the project \"Acme Portal\" has the user story \"[US-004] Sign in\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 70
+    await testRunner.AndAsync("the user story \"[US-004] Sign in\" is linked to the requirement \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 71
+    await testRunner.AndAsync("the risk \"Account takeover\" exists in \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 72
+    await testRunner.AndAsync("the risk \"Account takeover\" has the measure \"[US-004] Sign in\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 73
+    await testRunner.WhenAsync("I open the risk \"Account takeover\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 74
+    await testRunner.ThenAsync("the measure \"[US-004] Sign in\" says \"covers I.2(d) · 0 evidence\" and leads to \"I." +
+                        "2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="The organisation area has no \"Create story\" for a requirement that needs action")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Small fixes to the pages (#52)")]
+        [global::Xunit.TraitAttribute("Description", "The organisation area has no \"Create story\" for a requirement that needs action")]
+        [global::Xunit.TraitAttribute("Category", "issue-52")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task TheOrganisationAreaHasNoCreateStoryForARequirementThatNeedsAction()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "issue-52",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "8";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The organisation area has no \"Create story\" for a requirement that needs action", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 77
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 5
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 78
     await testRunner.GivenAsync("the AI says \"Art. 21(2)(a)\" applies and needs action with \"High\" because \"no risk" +
                         " analysis policy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 58
+#line 79
     await testRunner.WhenAsync("I do the NIS2 scope check with sector \"Manufacturing\", 60 employees and a turnove" +
                         "r of 12 million euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 59
+#line 80
     await testRunner.AndAsync("I click \"Find what needs action\" on the \"NIS2\" sub-tab of \"Organisation\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 60
+#line 81
     await testRunner.AndAsync("I open the requirement \"Art. 21(2)(a)\" from the \"NIS2\" sub-tab of \"Organisation\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 61
+#line 82
     await testRunner.ThenAsync("the needs-action box has \"Not needed\" and no \"Create story\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
