@@ -14,7 +14,10 @@
 }
 
 <section id="@Model.SectionId">
-    <form method="get" action="@Model.Address" class="row g-2 align-items-end mb-3" id="activity-filters">
+    @* US-175 R2, R3: the log's filters are remembered in this browser, per log; an address with its own wins *@
+    <button type="button" class="btn btn-sm btn-link reset-view" data-reset-view="activity:@Model.SectionId:@Model.Address" hidden>Reset view</button>
+    <form method="get" action="@Model.Address" class="row g-2 align-items-end mb-3" id="activity-filters"
+          data-remember="activity:@Model.SectionId:@Model.Address" data-remember-params="from,to,group,hide,project,q,sort,user">
         <div class="col-md-3">
             <label class="form-label small mb-0" for="activity-q">Search</label>
             <input id="activity-q" name="q" value="@query.Search" class="form-control form-control-sm" placeholder="@(Model.IsOrganisationLog ? "Details, user, project or framework" : "Details or user")" />

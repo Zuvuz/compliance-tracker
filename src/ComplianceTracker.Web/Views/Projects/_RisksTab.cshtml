@@ -129,8 +129,11 @@
 
         <div class="col-lg-8">
             @* R8: GET, so a filtered register can be linked to *@
+            @* US-175 R2, R3: the register's filters are remembered in this browser; an address with its own wins *@
+            <button type="button" class="btn btn-sm btn-link reset-view" data-reset-view="risks:@project.Id" hidden>Reset view</button>
             <form method="get" class="row g-2 mb-3" id="risk-filter"
-                  action="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks })">
+                  action="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks })"
+                  data-remember="risks:@project.Id" data-remember-params="status,level,treatment,due,nothing">
                 <div class="col-auto">
                     <select name="status" class="form-select form-select-sm" aria-label="Status">
                         <option value="">Not closed</option>
