@@ -168,7 +168,7 @@ else
         <tbody>
             @foreach (var requirement in version.Requirements)
             {
-                <tr data-requirement-code="@requirement.Code" data-requirement-id="@requirement.Id">
+                <tr id="req-@requirement.Id" data-requirement-code="@requirement.Code" data-requirement-id="@requirement.Id">
                     @if (version.IsActive)
                     {
                         @* R3: locked, so only shown *@

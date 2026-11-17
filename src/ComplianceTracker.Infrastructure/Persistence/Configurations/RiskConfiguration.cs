@@ -54,6 +54,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(r => r.ProjectId);
 
+            // US-100 R4: full-text search in English (the expression must match SearchIndex)
+            builder.HasIndex(r => new { r.Title, r.Description }).HasMethod("GIN").IsTsVectorExpressionIndex("english").HasDatabaseName("IX_Risks_Search");
+
             // US-049: where an imported risk came from
             builder.Property(r => r.ImportedFrom).HasMaxLength(255);
             builder.Property(r => r.ImportedOwner).HasMaxLength(200);

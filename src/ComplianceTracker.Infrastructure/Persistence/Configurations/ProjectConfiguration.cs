@@ -47,6 +47,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             // Speeds up "does this organisation already have a project with this name?"
             builder.HasIndex(p => new { p.OrganizationId, p.Name });
 
+            // US-100 R4: full-text search in English (the expression must match SearchIndex)
+            builder.HasIndex(p => p.Name).HasMethod("GIN").IsTsVectorExpressionIndex("english").HasDatabaseName("IX_Projects_Search");
+
             // US-142: product or organisation area; at most one organisation area per organisation
             builder.Property(p => p.Kind).HasConversion<string>().HasMaxLength(20).HasDefaultValue(ProjectKind.Product);
             builder.Ignore(p => p.IsOrganisationArea);

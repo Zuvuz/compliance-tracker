@@ -41,6 +41,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(r => r.Kind).HasConversion<string>().HasMaxLength(20).HasDefaultValue(RequirementKind.Requirement).HasSentinel((RequirementKind)(-1));
             builder.HasIndex(r => r.ParentId);
 
+            // US-100 R4: full-text search in English (the expression must match SearchIndex)
+            builder.HasIndex(r => new { r.Code, r.Title, r.Description }).HasMethod("GIN").IsTsVectorExpressionIndex("english").HasDatabaseName("IX_Requirements_Search");
+
             builder.HasMany(r => r.Texts)
                 .WithOne()
                 .HasForeignKey(t => t.RequirementId)

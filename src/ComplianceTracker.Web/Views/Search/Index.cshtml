@@ -1,0 +1,64 @@
+@* US-100: the search results, grouped by kind (R3), each with its project (or framework) and a link; at most 50 per
+   kind with "Show more" (R6). Ids and classes used by the tests: form#search-page (input name=q), #search-results,
+   section.search-group[data-kind] with li.search-hit (.search-title, .search-where, a.search-open) and a.search-more;
+   #search-empty, #search-nothing. *@
+@model SearchViewModel
+@using ComplianceTracker.Application.Search
+@using ComplianceTracker.Web.Controllers
+@{
+    var result = Model.Result;
+    ViewData["Title"] = string.IsNullOrEmpty(result.Term) ? "Search" : $"Search: {result.Term}";
+}
+
+<page-header heading="Search" heading-id="search-title" />
+
+<form method="get" asp-action="Index" class="d-flex gap-2 mb-3" id="search-page" role="search">
+    <label for="search-page-q" class="visually-hidden">Search</label>
+    <input class="form-control" id="search-page-q" name="q" value="@result.Term" maxlength="@SearchRules.MaxTermLength"
+           placeholder="Requirements, work items, evidence, risks and projects" />
+    <button type="submit" class="btn btn-primary">Search</button>
+</form>
+
+@if (string.IsNullOrEmpty(result.Term))
+{
+    <empty-state id="search-empty" title="Type a word to search for."
+                 why="The search finds requirements, work items, evidence, risks and projects in your organisation, e.g. &quot;MFA&quot;." />
+}
+else if (result.IsEmpty)
+{
+    <empty-state id="search-nothing" title="Nothing matches &quot;@result.Term&quot;."
+                 why="The search looks at titles, texts and ids in your own organisation. Try another word or a shorter one." />
+}
+else
+{
+    <div id="search-results" class="d-flex flex-column gap-3">
+        @foreach (var group in result.Groups.Where(g => g.Hits.Count > 0))
+        {
+            <section class="search-group" data-kind="@group.Kind" aria-labelledby="search-@group.Kind">
+                <h2 class="h5" id="search-@group.Kind">@SearchRules.KindName(group.Kind) <span class="badge text-bg-light border">@group.Hits.Count@(group.HasMore ? "+" : "")</span></h2>
+                <ul class="list-unstyled border rounded mb-1">
+                    @foreach (var hit in group.Hits)
+                    {
+                        var where = hit.Kind == SearchKind.Requirement ? hit.Detail : Model.ProjectOf(hit);
+                        <li class="search-hit d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom">
+                            <span class="search-title">@hit.Title</span>
+                            @if (hit.Kind == SearchKind.WorkItem && !string.IsNullOrEmpty(hit.Detail))
+                            {
+                                <span class="small text-muted search-reference">@hit.Detail</span>
+                            }
+                            @if (where is not null && hit.Kind != SearchKind.Project)
+                            {
+                                <span class="small text-muted search-where">@where</span>
+                            }
+                            <a class="ms-auto search-open" href="@SearchController.Address(hit)">Open</a>
+                        </li>
+                    }
+                </ul>
+                @if (group.HasMore)
+                {
+                    <a class="small search-more" asp-action="Index" asp-route-q="@result.Term" asp-route-more="@group.Kind">Show more @SearchRules.KindName(group.Kind).ToLowerInvariant()</a>
+                }
+            </section>
+        }
+    </div>
+}

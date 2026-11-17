@@ -96,6 +96,13 @@
                     <ul class="navbar-nav">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
+                            @* US-100: search across the organisation's requirements, work items, evidence, risks and projects *@
+                            <li class="nav-item d-flex align-items-center me-lg-2">
+                                <form method="get" action="@Url.Action("Index", "Search")" role="search" id="top-search" class="d-flex">
+                                    <label for="top-search-q" class="visually-hidden">Search</label>
+                                    <input type="search" class="form-control form-control-sm" id="top-search-q" name="q" placeholder="Search" maxlength="200" />
+                                </form>
+                            </li>
                             @* US-187: a person in several organisations switches here; the current one is marked *@
                             var memberships = await Organisations.MembershipsAsync();
                             if (memberships.Count > 1)

@@ -770,6 +770,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasIndex("FrameworkVersionId", "Code")
                         .IsUnique();
 
+                    b.HasIndex("Code", "Title", "Description")
+                        .HasDatabaseName("IX_Requirements_Search")
+                        .HasAnnotation("Npgsql:TsVectorConfig", "english");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Code", "Title", "Description"), "GIN");
+
                     b.ToTable("Requirements", (string)null);
 
                     b.HasData(
@@ -3493,6 +3499,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("RemovedById");
 
+                    b.HasIndex("Title")
+                        .HasDatabaseName("IX_Evidence_Search")
+                        .HasAnnotation("Npgsql:TsVectorConfig", "english");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Title"), "GIN");
+
                     b.ToTable("Evidence", null, t =>
                         {
                             t.HasCheckConstraint("CK_Evidence_LinkOrFile", "(\"Url\" IS NULL) <> (\"FileName\" IS NULL)");
@@ -5351,6 +5363,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_Projects_Search")
+                        .HasAnnotation("Npgsql:TsVectorConfig", "english");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Name"), "GIN");
+
                     b.HasIndex("OrganizationId")
                         .IsUnique()
                         .HasDatabaseName("IX_Projects_OrganisationArea")
@@ -5857,6 +5875,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasIndex("OwnerId");
 
                     b.HasIndex("ProjectId");
+
+                    b.HasIndex("Title", "Description")
+                        .HasDatabaseName("IX_Risks_Search")
+                        .HasAnnotation("Npgsql:TsVectorConfig", "english");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Title", "Description"), "GIN");
 
                     b.ToTable("Risks", (string)null);
                 });
@@ -6922,6 +6946,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DocumentId");
+
+                    b.HasIndex("ExternalReference", "Title", "Rules", "Description")
+                        .HasDatabaseName("IX_WorkItems_Search")
+                        .HasAnnotation("Npgsql:TsVectorConfig", "english");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("ExternalReference", "Title", "Rules", "Description"), "GIN");
 
                     b.HasIndex("ProjectId", "Source", "DocumentId", "ExternalReference")
                         .IsUnique();
