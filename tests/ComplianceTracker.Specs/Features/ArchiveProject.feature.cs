@@ -272,7 +272,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.GivenAsync("I archive \"Old App\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 28
-    await testRunner.AndAsync("the framework \"Security policy\" has been uploaded", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the framework \"Security policy\" has been uploaded and activated", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 29
     await testRunner.WhenAsync("I add \"Security policy\" to the project \"Old App\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");

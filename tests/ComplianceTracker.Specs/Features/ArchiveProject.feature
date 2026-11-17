@@ -25,7 +25,7 @@ Feature: Archive a project
   @US-028 @integration
   Scenario: An archived project can be read but not changed
     Given I archive "Old App"
-    And the framework "Security policy" has been uploaded
+    And the framework "Security policy" has been uploaded and activated
     When I add "Security policy" to the project "Old App"
     Then I see the error "An archived project cannot be changed"
     And the page of "Old App" says it was archived by "Anna"
