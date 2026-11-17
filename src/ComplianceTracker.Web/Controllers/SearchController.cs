@@ -8,33 +8,17 @@ namespace ComplianceTracker.Web.Controllers
     public class SearchController : Controller
     {
         private readonly SearchService _search;
-        private readonly Application.Projects.IProjectRepository _projects;
-        private readonly Application.Common.CurrentMember _member;
 
-        public SearchController(SearchService search, Application.Projects.IProjectRepository projects, Application.Common.CurrentMember member)
+        public SearchController(SearchService search)
         {
             _search = search;
-            _projects = projects;
-            _member = member;
         }
 
         // GET /Search?q=MFA&more=Risk
         public async Task<IActionResult> Index(string? q, string? more, CancellationToken cancellationToken)
         {
             var moreKind = Enum.TryParse<SearchKind>(more, true, out var k) && Enum.IsDefined(k) ? k : (SearchKind?)null;
-            var result = await _search.SearchAsync(q, moreKind, cancellationToken);
-
-            // The project names for the hits; only the organisation's own projects can be among them (R2)
-            var names = new Dictionary<Guid, string>();
-            if (!result.IsEmpty && await _member.FindOrganizationAsync(cancellationToken) is { } organization)
-            {
-                foreach (var project in await _projects.ListAsync(organization.Id, cancellationToken))
-                {
-                    names[project.Id] = project.Name;
-                }
-            }
-
-            return View(new SearchViewModel(result, names));
+            return View(new SearchViewModel(await _search.SearchAsync(q, moreKind, cancellationToken)));
         }
 
         // Where a hit opens

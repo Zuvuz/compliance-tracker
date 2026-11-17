@@ -22,6 +22,11 @@ namespace ComplianceTracker.Application.Search
 
     public sealed record SearchResult(string Term, IReadOnlyList<SearchGroup> Groups)
     {
+        // The names of the projects the hits belong to (only the organisation's own, R2)
+        public IReadOnlyDictionary<Guid, string> ProjectNames { get; init; } = new Dictionary<Guid, string>();
+
+        public string? ProjectOf(SearchHit hit) => hit.ProjectId is { } id && ProjectNames.TryGetValue(id, out var name) ? name : null;
+
         public bool IsEmpty => Groups.All(g => g.Hits.Count == 0);
     }
 
@@ -94,8 +99,9 @@ namespace ComplianceTracker.Application.Search
             }
 
             var only = await _member.OnlyProjectAsync(cancellationToken);
-            var projectIds = (await _projects.ListAsync(organization.Id, cancellationToken))
-                .Where(p => only is null || p.Id == only).Select(p => p.Id).ToList();
+            var projects = (await _projects.ListAsync(organization.Id, cancellationToken))
+                .Where(p => only is null || p.Id == only).ToList();
+            var projectIds = projects.Select(p => p.Id).ToList();
 
             var groups = new List<SearchGroup>();
             foreach (var kind in Enum.GetValues<SearchKind>())
@@ -105,7 +111,7 @@ namespace ComplianceTracker.Application.Search
                 groups.Add(new SearchGroup(kind, hits.Take(limit).ToList(), hits.Count > limit));
             }
 
-            return new SearchResult(clean, groups);
+            return new SearchResult(clean, groups) { ProjectNames = projects.ToDictionary(p => p.Id, p => p.Name) };
         }
     }
 }
