@@ -45,7 +45,7 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             ViewData["CanEdit"] = canEdit;
-            ViewData["SharedCount"] = await _aiFeedback.SharedCountAsync(cancellationToken); // US-130 R6
+            ViewData["SharedCount"] = canEdit ? await _aiFeedback.SharedCountAsync(cancellationToken) : null; // US-130 R6, for the admins
             ViewData["Seal"] = await signing.SealAsync(cancellationToken); // US-132
             return View(organization);
         }

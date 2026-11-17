@@ -33,7 +33,10 @@
             <button type="submit" class="btn btn-sm btn-outline-primary">@(Model.ShareAiFeedback ? "Switch off" : "Switch on")</button>
         </form>
         @* US-130 R6: organisations do not export for their own models; they see how much is shared *@
-        <span class="small text-muted" id="ai-shared-count">@ViewData["SharedCount"] decisions shared</span>
+        @if (ViewData["SharedCount"] is int shared)
+        {
+            <span class="small text-muted" id="ai-shared-count">@shared decisions shared</span>
+        }
     </div>
 </section>
 
