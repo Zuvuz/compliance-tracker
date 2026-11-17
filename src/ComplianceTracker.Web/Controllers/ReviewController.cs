@@ -10,16 +10,27 @@ namespace ComplianceTracker.Web.Controllers
     {
         private readonly ReviewInbox _inbox;
         private readonly MyTasks _tasks;
+        private readonly Application.Projects.IProjectRepository _projects;
+        private readonly Application.Common.CurrentMember _member;
 
-        public ReviewController(ReviewInbox inbox, MyTasks tasks)
+        public ReviewController(ReviewInbox inbox, MyTasks tasks, Application.Projects.IProjectRepository projects, Application.Common.CurrentMember member)
         {
             _inbox = inbox;
             _tasks = tasks;
+            _projects = projects;
+            _member = member;
         }
 
         // GET /Review?project=…&kind=RiskReview. US-099 R3: filtered by project and kind, sorted by due date.
         public async Task<IActionResult> Index(Guid? project, string? kind, CancellationToken cancellationToken)
         {
+            // US-086: another organisation's project is not found, like everywhere else
+            if (project is { } projectId && (await _member.FindOrganizationAsync(cancellationToken) is not { } organization
+                || await _projects.GetAsync(organization.Id, projectId, cancellationToken) is null))
+            {
+                return NotFound();
+            }
+
             var all = await _tasks.ForMeAsync(cancellationToken);
             var chosenKind = Enum.TryParse<TaskKind>(kind, true, out var k) && Enum.IsDefined(k) ? k : (TaskKind?)null;
             var decisions = await _inbox.ForMeAsync(cancellationToken);
