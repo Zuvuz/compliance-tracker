@@ -39,9 +39,9 @@ En status vises altid med `<status-badge status="…" />` og har den samme farve
 | --- | --- |
 | Grøn | Covered, Done, Low, Treated |
 | Gul | Covered, needs review, Partly, Needs review, Medium |
-| Orange | Needs action, High |
-| Rød | Not covered, Missing, Critical, Expired |
-| Grå | Not applicable, Turned off, Closed, Accepted |
+| Orange | Needs action, High, Due soon |
+| Rød | Not covered, Missing, Critical, Expired, Overdue |
+| Grå | Not applicable, Turned off, Closed, Accepted, Later |
 | Teal | AI-generated, AI-drafted |
 | Lys | navne og etiketter uden en vurdering, fx en fase |
 

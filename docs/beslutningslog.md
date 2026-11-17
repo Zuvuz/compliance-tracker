@@ -2184,6 +2184,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At gemme trinnene. De beregnes af det, der allerede findes.
   - At lukke en story fra trackeren. Storyen lukkes i sin kilde.
 
+### B144 – "My tasks": frister og beslutninger på én side (US-099, ændrer B117)
+
+- **Beslutning:**
+  - **Én side:** "To review" (US-169) bliver til "My tasks". Øverst står frister på tværs af projekterne: evidens, der er udløbet eller udløber inden for 7 dage, risici, der skal reviewes, mine egne risici, rapporteringsfrister for sikkerhedshændelser og mine audit-fund. Nedenunder står det, der venter på min beslutning, som før.
+  - **Rækkefølge og filter:** fristerne sorteres efter dato, den tidligste først. Siden kan filtreres på projekt og type. Hver linje siger fx "Overdue by 3 days" og linker til der, hvor opgaven løses. En risiko åbner i sidepanelet (US-147).
+  - **Rettigheder:** en opgave, som medlemmets rolle ikke kan løse, vises uden link med "Your role can only read this". Det gælder fx auditoren. Lukkede projekter er udeladt, og et medlem med adgang til ét projekt (US-182) ser kun det.
+  - **Tallet i topbaren:** "My tasks (3)" tæller det, der er overskredet eller forfalder inden for 7 dage. Tallet hentes, efter siden er vist, og gemmes i fanen i 5 minutter. Så venter ingen side på det, og der spørges ikke ved hvert sideskift. Det ændrer fravalget i B117.
+- **Begrundelse:** Den, der arbejder på flere projekter, skal ikke åbne hvert projekt for at finde det, der haster. Overskredne reviews og frister ses og handles på (ISO/IEC 27001 9.1 og A.5.1, CRA bilag I, del II (2)).
+- **Fravalgt:**
+  - Mails. De sendes af påmindelserne (US-183).
+  - At tildele opgaver til andre medlemmer. Det står uden for US-099.
+  - En ny side ved siden af "To review". To lister med næsten det samme ville forvirre.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
