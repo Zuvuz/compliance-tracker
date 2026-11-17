@@ -169,7 +169,8 @@
                 }
                 @if (editable)
                 {
-                    <form asp-action="RemoveMeasure" method="post">
+                    @* US-174: no question; the message after it offers Undo *@
+                    <form asp-action="RemoveMeasure" method="post" class="remove-measure">
                         <input type="hidden" name="id" value="@risk.Id" />
                         <input type="hidden" name="measureId" value="@measure.Id" />
                         <button type="submit" class="btn btn-sm btn-link text-danger p-0" aria-label="Remove measure">×</button>

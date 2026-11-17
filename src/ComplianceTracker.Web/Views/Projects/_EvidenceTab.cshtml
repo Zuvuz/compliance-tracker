@@ -219,7 +219,7 @@
                                         <span class="text-muted trace-via">@story.Via</span>
                                         @if (canChange && direct is not null)
                                         {
-                                            <form asp-action="UnlinkEvidenceStory" method="post" class="d-inline unlink-evidence-story" data-confirm="The evidence no longer shows that this story is done.">
+                                            <form asp-action="UnlinkEvidenceStory" method="post" class="d-inline unlink-evidence-story">
                                                 <input type="hidden" name="projectId" value="@project.Id" />
                                                 <input type="hidden" name="linkId" value="@direct.Link.Id" />
                                                 <button type="submit" class="btn btn-sm btn-link text-danger p-0" aria-label="Unlink @story.Title">Remove</button>

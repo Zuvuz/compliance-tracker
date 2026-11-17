@@ -2,7 +2,23 @@
    seconds (site.js); a warning or an error stays until the page changes. Screen readers announce them: a success as a
    status, a warning or an error as an alert. Ids used by the tests: #messages with .message-success, .message-warning and
    .message-error. Pages that show a message of their own keep its id (R4). *@
+@inject TimeProvider Clock
 <div id="messages">
+    @if (UndoOffer.From(TempData[UndoOffer.Key]) is { } undo && undo.IsOpen(Clock.GetUtcNow().UtcDateTime))
+    {
+        @* US-174 R1, R4: "Removed … · Undo" for 2 minutes, then the message and the button go *@
+        <div class="alert alert-success message-undo mt-3 d-flex flex-wrap align-items-center gap-2" role="status" data-fade="120000">
+            <span>@undo.Text</span>
+            <form method="post" action="@Url.Action(undo.Action, undo.Controller)" class="d-inline undo-removal">
+                @Html.AntiForgeryToken()
+                @foreach (var (name, value) in undo.Fields)
+                {
+                    <input type="hidden" name="@name" value="@value" />
+                }
+                <button type="submit" class="btn btn-sm btn-link p-0 align-baseline">Undo</button>
+            </form>
+        </div>
+    }
     @if (TempData["Success"] is string success)
     {
         <div class="alert alert-success message-success mt-3" role="status" data-fade="6000">@success</div>

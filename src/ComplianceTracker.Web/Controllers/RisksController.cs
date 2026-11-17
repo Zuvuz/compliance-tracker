@@ -393,7 +393,12 @@ namespace ComplianceTracker.Web.Controllers
         [OnDomainError(nameof(Details), IdFrom = "id")]
         public async Task<IActionResult> RemoveMeasure(Guid id, Guid measureId, CancellationToken cancellationToken)
         {
-            await _service.RemoveMeasureAsync(await ProjectOfAsync(id, cancellationToken), id, measureId, cancellationToken);
+            var (requirementId, workItemId) = await _service.RemoveMeasureAsync(await ProjectOfAsync(id, cancellationToken), id, measureId, cancellationToken);
+            // US-174 R1: no question before, an Undo after
+            UndoOffer.Offer(TempData, _clock.GetUtcNow().UtcDateTime, "Removed the measure", "Risks", nameof(AddMeasure), new()
+            {
+                ["id"] = id.ToString(), ["measure"] = requirementId is { } r ? $"requirement:{r}" : $"story:{workItemId}"
+            });
             return RedirectToAction(nameof(Details), new { id });
         }
 

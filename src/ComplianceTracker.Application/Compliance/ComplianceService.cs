@@ -121,7 +121,8 @@ namespace ComplianceTracker.Application.Compliance
         }
 
         // The link is kept with the time it was removed
-        public async Task UnlinkAsync(Guid projectId, Guid linkId, CancellationToken cancellationToken = default)
+        // US-174: returns the requirement and the story, so the link can be put back (Undo)
+        public async Task<(Guid RequirementId, Guid WorkItemId, string Name)> UnlinkAsync(Guid projectId, Guid linkId, CancellationToken cancellationToken = default)
         {
             var (organizationId, userId, project) = await OpenProjectAsync(projectId, cancellationToken);
             var link = await _links.GetAsync(project.Id, linkId, cancellationToken)
@@ -134,6 +135,7 @@ namespace ComplianceTracker.Application.Compliance
             await _log.LogAsync(ActivityAction.RequirementUnlinked, project.Id,
                 $"{requirement?.Code ?? "?"} ↔ {workItem?.Title ?? "?"}", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return (link.RequirementId, link.WorkItemId, workItem?.Title ?? "the story");
         }
 
         // US-043 R5: the requirement does not apply to the project; the reason is required

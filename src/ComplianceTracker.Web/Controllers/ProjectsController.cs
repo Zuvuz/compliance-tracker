@@ -546,7 +546,13 @@ namespace ComplianceTracker.Web.Controllers
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
         public async Task<IActionResult> UnlinkRequirement(Guid projectId, Guid linkId, string? sub, CancellationToken cancellationToken)
         {
-            await _compliance.UnlinkAsync(projectId, linkId, cancellationToken);
+            var (requirementId, workItemId, name) = await _compliance.UnlinkAsync(projectId, linkId, cancellationToken);
+            // US-174 R1: no question before, an Undo after
+            UndoOffer.Offer(TempData, _clock.GetUtcNow().UtcDateTime, $"Removed the link to {name}", "Projects", nameof(LinkRequirement), new()
+            {
+                ["projectId"] = projectId.ToString(), ["requirementId"] = requirementId.ToString(), ["workItemId"] = workItemId.ToString(),
+                ["sub"] = sub ?? "", ["req"] = Request.HasFormContentType ? Request.Form["req"].ToString() : ""
+            });
             return BackToCompliance(projectId, sub);
         }
 
@@ -627,6 +633,12 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> RemoveEvidence(Guid projectId, Guid evidenceId, Guid requirementId, string? sub, CancellationToken cancellationToken)
         {
             await _compliance.RemoveEvidenceAsync(projectId, evidenceId, requirementId, cancellationToken);
+            // US-174 R1: no question before, an Undo after
+            UndoOffer.Offer(TempData, _clock.GetUtcNow().UtcDateTime, "Removed the evidence from the requirement", "Projects", nameof(LinkExistingEvidence), new()
+            {
+                ["projectId"] = projectId.ToString(), ["requirementId"] = requirementId.ToString(), ["evidenceId"] = evidenceId.ToString(),
+                ["sub"] = sub ?? "", ["req"] = Request.HasFormContentType ? Request.Form["req"].ToString() : ""
+            });
             return BackToCompliance(projectId, sub);
         }
 
@@ -1441,7 +1453,12 @@ namespace ComplianceTracker.Web.Controllers
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
         public async Task<IActionResult> UnlinkEvidenceStory(Guid projectId, Guid linkId, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
         {
-            await evidence.UnlinkStoryAsync(projectId, linkId, cancellationToken);
+            var (evidenceId, workItemId, name) = await evidence.UnlinkStoryAsync(projectId, linkId, cancellationToken);
+            // US-174 R1: no question before, an Undo after
+            UndoOffer.Offer(TempData, _clock.GetUtcNow().UtcDateTime, $"Removed {name} from the story", "Projects", nameof(LinkEvidenceStory), new()
+            {
+                ["projectId"] = projectId.ToString(), ["evidenceId"] = evidenceId.ToString(), ["workItemId"] = workItemId.ToString()
+            });
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
         }
 

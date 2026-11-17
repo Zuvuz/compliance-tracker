@@ -314,7 +314,8 @@ namespace ComplianceTracker.Application.Compliance
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
-        public async Task UnlinkStoryAsync(Guid projectId, Guid linkId, CancellationToken cancellationToken = default)
+        // US-174: returns the evidence and the story, so the link can be put back (Undo)
+        public async Task<(Guid EvidenceId, Guid WorkItemId, string Name)> UnlinkStoryAsync(Guid projectId, Guid linkId, CancellationToken cancellationToken = default)
         {
             var (_, user, project) = await OpenProjectAsync(projectId, cancellationToken);
             var link = (await _stories.ListActiveLinksAsync(project.Id, cancellationToken)).FirstOrDefault(l => l.Id == linkId)
@@ -324,6 +325,7 @@ namespace ComplianceTracker.Application.Compliance
             link.Remove(user.Id, Now);
             await _log.LogAsync(ActivityAction.EvidenceUnlinkedFromStory, project.Id, $"{story?.Title ?? "?"}: {evidence.Title}", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return (link.EvidenceId, link.WorkItemId, evidence.Title);
         }
 
         // US-145 R6: a person takes back the rejection of a requirement suggestion; it can be suggested again at once
