@@ -295,3 +295,8 @@ img, video { max-width: 100%; height: auto; }
 /* US-171 R2: a success message fades out (site.js) */
 .alert-success { transition: opacity .6s ease; }
 .alert-success.message-fading { opacity: 0; }
+
+/* US-173: the small "?" after a term */
+.term-help { display: inline-block; margin-left: .2rem; width: 1.05rem; height: 1.05rem; line-height: 1.05rem; text-align: center;
+  font-size: .7rem; font-weight: 600; border-radius: 50%; border: 1px solid var(--ct-border); color: var(--ct-muted); text-decoration: none; vertical-align: middle; }
+.term-help:hover, .term-help:focus { color: var(--ct-teal); border-color: var(--ct-teal); }

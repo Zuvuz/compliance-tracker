@@ -150,3 +150,26 @@ document.querySelectorAll("[data-percent]").forEach(bar => {
         }, delay);
     });
 })();
+
+// US-173 R1, R3: the "?" after a term opens its explanation in a popover; without JavaScript it is a link to the glossary
+(() => {
+    if (!window.bootstrap || !window.bootstrap.Popover) {
+        return;
+    }
+
+    document.querySelectorAll(".term-help[data-explanation]").forEach(help => {
+        help.removeAttribute("title");
+        const popover = new window.bootstrap.Popover(help, {
+            content: help.dataset.explanation,
+            title: help.dataset.term,
+            trigger: "focus",
+            placement: "top"
+        });
+        help.setAttribute("role", "button");
+        help.addEventListener("click", event => {
+            event.preventDefault();
+            help.focus();
+            popover.show();
+        });
+    });
+})();

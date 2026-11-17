@@ -1,0 +1,17 @@
+@* US-173: the glossary. Ids used by the tests: #glossary with dt[id] (the term's anchor) and dd .glossary-source. *@
+@model IReadOnlyList<GlossaryTerm>
+@{
+    ViewData["Title"] = "Help";
+}
+
+<page-header heading="Help"></page-header>
+<p class="text-muted">The terms the tracker uses, each in one or two sentences, and where it comes from. The "?" after a term on a page opens the same explanation.</p>
+
+<h2 class="h5">Glossary</h2>
+<dl id="glossary">
+    @foreach (var term in Model.OrderBy(t => t.Term, StringComparer.OrdinalIgnoreCase))
+    {
+        <dt id="@term.Anchor">@term.Term</dt>
+        <dd class="mb-3">@term.Explanation <span class="small text-muted glossary-source">(@term.Source)</span></dd>
+    }
+</dl>

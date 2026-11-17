@@ -128,7 +128,7 @@
             var framework = active!;
             var current = framework.Framework.CurrentVersion(Model.Today);
             <span class="fw-semibold">@framework.Framework.Name</span><text>, version @framework.Version.Number: </text>
-            <span id="coverage">@framework.CoverageText</span>
+            <span id="coverage">@framework.CoverageText</span><term name="Coverage"></term>
             @if (current is not null && current.Id != framework.Version.Id && current.Number > framework.Version.Number)
             {
                 <span class="badge text-bg-warning ms-2" id="compliance-newer">Newer version available</span>
