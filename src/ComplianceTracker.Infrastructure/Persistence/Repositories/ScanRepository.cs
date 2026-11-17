@@ -15,7 +15,8 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         }
 
         public async Task<IReadOnlyList<Scan>> ListAsync(Guid projectId, CancellationToken cancellationToken = default)
-            => await _db.Scans.Where(s => s.ProjectId == projectId).OrderByDescending(s => s.ScannedAt).ToListAsync(cancellationToken);
+            => await _db.Scans.Where(s => s.ProjectId == projectId && s.WithdrawnAt == null) // US-177 R2: left out of the lists
+                .OrderByDescending(s => s.ScannedAt).ToListAsync(cancellationToken);
 
         public Task<Scan?> GetAsync(Guid projectId, Guid scanId, CancellationToken cancellationToken = default)
             => _db.Scans.FirstOrDefaultAsync(s => s.Id == scanId && s.ProjectId == projectId, cancellationToken);
@@ -55,7 +56,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         }
 
         public async Task<IReadOnlyList<Sbom>> ListAsync(Guid projectId, CancellationToken cancellationToken = default)
-            => await _db.Sboms.Include(s => s.Components).Where(s => s.ProjectId == projectId)
+            => await _db.Sboms.Include(s => s.Components).Where(s => s.ProjectId == projectId && s.WithdrawnAt == null) // US-177 R2
                 .OrderByDescending(s => s.ImportedAt).AsSplitQuery().ToListAsync(cancellationToken);
 
         public async Task<byte[]?> GetContentAsync(Guid sbomId, CancellationToken cancellationToken = default)

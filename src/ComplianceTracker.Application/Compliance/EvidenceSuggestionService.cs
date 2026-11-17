@@ -101,6 +101,45 @@ namespace ComplianceTracker.Application.Compliance
             _clock = clock;
         }
 
+        // US-177: the uploads of test results whose suggestions still wait (or are blocked), newest first; those are the
+        // ones that can be withdrawn
+        public async Task<IReadOnlyList<TestResultsUpload>> UploadsAsync(Guid projectId, CancellationToken cancellationToken = default)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is not { } organization
+                || await _projects.GetAsync(organization.Id, projectId, cancellationToken) is not { } project)
+            {
+                return [];
+            }
+
+            return TestResultsUpload.From(await _suggestions.ListAsync(project.Id, cancellationToken));
+        }
+
+        // US-177 R2, R4: test results uploaded by mistake are withdrawn with a reason, by a member who may upload them:
+        // the suggestions that wait or are blocked are withdrawn; accepted ones stay, as they are evidence now
+        public async Task<int> WithdrawTestResultsAsync(Guid projectId, string? sha256, string? reason, CancellationToken cancellationToken = default)
+        {
+            var (_, _, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var text = Withdrawal.Reason(reason);
+            var waiting = (await _suggestions.ListAsync(project.Id, cancellationToken))
+                .Where(s => s.Source == EvidenceSourceKind.TestRun && s.ExternalId == sha256
+                            && s.Status is EvidenceSuggestionStatus.Pending or EvidenceSuggestionStatus.Blocked)
+                .ToList();
+            if (waiting.Count == 0)
+            {
+                throw new DomainException("These test results have nothing left to withdraw");
+            }
+
+            foreach (var suggestion in waiting)
+            {
+                suggestion.Withdraw();
+            }
+
+            await _log.LogAsync(ActivityAction.TestResultsWithdrawn, project.Id,
+                $"Test results {waiting[0].ResultsFileName} withdrawn ({text}): {waiting.Count} suggestions withdrawn", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return waiting.Count;
+        }
+
         // R1, R2, R6, R9: one suggestion per requirement in the run. A tag is "<framework>-<code>", e.g. "cra-I.2(d)",
         // where the framework is the short name of one the project follows, as in the Compliance tab's address.
         public async Task<TestRunResult> UploadTestResultsAsync(Guid projectId, string fileName, byte[] content, CancellationToken cancellationToken = default)

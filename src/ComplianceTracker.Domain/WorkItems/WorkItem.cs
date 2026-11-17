@@ -160,6 +160,32 @@ namespace ComplianceTracker.Domain.WorkItems
             return true;
         }
 
+        // US-177: the newest version of its document was withdrawn. previous is the version before it (null when there is
+        // none) and previousUploadedAt when it was uploaded. A story only that version brought (read for the first time
+        // after the previous one) is marked removed; one it marked removed is back; one it changed belongs to the previous
+        // version again, with the text it has now (the old text is not kept). Returns true when the story was removed.
+        public bool UndoDocumentVersion(int withdrawn, int? previous, DateTime? previousUploadedAt)
+        {
+            if (DocumentVersion == withdrawn && (previousUploadedAt is null || FirstSyncedAt > previousUploadedAt))
+            {
+                return MarkRemovedIn(withdrawn);
+            }
+
+            if (RemovedInVersion == withdrawn && State == WorkItemState.Removed)
+            {
+                State = WorkItemState.Open;
+                RemovedInVersion = null;
+                return false;
+            }
+
+            if (DocumentVersion == withdrawn && previous is { } before)
+            {
+                DocumentVersion = before;
+            }
+
+            return false;
+        }
+
         // What the AI reads about it (US-020 R3): the title and the text that says what it must do
         public string MatchingText
             => string.Join("\n", new[] { Title, Rules, Examples, Description, AcceptanceCriteria }.Where(t => !string.IsNullOrWhiteSpace(t)));

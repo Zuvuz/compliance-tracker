@@ -52,6 +52,21 @@ namespace ComplianceTracker.Application.Security
 
     public class SecurityEventSuggestionService
     {
+        // US-177 R1: the pending suggestions made from findings that were withdrawn with their scan are withdrawn too
+        public async Task WithdrawForFindingsAsync(Guid projectId, IReadOnlySet<Guid> findingIds, string reason, CancellationToken cancellationToken = default)
+        {
+            if (findingIds.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var suggestion in (await _suggestions.ListAsync(projectId, cancellationToken))
+                         .Where(s => s.Status == SuggestionStatus.Pending && s.FindingIds.Count > 0 && s.FindingIds.All(findingIds.Contains)))
+            {
+                suggestion.Supersede(reason, _clock.GetUtcNow().UtcDateTime);
+            }
+        }
+
         private readonly IProjectRepository _projects;
         private readonly IScanRepository _scans;
         private readonly ISecurityEventRepository _events;

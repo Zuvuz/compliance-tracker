@@ -105,6 +105,25 @@ namespace ComplianceTracker.Domain.Scanning
             OpenCritical = openCritical;
         }
 
+        // US-177: withdrawn because it was uploaded by mistake; kept in the history (R2), left out of the lists
+        public DateTime? WithdrawnAt { get; private set; }
+        public Guid? WithdrawnById { get; private set; }
+        public string? WithdrawnReason { get; private set; }
+        public bool IsWithdrawn => WithdrawnAt is not null;
+
+        // R4: with a reason. The caller checks that it is the newest scan of its tool (R1).
+        public void Withdraw(string? reason, Guid userId, DateTime at)
+        {
+            if (IsWithdrawn)
+            {
+                throw new DomainException("The scan is already withdrawn");
+            }
+
+            WithdrawnReason = Withdrawal.Reason(reason);
+            WithdrawnAt = at;
+            WithdrawnById = userId;
+        }
+
         // R7, e.g. "Trivy: 3 new, 0 fixed, 3 open (1 critical)"
         public string Summary => $"{Tool}: {New} new, {Fixed} fixed, {Open} open" + (OpenCritical > 0 ? $" ({OpenCritical} critical)" : "");
 
@@ -181,11 +200,25 @@ namespace ComplianceTracker.Domain.Scanning
                 LastScanId = scanId
             };
 
+        // US-177 R1: how the finding was before the scan that last changed it, so that scan can be withdrawn exactly
+        public Guid? PreviousLastScanId { get; private set; }
+        public FindingState? PreviousState { get; private set; }
+        public DateTime? PreviousFixedAt { get; private set; }
+
+        private void Remember()
+        {
+            PreviousLastScanId = LastScanId;
+            PreviousState = State;
+            PreviousFixedAt = FixedAt;
+        }
+
         // R3: reported again. A fixed finding that comes back is open again; an accepted one stays accepted.
+        // US-177: a finding whose scan was withdrawn is open again when a later scan reports it.
         public void SeenIn(Guid scanId)
         {
+            Remember();
             LastScanId = scanId;
-            if (State == FindingState.Fixed)
+            if (State is FindingState.Fixed or FindingState.Withdrawn)
             {
                 State = FindingState.Open;
                 FixedAt = null;
@@ -200,9 +233,48 @@ namespace ComplianceTracker.Domain.Scanning
                 return false;
             }
 
+            Remember();
             State = FindingState.Fixed;
             FixedAt = at;
             LastScanId = scanId;
+            return true;
+        }
+
+        // US-177 R1: the scan is withdrawn. A finding first seen in it is withdrawn; one it changed is as it was before
+        // (a finding it marked as fixed is open again). An acceptance made since stays. Returns whether it changed.
+        public bool UndoScan(Guid scanId)
+        {
+            if (FirstScanId == scanId)
+            {
+                State = FindingState.Withdrawn;
+                FixedAt = null;
+                return true;
+            }
+
+            if (LastScanId != scanId)
+            {
+                return false;
+            }
+
+            if (PreviousLastScanId is { } previous)
+            {
+                LastScanId = previous;
+                if (State != FindingState.Accepted)
+                {
+                    State = PreviousState ?? FindingState.Open;
+                    FixedAt = PreviousFixedAt;
+                }
+            }
+            else if (State == FindingState.Fixed)
+            {
+                // Changed by a scan from before US-177: only a fixed finding is known to have been open before it
+                State = FindingState.Open;
+                FixedAt = null;
+            }
+
+            PreviousLastScanId = null;
+            PreviousState = null;
+            PreviousFixedAt = null;
             return true;
         }
 
@@ -270,6 +342,9 @@ namespace ComplianceTracker.Domain.Scanning
     {
         Open,
         Fixed,
-        Accepted
+        Accepted,
+
+        // US-177: first seen in a scan that was withdrawn
+        Withdrawn
     }
 }

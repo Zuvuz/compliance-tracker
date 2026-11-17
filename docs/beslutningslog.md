@@ -2255,6 +2255,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - At slå rammen til uden at spørge. Gruppen siger tydeligt, at den også slås til for organisationen.
 
+### B150 – En upload, der er lavet ved en fejl, trækkes tilbage, ikke slettes (US-177)
+
+- **Beslutning:**
+  - **Fælles:** scanninger, SBOM'er, testresultater og versioner af kravspecifikationer kan trækkes tilbage via "⋯" ved siden af uploaden. Det kræver en begrundelse på højst 500 tegn og den samme ret som uploaden. Det tilbagetrukne gemmes med hvem, hvornår og hvorfor, logges og udelades af lister, dækning, forslag og nye rapporter.
+  - **Scanning:** kun den nyeste scanning af et værktøj kan trækkes tilbage. Fund, den så første gang, bliver "Withdrawn". Hvert fund husker sin tilstand fra før den seneste scanning, der ændrede det. Fund, scanningen lukkede, er derfor åbne igen, og fund, den genåbnede, er lukkede igen. En accept efter scanningen består. Ventende forslag til sikkerhedshændelser, der kun bygger på de tilbagetrukne fund, trækkes også tilbage. For scanninger fra før US-177 vides kun, at et lukket fund var åbent før.
+  - **SBOM:** den forrige SBOM for samme version er den gældende igen. Det er ikke muligt, hvis en låst rapport blev låst, mens SBOM'en var den nyeste for sin version: "Used by a locked report; upload a corrected SBOM instead".
+  - **Testresultater:** forslag, der venter eller er blokeret, trækkes tilbage. Accepterede forslag er blevet til evidens og bliver stående.
+  - **Kravspecifikation:** kun den nyeste version kan trækkes tilbage, og ikke hvis en låst rapport brugte den. Stories, som kun den version bragte ind (læst første gang efter den forrige versions upload), markeres som fjernet. Stories, den fjernede, er tilbage. Stories, den ændrede, hører til den forrige version igen, men beholder den tekst, de har nu, fordi den gamle tekst ikke er gemt. Den rigtige version uploades derefter igen.
+- **Begrundelse:** En fejl-upload må ikke stå som projektets data eller produktets SBOM, men historikken skal bevares (ISO/IEC 27001 A.5.33 og A.8.15, CRA bilag I, del II (1)).
+- **Fravalgt:**
+  - At slette uploaden. Data slettes kun, når organisationen lukkes (US-184).
+  - At trække en ældre scanning tilbage. Fundene kan så ikke sættes præcist tilbage.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

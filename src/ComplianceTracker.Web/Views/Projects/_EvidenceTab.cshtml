@@ -434,6 +434,8 @@
                             suggested as evidence for that requirement; a failing one blocks it.
                         </p>
                     </form>
+                    @* US-177: the uploads can be withdrawn on a page of their own *@
+                    <a class="small d-inline-block mt-2" id="test-results-link" asp-action="TestResults" asp-route-id="@project.Id">Withdraw test results uploaded by mistake…</a>
                 </div>
             </div>
         </div>
