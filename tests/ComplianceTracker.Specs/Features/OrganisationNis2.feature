@@ -39,7 +39,7 @@ Feature: NIS2 at organisation level
 
   @US-142 @nis2-art3 @integration
   Scenario: Outside Denmark the Danish law is not switched on
-    Given the organisation's country is set to "DE" on the Settings page
+    Given the organisation's country is set to "DE" on the organisation's profile
     When I do the NIS2 scope check with sector "Manufacturing", 60 employees and a turnover of 12 million euro
     Then the organisation follows "NIS2 – Directive (EU) 2022/2555"
     And the organisation does not follow "NIS 2-loven – Lov nr. 434 af 6. maj 2025 (Denmark)"

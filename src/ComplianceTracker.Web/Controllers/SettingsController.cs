@@ -24,8 +24,7 @@ namespace ComplianceTracker.Web.Controllers
 
         // GET /Settings
         [HttpGet]
-        public async Task<IActionResult> Index([FromServices] Application.Reports.ReportSigningService signing,
-            [FromServices] Application.Organizations.IndustryProfileService industry, CancellationToken cancellationToken)
+        public async Task<IActionResult> Index([FromServices] Application.Reports.ReportSigningService signing, CancellationToken cancellationToken)
         {
             var organization = await _organizations.MineAsync(cancellationToken);
             if (organization is null)
@@ -33,14 +32,21 @@ namespace ComplianceTracker.Web.Controllers
                 return RedirectToAction("Create", "Organizations");
             }
 
-            if (!await _currentMember.CanAsync(Permission.ManageAiSharing, cancellationToken))
+            // US-163 R3: the admins change the settings; the organisation's own members see them read-only. An auditor and a
+            // member limited to one project (US-182) do not see them (US-045 R2).
+            var canEdit = await _currentMember.CanAsync(Permission.ManageAiSharing, cancellationToken);
+            if (!canEdit)
             {
-                return Forbid(); // US-045 R2
+                var (_, user) = await _currentMember.RequireAsync(cancellationToken);
+                if (user.Role == UserRole.Auditor || await _currentMember.OnlyProjectAsync(cancellationToken) is not null)
+                {
+                    return Forbid();
+                }
             }
 
-            ViewData["SharedCount"] = await _aiFeedback.SharedCountAsync(cancellationToken); // US-130 R6
+            ViewData["CanEdit"] = canEdit;
+            ViewData["SharedCount"] = canEdit ? await _aiFeedback.SharedCountAsync(cancellationToken) : null; // US-130 R6, for the admins
             ViewData["Seal"] = await signing.SealAsync(cancellationToken); // US-132
-            ViewData["Industry"] = await industry.ViewAsync(cancellationToken); // US-080
             return View(organization);
         }
 
@@ -54,15 +60,16 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // POST /Settings/ChooseIndustry: US-080 R1, R6
+        // POST /Settings/ChooseIndustry: US-080 R1, R6. US-163 R5: the industry is on the profile now; a form sent to the old
+        // address still works and leads there.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [OnDomainError(nameof(Index))]
+        [OnDomainError("Profile", Controller = "Organisation")]
         public async Task<IActionResult> ChooseIndustry(Domain.Organizations.Industry? industry, bool productsUseAi,
             [FromServices] Application.Organizations.IndustryProfileService profiles, CancellationToken cancellationToken)
         {
             await profiles.ChooseAsync(industry, productsUseAi, cancellationToken);
-            return RedirectToAction(nameof(Index), null, null, "industry-profile");
+            return RedirectToAction("Profile", "Organisation", null, "industry-profile");
         }
 
         // POST /Settings/SetReviewDefaults: US-195 R3, the organisation admin only (checked in the use case)
@@ -106,14 +113,14 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Index), null, null, "close-organisation");
         }
 
-        // POST /Settings/SetCountry: US-142 R6
+        // POST /Settings/SetCountry: US-142 R6. US-163 R5: on the profile now; the old address still works and leads there.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [OnDomainError(nameof(Index))]
+        [OnDomainError("Profile", Controller = "Organisation")]
         public async Task<IActionResult> SetCountry(string? country, [FromServices] Application.Organizations.OrganisationAreaService area, CancellationToken cancellationToken)
         {
             await area.SetCountryAsync(country ?? "", cancellationToken);
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction("Profile", "Organisation", null, "organisation-country");
         }
 
         // POST /Settings/UploadSeal: US-132, the organisation's certificate (.pfx) for sealing signed reports

@@ -1,22 +1,35 @@
-@* US-027: the organisation's details. The Admin edits the name, sector and size; the CVR identifies the company and is
-   only shown (R2). Others see the details without a form (R3).
-   Ids used by the tests: #organisation-profile, form#edit-organisation (name, sector, size), #profile-name, #profile-cvr,
-   #profile-sector, #profile-size, #profile-read-only. *@
+@* US-027, US-163: the organisation's profile in one place: the details (name, CVR, NIS2 sector, size), the country, the
+   industry and whether the products use AI, each with what it changes. The admin edits them; others see them (R4).
+   Choosing a sector suggests an industry; nothing changes until the admin saves (R2).
+   Ids used by the tests: #organisation-profile, form#edit-organisation (name, sector, size) with #suggested-industry;
+   #profile-cvr, #profile-name, #profile-sector, #profile-size, #profile-country, #profile-industry, #profile-read-only;
+   #organisation-country with form#set-country; #industry-profile with form#choose-industry (industry, productsUseAi),
+   #industry-suggestions li.industry-suggestion[data-name] (.suggestion-reason, .suggestion-state,
+   form.switch-on-suggestion), #industry-coming, #industry-no-suggestions, #industry-scan-kinds li, #industry-reports li. *@
 @model OrganisationProfileViewModel
 @using ComplianceTracker.Domain.Organizations
 @{
     var organization = Model.Organization;
+    var industryView = Model.Industry;
     ViewData["Title"] = "Organisation profile";
 }
 
 <page-header heading="Organisation profile" heading-id="profile-title" />
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+<p class="text-muted" id="profile-intro">
+    The <strong>sector</strong> decides whether NIS2 applies to the organisation. The <strong>industry</strong> decides which
+    regulations, scans and reports the tracker suggests. The <strong>country</strong> decides the national laws.
+</p>
+@if (!Model.CanEdit)
+{
+    <p class="alert alert-light border small" id="profile-read-only">Only the organisation's admins can change the profile.</p>
+}
 
 <section class="mb-4" id="organisation-profile" aria-labelledby="profile-details">
     <h2 class="h5" id="profile-details">Details</h2>
     @if (Model.CanEdit)
     {
-        <form asp-action="Update" method="post" class="row g-3" id="edit-organisation" style="max-width: 40rem">
+        <form asp-action="Update" method="post" class="row g-3" id="edit-organisation" style="max-width: 44rem">
             <div class="col-12">
                 <label for="organisation-name" class="form-label">Name</label>
                 <input class="form-control" id="organisation-name" name="name" value="@organization.Name" maxlength="@Organization.MaxNameLength" required />
@@ -27,14 +40,21 @@
                 <div class="form-text">The CVR identifies the company and cannot be changed.</div>
             </div>
             <div class="col-sm-6">
-                <label for="organisation-sector" class="form-label">Sector</label>
-                <select class="form-select" id="organisation-sector" name="sector">
+                <label for="organisation-sector" class="form-label">NIS2 sector</label>
+                <select class="form-select" id="organisation-sector" name="sector" data-suggest-target="suggested-industry">
                     @foreach (var sector in Enum.GetValues<Sector>())
                     {
-                        <option value="@sector" selected="@(sector == organization.Sector)">@sector</option>
+                        <option value="@sector" selected="@(sector == Model.ChosenSector)" data-suggests="@IndustryFromSector.Suggest(sector)">@sector</option>
                     }
                 </select>
-                <div class="form-text">The NIS2 sector; it decides whether NIS2 can apply.</div>
+                <div class="form-text">Decides whether NIS2 can apply (with the size).</div>
+                @* R2: the industry that fits the sector; nothing is changed until saved *@
+                <div class="small mt-1" id="suggested-industry" aria-live="polite">
+                    @if (Model.SuggestedIndustry is { } suggested)
+                    {
+                        <text>Suggested industry: <strong>@suggested</strong>@(industryView?.Industry == suggested ? " (chosen)" : "")</text>
+                    }
+                </div>
             </div>
             <div class="col-sm-6">
                 <label for="organisation-size" class="form-label">Size</label>
@@ -44,21 +64,136 @@
                         <option value="@size" selected="@(size == organization.Size)">@size</option>
                     }
                 </select>
-                <div class="form-text">With the sector, the size decides whether the organisation is essential or important under NIS2.</div>
+                <div class="form-text">With the sector, decides whether the organisation is essential or important under NIS2.</div>
             </div>
             <div class="col-12">
-                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="submit" class="btn btn-primary">Save details</button>
             </div>
         </form>
     }
     else
     {
-        <p class="text-muted small" id="profile-read-only">Only the organisation's admins can change these details.</p>
-        <dl class="row mb-0" style="max-width: 40rem">
+        <dl class="row mb-0" style="max-width: 44rem">
             <dt class="col-sm-3">Name</dt><dd class="col-sm-9" id="profile-name">@organization.Name</dd>
             <dt class="col-sm-3">CVR</dt><dd class="col-sm-9" id="profile-cvr">@organization.Cvr</dd>
-            <dt class="col-sm-3">Sector</dt><dd class="col-sm-9" id="profile-sector">@organization.Sector</dd>
+            <dt class="col-sm-3">NIS2 sector</dt><dd class="col-sm-9" id="profile-sector">@organization.Sector</dd>
             <dt class="col-sm-3">Size</dt><dd class="col-sm-9" id="profile-size">@organization.Size</dd>
+            <dt class="col-sm-3">Country</dt><dd class="col-sm-9" id="profile-country">@organization.Country</dd>
+            <dt class="col-sm-3">Industry</dt><dd class="col-sm-9" id="profile-industry">@(industryView?.Industry?.ToString() ?? "Not chosen")@(industryView?.ProductsUseAi == true ? ", products use AI" : "")</dd>
         </dl>
+    }
+</section>
+
+@* US-142 R6: the EU country the organisation is established in *@
+@if (Model.CanEdit)
+{
+    <section class="mb-4" id="organisation-country" aria-labelledby="profile-country-title">
+        <h2 class="h5" id="profile-country-title">Country</h2>
+        <form asp-action="SetCountry" method="post" class="d-flex flex-wrap gap-2 align-items-center" id="set-country">
+            <select name="country" class="form-select form-select-sm w-auto" aria-label="Country">
+                @foreach (var code in Organization.EuCountries)
+                {
+                    <option value="@code" selected="@(organization.Country == code)">@code</option>
+                }
+            </select>
+            <button type="submit" class="btn btn-sm btn-outline-primary">Save country</button>
+            <span class="small text-muted">Decides which national laws are offered, e.g. the Danish NIS2 law for DK.</span>
+        </form>
+    </section>
+}
+
+@* US-080: the industry and what it suggests *@
+<section id="industry-profile" class="mb-4" aria-labelledby="profile-industry-title">
+    <h2 class="h5" id="profile-industry-title">Industry and AI</h2>
+    <p class="small text-muted mb-2">The industry you make products for decides what the tracker suggests: regulations, scans and reports. It never switches anything on by itself. "Our products use AI" adds the AI Act to the suggestions.</p>
+    @if (Model.CanEdit)
+    {
+        <form asp-action="ChooseIndustry" method="post" class="d-flex flex-wrap gap-3 align-items-center mb-3" id="choose-industry">
+            <select name="industry" class="form-select form-select-sm w-auto" aria-label="Industry">
+                <option value="">Choose…</option>
+                @foreach (var industry in Enum.GetValues<Industry>())
+                {
+                    @* R1: every industry, with a note when its own suggestions are coming *@
+                    <option value="@industry" selected="@(industryView?.Industry == industry)">@industry@(Model.ComingSoon.ContainsKey(industry) ? " (own suggestions coming)" : "")</option>
+                }
+            </select>
+            <div class="form-check m-0">
+                <input class="form-check-input" type="checkbox" name="productsUseAi" value="true" id="products-use-ai" checked="@(industryView?.ProductsUseAi == true)" />
+                <label class="form-check-label small" for="products-use-ai">Our products use AI</label>
+            </div>
+            <button type="submit" class="btn btn-sm btn-outline-primary">Save industry</button>
+        </form>
+    }
+
+    @if (industryView?.Profile is { } profile)
+    {
+        @if (profile.ComingSoon is { } coming)
+        {
+            <div class="alert alert-info py-2 small" id="industry-coming" role="status">Suggestions for @profile.Industry are coming: @coming. Until then you see the suggestions that fit software products.</div>
+        }
+
+        @if (profile.Frameworks.Count == 0)
+        {
+            <p class="small text-muted" id="industry-no-suggestions">No suggestions for this industry.</p>
+        }
+        else
+        {
+            <ul class="list-group mb-3" id="industry-suggestions">
+                @foreach (var suggestion in profile.Frameworks)
+                {
+                    var on = suggestion.FrameworkId is { } id && industryView.SwitchedOn.Contains(id);
+                    <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2 industry-suggestion" data-name="@suggestion.Name">
+                        <div>
+                            <strong>@suggestion.Name</strong>
+                            <div class="small text-muted suggestion-reason">@suggestion.Reason</div>
+                        </div>
+                        @switch (suggestion.Action)
+                        {
+                            case ComplianceTracker.Application.Organizations.SuggestionAction.SwitchOn when on:
+                                <span class="badge text-bg-success suggestion-state">On</span>
+                                break;
+                            case ComplianceTracker.Application.Organizations.SuggestionAction.SwitchOn:
+                                <span class="d-flex gap-2 align-items-center">
+                                    <span class="badge text-bg-light border suggestion-state">Off</span>
+                                    @if (Model.CanEdit)
+                                    {
+                                        <form asp-controller="Frameworks" asp-action="Enable" method="post" class="switch-on-suggestion">
+                                            <input type="hidden" name="frameworkId" value="@suggestion.FrameworkId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-primary">Switch on</button>
+                                        </form>
+                                    }
+                                </span>
+                                break;
+                            case ComplianceTracker.Application.Organizations.SuggestionAction.ScopeCheck:
+                                <a class="btn btn-sm btn-outline-secondary" asp-controller="Organisation" asp-action="Index" asp-route-tab="nis2-scope">Do the scope check</a>
+                                break;
+                            default:
+                                <a class="btn btn-sm btn-outline-secondary" asp-controller="Frameworks" asp-action="Index">Add your own copy</a>
+                                break;
+                        }
+                    </li>
+                }
+            </ul>
+            <div class="row small">
+                <div class="col-md-6">
+                    <h3 class="h6">Scans you are expected to have</h3>
+                    <ul id="industry-scan-kinds">
+                        @foreach (var kind in profile.ScanKinds)
+                        {
+                            <li>@kind</li>
+                        }
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h3 class="h6">Reports you are expected to have</h3>
+                    <ul id="industry-reports">
+                        @foreach (var report in profile.Reports)
+                        {
+                            <li>@report</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        }
     }
 </section>

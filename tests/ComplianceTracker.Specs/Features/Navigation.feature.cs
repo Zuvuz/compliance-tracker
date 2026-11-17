@@ -278,24 +278,26 @@ namespace ComplianceTracker.Specs.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="A developer cannot open the settings page directly")]
+        [global::Xunit.SkippableFactAttribute(DisplayName="A developer sees the settings page directly, without changing anything")]
         [global::Xunit.TraitAttribute("FeatureTitle", "The main pages are in the top bar")]
-        [global::Xunit.TraitAttribute("Description", "A developer cannot open the settings page directly")]
+        [global::Xunit.TraitAttribute("Description", "A developer sees the settings page directly, without changing anything")]
         [global::Xunit.TraitAttribute("Category", "US-045")]
+        [global::Xunit.TraitAttribute("Category", "US-163")]
         [global::Xunit.TraitAttribute("Category", "iso27001-A.5.15")]
         [global::Xunit.TraitAttribute("Category", "integration")]
-        public async global::System.Threading.Tasks.Task ADeveloperCannotOpenTheSettingsPageDirectly()
+        public async global::System.Threading.Tasks.Task ADeveloperSeesTheSettingsPageDirectlyWithoutChangingAnything()
         {
             string[] tagsOfScenario = new string[] {
                     "US-045",
+                    "US-163",
                     "iso27001-A.5.15",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "3";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A developer cannot open the settings page directly", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A developer sees the settings page directly, without changing anything", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 30
+#line 31
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -308,14 +310,14 @@ namespace ComplianceTracker.Specs.Features
 #line 5
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 31
+#line 32
     await testRunner.GivenAsync("\"Bo\" has joined \"Acme ApS\" as \"Developer\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 32
+#line 33
     await testRunner.WhenAsync("\"Bo\" opens the address \"/Settings\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 33
-    await testRunner.ThenAsync("access is denied", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line 34
+    await testRunner.ThenAsync("the answer is the page and says \"You can see the settings but not change them.\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -336,7 +338,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The front page after sign-in is the projects page", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 36
+#line 37
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -349,10 +351,10 @@ namespace ComplianceTracker.Specs.Features
 #line 5
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 37
+#line 38
     await testRunner.WhenAsync("I open the front page", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 38
+#line 39
     await testRunner.ThenAsync("I am on the page \"/Projects\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -374,7 +376,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Old addresses still work", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 41
+#line 42
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -387,10 +389,10 @@ namespace ComplianceTracker.Specs.Features
 #line 5
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 42
+#line 43
     await testRunner.WhenAsync("I open the old users address of \"Acme ApS\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 43
+#line 44
     await testRunner.ThenAsync("I am on the page \"/Users\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }

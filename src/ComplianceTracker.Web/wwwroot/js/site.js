@@ -396,3 +396,25 @@ document.querySelectorAll("[data-percent]").forEach(bar => {
         })
         .catch(() => { });
 })();
+
+// US-163 R2: choosing a NIS2 sector on the organisation's profile suggests an industry; nothing is saved until the admin
+// saves. R5: the old addresses of the moved parts (/Settings#industry-profile, #organisation-country) lead to the profile.
+(() => {
+    const sector = document.querySelector("select[data-suggest-target]");
+    const hint = sector && document.getElementById(sector.dataset.suggestTarget);
+    if (sector && hint) {
+        sector.addEventListener("change", () => {
+            const suggested = sector.selectedOptions[0]?.dataset.suggests;
+            hint.replaceChildren();
+            if (suggested) {
+                const strong = document.createElement("strong");
+                strong.textContent = suggested;
+                hint.append("Suggested industry: ", strong);
+            }
+        });
+    }
+
+    if (location.pathname.toLowerCase() === "/settings" && ["#industry-profile", "#organisation-country"].includes(location.hash)) {
+        location.replace("/Organisation/Profile" + location.hash);
+    }
+})();

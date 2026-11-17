@@ -378,7 +378,7 @@ namespace ComplianceTracker.Specs.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 42
-    await testRunner.GivenAsync("the organisation\'s country is set to \"DE\" on the Settings page", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+    await testRunner.GivenAsync("the organisation\'s country is set to \"DE\" on the organisation\'s profile", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 43
     await testRunner.WhenAsync("I do the NIS2 scope check with sector \"Manufacturing\", 60 employees and a turnove" +
