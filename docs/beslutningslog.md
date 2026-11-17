@@ -2267,6 +2267,16 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - At slette uploaden. Data slettes kun, når organisationen lukkes (US-184).
   - At trække en ældre scanning tilbage. Fundene kan så ikke sættes præcist tilbage.
+### B151 – Alle sider tjekkes for skærmlæser og tastatur i CI (US-185)
+
+- **Beslutning:**
+  - **Tjekket:** et Reqnroll-scenarie åbner alle sider og faner i en organisation med data, deriblandt projekter, risici, evidens og en uploadet ramme. Det fejler, hvis et felt mangler en label, der er bundet til det (med `for`/`id`, en omsluttende label, `aria-label`, `aria-labelledby` eller `title`), hvis en knap, et link eller en `summary` ikke har et navn, eller hvis et billede mangler alt-tekst. Fejlen nævner siden og elementet. Tjekket bruger AngleSharp, som allerede er med, så der er intet nyt værktøj.
+  - **Rettet:** audit-formularens labels er nu bundet til felterne, og filfeltet "Upload new version" på Frameworks har et navn.
+  - **Tastatur:** unit-tests sikrer, at det fælles dialogvindue (US-166) er en navngivet modal dialog, som Esc lukker. De sikrer også, at fokus altid er synligt (en regel, der fjerner `outline`, skal give en fokusring i stedet), og at ingen side bruger en positiv `tabindex`.
+- **Begrundelse:** Den, der bruger skærmlæser eller kun tastatur, skal kunne arbejde som alle andre. EU-kunder kan kræve det (WCAG 2.1 AA 1.3.1, 2.1.1, 2.4.7 og 4.1.2, EN 301 549, European Accessibility Act).
+- **Fravalgt:**
+  - Værktøjer som axe eller Lighthouse i CI. De kræver en browser og installation, og de vigtigste regler kan læses direkte af siden.
+  - Kontrastberegning. Farverne kommer fra designreglerne (B142).
 
 ## Åbne spørgsmål til klassediagrammet
 
