@@ -208,7 +208,7 @@
     @if (row.NeedsAction is { } mark)
     {
         @* US-155 R3, R5, R6: the AI's mark, with "Create story" and "Not needed" for those who decide (R7) *@
-        <section class="alert alert-warning needs-action-box" data-priority="@mark.Priority" data-status="@mark.Status" aria-label="Needs action">
+        <section class="alert alert-warning needs-action-box" data-priority="@mark.Priority" data-status="@mark.Status" aria-label="Needs action" role="alert">
             <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
                 <strong>Needs action</strong>
                 <span class="badge @NeedsActionTexts.PriorityClass(mark.Priority) needs-action-priority">@mark.Priority priority</span>

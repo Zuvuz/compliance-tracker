@@ -165,6 +165,8 @@
                 @* US-135 R2 *@
                 <div class="alert alert-info mt-3" id="approval-requested" role="status">@waits</div>
             }
+            @* US-171 R1: one place for the message of the last action; success fades (site.js), warnings and errors stay *@
+            <partial name="_Messages" />
             @RenderBody()
         </main>
     </div>

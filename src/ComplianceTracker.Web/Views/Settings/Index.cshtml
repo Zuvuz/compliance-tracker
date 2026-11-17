@@ -38,7 +38,7 @@
     {
         @if (profile.ComingSoon is { } coming)
         {
-            <div class="alert alert-info py-2 small" id="industry-coming">Suggestions for @profile.Industry are coming: @coming. Until then you see the suggestions that fit software products.</div>
+            <div class="alert alert-info py-2 small" id="industry-coming" role="status">Suggestions for @profile.Industry are coming: @coming. Until then you see the suggestions that fit software products.</div>
         }
 
         @if (profile.Frameworks.Count == 0)

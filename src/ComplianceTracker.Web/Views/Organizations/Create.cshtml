@@ -19,7 +19,7 @@
 @if (ViewData["FormerOrganization"] is string former)
 {
     @* US-090 R3: a removed member who signs in again *@
-    <div class="alert alert-warning" id="former-member">
+    <div class="alert alert-warning" id="former-member" role="alert">
         You are no longer a member of @former. Ask one of its admins for a new invitation, or create your own organisation.
     </div>
 }

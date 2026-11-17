@@ -47,7 +47,7 @@ else
 
     @if (link.LastSyncError is { } error)
     {
-        <div class="alert alert-warning" id="sync-error">Sync failed: @error</div>
+        <div class="alert alert-warning" id="sync-error" role="alert">Sync failed: @error</div>
     }
 
     @if (link.Skipped.Count > 0)
@@ -74,7 +74,7 @@ else
     </p>
     @if (azure.LastSyncError is { } azureError)
     {
-        <div class="alert alert-warning" id="azure-sync-error">Sync failed: @azureError</div>
+        <div class="alert alert-warning" id="azure-sync-error" role="alert">Sync failed: @azureError</div>
     }
     @if (azure.Skipped.Count > 0)
     {

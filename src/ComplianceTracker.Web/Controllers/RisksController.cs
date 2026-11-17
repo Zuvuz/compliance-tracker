@@ -383,6 +383,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> SetResidual(Guid id, int likelihood, int impact, CancellationToken cancellationToken)
         {
             await _service.SetResidualAsync(await ProjectOfAsync(id, cancellationToken), id, likelihood, impact, cancellationToken);
+            TempData["Success"] = $"Residual risk set: {likelihood} × {impact}"; // US-171
             return RedirectToAction(nameof(Details), new { id });
         }
 

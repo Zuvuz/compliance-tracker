@@ -291,3 +291,7 @@ img, video { max-width: 100%; height: auto; }
 @media (max-width: 991.98px) {
     main table.table { display: block; overflow-x: auto; }
 }
+
+/* US-171 R2: a success message fades out (site.js) */
+.alert-success { transition: opacity .6s ease; }
+.alert-success.message-fading { opacity: 0; }
