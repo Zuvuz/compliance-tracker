@@ -1,0 +1,18 @@
+@* US-171 R1–R3: the message of the last action, from TempData "Success", "Warning" or "Error". A success fades after 6
+   seconds (site.js); a warning or an error stays until the page changes. Screen readers announce them: a success as a
+   status, a warning or an error as an alert. Ids used by the tests: #messages with .message-success, .message-warning and
+   .message-error. Pages that show a message of their own keep its id (R4). *@
+<div id="messages">
+    @if (TempData["Success"] is string success)
+    {
+        <div class="alert alert-success message-success mt-3" role="status" data-fade="6000">@success</div>
+    }
+    @if (TempData["Warning"] is string warning)
+    {
+        <div class="alert alert-warning message-warning mt-3" role="alert">@warning</div>
+    }
+    @if (TempData["Error"] is string error)
+    {
+        <div class="alert alert-danger message-error mt-3" role="alert">@error</div>
+    }
+</div>

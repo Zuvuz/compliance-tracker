@@ -153,7 +153,7 @@
         @if (TempData["InvitationLink"] is string link)
         {
             @* US-009 R6: shown once; only its hash is stored *@
-            <div class="alert alert-success">
+            <div class="alert alert-success" role="status" data-keep>
                 Send this link to the person. It works once and for @Invitation.ValidDays days, and is not shown again:
                 <input class="form-control mt-2" id="invitation-link" value="@link" readonly />
             </div>

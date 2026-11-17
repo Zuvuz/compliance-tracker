@@ -132,3 +132,21 @@ document.querySelectorAll("[data-percent]").forEach(bar => {
     // R3: back to a page that was left while it worked
     window.addEventListener("pageshow", () => document.querySelectorAll("form[aria-busy=true]").forEach(restore));
 })();
+
+// US-171 R2: a success message fades after 6 seconds; a warning or an error stays. Any success alert on a page counts,
+// also the ones a page shows with its own id (R4). data-keep keeps one on purpose.
+(() => {
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.querySelectorAll(".alert-success:not([data-keep])").forEach(message => {
+        const delay = Number(message.dataset.fade) || 6000;
+        setTimeout(() => {
+            if (reduce) {
+                message.hidden = true;
+                return;
+            }
+
+            message.classList.add("message-fading");
+            message.addEventListener("transitionend", () => { message.hidden = true; }, { once: true });
+        }, delay);
+    });
+})();

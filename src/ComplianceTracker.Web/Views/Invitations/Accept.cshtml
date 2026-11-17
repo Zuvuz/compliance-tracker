@@ -10,7 +10,7 @@
     <div asp-validation-summary="All" class="text-danger" role="alert"></div>
     @if (Model.Preview.Problem is { } problem)
     {
-        <div class="alert alert-warning" id="invitation-problem">@problem</div>
+        <div class="alert alert-warning" id="invitation-problem" role="alert">@problem</div>
     }
     else
     {

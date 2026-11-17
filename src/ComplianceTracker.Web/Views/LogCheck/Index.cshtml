@@ -17,7 +17,7 @@
 
 @if (Model.IsIntact)
 {
-    <div class="alert alert-success" id="log-check-result" data-intact="true">
+    <div class="alert alert-success" id="log-check-result" data-intact="true" role="status" data-keep>
         @(Model.WithoutFingerprint > 0
             ? $"The log is intact ({Model.Checked} entries); {Model.WithoutFingerprint} older entries from before the fingerprints have no fingerprint"
             : $"The log is intact ({Model.Checked} entries)")
@@ -26,7 +26,7 @@
 else
 {
     var broken = Model.FirstBroken!;
-    <div class="alert alert-danger" id="log-check-result" data-intact="false">
+    <div class="alert alert-danger" id="log-check-result" data-intact="false" role="alert">
         <span id="log-check-broken">The log is broken at the entry of @broken.OccurredAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</span>
         (@broken.Action). @Model.Checked entries before it are intact.
     </div>

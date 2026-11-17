@@ -34,7 +34,7 @@
 
     @if (TempData["ScanImported"] is string imported)
     {
-        <div class="alert alert-success py-2" id="scan-imported" role="status">
+        <div class="alert alert-success py-2" id="scan-imported" role="status" data-keep>
             @foreach (var line in imported.Split('\n'))
             {
                 <div class="scan-line">@line</div>

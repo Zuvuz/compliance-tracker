@@ -29,7 +29,7 @@
 
         @if (TempData["EvidenceAiUnavailable"] is string aiMessage)
         {
-            <div class="alert alert-warning small" id="evidence-ai-unavailable">@aiMessage</div>
+            <div class="alert alert-warning small" id="evidence-ai-unavailable" role="alert">@aiMessage</div>
         }
         <div asp-validation-summary="All" class="text-danger" role="alert"></div>
 
@@ -423,7 +423,7 @@
                     <h2 class="h6 card-title">Upload test results</h2>
                     @if (TempData["TestResults"] is string testResults)
                     {
-                        <div class="alert alert-info small py-2" id="test-results-summary">@testResults</div>
+                        <div class="alert alert-info small py-2" id="test-results-summary" role="status">@testResults</div>
                     }
                     <form asp-action="UploadTestResults" method="post" enctype="multipart/form-data" id="test-results-upload" class="d-flex flex-column gap-2" data-busy="Uploading…">
                         <input type="hidden" name="projectId" value="@project.Id" />

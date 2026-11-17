@@ -137,6 +137,7 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             await _members.SetAccessUntilAsync(memberId, until, cancellationToken);
+            TempData["Success"] = $"Access until {until:dd-MM-yyyy}"; // US-171
             return RedirectToAction(nameof(Index));
         }
 
