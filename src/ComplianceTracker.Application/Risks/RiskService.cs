@@ -229,12 +229,15 @@ namespace ComplianceTracker.Application.Risks
             }
         }
 
-        public async Task RemoveMeasureAsync(Guid projectId, Guid riskId, Guid measureId, CancellationToken cancellationToken = default)
+        // US-174: returns the measure's requirement or story, so it can be put back (Undo)
+        public async Task<(Guid? RequirementId, Guid? WorkItemId)> RemoveMeasureAsync(Guid projectId, Guid riskId, Guid measureId, CancellationToken cancellationToken = default)
         {
             var (organization, _, project, risk) = await RiskAsync(projectId, riskId, cancellationToken);
+            var removed = risk.Measures.FirstOrDefault(m => m.Id == measureId);
             risk.RemoveMeasure(measureId);
             await LogChangeAsync(organization, project, risk, [new ProjectChange("Measure", "linked", "")], cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return (removed?.RequirementId, removed?.WorkItemId);
         }
 
         // ---------------------------------------------------------- Treatment actions (US-111)

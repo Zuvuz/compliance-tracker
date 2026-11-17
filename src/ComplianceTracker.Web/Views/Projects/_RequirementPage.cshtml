@@ -368,7 +368,7 @@
                                     @* R8: removing is in a small menu, not a bare × *@
                                     <details class="item-menu">
                                         <summary class="btn btn-sm btn-link p-0 text-muted" aria-label="More for @link.WorkItem.Title">⋯</summary>
-                                        <form asp-action="UnlinkRequirement" method="post" class="unlink-requirement mt-1" data-confirm="The story is no longer linked to @requirement.Code.">
+                                        <form asp-action="UnlinkRequirement" method="post" class="unlink-requirement mt-1">
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="linkId" value="@link.LinkId" />
                                             <input type="hidden" name="sub" value="@sub" />
@@ -525,7 +525,7 @@
                                 {
                                     <details class="item-menu">
                                         <summary class="btn btn-sm btn-link p-0 text-muted" aria-label="More for @evidence.Title">⋯</summary>
-                                        <form asp-action="RemoveEvidence" method="post" data-confirm="The evidence is no longer linked to this requirement." class="remove-evidence mt-1">
+                                        <form asp-action="RemoveEvidence" method="post" class="remove-evidence mt-1">
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="evidenceId" value="@evidence.Id" />
                                             <input type="hidden" name="requirementId" value="@requirement.Id" />
