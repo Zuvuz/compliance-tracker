@@ -2197,6 +2197,18 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At tildele opgaver til andre medlemmer. Det står uden for US-099.
   - En ny side ved siden af "To review". To lister med næsten det samme ville forvirre.
 
+### B145 – Søgning med PostgreSQL's fuldtekstsøgning (US-100)
+
+- **Beslutning:**
+  - **Søgefeltet** står i topbaren. Søgningen finder krav, work items, evidens, risici og projekter i medlemmets egen organisation og viser dem grupperet efter type. Hvert resultat viser projektet eller rammen og har et link. En risiko åbner i sidepanelet (US-147), og et krav åbner på rammens side.
+  - **Teknik:** PostgreSQL's fuldtekstsøgning med den engelske konfiguration, så "log" finder "logging". Den bruger GIN-indeks på de søgte kolonner (migrationen Search). Koder og id'er som "I.2(d)" og "US-004" findes også med en almindelig "indeholder"-søgning, fordi fuldtekstsøgningen deler dem op.
+  - **Sikkerhed:** organisationen tjekkes først. Kun egne projekter og de rammer, organisationen bruger, søges i, og et medlem med adgang til ét projekt (US-182) søger kun i det. Søgeordet sendes altid som parameter og aldrig som SQL-tekst (US-094). %, _ og \ i ordet søges som tegn.
+  - **Grænser:** højst 50 resultater pr. type med "Show more", og et søgeord på højst 200 tegn.
+- **Begrundelse:** Man skal hurtigt kunne finde alt om fx "MFA" på tværs af projekterne. Søgningen må kun finde det, medlemmet må se (ISO/IEC 27001 A.5.15 og A.8.28).
+- **Fravalgt:**
+  - En separat søgemaskine som Elasticsearch. Det ville betyde endnu en tjeneste at drive, og PostgreSQL er nok her.
+  - Søgning i uploadede filer og danske ordformer. Det står uden for US-100.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

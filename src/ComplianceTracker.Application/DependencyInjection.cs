@@ -73,6 +73,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<RiskDraftService>(); // US-112
             services.AddScoped<Review.ReviewInbox>(); // US-169
             services.AddScoped<Review.MyTasks>(); // US-099
+            services.AddScoped<Search.SearchService>(); // US-100
             services.AddScoped<RiskBackingQueries>(); // US-159
             services.AddScoped<MeasureEvidenceService>(); // US-158
             services.AddScoped<RiskService>();

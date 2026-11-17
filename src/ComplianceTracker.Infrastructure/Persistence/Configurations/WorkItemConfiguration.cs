@@ -57,6 +57,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
 
             // One work item per item in the source, e.g. one per GitHub issue, or one per ID in a requirement specification.
             // NULLS NOT DISTINCT: GitHub's work items have no document and must still be unique.
+            // US-100 R4: full-text search in English (the expression must match SearchIndex)
+            builder.HasIndex(w => new { w.ExternalReference, w.Title, w.Rules, w.Description }).HasMethod("GIN").IsTsVectorExpressionIndex("english").HasDatabaseName("IX_WorkItems_Search");
+
             builder.HasIndex(w => new { w.ProjectId, w.Source, w.DocumentId, w.ExternalReference })
                 .IsUnique()
                 .AreNullsDistinct(false);

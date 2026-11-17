@@ -39,6 +39,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(e => e.ProjectId);
 
+            // US-100 R4: full-text search in English (the expression must match SearchIndex)
+            builder.HasIndex(e => e.Title).HasMethod("GIN").IsTsVectorExpressionIndex("english").HasDatabaseName("IX_Evidence_Search");
+
             // US-136: evidence made from an organisation's document
             builder.Ignore(e => e.IsFromOrganisation);
             builder.HasOne<Domain.Organizations.OrganisationDocument>().WithMany().HasForeignKey(e => e.OrganisationDocumentId)

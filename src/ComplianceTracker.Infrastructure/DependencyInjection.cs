@@ -132,6 +132,7 @@ namespace ComplianceTracker.Infrastructure
             services.AddSingleton<Application.Scanning.ISbomImporter, Scanning.CycloneDxSbomImporter>();
             services.AddSingleton<Application.Scanning.ISbomImporter, Scanning.SpdxSbomImporter>();
             services.AddScoped<IRiskRepository, RiskRepository>();
+            services.AddScoped<Application.Search.ISearchIndex, SearchIndex>(); // US-100
             services.AddScoped<IRiskDraftRepository, RiskDraftRepository>(); // US-112
             services.AddScoped<IEvidenceCheckRepository, EvidenceCheckRepository>(); // US-038
             services.AddScoped<Application.Ai.IRequirementMappingRepository, RequirementMappingRepository>(); // US-037
