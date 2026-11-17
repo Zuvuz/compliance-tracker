@@ -106,20 +106,20 @@
     <form asp-action="Record" method="post" enctype="multipart/form-data" id="record-audit" class="card card-body small" data-busy="Uploading…">
         <input type="hidden" name="projectId" value="@project.Id" />
         <div class="row g-2">
-            <div class="col-md-3"><label class="form-label">Kind</label>
-                <select name="kind" class="form-select form-select-sm"><option value="External">External</option><option value="Internal">Internal</option></select></div>
-            <div class="col-md-5"><label class="form-label">Scope</label>
-                <input name="scope" maxlength="200" class="form-control form-control-sm" placeholder="e.g. ISO/IEC 27001:2022" required /></div>
-            <div class="col-md-4"><label class="form-label">Date</label>
-                <input type="date" name="heldOn" class="form-control form-control-sm" required /></div>
-            <div class="col-md-4"><label class="form-label">Auditor</label>
-                <input name="auditorName" maxlength="200" class="form-control form-control-sm" required /></div>
-            <div class="col-md-4"><label class="form-label">Company</label>
-                <input name="auditorCompany" maxlength="200" class="form-control form-control-sm" placeholder="e.g. Bureau Veritas" /></div>
-            <div class="col-md-4"><label class="form-label">Result</label>
-                <select name="result" class="form-select form-select-sm"><option value="Passed">Passed</option><option value="PassedWithRemarks">Passed with remarks</option><option value="Failed">Failed</option></select></div>
-            <div class="col-12"><label class="form-label">The auditor's signed report</label>
-                <input type="file" name="file" accept=".pdf,.png,.jpg,.jpeg,.txt,.md" class="form-control form-control-sm" required /></div>
+            <div class="col-md-3"><label class="form-label" for="audit-kind">Kind</label>
+                <select id="audit-kind" name="kind" class="form-select form-select-sm"><option value="External">External</option><option value="Internal">Internal</option></select></div>
+            <div class="col-md-5"><label class="form-label" for="audit-scope">Scope</label>
+                <input id="audit-scope" name="scope" maxlength="200" class="form-control form-control-sm" placeholder="e.g. ISO/IEC 27001:2022" required /></div>
+            <div class="col-md-4"><label class="form-label" for="audit-held-on">Date</label>
+                <input type="date" id="audit-held-on" name="heldOn" class="form-control form-control-sm" required /></div>
+            <div class="col-md-4"><label class="form-label" for="audit-auditor">Auditor</label>
+                <input id="audit-auditor" name="auditorName" maxlength="200" class="form-control form-control-sm" required /></div>
+            <div class="col-md-4"><label class="form-label" for="audit-company">Company</label>
+                <input id="audit-company" name="auditorCompany" maxlength="200" class="form-control form-control-sm" placeholder="e.g. Bureau Veritas" /></div>
+            <div class="col-md-4"><label class="form-label" for="audit-result">Result</label>
+                <select id="audit-result" name="result" class="form-select form-select-sm"><option value="Passed">Passed</option><option value="PassedWithRemarks">Passed with remarks</option><option value="Failed">Failed</option></select></div>
+            <div class="col-12"><label class="form-label" for="audit-report">The auditor's signed report</label>
+                <input type="file" id="audit-report" name="file" accept=".pdf,.png,.jpg,.jpeg,.txt,.md" class="form-control form-control-sm" required /></div>
             <div class="col-12 fw-semibold mt-2">Certificate (if the audit gave one)</div>
             <div class="col-md-3"><input name="certificateNumber" maxlength="200" class="form-control form-control-sm" placeholder="Number" aria-label="Certificate number" /></div>
             <div class="col-md-3"><input name="certificateIssuer" maxlength="200" class="form-control form-control-sm" placeholder="Issuer" aria-label="Certificate issuer" /></div>
@@ -139,8 +139,8 @@
             }
             @if (overview.Own.Count > 0)
             {
-                <div class="col-12 mt-2"><label class="form-label">Corrects an earlier record (optional)</label>
-                    <select name="correctsAuditId" class="form-select form-select-sm">
+                <div class="col-12 mt-2"><label class="form-label" for="audit-corrects">Corrects an earlier record (optional)</label>
+                    <select id="audit-corrects" name="correctsAuditId" class="form-select form-select-sm">
                         <option value="">No, a new audit</option>
                         @foreach (var audit in overview.Own.Where(a => overview.CorrectedBy(a) is null))
                         {
