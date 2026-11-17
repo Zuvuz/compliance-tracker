@@ -3,13 +3,13 @@ using ComplianceTracker.Specs.Support;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {
-    // US-080: the industry section on /Settings (Views/Settings/Index.cshtml: form#choose-industry with industry and
+    // US-080: the industry section, on the organisation's profile since US-163 (Views/Organisation/Profile.cshtml: form#choose-industry with industry and
     // productsUseAi, #industry-suggestions li.industry-suggestion[data-name] with .suggestion-reason, .suggestion-state
     // and form.switch-on-suggestion, #industry-coming, #industry-no-suggestions).
     [Binding]
     public class IndustryProfileStepDefinitions
     {
-        private const string SettingsPath = "/Settings";
+        private const string SettingsPath = "/Organisation/Profile";
 
         private readonly WebScenario _web;
 

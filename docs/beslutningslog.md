@@ -2220,6 +2220,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - Formularen på organisationens Overview-fane, som issuen foreslog. Siden Profile er der, hvor US-163 også samler branche, land og AI. Så findes organisationens profil ét sted.
 
+### B147 – Én profil for organisationen; Settings er kun indstillinger (US-163, ændrer US-045 R2)
+
+- **Beslutning:**
+  - **Profilen:** Organisation → Profile samler navn, CVR, NIS2-sektor og størrelse (US-027), land samt branche og "Our products use AI". Hvert felt siger, hvad det ændrer: sektoren afgør, om NIS2 gælder; branchen afgør, hvad trackeren foreslår; landet afgør de nationale love. Branchens forslag til regler, scanninger og rapporter vises også her.
+  - **Sektor foreslår branche:** når en sektor vælges, viser siden fx "Suggested industry: Medtech". Health giver Medtech, Banking og finansiel infrastruktur giver Fintech, og de digitale sektorer giver Software. Andre sektorer giver Other, og sektoren Other giver intet forslag. Intet gemmes, før admin gemmer.
+  - **Alle fire brancher** kan vælges. En branche, hvis egne forslag ikke er klar endnu, står med "(own suggestions coming)".
+  - **Settings** siger øverst "For the organisation's admins" og har kun indstillingerne (AI-feedback, revisionsdatoer, segl, eksport og lukning). Den linker til profilen. Organisationens egne medlemmer ser Settings skrivebeskyttet. En auditor og et medlem med adgang til ét projekt (US-182) får stadig "forbidden". Det ændrer US-045 R2.
+  - **Gamle adresser:** /Settings#industry-profile og #organisation-country fører til profilen. Formularer, der sendes til de gamle POST-adresser, virker stadig og fører også dertil.
+- **Begrundelse:** Branchelisten på Settings og sektorlisten under Organisation fik folk til at undre sig over forskellen. Ét sted med en forklaring gør organisationens kontekst tydelig (ISO/IEC 27001 4.1 og 4.3, NIS2 art. 3).
+- **Fravalgt:**
+  - At gemme alt i én formular. Navn, sektor og størrelse, landet og branchen har hver sin regel og log. Derfor har hver sin formular på samme side.
+  - At ændre branchen automatisk, når sektoren skifter. Branchen ændres kun, når admin selv gemmer den.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

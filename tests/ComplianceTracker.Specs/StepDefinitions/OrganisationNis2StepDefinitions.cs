@@ -68,11 +68,12 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await _web.OpenAsync($"/Projects/Details/{areaId}/nis2-scope");
         }
 
-        [Given("the organisation's country is set to {string} on the Settings page")]
+        // US-163: the country is on the organisation's profile
+        [Given("the organisation's country is set to {string} on the organisation's profile")]
         public async Task GivenTheCountryIsSet(string country)
         {
-            await _web.OpenAsync("/Settings");
-            var form = _web.Page!.QuerySelector("form#set-country") ?? throw new Xunit.Sdk.XunitException("Settings has no country form.");
+            await _web.OpenAsync("/Organisation/Profile");
+            var form = _web.Page!.QuerySelector("form#set-country") ?? throw new Xunit.Sdk.XunitException("The profile has no country form.");
             await _web.PostFormAsync(form.GetAttribute("action")!, new Dictionary<string, string> { ["country"] = country });
         }
 

@@ -26,11 +26,12 @@ Feature: The main pages are in the top bar
     When "Bo" opens the address "/Users"
     Then access is denied
 
-  @US-045 @iso27001-A.5.15 @integration
-  Scenario: A developer cannot open the settings page directly
+  # US-163 R3 (changes US-045 R2): a developer sees the settings read-only; the forms do not work for them
+  @US-045 @US-163 @iso27001-A.5.15 @integration
+  Scenario: A developer sees the settings page directly, without changing anything
     Given "Bo" has joined "Acme ApS" as "Developer"
     When "Bo" opens the address "/Settings"
-    Then access is denied
+    Then the answer is the page and says "You can see the settings but not change them."
 
   @US-045 @integration
   Scenario: The front page after sign-in is the projects page
