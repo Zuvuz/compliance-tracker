@@ -248,6 +248,60 @@ namespace ComplianceTracker.Domain.Organizations
         }
 
         // US-142 R6: only an Admin may change it. Returns false when nothing changed.
+        // US-027 R1-R4: an Admin corrects the name, sector and size with the rules from Create; the CVR never changes (R2).
+        // Returns what changed, old and new, for the activity log; empty when nothing changed.
+        public const int MaxNameLength = 200;
+
+        public IReadOnlyList<Projects.ProjectChange> Update(string? name, Sector? sector, OrganizationSize? size, Guid userId)
+        {
+            if (_users.FirstOrDefault(u => u.Id == userId && u.IsActive)?.Role != UserRole.Admin)
+            {
+                throw new DomainException("Only an Admin can edit the organisation");
+            }
+
+            var trimmed = (name ?? "").Trim();
+            if (trimmed.Length == 0)
+            {
+                throw new DomainException("Name is required");
+            }
+
+            if (trimmed.Length > MaxNameLength)
+            {
+                throw new DomainException($"The name can be at most {MaxNameLength} characters");
+            }
+
+            if (sector is null || !Enum.IsDefined(sector.Value))
+            {
+                throw new DomainException("Sector is required");
+            }
+
+            if (size is null || !Enum.IsDefined(size.Value))
+            {
+                throw new DomainException("Size is required");
+            }
+
+            var changes = new List<Projects.ProjectChange>();
+            if (trimmed != Name)
+            {
+                changes.Add(new Projects.ProjectChange("Name", Name, trimmed));
+                Name = trimmed;
+            }
+
+            if (sector.Value != Sector)
+            {
+                changes.Add(new Projects.ProjectChange("Sector", Sector.ToString(), sector.Value.ToString()));
+                Sector = sector.Value;
+            }
+
+            if (size.Value != Size)
+            {
+                changes.Add(new Projects.ProjectChange("Size", Size.ToString(), size.Value.ToString()));
+                Size = size.Value;
+            }
+
+            return changes;
+        }
+
         public bool SetCountry(string? country, Guid userId)
         {
             if (_users.FirstOrDefault(u => u.Id == userId && u.IsActive)?.Role != UserRole.Admin)

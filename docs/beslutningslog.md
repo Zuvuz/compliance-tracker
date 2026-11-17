@@ -2209,6 +2209,17 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - En separat søgemaskine som Elasticsearch. Det ville betyde endnu en tjeneste at drive, og PostgreSQL er nok her.
   - Søgning i uploadede filer og danske ordformer. Det står uden for US-100.
 
+### B146 – Organisationens oplysninger rettes på Organisation → Profile (US-027)
+
+- **Beslutning:**
+  - **Siden:** Organisation-menuen har punktet "Profile" med organisationens navn, CVR, sektor og størrelse. Admin retter navn, sektor og størrelse i én formular med de samme regler som ved oprettelsen (US-001). Navnet trimmes og må højst være 200 tegn.
+  - **CVR** vises, men kan ikke rettes, fordi det identificerer virksomheden.
+  - **Rettigheder:** kun Admin kan rette. Domænet og use casen tjekker det begge. Andre ser oplysningerne uden formular.
+  - **Log:** hver ændring logges som `OrganizationUpdated` med gammel og ny værdi, fx "Size: Small → Medium". Uden ændringer gemmes og logges intet.
+- **Begrundelse:** Sektor og størrelse afgør senere, hvilke regler der gælder (fx NIS2), så de skal kunne holdes opdateret og spores (ISO/IEC 27001 4.1 og A.8.15).
+- **Fravalgt:**
+  - Formularen på organisationens Overview-fane, som issuen foreslog. Siden Profile er der, hvor US-163 også samler branche, land og AI. Så findes organisationens profil ét sted.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

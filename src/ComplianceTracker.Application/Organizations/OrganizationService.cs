@@ -68,5 +68,21 @@ namespace ComplianceTracker.Application.Organizations
             _member.Reset();
             return organization;
         }
+
+        // US-027: the Admin corrects the name, sector and size (R1, R3); each change is logged with the old and new value
+        // (R4). Nothing is saved or logged when nothing changed.
+        public async Task<IReadOnlyList<Domain.Projects.ProjectChange>> UpdateAsync(string? name, Sector? sector, OrganizationSize? size,
+            CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Domain.Users.Permission.ManageMembers, cancellationToken);
+            var changes = organization.Update(name, sector, size, user.Id);
+            if (changes.Count > 0)
+            {
+                await _log.LogAsync(ActivityAction.OrganizationUpdated, organization.Id, string.Join("; ", changes), cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+
+            return changes;
+        }
     }
 }

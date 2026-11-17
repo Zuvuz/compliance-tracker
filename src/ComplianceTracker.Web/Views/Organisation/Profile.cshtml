@@ -1,0 +1,64 @@
+@* US-027: the organisation's details. The Admin edits the name, sector and size; the CVR identifies the company and is
+   only shown (R2). Others see the details without a form (R3).
+   Ids used by the tests: #organisation-profile, form#edit-organisation (name, sector, size), #profile-name, #profile-cvr,
+   #profile-sector, #profile-size, #profile-read-only. *@
+@model OrganisationProfileViewModel
+@using ComplianceTracker.Domain.Organizations
+@{
+    var organization = Model.Organization;
+    ViewData["Title"] = "Organisation profile";
+}
+
+<page-header heading="Organisation profile" heading-id="profile-title" />
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+<section class="mb-4" id="organisation-profile" aria-labelledby="profile-details">
+    <h2 class="h5" id="profile-details">Details</h2>
+    @if (Model.CanEdit)
+    {
+        <form asp-action="Update" method="post" class="row g-3" id="edit-organisation" style="max-width: 40rem">
+            <div class="col-12">
+                <label for="organisation-name" class="form-label">Name</label>
+                <input class="form-control" id="organisation-name" name="name" value="@organization.Name" maxlength="@Organization.MaxNameLength" required />
+            </div>
+            <div class="col-12">
+                <span class="form-label d-block">CVR</span>
+                <span id="profile-cvr" class="form-control-plaintext">@organization.Cvr</span>
+                <div class="form-text">The CVR identifies the company and cannot be changed.</div>
+            </div>
+            <div class="col-sm-6">
+                <label for="organisation-sector" class="form-label">Sector</label>
+                <select class="form-select" id="organisation-sector" name="sector">
+                    @foreach (var sector in Enum.GetValues<Sector>())
+                    {
+                        <option value="@sector" selected="@(sector == organization.Sector)">@sector</option>
+                    }
+                </select>
+                <div class="form-text">The NIS2 sector; it decides whether NIS2 can apply.</div>
+            </div>
+            <div class="col-sm-6">
+                <label for="organisation-size" class="form-label">Size</label>
+                <select class="form-select" id="organisation-size" name="size">
+                    @foreach (var size in Enum.GetValues<OrganizationSize>())
+                    {
+                        <option value="@size" selected="@(size == organization.Size)">@size</option>
+                    }
+                </select>
+                <div class="form-text">With the sector, the size decides whether the organisation is essential or important under NIS2.</div>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    }
+    else
+    {
+        <p class="text-muted small" id="profile-read-only">Only the organisation's admins can change these details.</p>
+        <dl class="row mb-0" style="max-width: 40rem">
+            <dt class="col-sm-3">Name</dt><dd class="col-sm-9" id="profile-name">@organization.Name</dd>
+            <dt class="col-sm-3">CVR</dt><dd class="col-sm-9" id="profile-cvr">@organization.Cvr</dd>
+            <dt class="col-sm-3">Sector</dt><dd class="col-sm-9" id="profile-sector">@organization.Sector</dd>
+            <dt class="col-sm-3">Size</dt><dd class="col-sm-9" id="profile-size">@organization.Size</dd>
+        </dl>
+    }
+</section>
