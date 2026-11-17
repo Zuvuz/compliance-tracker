@@ -422,6 +422,13 @@ namespace ComplianceTracker.Web.Models
             .OrderBy(r => r.Framework.Name)
             .ToList();
 
+        // US-164 R1, R3: the built-in frameworks not switched on yet, for members who may switch them on
+        public IReadOnlyList<Framework> NotSwitchedOn { get; init; } = [];
+
+        public IEnumerable<Framework> CanBeSwitchedOnAndAdded
+            => NotSwitchedOn.Where(f => f.CurrentVersion(Today) is not null
+                && f.Level == (Project.IsOrganisationArea ? FrameworkLevel.Organisation : FrameworkLevel.Product));
+
         // The frameworks that can still be added (the project uses each framework at most once, R3),
         // and that have an active version (US-007)
         // US-142 R2: only frameworks of the right level (organisation-level ones only in the organisation area)

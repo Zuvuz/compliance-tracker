@@ -2245,6 +2245,16 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - En Delete-knap. Data slettes kun, når hele organisationen lukkes (US-184).
   - Et eget skrivebeskyttet flag ved siden af `IsClosed`. Så skulle alle de steder, der allerede skjuler formularer for lukkede projekter, kende to flag.
 
+### B149 – En ramme kan tilføjes fra projektet og slås til samtidig (US-164)
+
+- **Beslutning:**
+  - **Valglisten** på projektets Frameworks-fane har to grupper: "Switched on" og "Not switched on yet (also switches it on for the organisation)". Den sidste gruppe har de indbyggede rammer, organisationen ikke har slået til, og den vises kun for medlemmer med ManageFrameworks. Andre ser listen som før.
+  - **Ét trin:** vælges en ramme fra den anden gruppe, slås den til for organisationen med den aktuelle version (som i US-006/US-007) og tilføjes projektet. Begge dele gemmes i samme transaktion og logges som `FrameworkEnabled` og `ProjectFrameworkAdded`. Fejler et af trinene, fx fordi versionen ikke er aktiv, gemmes ingenting.
+  - **Sikkerhed:** serveren tjekker ManageFrameworks igen. Uploadede rammer findes kun i deres egen organisation.
+- **Begrundelse:** En regulering, der gælder et produkt, sættes op der, hvor arbejdet foregår, uden en omvej (ISO/IEC 27001 4.2 og A.5.31, CRA art. 13).
+- **Fravalgt:**
+  - At slå rammen til uden at spørge. Gruppen siger tydeligt, at den også slås til for organisationen.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

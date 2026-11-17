@@ -358,7 +358,7 @@ namespace ComplianceTracker.Application.Projects
             Guid projectId, Guid frameworkId, Guid? frameworkVersionId = null,
             CancellationToken cancellationToken = default)
         {
-            var (userId, project, framework) = await LoadAsync(projectId, frameworkId, cancellationToken);
+            var (userId, project, framework) = await LoadAsync(projectId, frameworkId, cancellationToken, mayEnable: true);
 
             var version = frameworkVersionId is null
                 ? framework.RequireCurrentVersion(_clock.Today())
@@ -419,13 +419,35 @@ namespace ComplianceTracker.Application.Projects
 
         // The user, the project and the framework; all must belong to (or be followed by) the user's organisation
         private async Task<(Guid UserId, Project Project, Framework Framework)> LoadAsync(
-            Guid projectId, Guid frameworkId, CancellationToken cancellationToken)
+            Guid projectId, Guid frameworkId, CancellationToken cancellationToken, bool mayEnable = false)
         {
             var (organization, user) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
             var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
                 ?? throw new DomainException("Project not found");
-            var framework = await AvailableFrameworkAsync(organization.Id, frameworkId, cancellationToken);
-            return (user.Id, project, framework);
+            var framework = await _frameworks.GetAvailableAsync(organization.Id, frameworkId, cancellationToken);
+            if (framework is null && mayEnable)
+            {
+                framework = await EnableBuiltInAsync(organization.Id, frameworkId, cancellationToken);
+            }
+
+            return (user.Id, project, framework ?? throw new DomainException("Framework not found"));
+        }
+
+        // US-164 R2, R3, R5: a built-in framework not switched on yet is switched on for the organisation, by a member who
+        // may manage frameworks. It is saved in the same transaction as the project's change, so if anything fails nothing
+        // is switched on or added. Uploaded frameworks of another organisation are never found (R4).
+        private async Task<Framework?> EnableBuiltInAsync(Guid organizationId, Guid frameworkId, CancellationToken cancellationToken)
+        {
+            if (await _frameworks.GetBuiltInAsync(frameworkId, cancellationToken) is not { } builtIn)
+            {
+                return null;
+            }
+
+            var (_, user) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
+            var version = builtIn.RequireCurrentVersion(_clock.Today());
+            await _frameworks.AddSelectionAsync(OrganizationFramework.Enable(organizationId, version.Id, user.Id, Now), cancellationToken);
+            await _log.LogAsync(ActivityAction.FrameworkEnabled, version.Id, cancellationToken);
+            return builtIn;
         }
 
         // R1: an uploaded framework of the organisation, or a built-in one it has switched on

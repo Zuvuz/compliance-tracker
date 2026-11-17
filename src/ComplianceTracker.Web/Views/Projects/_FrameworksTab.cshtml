@@ -95,18 +95,37 @@
         </table>
     }
 
-    @* US-011 R2: add one of the organisation's frameworks; the newest active version is used *@
-    @if (Model.CanBeAdded.Any() && !project.IsClosed)
+    @* US-011 R2: add one of the organisation's frameworks; the newest active version is used. US-164 R1, R3: apart, the
+       built-in ones not switched on yet, for members who may switch them on; adding one switches it on too (R2). *@
+    @{
+        var notOn = Model.CanBeSwitchedOnAndAdded.OrderBy(f => f.Name).ToList();
+    }
+    @if ((Model.CanBeAdded.Any() || notOn.Count > 0) && !project.IsClosed)
     {
         <form asp-action="AddFramework" method="post" class="row g-2" id="add-framework">
             <input type="hidden" name="projectId" value="@project.Id" />
             <div class="col-md-6">
-                <select name="frameworkId" class="form-select" aria-label="Framework">
-                    @foreach (var framework in Model.CanBeAdded.OrderBy(f => f.Name))
+                <select name="frameworkId" class="form-select" aria-label="Framework" aria-describedby="add-framework-note">
+                    <optgroup label="Switched on" id="switched-on-frameworks">
+                        @foreach (var framework in Model.CanBeAdded.OrderBy(f => f.Name))
+                        {
+                            <option value="@framework.Id">@framework.Name</option>
+                        }
+                    </optgroup>
+                    @if (notOn.Count > 0)
                     {
-                        <option value="@framework.Id">@framework.Name</option>
+                        <optgroup label="Not switched on yet (also switches it on for the organisation)" id="not-switched-on-frameworks">
+                            @foreach (var framework in notOn)
+                            {
+                                <option value="@framework.Id" data-switches-on="true">@framework.Name</option>
+                            }
+                        </optgroup>
                     }
                 </select>
+                @if (notOn.Count > 0)
+                {
+                    <div class="form-text" id="add-framework-note">A framework under "Not switched on yet" is also switched on for the organisation.</div>
+                }
             </div>
             <div class="col-md-3">
                 <button type="submit" class="btn btn-primary">Add framework</button>

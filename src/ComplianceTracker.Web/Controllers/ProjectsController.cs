@@ -312,6 +312,8 @@ namespace ComplianceTracker.Web.Controllers
                     ? await _sync.ProjectsToChooseAsync(id, cancellationToken)
                     : [],
                 Tab = activeTab,
+                // US-164: the built-in frameworks that can be switched on and added from the Frameworks tab
+                NotSwitchedOn = activeTab == ProjectTabs.Frameworks ? await _frameworks.NotSwitchedOnAsync(cancellationToken) : [],
                 Organization = organization,
                 // US-142
                 OrganisationArea = project.IsOrganisationArea && activeTab is ProjectTabs.Overview or ProjectTabs.Nis2Scope
