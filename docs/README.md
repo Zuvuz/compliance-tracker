@@ -20,6 +20,12 @@ Tekst i *kursiv* er udkast, du kan rette til. Linjer der starter med **Spørgsm�
 | [Backup og gendannelse af databasen](backup-og-gendannelse.md) | ISO 27001 A.8.13; US-014 |
 | [Scanninger fra byggepipelinen](scan-upload-fra-pipeline.md) | CRA bilag I, del II (3); ISO 27001 A.8.29; US-122 |
 
+## Udvikling
+
+| Dokument | Primær reference |
+| --- | --- |
+| [Designregler for siderne](design-rules.md) | ISO 27001 A.8.25, A.8.26; US-168 |
+
 ## Næste dokumenter
 
 Når de tre første er rettet til, følger disse i rækkefølge. Hver bygger på det forrige.

@@ -2159,6 +2159,17 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Tovejssynkronisering.
   - Ét fælles token for hele trackeren.
   - Azure DevOps Server on-premises og Entra ID-login. De står uden for US-030.
+### B142 – Fælles sidehoved og faste farver for status (US-168)
+
+- **Beslutning:**
+  - **Sidehovedet:** hovedsiderne bygges med `<page-header>`: et link tilbage, titlen som h1 med status, og handlingerne til højre med højst én primær knap. Projekt, risiko og dokumenter bruger det; kravsiden har sin egen header under projektets.
+  - **Status:** en status vises med `<status-badge>` og har faste farver fra ét sted (`StatusBadges`). Grøn er dækket eller færdig, gul er review, orange er "Needs action" og "High", rød er "Not covered", "Missing" og "Critical", grå er "Not applicable", og teal er AI. Orange er den eneste nye farve og har en kontrast på 10,5:1.
+  - **Reglerne** står i `docs/design-rules.md` og er linket fra README.
+- **Begrundelse:** Siderne genkendes, og det vigtigste ses først. Det mindsker risikoen for forkerte beslutninger og klik (ISO/IEC 27001 A.8.25 og A.8.26).
+- **Fravalgt:**
+  - Et nyt tema eller nye farver ud over orange. Det står uden for US-168.
+  - At ændre test-id'erne. Komponenterne beholder sidernes id'er og klasser.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

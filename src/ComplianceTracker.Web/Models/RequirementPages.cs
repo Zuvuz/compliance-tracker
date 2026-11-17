@@ -49,13 +49,9 @@ namespace ComplianceTracker.Web.Models
                 : row.NeedsAction is not null ? "Needs action" // US-155
                 : "Not covered";
 
-        // R1: the badge colour of that status
+        // R1: the badge colour of that status. US-168 R2: from the shared status vocabulary, so it is the same everywhere.
         public static string StatusClass(RequirementCoverage row)
-            => !row.IsApplicable ? "text-bg-secondary"
-                : row.IsCoveredNeedingReview ? "text-bg-warning"
-                : row.IsCovered ? "text-bg-success"
-                : row.NeedsAction is not null ? "text-bg-warning needs-action"
-                : "text-bg-danger";
+            => StatusBadges.ClassOf(Status(row)) + (row.IsApplicable && !row.IsCovered && !row.IsCoveredNeedingReview && row.NeedsAction is not null ? " needs-action" : "");
     }
 
     // US-155: the texts of "needs action"

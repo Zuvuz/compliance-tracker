@@ -5,15 +5,6 @@
 @model ProjectDetailsViewModel
 @{
     var project = Model.Project;
-    var phaseBadge = project.Phase switch
-    {
-        ComplianceTracker.Domain.Projects.LifecyclePhase.Planning => "text-bg-info",
-        ComplianceTracker.Domain.Projects.LifecyclePhase.Design => "text-bg-info",
-        ComplianceTracker.Domain.Projects.LifecyclePhase.Development => "text-bg-primary",
-        ComplianceTracker.Domain.Projects.LifecyclePhase.Verification => "text-bg-primary",
-        ComplianceTracker.Domain.Projects.LifecyclePhase.Released => "text-bg-success",
-        _ => "text-bg-secondary"
-    };
 }
 
 @if (project.IsOrganisationArea)
@@ -25,13 +16,17 @@
 }
 else
 {
-<p class="mb-1"><a asp-controller="Projects" asp-action="Index">← Projects</a></p>
-<div class="d-flex align-items-start justify-content-between gap-3">
+@* US-168 R1: the shared page header *@
+<page-header heading="@project.Name" heading-id="project-name" status="@project.Phase.ToString()" status-id="project-phase"
+             back-href="@Url.Action("Index", "Projects")" back-text="Projects">
+    @* US-024 R4: a project at end of support can only be viewed *@
+    @if (!project.IsClosed && await Permissions.CanAsync(Permission.EditProjects))
+    {
+        <a asp-action="Edit" asp-route-id="@project.Id" class="btn btn-outline-primary" id="edit-project-link">Edit</a>
+    }
+</page-header>
+<div>
     <div>
-        <h1 class="mb-1">
-            <span id="project-name">@project.Name</span>
-            <span id="project-phase" class="badge @phaseBadge fs-6 align-middle">@project.Phase</span>
-        </h1>
         <p class="text-muted mb-1" id="project-intended-purpose">@project.IntendedPurpose</p>
         <partial name="_CertificateBadges" model="Model" />
         @if (project.IsClosed && project.RetainUntil is { } keptUntil)
@@ -49,11 +44,6 @@ else
             <div class="mb-3"></div>
         }
     </div>
-    @* US-024 R4: a project at end of support can only be viewed *@
-    @if (!project.IsClosed && await Permissions.CanAsync(Permission.EditProjects))
-    {
-        <a asp-action="Edit" asp-route-id="@project.Id" class="btn btn-outline-primary" id="edit-project-link">Edit</a>
-    }
 </div>
 }
 
