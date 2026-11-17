@@ -7,6 +7,7 @@
    US-122: .scan-build on each latest scan; #upload-tokens with form #create-upload-token (name), #new-upload-token (shown
    once), rows .upload-token (data-name) with .token-created, .token-last-used, .token-revoked and form .revoke-upload-token.
    US-079: #project-sboms with form #upload-sbom (productVersion, file), #no-sbom, rows .sbom (data-version) with .sbom-summary
+   (US-148: .sbom-source, form #fetch-sbom-from-github, #sbom-unavailable)
    and form .sbom-as-evidence (requirementId); #sbom-components rows .sbom-component (data-name) with .component-version,
    .component-purl, .component-license and .component-findings; form #search-components (q). *@
 @using ComplianceTracker.Domain.Scanning
@@ -270,6 +271,19 @@
 
         @if (canChange)
         {
+            @if (project.GitHub is { IsProject: false } sbomRepository)
+            {
+                @* US-148 R3: GitHub's SBOM from the dependency graph; also fetched once a day with the scheduled sync (R4) *@
+                <form asp-action="FetchSbomFromGitHub" method="post" class="d-flex flex-wrap align-items-center gap-2 mb-2" id="fetch-sbom-from-github">
+                    <input type="hidden" name="projectId" value="@project.Id" />
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Fetch SBOM from GitHub</button>
+                    <span class="small text-muted">From the dependency graph of @sbomRepository.Repository, stored as "@ComplianceTracker.Domain.Scanning.Sbom.GitHubVersion"</span>
+                </form>
+            }
+            @if (TempData["SbomUnavailable"] is string sbomUnavailable)
+            {
+                <div class="alert alert-warning py-2 small" id="sbom-unavailable" role="status">@sbomUnavailable</div>
+            }
             <form asp-action="UploadSbom" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 mb-3" id="upload-sbom" data-busy="Uploading…">
                 <input type="hidden" name="projectId" value="@project.Id" />
                 <input name="productVersion" maxlength="100" class="form-control form-control-sm w-auto" placeholder="Product version, e.g. 2.1.0" aria-label="Product version" required />
@@ -285,13 +299,15 @@
         else
         {
             <table class="table table-sm align-middle" id="sboms">
-                <thead><tr><th>Version</th><th>Imported</th><th>Contents</th><th>SHA-256</th><th></th></tr></thead>
+                <thead><tr><th>Version</th><th>Imported</th><th>From</th><th>Contents</th><th>SHA-256</th><th></th></tr></thead>
                 <tbody>
                     @foreach (var sbom in sboms.LatestPerVersion)
                     {
                         <tr class="sbom @(sbom.Id == shown?.Id ? "table-active" : "")" data-version="@sbom.ProductVersion">
                             <td><a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Scans" asp-route-sbom="@sbom.ProductVersion" asp-fragment="sbom-components">@sbom.ProductVersion</a></td>
                             <td class="text-nowrap">@sbom.ImportedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
+                            @* US-148 R5 *@
+                            <td class="small sbom-source" title="@(sbom.CommitSha is { } sbomCommit ? $"Commit {sbomCommit}" : "")">@sbom.SourceText</td>
                             <td class="sbom-summary">@sbom.Summary</td>
                             <td class="small text-muted" title="@sbom.Sha256">@sbom.Sha256[..8]…</td>
                             <td>

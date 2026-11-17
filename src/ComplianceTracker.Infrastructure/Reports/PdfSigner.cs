@@ -161,21 +161,21 @@ namespace ComplianceTracker.Infrastructure.Reports
 
             var r = match.Groups.Values.Skip(1).Select(g => long.Parse(g.Value, CultureInfo.InvariantCulture)).ToArray();
             var covers = r[0] == 0 && r[2] + r[3] == signed.Length;
-            var hex = text.Substring((int)r[1] + 1, (int)(r[2] - r[1] - 2)).TrimEnd('0');
-            if (hex.Length % 2 == 1)
-            {
-                hex += "0";
-            }
+            var hex = text.Substring((int)r[1] + 1, (int)(r[2] - r[1] - 2));
 
             try
             {
+                // The space is padded with zeros after the signature; its DER length says where it ends. Trimming the
+                // zeros instead would cut a signature whose own last byte is 0x00.
+                var padded = Convert.FromHexString(hex.Length % 2 == 0 ? hex : hex + "0");
+                var encoded = new System.Formats.Asn1.AsnReader(padded, System.Formats.Asn1.AsnEncodingRules.BER).PeekEncodedValue().ToArray();
                 var data = signed.Skip((int)r[0]).Take((int)r[1]).Concat(signed.Skip((int)r[2]).Take((int)r[3])).ToArray();
                 var cms = new SignedCms(new ContentInfo(data), detached: true);
-                cms.Decode(Convert.FromHexString(hex));
+                cms.Decode(encoded);
                 cms.CheckSignature(verifySignatureOnly: true);
                 return (true, covers, cms.SignerInfos[0].Certificate);
             }
-            catch (CryptographicException)
+            catch (Exception error) when (error is CryptographicException or System.Formats.Asn1.AsnContentException or FormatException)
             {
                 return (false, covers, null);
             }

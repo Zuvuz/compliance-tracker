@@ -153,4 +153,42 @@ public class PdfSignerTests
         // Act / Assert
         Assert.False(PdfSigner.Verify(Report()).Valid);
     }
+
+    // The signature space is padded with zeros. A signature whose own last byte is 0x00 (about 1 in 256) must still be
+    // read whole: its DER length says where it ends, not the first zero from the end.
+    [Fact]
+    public void A_signature_that_ends_with_a_zero_byte_is_still_valid()
+    {
+        // Arrange: sign with different times until the signature's last byte is 0x00
+        using var certificate = Certificate();
+        var report = Report();
+        byte[]? signed = null;
+        for (var i = 0; i < 5000 && signed is null; i++)
+        {
+            var candidate = PdfSigner.Sign(report, certificate, "Acme ApS", "Approved", Monday.AddSeconds(i));
+            if (LastSignatureByte(candidate) == 0x00)
+            {
+                signed = candidate;
+            }
+        }
+
+        // Act
+        Assert.NotNull(signed);
+        var (valid, covers, _) = PdfSigner.Verify(signed);
+
+        // Assert
+        Assert.True(valid);
+        Assert.True(covers);
+    }
+
+    private static byte LastSignatureByte(byte[] signed)
+    {
+        var text = System.Text.Encoding.Latin1.GetString(signed);
+        var start = text.LastIndexOf("/Contents <", StringComparison.Ordinal) + "/Contents <".Length;
+        var end = text.IndexOf('>', start);
+        var hex = text[start..end];
+        var padded = Convert.FromHexString(hex.Length % 2 == 0 ? hex : hex + "0");
+        var encoded = new System.Formats.Asn1.AsnReader(padded, System.Formats.Asn1.AsnEncodingRules.BER).PeekEncodedValue();
+        return encoded.Span[^1];
+    }
 }

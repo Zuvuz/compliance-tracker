@@ -129,6 +129,31 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         // ---------------------------------------------------------- Helpers
 
+        // US-148: an SBOM sent like a pipeline does, with the project's token (or none); the answer is checked as for scans
+        public async Task SendSbomAsync(string project, bool withToken, byte[] content, string? version)
+        {
+            using var pipeline = _web.CreateClient(followRedirects: false);
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/projects/{await ProjectIdAsync(project)}/sboms");
+            if (withToken)
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _tokens[project]);
+            }
+
+            var form = new MultipartFormDataContent();
+            var file = new ByteArrayContent(content);
+            file.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            form.Add(file, "file", "sbom.cdx.json");
+            if (version is not null)
+            {
+                form.Add(new StringContent(version), "version");
+            }
+
+            request.Content = form;
+            _answer = await pipeline.SendAsync(request);
+        }
+
+        public string? AnswerText => _answer?.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+
         // Like curl -H "Authorization: Bearer …" -F file=@… -F commit=… -F version=…; no cookie, no antiforgery
         private async Task UploadAsync(string project, string? token, string fileName, byte[] content, string? commit, string? version)
         {
