@@ -164,7 +164,7 @@
             @* #52: "Not applicable" is a button of its own, so a requirement that does not apply is skipped quickly *@
             @if (canMarkHere)
             {
-                <details class="not-applicable-action" id="not-applicable-action">
+                <details class="not-applicable-action" id="not-applicable-action" data-dialog-title="Mark @requirement.Code as not applicable">
                     <summary class="btn btn-outline-secondary">Not applicable</summary>
                     <form asp-action="MarkNotApplicable" method="post" class="d-flex flex-column gap-1 mt-1 mark-not-applicable">
                         <input type="hidden" name="projectId" value="@project.Id" />
@@ -190,7 +190,12 @@
             @if (canAddEvidence)
             {
                 @* R5: the one primary action *@
-                <a class="btn btn-primary" id="primary-action" href="#add-evidence-section">Add evidence</a>
+                <a class="btn btn-primary" id="primary-action" href="#add-evidence-section" data-dialog-open="add-evidence">Add evidence</a>
+                @if (canLinkHere)
+                {
+                    @* US-166: opens the story picker in a dialog *@
+                    <a class="btn btn-outline-primary" id="link-story-action" href="#link-story-section" data-dialog-open="link-story">Link a story</a>
+                }
             }
         </div>
     </header>
@@ -238,7 +243,7 @@
                             <button type="submit" class="btn btn-sm btn-outline-primary">Create story</button>
                         </form>
                     }
-                    <details class="dismiss-needs-action-menu">
+                    <details class="dismiss-needs-action-menu" data-dialog-title="Not needed: @requirement.Code">
                         <summary class="btn btn-sm btn-outline-secondary">Not needed</summary>
                         <form asp-action="DismissNeedsAction" method="post" class="d-flex flex-column gap-1 mt-1 dismiss-needs-action">
                             <input type="hidden" name="projectId" value="@project.Id" />
@@ -383,7 +388,9 @@
                 }
             @if (canLinkHere)
             {
-                <h3 class="h6 mt-3 mb-1">Link a user story</h3>
+                @* US-166: opens in a dialog from "Link a story" *@
+                <div class="dialog-part" data-dialog="link-story" data-dialog-title="Link a user story to @requirement.Code">
+                <h3 class="h6 mt-3 mb-1 dialog-part-heading" id="link-story-section">Link a user story</h3>
                     <form asp-action="LinkRequirement" method="post" class="d-flex flex-wrap gap-1 mt-1 link-requirement">
                         <input type="hidden" name="projectId" value="@project.Id" />
                         <input type="hidden" name="requirementId" value="@requirement.Id" />
@@ -397,6 +404,7 @@
                         </select>
                         <button type="submit" class="btn btn-sm btn-outline-primary">Link</button>
                     </form>
+                </div>
             }
             </div></div>
         </section>
@@ -541,8 +549,9 @@
                 }
             @if (canAddEvidence)
             {
-                @* US-057 R1, R2 *@
-                <h3 class="h6 mt-3 mb-1" id="add-evidence-section">Add evidence</h3>
+                @* US-057 R1, R2. US-166: opens in a dialog from "Add evidence" *@
+                <div class="dialog-part" data-dialog="add-evidence" data-dialog-title="Add evidence to @requirement.Code">
+                <h3 class="h6 mt-3 mb-1 dialog-part-heading" id="add-evidence-section">Add evidence</h3>
                     <form asp-action="AddEvidence" method="post" enctype="multipart/form-data" class="d-flex flex-column gap-1 mt-1 add-evidence" data-busy="Uploading…">
                         <input type="hidden" name="projectId" value="@project.Id" />
                         <input type="hidden" name="requirementId" value="@requirement.Id" />
@@ -557,7 +566,7 @@
                             <button type="submit" class="btn btn-sm btn-primary text-nowrap">Add</button>
                         </div>
                     </form>
-                    var pickable = Model.PickableEvidence.Where(e => !row.Evidence.Any(x => x.Evidence.Id == e.Evidence.Id)).ToList();
+                    @{ var pickable = Model.PickableEvidence.Where(e => !row.Evidence.Any(x => x.Evidence.Id == e.Evidence.Id)).ToList(); }
                     @if (pickable.Count > 0)
                     {
                         @* US-059 *@
@@ -575,6 +584,7 @@
                             <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Pick existing</button>
                         </form>
                     }
+                </div>
             }
             </div></div>
         </section>

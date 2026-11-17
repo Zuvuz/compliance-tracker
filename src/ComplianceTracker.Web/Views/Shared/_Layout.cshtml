@@ -181,6 +181,22 @@
             }
         </div>
     </footer>
+    @* US-166: the shared dialog for forms that interrupt a page (site.js). A part with data-dialog is moved into it when
+       opened and back when closed; without JavaScript the part stays where it is and works as a normal form (R5). *@
+    <div class="modal fade" id="shared-dialog" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="shared-dialog-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="shared-dialog-title"></h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cancel"></button>
+                </div>
+                <div class="modal-body" id="shared-dialog-body"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
     @* US-135 R1: the confirmation dialog for forms with data-confirm (site.js) *@
     <div class="modal fade" id="confirm-dialog" tabindex="-1" aria-labelledby="confirm-dialog-title" aria-hidden="true">
         <div class="modal-dialog">
