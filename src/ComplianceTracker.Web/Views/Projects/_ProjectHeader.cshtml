@@ -24,6 +24,15 @@ else
     {
         <a asp-action="Edit" asp-route-id="@project.Id" class="btn btn-outline-primary" id="edit-project-link">Edit</a>
     }
+    @* US-028 R1: archive instead of delete; it can be restored *@
+    @if (!project.IsArchived && await Permissions.CanAsync(Permission.EditProjects))
+    {
+        <form asp-action="Archive" method="post" class="d-inline" id="archive-project"
+              data-confirm="The project is hidden from the lists and can no longer be changed. All its data is kept, and it can be restored.">
+            <input type="hidden" name="projectId" value="@project.Id" />
+            <button type="submit" class="btn btn-outline-secondary">Archive</button>
+        </form>
+    }
 </page-header>
 <div>
     <div>
@@ -93,7 +102,22 @@ else
 @* The domain's error messages from every action on the page, e.g. "The project already uses Security policy" *@
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
 
-@if (project.IsClosed)
+@if (project.IsArchived)
+{
+    @* US-028 R3: read, not changed; R4: restored *@
+    var archivedBy = Model.Organization?.Users.FirstOrDefault(u => u.Id == project.ArchivedById)?.Name;
+    <div class="alert alert-secondary d-flex flex-wrap align-items-center gap-2" id="project-archived" role="status">
+        <span>Archived on @project.ArchivedAt?.ToString("dd-MM-yyyy")@(archivedBy is null ? "" : $" by {archivedBy}"). It can be read but not changed.</span>
+        @if (await Permissions.CanAsync(Permission.EditProjects))
+        {
+            <form asp-action="Restore" method="post" class="ms-auto" id="restore-project">
+                <input type="hidden" name="projectId" value="@project.Id" />
+                <button type="submit" class="btn btn-sm btn-outline-primary">Restore</button>
+            </form>
+        }
+    </div>
+}
+else if (project.IsClosed)
 {
     <div class="alert alert-secondary" id="project-closed" role="status">This project is at end of support and can no longer be changed.</div>
 }

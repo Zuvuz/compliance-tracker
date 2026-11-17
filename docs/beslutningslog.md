@@ -2233,6 +2233,18 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At gemme alt i én formular. Navn, sektor og størrelse, landet og branchen har hver sin regel og log. Derfor har hver sin formular på samme side.
   - At ændre branchen automatisk, når sektoren skifter. Branchen ændres kun, når admin selv gemmer den.
 
+### B148 – Et projekt arkiveres i stedet for at blive slettet (US-028)
+
+- **Beslutning:**
+  - **Arkivering:** et projekt kan arkiveres, men aldrig slettes. Det kan også arkiveres ved end of support. Arkiveringen gemmer hvem og hvornår (`ArchivedAt`, `ArchivedById`, migrationen ProjectArchived) og logges som `ProjectArchived`. Gendannelse logges som `ProjectRestored`.
+  - **Skrivebeskyttet:** et arkiveret projekt tæller som lukket (`IsClosed`), ligesom ved end of support. Alle ændringer afvises derfor med "An archived project cannot be changed". Siden viser "Archived on dd-MM-yyyy by …" og en Restore-knap.
+  - **Lister:** projektsiden viser kun arkiverede projekter efter "Show archived projects (n)", og de er så mærket "Archived". Valglister som invitationer til ét projekt viser dem ikke. "My tasks" og påmindelserne udelader dem som andre lukkede projekter.
+  - **Rammer:** arkiverede projekter hindrer ikke, at en indbygget ramme slås fra (US-011 R8). Gendannes projektet senere, følger det stadig rammen. Det ses på projektets Frameworks-fane.
+- **Begrundelse:** Listerne skal være korte, mens dokumentationen og historikken bevares for auditorer. CRA kræver, at den tekniske dokumentation gemmes i ti år (ISO/IEC 27001 7.5.3 og A.8.15, CRA art. 13(13)).
+- **Fravalgt:**
+  - En Delete-knap. Data slettes kun, når hele organisationen lukkes (US-184).
+  - Et eget skrivebeskyttet flag ved siden af `IsClosed`. Så skulle alle de steder, der allerede skjuler formularer for lukkede projekter, kende to flag.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
