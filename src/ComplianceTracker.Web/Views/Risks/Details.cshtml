@@ -48,7 +48,7 @@
     <dd class="col-sm-9" id="risk-residual">@risk.ResidualText@(risk.ResidualToReview ? " – to review: measures were removed after it was set" : "")
         @if (editable)
         {
-            <details class="mt-1" id="set-residual-menu" open="@(risk.ResidualToReview)">
+            <details class="mt-1" id="set-residual-menu" open="@(risk.ResidualToReview)" data-dialog-title="Set the residual risk of @risk.Title">
                 <summary class="btn btn-sm btn-outline-secondary">Set residual risk</summary>
                 <form asp-action="SetResidual" method="post" class="d-flex flex-wrap align-items-end gap-2 mt-1" id="set-residual">
                     <input type="hidden" name="id" value="@risk.Id" />
@@ -203,7 +203,7 @@
                                 @if (canLinkWork)
                                 {
                                     @* US-158 R1: optional evidence, approved and proven in one step *@
-                                    <details class="approve-with-evidence">
+                                    <details class="approve-with-evidence" data-dialog-title="Approve the measure with evidence">
                                         <summary class="btn btn-sm btn-link py-0">+ Evidence</summary>
                                         <div class="d-flex flex-column gap-1 mt-1">
                                             <input name="evidenceTitle" class="form-control form-control-sm" maxlength="200" placeholder="Title, e.g. MFA policy" aria-label="Evidence title" />

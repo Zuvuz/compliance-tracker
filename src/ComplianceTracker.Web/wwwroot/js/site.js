@@ -228,3 +228,87 @@ document.querySelectorAll("[data-percent]").forEach(bar => {
         }
     });
 })();
+
+// US-166: forms that interrupt a page open in the shared dialog. A part (div[data-dialog] opened by [data-dialog-open], or a
+// <details data-dialog-title>) is moved into the dialog and back when it closes, so the form is the same one and works
+// without JavaScript too (R5). R2: a title, the form's own primary button and Cancel; Esc and the backdrop close it.
+// R3: Bootstrap moves the focus in; it goes back to the button that opened it. R4: after a broken rule the page comes
+// back with the error, and the dialog opens again with the error in it.
+(() => {
+    const dialog = document.getElementById("shared-dialog");
+    if (!dialog || !window.bootstrap || !window.bootstrap.Modal) {
+        return;
+    }
+
+    const modal = window.bootstrap.Modal.getOrCreateInstance(dialog);
+    const body = dialog.querySelector("#shared-dialog-body");
+    const title = dialog.querySelector("#shared-dialog-title");
+    let moved = null; // { nodes, home, opener, details }
+    const save = key => { try { key ? sessionStorage.setItem("ct-dialog", key) : sessionStorage.removeItem("ct-dialog"); } catch { /* private window */ } };
+    const saved = () => { try { return sessionStorage.getItem("ct-dialog"); } catch { return null; } };
+
+    const open = (part, heading, opener, error) => {
+        const details = part.tagName === "DETAILS" ? part : null;
+        const nodes = details ? [...details.children].filter(c => c.tagName !== "SUMMARY") : [part];
+        const home = document.createComment("dialog-home");
+        (details ? details : part).after(home);
+        title.textContent = heading;
+        body.replaceChildren();
+        if (error) {
+            const alert = document.createElement("div");
+            alert.className = "alert alert-danger py-2 small";
+            alert.setAttribute("role", "alert");
+            alert.textContent = error;
+            body.append(alert);
+        }
+
+        nodes.forEach(n => body.append(n));
+        part.querySelectorAll?.(".dialog-part-heading").forEach(h => h.hidden = true);
+        moved = { nodes, home, opener, details, key: part.dataset.dialog || part.id || heading };
+        body.querySelectorAll("form").forEach(f => f.addEventListener("submit", () => save(moved?.key), { once: true }));
+        modal.show();
+    };
+
+    dialog.addEventListener("hidden.bs.modal", () => {
+        if (!moved) return;
+        if (moved.details) {
+            moved.nodes.forEach(n => moved.details.append(n));
+            moved.details.open = false;
+        } else {
+            moved.nodes.forEach(n => moved.home.before(n));
+            moved.nodes.forEach(n => n.querySelectorAll?.(".dialog-part-heading").forEach(h => h.hidden = false));
+        }
+
+        moved.home.remove();
+        moved.opener?.focus();
+        moved = null;
+    });
+
+    document.querySelectorAll("[data-dialog-open]").forEach(opener => {
+        const part = document.querySelector(`[data-dialog="${opener.dataset.dialogOpen}"]`);
+        if (!part) return;
+        opener.addEventListener("click", event => {
+            event.preventDefault();
+            open(part, part.dataset.dialogTitle || opener.textContent.trim(), opener);
+        });
+    });
+
+    document.querySelectorAll("details[data-dialog-title] > summary").forEach(summary => {
+        summary.addEventListener("click", event => {
+            event.preventDefault();
+            open(summary.parentElement, summary.parentElement.dataset.dialogTitle, summary);
+        });
+    });
+
+    // R4: the page came back with an error after a dialog's form: open the same dialog with the error in it
+    const key = saved();
+    save(null);
+    const error = document.querySelector(".validation-summary-errors li");
+    if (key && error) {
+        const part = document.querySelector(`[data-dialog="${key}"]`) || document.getElementById(key)
+            || [...document.querySelectorAll("details[data-dialog-title]")].find(d => d.dataset.dialogTitle === key);
+        if (part) {
+            open(part, part.dataset.dialogTitle || key, null, error.textContent.trim());
+        }
+    }
+})();
