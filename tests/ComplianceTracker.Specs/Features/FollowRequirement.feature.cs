@@ -206,7 +206,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.ThenAsync("the steps of \"[US-004] Sign in\" and \"[US-012] Lock account\" are listed", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 23
-    await testRunner.AndAsync("the page says \"0 of 6 steps done\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the progress says \"0 of 6 steps done\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 24
     await testRunner.AndAsync("the next step is \"[US-004] Sign in: evidence\" with the action \"Link evidence to t" +
@@ -258,7 +258,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.ThenAsync("the step \"Evidence on the requirement\" is done", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 32
-    await testRunner.AndAsync("the page says \"1 of 6 steps done\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the progress says \"1 of 6 steps done\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

@@ -33,7 +33,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.True(texts.IndexOf($"{second}: evidence") < texts.IndexOf("Evidence on the requirement"));
         }
 
-        [Then("the page says {string}")]
+        [Then("the progress says {string}")]
         public void ThenThePageSays(string progress)
             => Assert.Equal(progress, Path.QuerySelector("#path-progress")!.TextContent.Trim());
 
@@ -46,7 +46,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.Equal(text, Text(next.Closest("li.path-step")!));
             Assert.False(next.GetAttribute("href")!.StartsWith("http"), "The next step leaves the tracker.");
             // US-153: the header's "Add evidence" stays the one primary button
-            Assert.Single(_web.Page!.QuerySelectorAll("article.requirement-page .btn-primary"));
+            Assert.Empty(Path.QuerySelectorAll(".btn-primary"));
+            Assert.Contains("btn-primary", _web.Page!.QuerySelector("#primary-action")!.ClassName);
         }
 
         [Then("{string} is there but does not stand out")]

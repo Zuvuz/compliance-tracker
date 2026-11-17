@@ -20,7 +20,7 @@ Feature: Follow one requirement to the end
   Scenario: The page lists every step and what is left
     When I open the requirement "I.2(d)" from the overview
     Then the steps of "[US-004] Sign in" and "[US-012] Lock account" are listed
-    And the page says "0 of 6 steps done"
+    And the progress says "0 of 6 steps done"
     And the next step is "[US-004] Sign in: evidence" with the action "Link evidence to the story"
     And "Next requirement" is there but does not stand out
 
@@ -29,7 +29,7 @@ Feature: Follow one requirement to the end
     Given I add the evidence "Access policy" with the link "https://example.com/policy" to "I.2(d)"
     When I open the requirement "I.2(d)" from the overview
     Then the step "Evidence on the requirement" is done
-    And the page says "1 of 6 steps done"
+    And the progress says "1 of 6 steps done"
 
   @US-200 @integration
   Scenario: A requirement that does not apply has no steps
