@@ -4,19 +4,46 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ComplianceTracker.Web.Controllers
 {
-    // US-169 R3, R4: "To review": everything that waits for the signed-in member's decision, across the projects
+    // US-169 R3, R4: everything that waits for the signed-in member's decision, across the projects. US-099: "My tasks", the
+    // same page with the tasks that have a date (expiring evidence, risk reviews, reporting deadlines, audit findings).
     public class ReviewController : Controller
     {
         private readonly ReviewInbox _inbox;
+        private readonly MyTasks _tasks;
+        private readonly Application.Projects.ProjectQueries _projects;
 
-        public ReviewController(ReviewInbox inbox)
+        public ReviewController(ReviewInbox inbox, MyTasks tasks, Application.Projects.ProjectQueries projects)
         {
             _inbox = inbox;
+            _tasks = tasks;
+            _projects = projects;
         }
 
-        // GET /Review
-        public async Task<IActionResult> Index(CancellationToken cancellationToken)
-            => View(await _inbox.ForMeAsync(cancellationToken));
+        // GET /Review?project=…&kind=RiskReview. US-099 R3: filtered by project and kind, sorted by due date.
+        public async Task<IActionResult> Index(Guid? project, string? kind, CancellationToken cancellationToken)
+        {
+            // US-086: another organisation's project is not found, like everywhere else
+            if (project is { } projectId && await _projects.GetAsync(projectId, cancellationToken) is null)
+            {
+                return NotFound();
+            }
+
+            var all = await _tasks.ForMeAsync(cancellationToken);
+            var chosenKind = Enum.TryParse<TaskKind>(kind, true, out var k) && Enum.IsDefined(k) ? k : (TaskKind?)null;
+            var decisions = await _inbox.ForMeAsync(cancellationToken);
+            return View(new MyTasksViewModel(
+                MyTaskPlan.Filter(all, project, chosenKind),
+                project is null ? decisions : decisions.Where(d => d.ProjectId == project).ToList(),
+                all.Select(t => (t.ProjectId, t.ProjectName)).Concat(decisions.Select(d => (d.ProjectId, d.ProjectName)))
+                    .Distinct().OrderBy(p => p.ProjectName, StringComparer.OrdinalIgnoreCase).ToList(),
+                project, chosenKind, _tasks.Now, MyTaskPlan.Count(all, _tasks.Now)));
+        }
+
+        // GET /Review/Count. US-099 R4: the number in the top bar (overdue or due within 7 days); fetched after the page has
+        // loaded, so no page waits for it.
+        [HttpGet]
+        public async Task<IActionResult> Count(CancellationToken cancellationToken)
+            => Json(new { count = MyTaskPlan.Count(await _tasks.ForMeAsync(cancellationToken), _tasks.Now) });
 
         // Where each kind is decided
         public static (string Tab, string? Show) WhereDecided(ReviewKind kind) => kind switch

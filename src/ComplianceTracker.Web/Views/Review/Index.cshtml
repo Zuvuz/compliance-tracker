@@ -1,41 +1,114 @@
-@* US-169 R3, R4: "To review": what waits for the signed-in member's decision, per project, each line linking to where it
-   is decided. Ids and classes used by the tests: #review-inbox, .review-project[data-project] with .review-item
-   (data-kind) and its a.review-open; #review-empty. *@
-@model IReadOnlyList<ComplianceTracker.Application.Review.ReviewItem>
+@* US-099: "My tasks": what has a deadline, sorted by due date and filtered by project and kind, and below it what waits
+   for the member's decision (US-169 R3, R4), per project. Each line links to where it is handled; a task the member's
+   role cannot handle has no link (R6).
+   Ids and classes used by the tests: #task-filter (select name=project, select name=kind), #my-tasks with li.task-item
+   (data-kind, data-project) holding .task-project, .task-title, .task-due and a.task-open; #tasks-empty;
+   #review-inbox, .review-project[data-project] with .review-item (data-kind) and its a.review-open; #review-empty. *@
+@model MyTasksViewModel
 @using ComplianceTracker.Application.Review
 @using ComplianceTracker.Web.Controllers
 @{
-    ViewData["Title"] = "To review";
+    ViewData["Title"] = "My tasks";
+
+    string DueStatus(DateTime due)
+        => MyTaskPlan.IsOverdue(due, Model.Now) ? "Overdue" : MyTaskPlan.IsSoon(due, Model.Now) ? "Due soon" : "Later";
 }
 
-<h1 class="h3 mb-1">To review</h1>
-<p class="text-muted mb-4">What waits for your decision, across your projects. The AI only suggests; you decide each one.</p>
+<page-header heading="My tasks" heading-id="my-tasks-title" />
+<p class="text-muted mb-3">What needs doing across your projects: deadlines first, then what waits for your decision.</p>
 
-@if (Model.Count == 0)
-{
-    <p class="text-muted" id="review-empty">Nothing waits for your decision right now.</p>
-}
-else
-{
-    <div id="review-inbox" class="d-flex flex-column gap-3">
-        @foreach (var project in Model.GroupBy(i => (i.ProjectId, i.ProjectName)))
-        {
-            <section class="card review-project" data-project="@project.Key.ProjectName">
-                <div class="card-body">
-                    <h2 class="h5 card-title">@project.Key.ProjectName <span class="badge text-bg-light border">@project.Sum(i => i.Count)</span></h2>
-                    <ul class="list-unstyled mb-0">
-                        @foreach (var item in project)
-                        {
-                            var (tab, show) = ReviewController.WhereDecided(item.Kind);
-                            <li class="review-item d-flex flex-wrap align-items-center gap-2 py-1 border-top" data-kind="@item.Kind">
-                                <span>@ReviewKinds.Title(item.Kind, item.Count)</span>
-                                <a class="ms-auto review-open" asp-controller="Projects" asp-action="Details" asp-route-id="@project.Key.ProjectId"
-                                   asp-route-tab="@(tab == ProjectTabs.Overview ? null : tab)" asp-route-show="@show">Open</a>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            </section>
-        }
+<form method="get" class="d-flex flex-wrap align-items-end gap-2 mb-3" id="task-filter" aria-label="Filter the tasks">
+    <div>
+        <label for="task-project" class="form-label small mb-0">Project</label>
+        <select class="form-select form-select-sm" id="task-project" name="project">
+            <option value="">All projects</option>
+            @foreach (var project in Model.Projects)
+            {
+                <option value="@project.Id" selected="@(project.Id == Model.Project)">@project.Name</option>
+            }
+        </select>
     </div>
-}
+    <div>
+        <label for="task-kind" class="form-label small mb-0">Kind</label>
+        <select class="form-select form-select-sm" id="task-kind" name="kind">
+            <option value="">All kinds</option>
+            @foreach (var kind in Enum.GetValues<TaskKind>())
+            {
+                <option value="@kind" selected="@(kind == Model.Kind)">@MyTaskPlan.KindName(kind)</option>
+            }
+        </select>
+    </div>
+    <button type="submit" class="btn btn-sm btn-outline-secondary">Show</button>
+    @if (Model.Filtered)
+    {
+        <a class="btn btn-sm btn-link" id="task-filter-clear" asp-action="Index">Show all</a>
+    }
+</form>
+
+<section class="mb-4" aria-labelledby="deadlines-title">
+    <h2 class="h5" id="deadlines-title">Deadlines
+        @if (Model.Soon > 0)
+        {
+            <span class="badge text-bg-danger ms-1" id="tasks-soon" title="Overdue or due within @MyTaskPlan.SoonDays days">@Model.Soon</span>
+        }
+    </h2>
+    @if (Model.Tasks.Count == 0)
+    {
+        <empty-state id="tasks-empty" title="@(Model.Filtered ? "No deadlines match the filter." : "No deadlines right now.")"
+                     why="Expiring evidence, risk reviews, reporting deadlines and your audit findings show here when they are due." />
+    }
+    else
+    {
+        <ul class="list-unstyled border rounded mb-0" id="my-tasks">
+            @foreach (var task in Model.Tasks)
+            {
+                <li class="task-item d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom" data-kind="@task.Kind" data-project="@task.ProjectName">
+                    <status-badge status="@DueStatus(task.Due)" text="@MyTaskPlan.DueText(task.Due, Model.Now)" class="task-due" />
+                    <span class="task-project text-muted small">@task.ProjectName</span>
+                    <span class="task-title">@task.Title</span>
+                    @if (task.CanAct)
+                    {
+                        <a class="ms-auto btn btn-sm btn-outline-primary task-open" href="@task.Path">Open</a>
+                    }
+                    else
+                    {
+                        <span class="ms-auto small text-muted task-read-only">Your role can only read this</span>
+                    }
+                </li>
+            }
+        </ul>
+    }
+</section>
+
+<section aria-labelledby="decisions-title">
+    <h2 class="h5" id="decisions-title">Waiting for your decision</h2>
+    <p class="text-muted small">The AI only suggests; you decide each one.</p>
+    @if (Model.Decisions.Count == 0)
+    {
+        <p class="text-muted" id="review-empty">Nothing waits for your decision right now.</p>
+    }
+    else
+    {
+        <div id="review-inbox" class="d-flex flex-column gap-3">
+            @foreach (var project in Model.Decisions.GroupBy(i => (i.ProjectId, i.ProjectName)))
+            {
+                <section class="card review-project" data-project="@project.Key.ProjectName">
+                    <div class="card-body">
+                        <h3 class="h6 card-title">@project.Key.ProjectName <span class="badge text-bg-light border">@project.Sum(i => i.Count)</span></h3>
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var item in project)
+                            {
+                                var (tab, show) = ReviewController.WhereDecided(item.Kind);
+                                <li class="review-item d-flex flex-wrap align-items-center gap-2 py-1 border-top" data-kind="@item.Kind">
+                                    <span>@ReviewKinds.Title(item.Kind, item.Count)</span>
+                                    <a class="ms-auto review-open" asp-controller="Projects" asp-action="Details" asp-route-id="@project.Key.ProjectId"
+                                       asp-route-tab="@(tab == ProjectTabs.Overview ? null : tab)" asp-route-show="@show">Open</a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </section>
+            }
+        </div>
+    }
+</section>

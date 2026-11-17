@@ -74,8 +74,9 @@
                                 </ul>
                             </li>
                             <li class="nav-item">
-                                @* US-169 R3: everything that waits for my decision *@
-                                <a class="nav-link @Active("Review")" id="nav-review" asp-area="" asp-controller="Review" asp-action="Index">To review</a>
+                                @* US-169 R3: everything that waits for my decision. US-099: and my deadlines; R4: the number of tasks that
+                                   are overdue or due within 7 days is fetched after the page has loaded (site.js) *@
+                                <a class="nav-link @Active("Review")" id="nav-review" asp-area="" asp-controller="Review" asp-action="Index">My tasks<span class="badge rounded-pill text-bg-danger ms-1 d-none" id="nav-tasks-count" data-count-url="@Url.Action("Count", "Review")"></span></a>
                             </li>
                             @if (User.HasClaim(ComplianceTracker.Web.Security.SystemAdmin.ClaimType, ComplianceTracker.Web.Security.SystemAdmin.Role))
                             {

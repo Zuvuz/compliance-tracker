@@ -364,3 +364,35 @@ document.querySelectorAll("[data-percent]").forEach(bar => {
         open(panel.dataset.openRisk);
     }
 })();
+
+// US-099 R4: "My tasks (3)": the number of tasks that are overdue or due within 7 days, fetched after the page has loaded
+(() => {
+    const badge = document.getElementById("nav-tasks-count");
+    if (!badge?.dataset.countUrl) return;
+    const show = count => {
+        if (count > 0) {
+            badge.textContent = String(count);
+            badge.setAttribute("aria-label", `${count} due within 7 days`);
+            badge.classList.remove("d-none");
+        }
+    };
+
+    // Kept for 5 minutes in this tab, so moving between pages does not ask again (B117: no queries on every page)
+    const key = "ct-task-count";
+    try {
+        const kept = JSON.parse(sessionStorage.getItem(key) || "null");
+        if (kept && Date.now() - kept.at < 5 * 60 * 1000 && location.pathname.toLowerCase() !== "/review") {
+            show(kept.count);
+            return;
+        }
+    } catch { }
+
+    fetch(badge.dataset.countUrl, { credentials: "same-origin", headers: { Accept: "application/json" } })
+        .then(response => response.ok ? response.json() : null)
+        .then(result => {
+            const count = result?.count ?? 0;
+            try { sessionStorage.setItem(key, JSON.stringify({ count, at: Date.now() })); } catch { }
+            show(count);
+        })
+        .catch(() => { });
+})();
