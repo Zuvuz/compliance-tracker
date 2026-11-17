@@ -108,7 +108,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I withdraw the test results because {string}")]
         public async Task WhenIWithdrawTheTestResults(string reason)
         {
-            await OpenAsync("evidence");
+            await OpenTestResultsAsync();
             var row = _web.Page!.QuerySelectorAll("#test-results-uploads .test-results-upload").FirstOrDefault()
                 ?? throw new Xunit.Sdk.XunitException("No test results can be withdrawn.");
             await WithdrawAsync(row, reason);
@@ -123,10 +123,18 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await WithdrawAsync(row, reason);
         }
 
+        // From the Evidence tab's link to the page with the uploads
+        private async Task OpenTestResultsAsync()
+        {
+            await OpenAsync("evidence");
+            var link = _web.Page!.QuerySelector("#test-results-link") ?? throw new Xunit.Sdk.XunitException("The Evidence tab has no link to the test results.");
+            await _web.OpenAsync(link.GetAttribute("href")!);
+        }
+
         [Then("no test results wait to be withdrawn")]
         public async Task ThenNoTestResultsWait()
         {
-            await OpenAsync("evidence");
+            await OpenTestResultsAsync();
             Assert.Null(_web.Page!.QuerySelector("#test-results-uploads"));
         }
     }

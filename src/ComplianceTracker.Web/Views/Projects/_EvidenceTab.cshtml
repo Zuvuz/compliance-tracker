@@ -434,20 +434,8 @@
                             suggested as evidence for that requirement; a failing one blocks it.
                         </p>
                     </form>
-                    @* US-177: the uploads whose suggestions still wait, each with "⋯ Withdraw" *@
-                    @if (Model.TestResultsUploads.Count > 0)
-                    {
-                        <ul class="list-unstyled small mt-3 mb-0" id="test-results-uploads">
-                            @foreach (var upload in Model.TestResultsUploads)
-                            {
-                                <li class="test-results-upload d-flex flex-wrap align-items-center gap-2 py-1 border-top" data-file="@upload.FileName">
-                                    <span>@upload.FileName</span>
-                                    <span class="text-muted">@upload.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm") · @upload.Waiting waiting</span>
-                                    <span class="ms-auto">@await Html.PartialAsync("_WithdrawMenu", new WithdrawMenu(project.Id, "WithdrawTestResults", "sha256", upload.Sha256, $"the test results {upload.FileName}", "The suggestions that wait are withdrawn; accepted evidence stays."))</span>
-                                </li>
-                            }
-                        </ul>
-                    }
+                    @* US-177: the uploads can be withdrawn on a page of their own *@
+                    <a class="small d-inline-block mt-2" id="test-results-link" asp-action="TestResults" asp-route-id="@project.Id">Withdraw test results uploaded by mistake…</a>
                 </div>
             </div>
         </div>

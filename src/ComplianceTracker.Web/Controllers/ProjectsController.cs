@@ -326,9 +326,6 @@ namespace ComplianceTracker.Web.Controllers
                 ActivityIgnored = activityIgnored,
                 Compliance = compliance,
                 EvidenceTab = evidenceTab,
-                // US-177: the uploads of test results that can be withdrawn
-                TestResultsUploads = activeTab == ProjectTabs.Evidence ? await HttpContext.RequestServices
-                    .GetRequiredService<EvidenceSuggestionService>().UploadsAsync(id, cancellationToken) : [],
                 Sub = sub,
                 OpenRequirement = activeTab == ProjectTabs.Compliance ? req : null,
                 AuditReadiness = activeTab == ProjectTabs.Reports && check == "1" ? await readiness.CheckAsync(id, frameworks, cancellationToken) : null, // US-178
@@ -1910,6 +1907,21 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.ProductRequirements });
         }
 
+        // GET /Projects/TestResults/{id}: US-177, the uploads of test results whose suggestions still wait, to withdraw one.
+        // A page of its own, so the Evidence tab makes no more queries (US-154).
+        [HttpGet]
+        public async Task<IActionResult> TestResults(Guid id, [FromServices] EvidenceSuggestionService suggestions, CancellationToken cancellationToken)
+        {
+            var project = await _projects.GetAsync(id, cancellationToken);
+            if (project is null)
+            {
+                return NotFound();
+            }
+
+            return View(new TestResultsUploadsViewModel(project, await suggestions.UploadsAsync(id, cancellationToken),
+                !project.IsClosed && await HttpContext.RequestServices.GetRequiredService<Application.Common.CurrentMember>().CanAsync(Domain.Users.Permission.LinkWork, cancellationToken)));
+        }
+
         // POST /Projects/WithdrawTestResults: US-177 R4
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -1919,7 +1931,7 @@ namespace ComplianceTracker.Web.Controllers
         {
             var count = await suggestions.WithdrawTestResultsAsync(projectId, sha256, reason, cancellationToken);
             TempData["Success"] = $"The test results are withdrawn: {count} {(count == 1 ? "suggestion" : "suggestions")} withdrawn. Accepted evidence stays.";
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+            return RedirectToAction(nameof(TestResults), new { id = projectId });
         }
 
         // POST /Projects/Archive: US-028 R1, R6, instead of deleting

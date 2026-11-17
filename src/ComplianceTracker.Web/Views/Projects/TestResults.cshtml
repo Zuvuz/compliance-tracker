@@ -1,0 +1,32 @@
+@* US-177: the uploads of test results whose suggestions still wait, each with "⋯ Withdraw". Ids used by the tests:
+   #test-results-uploads with .test-results-upload (data-file), #no-test-results. *@
+@model TestResultsUploadsViewModel
+@{
+    var project = Model.Project;
+    ViewData["Title"] = $"Test results – {project.Name}";
+}
+
+<page-header heading="Test results" heading-id="test-results-title"
+             back-href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Evidence })" back-text="@project.Name" />
+<p class="text-muted">The uploads whose suggested evidence still waits. Withdraw one uploaded by mistake; accepted evidence stays.</p>
+
+@if (Model.Uploads.Count == 0)
+{
+    <empty-state id="no-test-results" title="No test results wait." why="Suggestions from uploaded test results show here until each is accepted or rejected." />
+}
+else
+{
+    <ul class="list-unstyled border rounded mb-0" id="test-results-uploads">
+        @foreach (var upload in Model.Uploads)
+        {
+            <li class="test-results-upload d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom" data-file="@upload.FileName">
+                <span>@upload.FileName</span>
+                <span class="text-muted small">@upload.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm") · @upload.Waiting waiting</span>
+                @if (Model.CanWithdraw)
+                {
+                    <span class="ms-auto">@await Html.PartialAsync("_WithdrawMenu", new WithdrawMenu(project.Id, "WithdrawTestResults", "sha256", upload.Sha256, $"the test results {upload.FileName}", "The suggestions that wait are withdrawn; accepted evidence stays."))</span>
+                }
+            </li>
+        }
+    </ul>
+}
