@@ -140,13 +140,32 @@
     <ul id="risk-measures" class="list-unstyled">
         @foreach (var measure in risk.Measures)
         {
-            <li class="risk-measure d-flex gap-2 align-items-center">
-                <span>@Model.MeasureName(measure)</span>
-                @if (canLinkWork && Model.MissingEvidence(measure) is { } missing)
+            var view = Model.ViewOf(measure);
+            string RequirementPage(string sub, string code, string? fragment = null)
+                => Url.Action("Details", "Projects", new { id = project.Id, tab = ProjectTabs.Compliance, sub, req = code, risk = risk.Id }) + (fragment is null ? "" : "#" + fragment);
+            <li class="risk-measure d-flex flex-wrap gap-2 align-items-center" data-measure="@Model.MeasureName(measure)">
+                @* #52: a measure leads on to its requirement's page, where stories and evidence are linked, and back here *@
+                @if (view.Code is { } code)
                 {
-                    @* US-158 R4: the requirement's page, where the evidence is added *@
+                    <a class="measure-link" href="@RequirementPage(view.Sub!, code)">@Model.MeasureName(measure)</a>
+                }
+                else
+                {
+                    <span class="measure-link-none">@Model.MeasureName(measure)</span>
+                }
+                @if (view.Behind.Length > 0)
+                {
+                    <span class="small text-muted measure-behind">@view.Behind</span>
+                }
+                @foreach (var (sub, storyCode) in view.StoryRequirements)
+                {
+                    <a class="small measure-story-requirement" href="@RequirementPage(sub, storyCode)">@storyCode</a>
+                }
+                @if (canLinkWork && view.NeedsEvidence)
+                {
+                    @* US-158 R4: where the evidence is added: the requirement's page, or for a story the Evidence tab *@
                     <a class="btn btn-sm btn-link py-0 measure-add-evidence"
-                       href="@Url.Action("Details", "Projects", new { id = project.Id, tab = ProjectTabs.Compliance, sub = missing.Sub, req = missing.Code })">Add evidence</a>
+                       href="@(view.Code is { } evidenceCode ? RequirementPage(view.Sub!, evidenceCode, "add-evidence-section") : Url.Action("Details", "Projects", new { id = project.Id, tab = ProjectTabs.Evidence }))">Add evidence</a>
                 }
                 @if (editable)
                 {

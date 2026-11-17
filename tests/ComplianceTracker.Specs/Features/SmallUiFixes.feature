@@ -53,6 +53,27 @@ Feature: Small fixes to the pages (#52)
     And the action "Ask the AI" is under "More"
 
   @issue-52 @integration
+  Scenario: A measure leads on to its requirement and back to the risk
+    Given the project "Acme Portal" has the user story "[US-004] Sign in"
+    And the user story "[US-004] Sign in" is linked to the requirement "I.2(d)"
+    And the risk "Account takeover" exists in "Acme Portal"
+    And the risk "Account takeover" has the requirement "I.2(d)" as a measure
+    When I open the risk "Account takeover"
+    Then the measure "I.2(d)" says "1 story · 0 evidence" and offers "Add evidence"
+    When I follow the measure "I.2(d)"
+    Then I am on the page of "I.2(d)"
+    And the page leads back to the risk "Account takeover"
+
+  @issue-52 @integration
+  Scenario: A story measure shows the requirements it covers
+    Given the project "Acme Portal" has the user story "[US-004] Sign in"
+    And the user story "[US-004] Sign in" is linked to the requirement "I.2(d)"
+    And the risk "Account takeover" exists in "Acme Portal"
+    And the risk "Account takeover" has the measure "[US-004] Sign in"
+    When I open the risk "Account takeover"
+    Then the measure "[US-004] Sign in" says "covers I.2(d) · 0 evidence" and leads to "I.2(d)"
+
+  @issue-52 @integration
   Scenario: The organisation area has no "Create story" for a requirement that needs action
     Given the AI says "Art. 21(2)(a)" applies and needs action with "High" because "no risk analysis policy"
     When I do the NIS2 scope check with sector "Manufacturing", 60 employees and a turnover of 12 million euro

@@ -50,7 +50,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await OpenRiskAsync(risk);
             var link = Measure(code).QuerySelector("a.measure-add-evidence") ?? throw new Xunit.Sdk.XunitException($"'{code}' offers no \"{text}\".");
             Assert.Equal(text, link.TextContent.Trim());
-            Assert.EndsWith("/compliance/cra/" + page, Uri.UnescapeDataString(link.GetAttribute("href")!));
+            // #52: the link also says which risk it came from (?risk=…) and goes to the "Add evidence" section
+            Assert.EndsWith("/compliance/cra/" + page, Uri.UnescapeDataString(link.GetAttribute("href")!.Split('?', '#')[0]));
         }
 
         // The approve form of the suggestion, with the evidence fields; a file goes as multipart

@@ -58,6 +58,15 @@ namespace ComplianceTracker.Web.Models
         };
     }
 
+    // #52: one measure on the risk's page: the requirement's page it leads to (Sub and Code), or the requirements a story
+    // covers; what stands behind it in words, e.g. "1 story · 0 evidence"; and whether evidence is missing
+    public record MeasureView(string? Sub, string? Code, IReadOnlyList<(string Sub, string Code)> StoryRequirements, string Behind,
+        bool NeedsEvidence = false)
+    {
+        public static string Counts(int stories, int evidence)
+            => $"{stories} {(stories == 1 ? "story" : "stories")} · {evidence} evidence";
+    }
+
     // The risk's own page: the risk, its project, names, and what can be linked as measures (US-042 R5)
     public record RiskPageViewModel(
         Risk Risk,
@@ -112,6 +121,43 @@ namespace ComplianceTracker.Web.Models
             }
 
             return null;
+        }
+
+        // #52: where a measure leads on to, and what stands behind it. A requirement: its page (sub-tab and code) with its
+        // stories and evidence. A story: the requirements it covers (each with its page) and its evidence.
+        public MeasureView ViewOf(RiskMeasure measure)
+        {
+            if (Compliance is null)
+            {
+                return new MeasureView(null, null, [], "");
+            }
+
+            if (measure.RequirementId is { } id)
+            {
+                foreach (var framework in Compliance.Frameworks)
+                {
+                    if (framework.Requirements.FirstOrDefault(r => r.Requirement.Id == id) is { } row)
+                    {
+                        var stories = row.Links.Count(l => l.WorkItem.State != Domain.WorkItems.WorkItemState.Removed);
+                        var evidence = row.Evidence.Count(e => !e.IsExpired);
+                        return new MeasureView(FrameworkNames.Slug(framework.Framework.Name), row.Requirement.Code, [],
+                            MeasureView.Counts(stories, evidence), evidence == 0 && row.IsApplicable);
+                    }
+                }
+
+                return new MeasureView(null, null, [], "");
+            }
+
+            var storyId = measure.WorkItemId!.Value;
+            var requirements = Compliance.Frameworks
+                .SelectMany(f => f.Requirements.Where(r => r.Links.Any(l => l.WorkItem.Id == storyId))
+                    .Select(r => (Sub: FrameworkNames.Slug(f.Framework.Name), r.Requirement.Code)))
+                .Distinct()
+                .ToList();
+            var storyEvidence = Compliance.EvidenceOf(storyId).Count;
+            return new MeasureView(null, null, requirements,
+                $"{(requirements.Count == 0 ? "no requirement linked" : $"covers {string.Join(", ", requirements.Select(r => r.Code))}")} · {storyEvidence} evidence",
+                storyEvidence == 0);
         }
 
         public Application.Risks.RiskTrace? Trace => Compliance is null ? null : Application.Risks.RiskTraces.For(Risk, Compliance);

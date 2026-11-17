@@ -33,6 +33,21 @@
          data-code="@requirement.Code" data-group="@requirement.Group" data-id="@requirement.Id" data-kind="@requirement.Kind">
     <nav class="small mb-2" aria-label="Back">
         @* req = "" so the link does not keep this page's code from the current address *@
+        @{
+            // #52: opened from a risk's measure (?risk=…): a way back to the risk, kept while one works on this requirement
+            if (Guid.TryParse(Context.Request.Query["risk"], out var fromRisk))
+            {
+                TempData["BackToRisk"] = $"{fromRisk}|{requirement.Id}";
+            }
+
+            var backToRisk = TempData.Peek("BackToRisk") is string back && back.Split('|') is [var riskId, var requirementId]
+                && requirementId == requirement.Id.ToString() ? riskId : null;
+        }
+        @if (backToRisk is not null)
+        {
+            <a id="back-to-risk" class="me-2" href="@Url.Action("Details", "Risks", new { id = backToRisk })">‹ Back to the risk</a>
+            <span class="text-muted">·</span>
+        }
         <a id="back-to-requirements" href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Compliance, sub = Model.Sub ?? sub, req = "" })">‹ All @FrameworkNames.Short(framework.Framework.Name) requirements</a>
         @if (requirement.Group is not null)
         {
