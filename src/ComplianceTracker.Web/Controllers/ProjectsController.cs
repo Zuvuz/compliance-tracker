@@ -159,6 +159,8 @@ namespace ComplianceTracker.Web.Controllers
             string? from, string? to, string? group, string? user, string? sort, string? page,
             // US-079: the SBOM version shown on the Scans tab
             string? sbom,
+            // US-147 R2, R4: a cell of the risk matrix ("3x4") filters the register; risk opens one in the side panel
+            string? cell, Guid? risk,
             [FromServices] ClassificationService classifications,
             [FromServices] Application.Projects.GapFinder gapFinder,
             [FromServices] Application.Security.SecurityEventQueries securityEventQueries,
@@ -265,6 +267,9 @@ namespace ComplianceTracker.Web.Controllers
                 .Where(r => nothing != "1" || (backing.TryGetValue(r.Id, out var b) && b.NothingBehind))
                 .Where(r => string.IsNullOrEmpty(level) || r.Level.ToString().Equals(level, StringComparison.OrdinalIgnoreCase))
                 .Where(r => due != "1" || r.IsReviewDue(now))
+                .Where(r => RiskCells.Parse(cell) is not { } c || (r.Likelihood == c.Likelihood && r.Impact == c.Impact))
+                // US-147 R1: highest level first, then by title
+                .OrderByDescending(r => r.Score).ThenBy(r => r.Title, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
             // An unknown sub-tab is "not found", like an unknown tab
@@ -350,6 +355,8 @@ namespace ComplianceTracker.Web.Controllers
                 RiskLevelFilter = level,
                 OnlyReviewDue = due == "1",
                 OnlyNothingBehind = nothing == "1",
+                RiskCell = RiskCells.Parse(cell), // US-147
+                RiskInPanel = risk is { } inPanel && allRisks.Any(r => r.Id == inPanel) ? inPanel : null,
                 RiskBacking = backing,
                 Now = now
             });

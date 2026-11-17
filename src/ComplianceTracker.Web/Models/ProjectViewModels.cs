@@ -365,6 +365,12 @@ namespace ComplianceTracker.Web.Models
         public string? RiskLevelFilter { get; init; }
         public bool OnlyReviewDue { get; init; }
 
+        // US-147 R2: the matrix cell the register is filtered to, or null
+        public (int Likelihood, int Impact)? RiskCell { get; init; }
+
+        // US-147 R4: the risk opened in the side panel (its own address), or null
+        public Guid? RiskInPanel { get; init; }
+
         // US-159: what stands behind each risk (Risks tab and Overview), and the filter for those with nothing behind them
         public IReadOnlyDictionary<Guid, Application.Risks.RiskBacking> RiskBacking { get; init; } = new Dictionary<Guid, Application.Risks.RiskBacking>();
         public bool OnlyNothingBehind { get; init; }

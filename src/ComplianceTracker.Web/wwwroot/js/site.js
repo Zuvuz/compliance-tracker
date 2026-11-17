@@ -312,3 +312,55 @@ document.querySelectorAll("[data-percent]").forEach(bar => {
         }
     }
 })();
+
+// US-147 R4: a risk opens in a side panel on the Risks tab, with its own address (?risk=…). The panel shows the risk's
+// own page (R5), so every action of US-042 works there. Without JavaScript the link opens the page itself.
+(() => {
+    const panel = document.getElementById("risk-panel");
+    if (!panel || !window.bootstrap || !window.bootstrap.Offcanvas || !window.DOMParser) {
+        return;
+    }
+
+    const offcanvas = window.bootstrap.Offcanvas.getOrCreateInstance(panel);
+    const body = panel.querySelector("#risk-panel-body");
+    const title = panel.querySelector("#risk-panel-title");
+    const page = panel.querySelector("#risk-panel-page");
+    const address = id => {
+        const url = new URL(location.href);
+        id ? url.searchParams.set("risk", id) : url.searchParams.delete("risk");
+        history.replaceState(null, "", url.toString());
+    };
+
+    const open = async id => {
+        const path = `/Risks/Details/${id}`;
+        page.href = path;
+        body.textContent = "Loading…";
+        offcanvas.show();
+        address(id);
+        try {
+            const response = await fetch(path, { credentials: "same-origin" });
+            if (!response.ok) throw new Error(String(response.status));
+            const html = new DOMParser().parseFromString(await response.text(), "text/html");
+            const main = html.querySelector("main");
+            main.querySelector("#messages")?.remove();
+            main.querySelector(".page-back")?.remove();
+            title.textContent = main.querySelector("#risk-title")?.textContent || "Risk";
+            body.replaceChildren(...main.children);
+        } catch {
+            body.textContent = "The risk could not be loaded. Open its page instead.";
+        }
+    };
+
+    document.querySelectorAll("[data-risk-panel]").forEach(link => {
+        link.addEventListener("click", event => {
+            if (event.ctrlKey || event.metaKey || event.shiftKey) return; // a new tab or window gets the page
+            event.preventDefault();
+            open(link.dataset.riskPanel);
+        });
+    });
+
+    panel.addEventListener("hidden.bs.offcanvas", () => address(null));
+    if (panel.dataset.openRisk) {
+        open(panel.dataset.openRisk);
+    }
+})();

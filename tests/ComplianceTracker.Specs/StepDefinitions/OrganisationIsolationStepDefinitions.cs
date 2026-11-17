@@ -357,7 +357,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 },
                 "projectid" or "onlyprojectid" => ids.Project, // US-196: an invitation limited to one project
                 "organizationid" => ids.Organization, // US-187: switching to an organisation the person is not a member of
-                "riskid" => ids.Risk,
+                "riskid" or "risk" => ids.Risk, // US-147: the risk opened in the side panel
                 "requirementid" => frameworks ? ids.FrameworkRequirement : ids.CraRequirement,
                 "workitemid" => ids.WorkItem,
                 "linkid" => documents ? ids.OrganisationDocumentLink : ids.Link,
