@@ -37,7 +37,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "/Projects", "/Projects/Create", "/Frameworks", "/Frameworks/BuiltIn", "/Documents", "/Users", "/Activity", "/Settings",
                 "/Organisation/Profile", "/Review", "/Search?q=risk", "/Suppliers", "/Checklists", "/GapAnalysis", "/Reminders", "/Help",
                 $"/Risks/Details/{riskId}", $"/Audits?projectId={projectId}", $"/Projects/Edit/{projectId}",
-                $"/Projects/Details/{projectId}/compliance/cra/I.2(d)"
+                $"/Projects/Details/{projectId}/compliance/cra/I.2(d)", $"/Projects/TestResults/{projectId}"
             };
             foreach (var tab in new[] { "overview", "frameworks", "compliance", "evidence", "risks", "security-events", "scans", "product-requirements", "suggestions", "activity", "reports" })
             {
