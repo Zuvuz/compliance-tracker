@@ -18,14 +18,14 @@
     ViewData["Title"] = risk.Title;
 }
 
-<p class="mb-1"><a asp-controller="Projects" asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Risks">← Risks of @project.Name</a></p>
-<div class="d-flex justify-content-between align-items-start">
-    <h1 class="mb-1"><span id="risk-title">@risk.Title</span> <span class="badge text-bg-secondary fs-6 align-middle" id="risk-level">@risk.Level</span></h1>
+@* US-168 R1: the shared page header *@
+<page-header heading="@risk.Title" heading-id="risk-title" status="@risk.Level.ToString()" status-id="risk-level"
+             back-href="@Url.Action("Details", "Projects", new { id = project.Id, tab = ProjectTabs.Risks })" back-text="@($"Risks of {project.Name}")">
     @if (editable)
     {
         <a class="btn btn-outline-primary" id="edit-risk-link" asp-action="Edit" asp-route-id="@risk.Id">Edit</a>
     }
-</div>
+</page-header>
 <p class="text-muted">@risk.Description</p>
 @if (risk.IsAiDrafted)
 {

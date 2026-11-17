@@ -8,7 +8,7 @@ A tracker that helps an organisation keep track of the standards and regulations
 - Sign-in: Keycloak via OpenID Connect
 - Tests: Reqnroll (BDD) with PostgreSQL and Keycloak in Testcontainers
 
-Project documentation (scope, domain model, class diagram, decisions) is in [`docs/`](docs/README.md).
+Project documentation (scope, domain model, class diagram, decisions) is in [`docs/`](docs/README.md). The design rules for the pages are in [docs/design-rules.md](docs/design-rules.md) (US-168).
 
 ## Getting started
 

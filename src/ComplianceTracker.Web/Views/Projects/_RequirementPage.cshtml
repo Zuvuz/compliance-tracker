@@ -74,7 +74,7 @@
             @if (!row.IsApplicable)
             {
                 @* US-043 R5, R6 *@
-                <span class="requirement-status badge text-bg-secondary">Not applicable</span>
+                <status-badge status="Not applicable" class="requirement-status" />
                 @if (row.DismissedBeforeChange)
                 {
                     @* US-156 R3 *@
@@ -117,11 +117,11 @@
             else if (row.IsCoveredNeedingReview)
             {
                 @* US-110 R3 *@
-                <span class="requirement-status badge text-bg-warning">Covered, needs review</span>
+                <status-badge status="Covered, needs review" class="requirement-status" />
             }
             else if (row.IsCovered)
             {
-                <span class="requirement-status badge text-bg-success">Covered</span>
+                <status-badge status="Covered" class="requirement-status" />
                 @if (row.CoveredThrough is { } through)
                 {
                     @* US-142 R6 *@

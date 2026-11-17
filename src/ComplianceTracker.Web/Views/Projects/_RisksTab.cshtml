@@ -6,13 +6,8 @@
 @model ProjectDetailsViewModel
 @{
     var project = Model.Project;
-    string Badge(RiskLevel level) => level switch
-    {
-        RiskLevel.Low => "text-bg-success",
-        RiskLevel.Medium => "text-bg-warning",
-        RiskLevel.High => "text-bg-danger",
-        _ => "text-bg-dark"
-    };
+    // US-168 R2: the shared colours of the risk levels
+    string Badge(RiskLevel level) => StatusBadges.ClassOf(level.ToString());
     var open = Model.AllRisks.Where(r => r.Status != RiskStatus.Closed).ToList();
 }
 
