@@ -483,7 +483,8 @@ namespace ComplianceTracker.Application.Frameworks
             }
 
             // US-011 R8: not while projects use it, so no project is left following a framework that is off
-            var users = await _projects.ListUsingFrameworkAsync(organization.Id, framework.Id, cancellationToken);
+            // US-028 R5: archived projects do not stop it
+            var users = (await _projects.ListUsingFrameworkAsync(organization.Id, framework.Id, cancellationToken)).Where(p => !p.IsArchived).ToList();
             if (users.Count > 0)
             {
                 throw new DomainException("Used by projects: " + string.Join(", ", users.Select(p => p.Name)));

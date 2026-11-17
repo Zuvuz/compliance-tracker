@@ -52,7 +52,10 @@ namespace ComplianceTracker.Web.Models
             // US-099: deadlines on "My tasks"
             ["Overdue"] = Tone.Bad,
             ["Due soon"] = Tone.Attention,
-            ["Later"] = Tone.Neutral
+            ["Later"] = Tone.Neutral,
+
+            // US-028: an archived project
+            ["Archived"] = Tone.Neutral
         };
 
         public static Tone ToneOf(string? status) => status is not null && Known.TryGetValue(status.Trim(), out var tone) ? tone : Tone.Info;

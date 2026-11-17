@@ -446,6 +446,10 @@ namespace ComplianceTracker.Web.Models
         // US-096: the "Get started" card, or null
         public Application.Organizations.GetStartedChecklist? GetStarted { get; init; }
 
+        // US-028 R2: archived projects are listed only when asked for
+        public bool ShowArchived { get; init; }
+        public int ArchivedCount { get; init; }
+
         // Per framework: the newest version (even with no projects yet), then every older version in use
         public IReadOnlyList<FrameworkUsageRow> FrameworkUsage { get; } = Frameworks
             .SelectMany(framework => framework.Versions

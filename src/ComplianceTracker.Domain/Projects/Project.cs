@@ -93,8 +93,42 @@ namespace ComplianceTracker.Domain.Projects
         public Guid? AiSharingChangedById { get; private set; }
         public DateTime? AiSharingChangedAt { get; private set; }
 
-        // US-024 R4: a project at end of support is kept as it was and cannot be changed
-        public bool IsClosed => Phase == LifecyclePhase.EndOfSupport;
+        // US-024 R4: a project at end of support is kept as it was and cannot be changed. US-028 R3: nor can an archived one.
+        public bool IsClosed => Phase == LifecyclePhase.EndOfSupport || IsArchived;
+
+        // US-028: archived instead of deleted (R1), with who and when (R3, R6); it can be restored (R4)
+        public DateTime? ArchivedAt { get; private set; }
+        public Guid? ArchivedById { get; private set; }
+        public bool IsArchived => ArchivedAt is not null;
+
+        // R1, R3: an archived project keeps all its data and cannot be changed; also one at end of support can be archived
+        public void Archive(Guid userId, DateTime at)
+        {
+            if (IsOrganisationArea)
+            {
+                throw new DomainException("The organisation area cannot be archived");
+            }
+
+            if (IsArchived)
+            {
+                throw new DomainException("The project is already archived");
+            }
+
+            ArchivedAt = at;
+            ArchivedById = userId;
+        }
+
+        // R4: back in the lists and changeable again (unless it is at end of support)
+        public void Restore()
+        {
+            if (!IsArchived)
+            {
+                throw new DomainException("The project is not archived");
+            }
+
+            ArchivedAt = null;
+            ArchivedById = null;
+        }
 
         public IReadOnlyList<ProjectFramework> FrameworkHistory => _frameworks;
 
@@ -430,6 +464,11 @@ namespace ComplianceTracker.Domain.Projects
         // US-024 R4: nothing about a project at end of support changes, also not its frameworks
         private void EnsureOpen()
         {
+            if (IsArchived)
+            {
+                throw new DomainException("An archived project cannot be changed"); // US-028 R3
+            }
+
             if (IsClosed)
             {
                 throw new DomainException("A project at end of support cannot be changed");

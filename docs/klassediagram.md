@@ -242,6 +242,10 @@ classDiagram
     +EnsureMayBeRemoved(today: DateOnly)
     -vulnerabilityContactEmail: string?
     +SetVulnerabilityContact(email: string?, defaultContact: VulnerabilityContact) ProjectChange?
+    -archivedAt: DateTime?
+    -archivedById: Guid?
+    +Archive(userId: Guid, at: DateTime)
+    +Restore()
   }
   class VulnerabilityContact {
     <<record>>

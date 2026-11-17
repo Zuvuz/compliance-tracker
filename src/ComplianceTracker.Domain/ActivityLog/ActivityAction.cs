@@ -370,6 +370,10 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-027 R4: an Admin changed the organisation's name, sector or size. SubjectId points at the organisation;
         // Details holds the old and new values, e.g. "Size: Small → Medium".
-        OrganizationUpdated
+        OrganizationUpdated,
+
+        // US-028 R6: a project was archived or restored. SubjectId points at the project.
+        ProjectArchived,
+        ProjectRestored
     }
 }

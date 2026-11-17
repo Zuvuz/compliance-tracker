@@ -69,7 +69,8 @@ namespace ComplianceTracker.Web.Controllers
         // GET /Projects: the front page after sign-in (US-045 R4). The organisation's projects (US-008 R4)
         // and which framework versions they use (US-011 R5).
         [HttpGet]
-        public async Task<IActionResult> Index(CancellationToken cancellationToken)
+        // archived: US-028 R2, "Show archived"
+        public async Task<IActionResult> Index(bool archived, CancellationToken cancellationToken)
         {
             var organization = await _organizations.MineAsync(cancellationToken);
             if (organization is null)
@@ -77,13 +78,16 @@ namespace ComplianceTracker.Web.Controllers
                 return RedirectToAction("Create", "Organizations");
             }
 
+            var all = await _projects.ListAsync(cancellationToken, includeArchived: true);
             return View(new OrganizationOverviewViewModel(
                 organization,
-                await _projects.ListAsync(cancellationToken),
+                archived ? all : all.Where(p => !p.IsArchived).ToList(),
                 await _frameworks.ListAsync(cancellationToken),
                 _clock.Today())
             {
-                GetStarted = await _getStarted.ForMeAsync(cancellationToken) // US-096
+                GetStarted = await _getStarted.ForMeAsync(cancellationToken), // US-096
+                ShowArchived = archived,
+                ArchivedCount = all.Count(p => p.IsArchived)
             });
         }
 
@@ -1862,6 +1866,28 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> SetVulnerabilityContact(Guid projectId, string? email, CancellationToken cancellationToken)
         {
             await _service.SetVulnerabilityContactAsync(projectId, email, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId });
+        }
+
+        // POST /Projects/Archive: US-028 R1, R6, instead of deleting
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId")]
+        public async Task<IActionResult> Archive(Guid projectId, CancellationToken cancellationToken)
+        {
+            await _service.ArchiveAsync(projectId, cancellationToken);
+            TempData["Success"] = "The project is archived. It is kept with all its data and can be restored.";
+            return RedirectToAction(nameof(Details), new { id = projectId });
+        }
+
+        // POST /Projects/Restore: US-028 R4, R6
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId")]
+        public async Task<IActionResult> Restore(Guid projectId, CancellationToken cancellationToken)
+        {
+            await _service.RestoreAsync(projectId, cancellationToken);
+            TempData["Success"] = "The project is restored.";
             return RedirectToAction(nameof(Details), new { id = projectId });
         }
 

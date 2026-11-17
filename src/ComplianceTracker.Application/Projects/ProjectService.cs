@@ -278,6 +278,30 @@ namespace ComplianceTracker.Application.Projects
         }
 
         // US-130 R4: leave a confidential project out of AI improvement (EditProjects), logged
+        // US-028 R1, R6: archive instead of delete; logged with user, project and time
+        public async Task ArchiveAsync(Guid projectId, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
+            var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
+                ?? throw new DomainException("Project not found");
+
+            project.Archive(user.Id, Now);
+            await _log.LogAsync(ActivityAction.ProjectArchived, project.Id, project.Name, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-028 R4, R6
+        public async Task RestoreAsync(Guid projectId, CancellationToken cancellationToken = default)
+        {
+            var (organization, _) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
+            var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
+                ?? throw new DomainException("Project not found");
+
+            project.Restore();
+            await _log.LogAsync(ActivityAction.ProjectRestored, project.Id, project.Name, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
         public async Task SetExcludedFromAiSharingAsync(Guid projectId, bool excluded, CancellationToken cancellationToken = default)
         {
             var (organization, user) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
