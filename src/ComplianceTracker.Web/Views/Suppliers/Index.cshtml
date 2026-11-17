@@ -45,7 +45,12 @@
 
 @if (Model.Suppliers.Count == 0)
 {
-    <p class="text-muted" id="no-suppliers">No suppliers yet.</p>
+    @* US-172 *@
+    <empty-state id="no-suppliers" title="No suppliers yet"
+                 why="NIS2 (Art. 21(2)(d)) asks you to manage the security of your supply chain: who delivers what, and whether they meet the rules."
+                 can-act="@Model.CanManage" cannot-text="Your role can only read them. A member who may change this adds them.">
+        <a class="btn btn-primary btn-sm" href="#add-supplier">Add a supplier</a>
+    </empty-state>
 }
 else
 {

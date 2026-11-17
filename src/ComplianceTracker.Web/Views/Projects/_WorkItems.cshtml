@@ -92,7 +92,13 @@ else
 
 @if (Model.VisibleWorkItems.Count == 0)
 {
-    <p class="text-muted">No work items read yet.</p>
+    @* US-172 *@
+    <empty-state id="no-work-items" title="No user stories read yet"
+                 why="The project's user stories are read from GitHub or Azure DevOps, or from an uploaded requirement specification, and linked to the requirements they meet."
+                 can-act="@(!project.IsClosed)">
+        <a class="btn btn-outline-primary btn-sm" href="#link-github">Link GitHub</a>
+        <a class="btn btn-outline-primary btn-sm" href="#azure-devops">Link Azure DevOps</a>
+    </empty-state>
 }
 else
 {

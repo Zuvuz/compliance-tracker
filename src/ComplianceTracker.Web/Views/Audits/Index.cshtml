@@ -37,7 +37,14 @@
 <ul class="list-unstyled" id="audits">
     @if (overview.Own.Count == 0)
     {
-        <li class="text-muted" id="no-audits">No audits recorded yet</li>
+        <li>
+            @* US-172 *@
+            <empty-state id="no-audits" title="No audits recorded yet"
+                         why="An internal or external audit and its findings are evidence that the rules are followed (ISO/IEC 27001 9.2)."
+                         can-act="@canRecord" cannot-text="Your role can only read them. A member who decides compliance records them.">
+                <a class="btn btn-outline-primary btn-sm" href="#record-audit">Record an audit</a>
+            </empty-state>
+        </li>
     }
     @foreach (var audit in overview.Own)
     {

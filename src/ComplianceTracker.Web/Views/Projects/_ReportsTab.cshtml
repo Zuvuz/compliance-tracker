@@ -181,7 +181,12 @@
     }
     @if (Model.LockedReports.Count == 0)
     {
-        <p class="text-muted small" id="no-locked-reports">No report has been locked yet.</p>
+        @* US-172 *@
+        <empty-state id="no-locked-reports" title="No report has been locked yet"
+                     why="A locked report is kept unchanged with its fingerprint, so you can show later what was reported (ISO/IEC 27001 A.5.33)."
+                     can-act="@canLock" cannot-text="Your role can only read them. A member who decides compliance locks reports.">
+            <span class="small text-muted">Choose a report above and press "Lock".</span>
+        </empty-state>
     }
     else
     {

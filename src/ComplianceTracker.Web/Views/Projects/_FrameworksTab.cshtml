@@ -11,7 +11,13 @@
     @if (Model.Frameworks.Count == 0)
     {
         @* R7 *@
-        <p class="text-muted" id="no-frameworks">No frameworks yet</p>
+        @* US-172 *@
+        <empty-state id="no-frameworks" title="No frameworks yet"
+                     why="A framework (e.g. the CRA or ISO/IEC 27001) gives the project its requirements; everything else is linked to them."
+                     can-act="@(!project.IsClosed && await Permissions.CanAsync(Permission.EditProjects))"
+                     cannot-text="Your role can only read them. A member who may change this adds them.">
+            <a class="btn btn-primary btn-sm" href="#add-framework">Add a framework</a>
+        </empty-state>
     }
     else
     {
