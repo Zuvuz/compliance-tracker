@@ -54,7 +54,9 @@ else
     var currentGroup = groups.FirstOrDefault(g => g.Tabs.Any(t => t.Slug == Model.Tab));
     string TabUrl(string slug) => Url.Action("Details", new { id = project.Id, tab = slug == ProjectTabs.Overview ? null : slug, sub = "", req = "" })!;
 }
-<div id="project-nav" class="mb-3">
+@* US-175 R1, R4: the member's last tab of the project is remembered in this browser (site.js); data-tabs lists the valid ones *@
+<div id="project-nav" class="mb-3" data-project="@project.Id" data-current-tab="@Model.Tab"
+     data-tabs="@string.Join(",", groups.SelectMany(g => g.Tabs).Select(t => t.Slug))">
     <ul class="nav nav-tabs" id="project-groups">
         @foreach (var group in groups)
         {

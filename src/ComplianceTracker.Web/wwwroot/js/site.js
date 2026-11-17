@@ -173,3 +173,58 @@ document.querySelectorAll("[data-percent]").forEach(bar => {
         });
     });
 })();
+
+// US-175: the member's choices are remembered in this browser only (nothing on the server), as #52 does for folding.
+// R1: opening a project from elsewhere goes to the member's last tab of it. R2: a page's filters are remembered; an address
+// with filters of its own always wins. R3: "Reset view" forgets them. R4: a remembered value that is no longer valid is
+// ignored (a tab the project no longer has; filters the page no longer knows are ignored by the server).
+(() => {
+    const read = key => { try { return localStorage.getItem(key); } catch { return null; } };
+    const write = (key, value) => { try { value ? localStorage.setItem(key, value) : localStorage.removeItem(key); } catch { /* private window */ } };
+    const once = key => { try { if (sessionStorage.getItem(key)) return false; sessionStorage.setItem(key, "1"); return true; } catch { return false; } };
+
+    // R1
+    const nav = document.getElementById("project-nav");
+    if (nav && nav.dataset.project) {
+        const key = `ct-tab:${nav.dataset.project}`;
+        const valid = (nav.dataset.tabs || "").split(",").filter(Boolean);
+        const root = `/Projects/Details/${nav.dataset.project}`;
+        const cameFromProject = document.referrer && new URL(document.referrer, location.href).pathname.startsWith(root);
+        const remembered = read(key);
+        if (location.pathname.replace(/\/$/, "") === root && !location.search && !cameFromProject
+            && remembered && remembered !== nav.dataset.currentTab && valid.includes(remembered) && once(`ct-tab-opened:${root}`)) {
+            location.replace(`${root}/${remembered}`);
+            return;
+        }
+
+        write(key, valid.includes(nav.dataset.currentTab) ? nav.dataset.currentTab : null);
+    }
+
+    // R2, R3
+    document.querySelectorAll("[data-remember]").forEach(part => {
+        const key = `ct-filters:${part.dataset.remember}`;
+        const names = (part.dataset.rememberParams || "").split(",").filter(Boolean);
+        const address = new URL(location.href);
+        const own = names.filter(n => address.searchParams.get(n));
+        const reset = [...document.querySelectorAll("[data-reset-view]")].find(b => b.dataset.resetView === part.dataset.remember);
+
+        if (own.length > 0) {
+            const kept = new URLSearchParams();
+            own.forEach(n => address.searchParams.getAll(n).forEach(v => kept.append(n, v)));
+            write(key, kept.toString());
+        } else if (read(key) && once(`ct-filters-restored:${key}:${location.pathname}`)) {
+            new URLSearchParams(read(key)).forEach((v, n) => { if (names.includes(n)) address.searchParams.append(n, v); });
+            location.replace(address.toString());
+            return;
+        }
+
+        if (reset) {
+            reset.hidden = !read(key);
+            reset.addEventListener("click", () => {
+                write(key, null);
+                names.forEach(n => address.searchParams.delete(n));
+                location.assign(address.toString());
+            });
+        }
+    });
+})();
