@@ -42,6 +42,7 @@ classDiagram
     +Create(name: string, cvr: string, sector: Sector?, size: OrganizationSize?, creator: UserIdentity)$ Organization
     +Members: List~User~
     +RemoveMember(memberId: Guid, removedById: Guid, at: DateTime) User
+    +Update(name: string, sector: Sector?, size: OrganizationSize?, userId: Guid) List~ProjectChange~
     +SetCountry(country: string, userId: Guid) bool
   }
   class User {

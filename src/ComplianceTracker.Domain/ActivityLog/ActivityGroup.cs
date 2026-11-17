@@ -29,7 +29,7 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.PersonalDataExported or ActivityAction.PersonalDataErased
                 or ActivityAction.MemberSignsForManagementChanged or ActivityAction.MemberAccessChanged // US-196
                 or ActivityAction.AuditorAccessGranted or ActivityAction.AuditorAccessUsed or ActivityAction.AuditorAccessRevoked => ActivityGroup.Members, // US-182
-            ActivityAction.OrganizationCreated or ActivityAction.FeedbackSent or ActivityAction.FeedbackIssueCreated
+            ActivityAction.OrganizationCreated or ActivityAction.OrganizationUpdated or ActivityAction.FeedbackSent or ActivityAction.FeedbackIssueCreated
                 or ActivityAction.FeedbackDismissed
                 or ActivityAction.SealUploaded or ActivityAction.SealRemoved
                 or ActivityAction.Nis2ScopeChecked or ActivityAction.OrganisationCountryChanged

@@ -366,6 +366,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         RiskResidualSet,
 
         // US-196 R5: an Admin changed the last day of an external member's access. SubjectId points at the member.
-        MemberAccessChanged
+        MemberAccessChanged,
+
+        // US-027 R4: an Admin changed the organisation's name, sector or size. SubjectId points at the organisation;
+        // Details holds the old and new values, e.g. "Size: Small → Medium".
+        OrganizationUpdated
     }
 }

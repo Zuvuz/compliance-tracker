@@ -53,6 +53,8 @@
                                    role="button" data-bs-toggle="dropdown" aria-expanded="false">Organisation</a>
                                 <ul class="dropdown-menu" aria-labelledby="nav-organisation">
                                     <li><a class="dropdown-item" id="nav-organisation-overview" asp-area="" asp-controller="Organisation" asp-action="Index">Overview</a></li>
+                                    @* US-027: the organisation's details *@
+                                    <li><a class="dropdown-item" id="nav-organisation-profile" asp-area="" asp-controller="Organisation" asp-action="Profile">Profile</a></li>
                                     <li><a class="dropdown-item" id="nav-gap-analysis" asp-area="" asp-controller="GapAnalysis" asp-action="Index">NIS2 gap analysis</a></li>
                                     <li><a class="dropdown-item" id="nav-suppliers" asp-area="" asp-controller="Suppliers" asp-action="Index">Suppliers</a></li>
                                     <li><a class="dropdown-item" id="nav-checklists" asp-area="" asp-controller="Checklists" asp-action="Index">Checklists</a></li>
