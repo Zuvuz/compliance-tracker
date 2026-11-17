@@ -187,6 +187,11 @@
                                     <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Use as evidence</button>
                                 </form>
                             }
+                            @if (canChange)
+                            {
+                                @* US-177 R1: only the newest scan of a tool, which is the one listed here *@
+                                @await Html.PartialAsync("_WithdrawMenu", new WithdrawMenu(project.Id, "WithdrawScan", "scanId", scan.Id.ToString(), $"the {scan.Tool} scan", "Its new findings are withdrawn and the findings it closed are open again."))
+                            }
                         </td>
                     </tr>
                 }
@@ -339,6 +344,10 @@
                                         </select>
                                         <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Use as evidence</button>
                                     </form>
+                                }
+                                @if (canChange)
+                                {
+                                    @await Html.PartialAsync("_WithdrawMenu", new WithdrawMenu(project.Id, "WithdrawSbom", "sbomId", sbom.Id.ToString(), $"the SBOM for version {sbom.ProductVersion}", "The previous SBOM of the version is the current one again. Not possible when a locked report used it."))
                                 }
                             </td>
                         </tr>

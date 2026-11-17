@@ -60,6 +60,8 @@ namespace ComplianceTracker.Application.WorkItems
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
 
+        private readonly Reports.IReportSnapshotRepository _reports; // US-177
+
         public RequirementDocumentService(
             IProjectRepository projects,
             IWorkItemRepository workItems,
@@ -69,8 +71,10 @@ namespace ComplianceTracker.Application.WorkItems
             CurrentMember member,
             IActivityLogger log,
             IUnitOfWork unitOfWork,
-            TimeProvider clock)
+            TimeProvider clock,
+            Reports.IReportSnapshotRepository reports)
         {
+            _reports = reports;
             _projects = projects;
             _workItems = workItems;
             _documents = documents;
@@ -193,6 +197,38 @@ namespace ComplianceTracker.Application.WorkItems
             {
                 throw new DomainException(string.Join("; ", duplicates));
             }
+        }
+
+        // US-177 R1-R4: the newest version of a requirement specification, imported by mistake, is withdrawn with a reason
+        // by a member who may upload it, while no locked report used it. The stories only it brought are marked removed.
+        public async Task WithdrawVersionAsync(Guid projectId, Guid versionId, string? reason, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
+            var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken) ?? throw new DomainException("Project not found");
+            if (project.IsClosed)
+            {
+                throw new DomainException("A project at end of support cannot be changed");
+            }
+
+            var document = (await _documents.ListAsync(project.Id, cancellationToken)).FirstOrDefault(d => d.Versions.Any(v => v.Id == versionId))
+                ?? throw new DomainException("Version not found");
+            var version = document.Versions.Single(v => v.Id == versionId);
+            if ((await _reports.ListAsync(organization.Id, project.Id, cancellationToken)).Any(r => document.UsedByReportLockedAt(version, r.LockedAt)))
+            {
+                throw new DomainException("Used by a locked report; upload a corrected version instead");
+            }
+
+            var previous = document.Withdraw(versionId, reason, user.Id, Now);
+            var removed = 0;
+            foreach (var workItem in await _workItems.ListByDocumentAsync(project.Id, document.Id, cancellationToken))
+            {
+                removed += workItem.UndoDocumentVersion(version.Number, previous?.Number, previous?.UploadedAt) ? 1 : 0;
+            }
+
+            await _log.LogAsync(ActivityAction.RequirementDocumentVersionWithdrawn, project.Id,
+                $"{document.Name} version {version.Number} withdrawn ({version.WithdrawnReason}): {removed} stories removed", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _notifier.WorkItemsChangedAsync(project.Id, cancellationToken);
         }
 
         private DateTime Now => _clock.GetUtcNow().UtcDateTime;

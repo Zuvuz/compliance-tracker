@@ -326,6 +326,9 @@ namespace ComplianceTracker.Web.Controllers
                 ActivityIgnored = activityIgnored,
                 Compliance = compliance,
                 EvidenceTab = evidenceTab,
+                // US-177: the uploads of test results that can be withdrawn
+                TestResultsUploads = activeTab == ProjectTabs.Evidence ? await HttpContext.RequestServices
+                    .GetRequiredService<EvidenceSuggestionService>().UploadsAsync(id, cancellationToken) : [],
                 Sub = sub,
                 OpenRequirement = activeTab == ProjectTabs.Compliance ? req : null,
                 AuditReadiness = activeTab == ProjectTabs.Reports && check == "1" ? await readiness.CheckAsync(id, frameworks, cancellationToken) : null, // US-178
@@ -1869,6 +1872,54 @@ namespace ComplianceTracker.Web.Controllers
         {
             await _service.SetVulnerabilityContactAsync(projectId, email, cancellationToken);
             return RedirectToAction(nameof(Details), new { id = projectId });
+        }
+
+        // POST /Projects/WithdrawScan: US-177 R1, R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Scans)]
+        public async Task<IActionResult> WithdrawScan(Guid projectId, Guid scanId, string? reason,
+            [FromServices] Application.Scanning.ScanService scans, CancellationToken cancellationToken)
+        {
+            await scans.WithdrawAsync(projectId, scanId, reason, cancellationToken);
+            TempData["Success"] = "The scan is withdrawn. Its new findings are gone, and the findings it closed are open again.";
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
+        }
+
+        // POST /Projects/WithdrawSbom: US-177 R3, R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Scans)]
+        public async Task<IActionResult> WithdrawSbom(Guid projectId, Guid sbomId, string? reason,
+            [FromServices] Application.Scanning.SbomService sboms, CancellationToken cancellationToken)
+        {
+            await sboms.WithdrawAsync(projectId, sbomId, reason, cancellationToken);
+            TempData["Success"] = "The SBOM is withdrawn. The previous SBOM of the version is the current one again.";
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
+        }
+
+        // POST /Projects/WithdrawRequirementDocumentVersion: US-177 R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.ProductRequirements)]
+        public async Task<IActionResult> WithdrawRequirementDocumentVersion(Guid projectId, Guid versionId, string? reason,
+            [FromServices] Application.WorkItems.RequirementDocumentService documents, CancellationToken cancellationToken)
+        {
+            await documents.WithdrawVersionAsync(projectId, versionId, reason, cancellationToken);
+            TempData["Success"] = "The version is withdrawn. The stories only it brought are marked removed.";
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.ProductRequirements });
+        }
+
+        // POST /Projects/WithdrawTestResults: US-177 R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
+        public async Task<IActionResult> WithdrawTestResults(Guid projectId, string? sha256, string? reason,
+            [FromServices] EvidenceSuggestionService suggestions, CancellationToken cancellationToken)
+        {
+            var count = await suggestions.WithdrawTestResultsAsync(projectId, sha256, reason, cancellationToken);
+            TempData["Success"] = $"The test results are withdrawn: {count} {(count == 1 ? "suggestion" : "suggestions")} withdrawn. Accepted evidence stays.";
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
         }
 
         // POST /Projects/Archive: US-028 R1, R6, instead of deleting

@@ -14,6 +14,7 @@
     var useUseCases = project.RequirementMethods.HasFlag(ComplianceTracker.Domain.Projects.RequirementMethods.UseCases);
     var documents = Model.Documents
         .Where(d => d.Kind == DocumentKind.UseCases ? useUseCases : useSpecification)
+        .Where(d => d.Latest is not null) // US-177: a document whose every version is withdrawn is left out
         .ToList();
     var heading = useSpecification && useUseCases ? "Requirement specifications and use cases"
         : useUseCases ? "Use cases" : "Requirement specifications";
@@ -102,7 +103,14 @@
                 }
             </div>
             <p class="document-summary small mb-1">@latest.Summary</p>
-            <p class="small text-muted mb-1">Uploaded by @Model.NameOf(latest.UploadedById), @latest.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</p>
+            <p class="small text-muted mb-1 d-flex flex-wrap align-items-center gap-2">
+                <span>Uploaded by @Model.NameOf(latest.UploadedById), @latest.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</span>
+                @if (canUpload)
+                {
+                    @* US-177: the newest version, imported by mistake *@
+                    <span class="ms-auto">@await Html.PartialAsync("_WithdrawMenu", new WithdrawMenu(project.Id, "WithdrawRequirementDocumentVersion", "versionId", latest.Id.ToString(), $"version {latest.Number} of {document.Name}", "The stories only this version brought are marked removed; the previous version is the current one again."))</span>
+                }
+            </p>
             @if (latest.SkippedRows.Count > 0)
             {
                 @* R3: the rows that did not become requirements, and why *@
@@ -123,6 +131,10 @@
                             <a href="@Url.Action("RequirementDocumentFile", "Projects", new { id = project.Id, versionId = version.Id })">Version @version.Number</a>
                             · @version.FileName · @Model.NameOf(version.UploadedById), @version.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy")
                             · <span class="text-muted" title="SHA-256 @version.Sha256">@version.Sha256[..12]</span>
+                            @if (version.IsWithdrawn)
+                            {
+                                <span class="badge text-bg-light border version-withdrawn">Withdrawn: @version.WithdrawnReason</span>
+                            }
                         </li>
                     }
                 </ul>

@@ -77,10 +77,13 @@ namespace ComplianceTracker.Application.Scanning
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
 
+        private readonly Reports.IReportSnapshotRepository _reports; // US-177
+
         public SbomService(IProjectRepository projects, ISbomRepository sboms, IScanRepository scans, IEnumerable<ISbomImporter> importers,
             CurrentMember member, IActivityLogger log, IUnitOfWork unitOfWork, TimeProvider clock,
-            IScanUploadTokenRepository tokens, IGitHubSbom github, ISecretProtector secrets)
+            IScanUploadTokenRepository tokens, IGitHubSbom github, ISecretProtector secrets, Reports.IReportSnapshotRepository reports)
         {
+            _reports = reports;
             _tokens = tokens;
             _github = github;
             _secrets = secrets;
@@ -92,6 +95,30 @@ namespace ComplianceTracker.Application.Scanning
             _log = log;
             _unitOfWork = unitOfWork;
             _clock = clock;
+        }
+
+        // US-177 R2-R4: an SBOM uploaded by mistake is withdrawn with a reason, by a member who may upload SBOMs, while no
+        // locked report used it; the previous SBOM of the version is the current one again
+        public async Task WithdrawAsync(Guid projectId, Guid sbomId, string? reason, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.LinkWork, cancellationToken);
+            var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken) ?? throw new DomainException("Project not found");
+            if (project.IsClosed)
+            {
+                throw new DomainException("A project at end of support cannot be changed");
+            }
+
+            var sboms = await _sboms.ListAsync(project.Id, cancellationToken);
+            var sbom = sboms.FirstOrDefault(s => s.Id == sbomId) ?? throw new DomainException("SBOM not found");
+            var locked = await _reports.ListAsync(organization.Id, project.Id, cancellationToken);
+            if (locked.Any(r => sbom.UsedByReportLockedAt(r.LockedAt, sboms)))
+            {
+                throw new DomainException("Used by a locked report; upload a corrected SBOM instead");
+            }
+
+            sbom.Withdraw(reason, user.Id, _clock.GetUtcNow().UtcDateTime);
+            await _log.LogAsync(ActivityAction.SbomWithdrawn, project.Id, $"SBOM {sbom.FileName} for version {sbom.ProductVersion} withdrawn ({sbom.WithdrawnReason})", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         // R1, R2, R7: reads the file, stores it for the product version, and logs it

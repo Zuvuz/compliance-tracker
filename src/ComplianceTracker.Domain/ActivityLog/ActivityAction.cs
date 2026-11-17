@@ -374,6 +374,12 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-028 R6: a project was archived or restored. SubjectId points at the project.
         ProjectArchived,
-        ProjectRestored
+        ProjectRestored,
+
+        // US-177: an upload made by mistake was withdrawn. SubjectId points at the project; Details holds what and why.
+        ScanWithdrawn,
+        SbomWithdrawn,
+        TestResultsWithdrawn,
+        RequirementDocumentVersionWithdrawn
     }
 }

@@ -6236,6 +6236,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
 
+                    b.Property<DateTime?>("PreviousFixedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("PreviousLastScanId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("PreviousState")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
 
@@ -6320,6 +6329,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid?>("UploadedById")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("WithdrawnAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("WithdrawnById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("WithdrawnReason")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -6440,6 +6458,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<string>("Version")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("WithdrawnAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("WithdrawnById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("WithdrawnReason")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -6856,6 +6883,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("UploadedById")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("WithdrawnAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("WithdrawnById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("WithdrawnReason")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 

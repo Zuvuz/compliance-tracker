@@ -284,6 +284,38 @@ namespace ComplianceTracker.Application.Scanning
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        // US-177 R1-R4: a scan uploaded by mistake is withdrawn with a reason, by a member who may upload scans. Only the
+        // newest scan of its tool, so its findings are put back exactly: those first seen in it are withdrawn, those it
+        // changed are as before. The suggested security events made only from its findings are withdrawn too.
+        public async Task WithdrawAsync(Guid projectId, Guid scanId, string? reason, CancellationToken cancellationToken = default)
+        {
+            var (userId, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var scan = await _scans.GetAsync(project.Id, scanId, cancellationToken) ?? throw new DomainException("Scan not found");
+            var newest = (await _scans.ListAsync(project.Id, cancellationToken))
+                .Where(s => string.Equals(s.Tool, scan.Tool, StringComparison.OrdinalIgnoreCase))
+                .MaxBy(s => s.ScannedAt);
+            if (scan.IsWithdrawn || newest?.Id != scan.Id)
+            {
+                throw new DomainException("Only the newest scan of a tool can be withdrawn");
+            }
+
+            scan.Withdraw(reason, userId, Now);
+            var findings = (await _scans.ListFindingsAsync(project.Id, cancellationToken))
+                .Where(f => string.Equals(f.Tool, scan.Tool, StringComparison.OrdinalIgnoreCase)).ToList();
+            var withdrawn = findings.Where(f => f.FirstScanId == scan.Id).Select(f => f.Id).ToHashSet();
+            var reopened = findings.Count(f => f.LastScanId == scan.Id && f.State == FindingState.Fixed);
+            foreach (var finding in findings)
+            {
+                finding.UndoScan(scan.Id);
+            }
+
+            await _suggestions.WithdrawForFindingsAsync(project.Id, withdrawn, $"The scan was withdrawn: {scan.WithdrawnReason}", cancellationToken);
+            await _log.LogAsync(ActivityAction.ScanWithdrawn, project.Id,
+                $"{scan.Tool} scan of {scan.ScannedAt:dd-MM-yyyy HH:mm} withdrawn ({scan.WithdrawnReason}): {withdrawn.Count} findings withdrawn, {reopened} open again",
+                cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
         // US-176 R1: an acceptance made by mistake; the finding is open again
         public async Task UndoAcceptFindingAsync(Guid projectId, Guid findingId, CancellationToken cancellationToken = default)
         {
@@ -310,7 +342,7 @@ namespace ComplianceTracker.Application.Scanning
             return new ScanOverview(
                 scans.GroupBy(s => s.Tool, StringComparer.OrdinalIgnoreCase).Select(g => g.OrderByDescending(s => s.ScannedAt).First()).ToList(),
                 findings.Where(f => f.IsOpen).OrderByDescending(f => f.Severity).ThenBy(f => f.RuleId, StringComparer.Ordinal).ToList(),
-                findings.Where(f => !f.IsOpen).OrderByDescending(f => f.FixedAt ?? f.AcceptedAt).ToList())
+                findings.Where(f => !f.IsOpen && f.State != FindingState.Withdrawn).OrderByDescending(f => f.FixedAt ?? f.AcceptedAt).ToList())
             {
                 Tokens = (await _tokens.ListAsync(project.Id, cancellationToken)).OrderBy(t => t.RevokedAt is not null).ThenByDescending(t => t.CreatedAt).ToList()
             };

@@ -51,6 +51,32 @@ namespace ComplianceTracker.Domain.Scanning
         private Sbom() { }
 
         // R1, R2: the importer has read the file; the caller checks the format
+        // US-177: withdrawn because it was uploaded by mistake; kept in the history (R2), left out of the lists, so the
+        // previous SBOM of the version is the current one again
+        public DateTime? WithdrawnAt { get; private set; }
+        public Guid? WithdrawnById { get; private set; }
+        public string? WithdrawnReason { get; private set; }
+        public bool IsWithdrawn => WithdrawnAt is not null;
+
+        // R4: with a reason. The caller checks that no locked report used it (R3).
+        public void Withdraw(string? reason, Guid userId, DateTime at)
+        {
+            if (IsWithdrawn)
+            {
+                throw new DomainException("The SBOM is already withdrawn");
+            }
+
+            WithdrawnReason = Withdrawal.Reason(reason);
+            WithdrawnAt = at;
+            WithdrawnById = userId;
+        }
+
+        // US-177 R3: a report locked while this was the newest SBOM of its version used it: it was imported before the
+        // report was locked, and no newer SBOM of the same version had come by then
+        public bool UsedByReportLockedAt(DateTime lockedAt, IEnumerable<Sbom> others)
+            => ImportedAt <= lockedAt && !others.Any(o => o.Id != Id && !o.IsWithdrawn && o.ProductVersion == ProductVersion
+                                                         && o.ImportedAt > ImportedAt && o.ImportedAt <= lockedAt);
+
         public static Sbom Create(Guid projectId, string? productVersion, string format, string? fileName, byte[] content,
             IEnumerable<SbomComponentRead> components, Guid? userId, DateTime at, SbomSource source = SbomSource.Upload)
         {

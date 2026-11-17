@@ -28,7 +28,8 @@ namespace ComplianceTracker.Domain.WorkItems
 
         public IReadOnlyList<RequirementDocumentVersion> Versions => _versions;
 
-        public RequirementDocumentVersion? Latest => _versions.MaxBy(v => v.Number);
+        // US-177: a withdrawn version is not the newest; when every version is withdrawn there is none
+        public RequirementDocumentVersion? Latest => _versions.Where(v => !v.IsWithdrawn).MaxBy(v => v.Number);
 
         // The number the next upload gets
         public int NextVersionNumber => _versions.Count == 0 ? 1 : _versions.Max(v => v.Number) + 1;
@@ -45,6 +46,25 @@ namespace ComplianceTracker.Domain.WorkItems
 
             return new RequirementDocument { ProjectId = projectId, Name = name.Trim(), CreatedAt = at, Kind = kind };
         }
+
+        // US-177 R1-R4: the newest version, imported by mistake, is withdrawn with a reason. Returns the version before it
+        // (null when it was the first), whose stories are the document's again.
+        public RequirementDocumentVersion? Withdraw(Guid versionId, string? reason, Guid userId, DateTime at)
+        {
+            var version = _versions.FirstOrDefault(v => v.Id == versionId) ?? throw new DomainException("Version not found");
+            if (version.IsWithdrawn || Latest?.Id != version.Id)
+            {
+                throw new DomainException("Only the newest version can be withdrawn");
+            }
+
+            version.Withdraw(reason, userId, at);
+            return Latest;
+        }
+
+        // US-177 R3: a report locked while this was the newest version used it
+        public bool UsedByReportLockedAt(RequirementDocumentVersion version, DateTime lockedAt)
+            => version.UploadedAt <= lockedAt
+               && !_versions.Any(v => v.Id != version.Id && !v.IsWithdrawn && v.Number > version.Number && v.UploadedAt <= lockedAt);
 
         // R5, R6, R7: one upload, with its file and what it did to the requirements.
         // idPattern: the pattern a Word document was read with (US-033), or null for a spreadsheet.
@@ -75,6 +95,19 @@ namespace ComplianceTracker.Domain.WorkItems
 
         public Guid UploadedById { get; private set; }
         public DateTime UploadedAt { get; private set; }
+
+        // US-177: withdrawn because it was imported by mistake; kept in the history (R2)
+        public DateTime? WithdrawnAt { get; private set; }
+        public Guid? WithdrawnById { get; private set; }
+        public string? WithdrawnReason { get; private set; }
+        public bool IsWithdrawn => WithdrawnAt is not null;
+
+        internal void Withdraw(string? reason, Guid userId, DateTime at)
+        {
+            WithdrawnReason = Withdrawal.Reason(reason);
+            WithdrawnAt = at;
+            WithdrawnById = userId;
+        }
 
         // R6: what the upload did
         public int Added { get; private set; }

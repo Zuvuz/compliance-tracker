@@ -292,6 +292,9 @@ namespace ComplianceTracker.Web.Models
 
         // US-059: the Evidence tab, and the project's evidence for "Pick existing evidence" on the Compliance tab
         public EvidenceTab? EvidenceTab { get; init; }
+
+        // US-177
+        public IReadOnlyList<Application.Compliance.TestResultsUpload> TestResultsUploads { get; init; } = [];
         public string? Sub { get; init; }
 
         // US-144 R12: the requirement code in the address, e.g. ".../compliance/cra/I.2(d)"; that row is shown open
