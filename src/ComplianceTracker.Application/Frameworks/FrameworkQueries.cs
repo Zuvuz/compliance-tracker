@@ -24,6 +24,20 @@ namespace ComplianceTracker.Application.Frameworks
                 ? await _frameworks.ListAsync(organization.Id, cancellationToken)
                 : [];
 
+        // US-164 R1, R3: the built-in frameworks the organisation has not switched on yet, for members who may switch them
+        // on (ManageFrameworks); empty for others
+        public async Task<IReadOnlyList<Framework>> NotSwitchedOnAsync(CancellationToken cancellationToken = default)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is not { } organization
+                || !await _member.CanAsync(Domain.Users.Permission.ManageFrameworks, cancellationToken))
+            {
+                return [];
+            }
+
+            var on = (await _frameworks.ListAsync(organization.Id, cancellationToken)).Select(f => f.Id).ToHashSet();
+            return (await _frameworks.ListBuiltInAsync(cancellationToken)).Where(f => !on.Contains(f.Id)).ToList();
+        }
+
         // One of the organisation's own (uploaded) frameworks, or null
         public async Task<Framework?> GetOwnAsync(Guid frameworkId, CancellationToken cancellationToken = default)
             => await _member.FindOrganizationAsync(cancellationToken) is { } organization
