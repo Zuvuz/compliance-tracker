@@ -300,3 +300,8 @@ img, video { max-width: 100%; height: auto; }
 .term-help { display: inline-block; margin-left: .2rem; width: 1.05rem; height: 1.05rem; line-height: 1.05rem; text-align: center;
   font-size: .7rem; font-weight: 600; border-radius: 50%; border: 1px solid var(--ct-border); color: var(--ct-muted); text-decoration: none; vertical-align: middle; }
 .term-help:hover, .term-help:focus { color: var(--ct-teal); border-color: var(--ct-teal); }
+
+/* US-147: the risk side panel and the chosen matrix cell */
+.ct-risk-panel { --bs-offcanvas-width: min(720px, 100vw); }
+#risk-matrix .risk-cell { min-height: 1.6rem; }
+#risk-matrix .risk-cell-chosen { outline: 3px solid var(--ct-navy); outline-offset: -3px; }

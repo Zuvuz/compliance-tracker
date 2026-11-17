@@ -111,7 +111,13 @@
                             @for (var impact = Risk.MinScale; impact <= Risk.MaxScale; impact++)
                             {
                                 var count = open.Count(r => r.Likelihood == likelihood && r.Impact == impact);
-                                <td class="@Badge(Risk.LevelOf(likelihood * impact)) bg-opacity-50" data-likelihood="@likelihood" data-impact="@impact">@(count == 0 ? "" : count)</td>
+                                var chosen = Model.RiskCell is { } c && c.Likelihood == likelihood && c.Impact == impact;
+                                @* US-147 R2: a cell filters the list; the chosen one again clears it *@
+                                <td class="@Badge(Risk.LevelOf(likelihood * impact)) bg-opacity-50 @(chosen ? "risk-cell-chosen" : "")" data-likelihood="@likelihood" data-impact="@impact">
+                                    <a class="risk-cell d-block text-reset text-decoration-none" aria-current="@(chosen ? "true" : null)"
+                                       aria-label="Likelihood @likelihood, impact @impact: @count open"
+                                       href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks, status = Model.RiskStatusFilter, due = Model.OnlyReviewDue ? "1" : null, cell = chosen ? null : RiskCells.Format(likelihood, impact) })">@(count == 0 ? "\u00a0" : count)</a>
+                                </td>
                             }
                         </tr>
                     }
@@ -128,6 +134,31 @@
         </div>
 
         <div class="col-lg-8">
+            @{
+                // US-147 R3: the filter buttons; each keeps the matrix cell
+                var cellText = Model.RiskCell is { } chosenCell ? RiskCells.Format(chosenCell.Likelihood, chosenCell.Impact) : null;
+                var buttons = new (string Text, string? Status, bool Due, bool Active)[]
+                {
+                    ("Open", null, false, string.IsNullOrEmpty(Model.RiskStatusFilter) && !Model.OnlyReviewDue),
+                    ("Accepted", "Accepted", false, string.Equals(Model.RiskStatusFilter, "Accepted", StringComparison.OrdinalIgnoreCase)),
+                    ("Closed", "Closed", false, string.Equals(Model.RiskStatusFilter, "Closed", StringComparison.OrdinalIgnoreCase)),
+                    ("Review due", null, true, Model.OnlyReviewDue)
+                };
+            }
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <div class="btn-group btn-group-sm flex-wrap" role="group" aria-label="Show risks" id="risk-status-buttons">
+                    @foreach (var b in buttons)
+                    {
+                        <a class="btn @(b.Active ? "btn-secondary" : "btn-outline-secondary")" aria-current="@(b.Active ? "true" : null)" data-status-button="@b.Text"
+                           href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks, status = b.Status, due = b.Due ? "1" : null, cell = cellText })">@b.Text</a>
+                    }
+                </div>
+                @if (Model.RiskCell is { } shownCell)
+                {
+                    <span class="small text-muted" id="risk-cell-filter">Likelihood @shownCell.Likelihood × impact @shownCell.Impact ·
+                        <a href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks, status = Model.RiskStatusFilter, due = Model.OnlyReviewDue ? "1" : null })">clear</a></span>
+                }
+            </div>
             @* R8: GET, so a filtered register can be linked to *@
             @* US-175 R2, R3: the register's filters are remembered in this browser; an address with its own wins *@
             <button type="button" class="btn btn-sm btn-link reset-view" data-reset-view="risks:@project.Id" hidden>Reset view</button>
@@ -210,7 +241,8 @@
                                         }</span>
                                 </td>
                                 <td>
-                                    <a class="risk-link" asp-controller="Risks" asp-action="Details" asp-route-id="@risk.Id">@risk.Title</a>
+                                    @* US-147 R4, R5: opens in the side panel; without JavaScript, or for printing, the risk's own page *@
+                                    <a class="risk-link" asp-controller="Risks" asp-action="Details" asp-route-id="@risk.Id" data-risk-panel="@risk.Id">@risk.Title</a>
                                     <div class="risk-flags small">
                                         @if (Model.RiskBacking.GetValueOrDefault(risk.Id)?.NothingBehind == true)
                                         {
@@ -257,3 +289,13 @@
         </div>
     </div>
 </section>
+
+@* US-147 R4: a risk opens in this side panel with its own address (?risk=…); site.js loads the risk's page into it *@
+<div class="offcanvas offcanvas-end ct-risk-panel" tabindex="-1" id="risk-panel" aria-labelledby="risk-panel-title" data-open-risk="@Model.RiskInPanel">
+    <div class="offcanvas-header">
+        <h2 class="offcanvas-title h5" id="risk-panel-title">Risk</h2>
+        <a class="small ms-auto me-3" id="risk-panel-page" href="#">Open the page</a>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body" id="risk-panel-body"></div>
+</div>

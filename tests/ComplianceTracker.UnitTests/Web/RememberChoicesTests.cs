@@ -20,7 +20,10 @@ public class RememberChoicesTests
         var script = Script();
         var start = script.IndexOf("// US-175:", StringComparison.Ordinal);
         Assert.True(start >= 0, "site.js has no US-175 part");
-        return script[start..];
+
+        // Only the US-175 part: up to the next story's part (e.g. US-147's side panel, which fetches the risk's page)
+        var end = script.IndexOf("\n// US-", start + 1, StringComparison.Ordinal);
+        return end < 0 ? script[start..] : script[start..end];
     }
 
     [Fact]
