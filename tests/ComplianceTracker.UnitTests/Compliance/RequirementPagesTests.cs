@@ -106,7 +106,8 @@ public class RequirementPagesTests
     {
         var row = Framework("CRA", "I.2(d)").Requirements[0];
 
-        Assert.Equal(("Not covered", "text-bg-danger"), (RequirementPages.Status(row), RequirementPages.StatusClass(row)));
+        Assert.Equal("Not covered", RequirementPages.Status(row));
+        Assert.Contains("text-bg-danger", RequirementPages.StatusClass(row).Split(' ')); // US-168: the shared colour
     }
 
     [Fact]
@@ -114,7 +115,8 @@ public class RequirementPagesTests
     {
         var row = Framework("CRA", "I.2(d)").Requirements[0] with { Links = [Link()] };
 
-        Assert.Equal(("Covered", "text-bg-success"), (RequirementPages.Status(row), RequirementPages.StatusClass(row)));
+        Assert.Equal("Covered", RequirementPages.Status(row));
+        Assert.Contains("text-bg-success", RequirementPages.StatusClass(row).Split(' ')); // US-168: the shared colour
     }
 
     [Fact]
@@ -122,7 +124,8 @@ public class RequirementPagesTests
     {
         var row = Framework("CRA", "I.2(d)").Requirements[0] with { Links = [Link(needsReview: true)] };
 
-        Assert.Equal(("Covered, needs review", "text-bg-warning"), (RequirementPages.Status(row), RequirementPages.StatusClass(row)));
+        Assert.Equal("Covered, needs review", RequirementPages.Status(row));
+        Assert.Contains("text-bg-warning", RequirementPages.StatusClass(row).Split(' ')); // US-168: the shared colour
     }
 
     [Fact]
@@ -130,6 +133,7 @@ public class RequirementPagesTests
     {
         var row = Framework("CRA", "I.2(d)").Requirements[0] with { Links = [Link()], NotApplicableReason = "No remote access" };
 
-        Assert.Equal(("Not applicable", "text-bg-secondary"), (RequirementPages.Status(row), RequirementPages.StatusClass(row)));
+        Assert.Equal("Not applicable", RequirementPages.Status(row));
+        Assert.Contains("text-bg-secondary", RequirementPages.StatusClass(row).Split(' ')); // US-168: the shared colour
     }
 }
