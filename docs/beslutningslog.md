@@ -2170,6 +2170,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Et nyt tema eller nye farver ud over orange. Det står uden for US-168.
   - At ændre test-id'erne. Komponenterne beholder sidernes id'er og klasser.
 
+### B143 – Følg ét krav til ende (US-200)
+
+- **Beslutning:**
+  - **Trinlisten:** kravets side viser de trin, kravet mangler, i rækkefølge. For hver koblet story: at linket er bekræftet (efter en ny version), at storyen er færdig, og at den har evidens. Derefter at testene består, og at kravet selv har evidens. Hvert trin står som "Done" eller "Open", med hvad der mangler.
+  - **Fremdrift:** siden siger fx "2 of 6 steps done". Når alle trin er færdige, står der "Requirement complete".
+  - **Næste trin:** det første åbne trin, som kan klares i trackeren, er mærket "Next step". Et link ud til GitHub eller Azure DevOps bliver kun næste trin, når intet andet er åbent.
+  - **Én primær knap:** "Add evidence" i kravets header forbliver den eneste primære knap (B142, US-153). Næste trin og "Next requirement" er markerede, men ikke primære.
+  - **Næste krav:** "Next requirement" følger rammens rækkefølge og det filter, siden blev åbnet med. Knappen fremhæves først, når kravet er færdigt.
+  - **Krav, der ikke gælder,** har ingen trin. I organisationsområdet er evidensen det eneste trin.
+- **Begrundelse:** Med flere stories, tests og evidens på ét krav skal det være tydeligt, at alt kan gøres færdigt, før man går videre. Det mindsker risikoen for huller i dokumentationen (ISO/IEC 27001 A.8.25).
+- **Fravalgt:**
+  - At gemme trinnene. De beregnes af det, der allerede findes.
+  - At lukke en story fra trackeren. Storyen lukkes i sin kilde.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

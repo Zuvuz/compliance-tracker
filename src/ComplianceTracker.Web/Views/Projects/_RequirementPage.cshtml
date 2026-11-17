@@ -200,6 +200,61 @@
         </div>
     </header>
 
+    @{
+        // US-200: every step this requirement needs, and the next one as the main action
+        var steps = RequirementPath.Steps(row, Model.StoryEvidence, Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Evidence })!);
+        var complete = RequirementPath.Complete(steps);
+        // R4: the main action is the next open step the member can do here; a link out (to GitHub) only when nothing else is open
+        var firstOpen = steps.FirstOrDefault(s => !s.Done && s.HasAction && !(s.Href?.StartsWith("http") ?? false)) ?? steps.FirstOrDefault(s => !s.Done && s.HasAction);
+        var next = Model.NextRequirement;
+        var nextHref = next is null ? null : Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Compliance, sub = sub, req = next.Requirement.Code, show = string.IsNullOrEmpty(Model.ShowFilter) ? null : Model.ShowFilter });
+    }
+    @if (steps.Count > 0)
+    {
+        <section class="card mb-3 requirement-path" id="requirement-path" aria-label="Steps to meet the requirement">
+            <div class="card-body py-2">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+                    <div>
+                        <span class="fw-semibold" id="path-progress">@RequirementPath.Progress(steps)</span>
+                        @if (complete)
+                        {
+                            <span class="ms-2" id="requirement-complete"><status-badge status="Done" text="Requirement complete" /></span>
+                        }
+                    </div>
+                    @if (next is not null && nextHref is not null)
+                    {
+                        @* R4, R5: "Next requirement" stands out only when every step is done; "Add evidence" in the header stays the one primary button (US-153) *@
+                        <a class="btn btn-sm @(complete ? "btn-outline-primary fw-semibold" : "btn-outline-secondary")" id="next-requirement" data-ready="@(complete ? "true" : "false")" href="@nextHref">Next requirement: @next.Requirement.Code</a>
+                    }
+                </div>
+                <ol class="list-unstyled mb-0 path-steps">
+                    @foreach (var step in steps)
+                    {
+                        <li class="path-step d-flex flex-wrap align-items-center gap-2 py-1 border-top" data-done="@(step.Done ? "true" : "false")">
+                            <status-badge status="@(step.Done ? "Done" : "Missing")" text="@(step.Done ? "Done" : "Open")" />
+                            <span class="path-step-text">@step.Text</span>
+                            @if (!step.Done && step.Missing is { } missing)
+                            {
+                                <span class="small text-muted path-step-missing">@missing</span>
+                            }
+                            @if (!step.Done && step.HasAction && !project.IsClosed)
+                            {
+                                var main = ReferenceEquals(step, firstOpen);
+                                if (main)
+                                {
+                                    <span class="badge text-bg-primary ms-auto path-next-label">Next step</span>
+                                }
+                                <a class="btn btn-sm @(main ? "btn-outline-primary fw-semibold" : "btn-outline-secondary ms-auto") path-step-action" href="@step.Href" data-next="@(main ? "true" : null)"
+                                   data-dialog-open="@step.DialogOpen" target="@(step.Href is not null && step.Href.StartsWith("http") ? "_blank" : null)"
+                                   rel="@(step.Href is not null && step.Href.StartsWith("http") ? "noopener noreferrer" : null)">@step.ActionText</a>
+                            }
+                        </li>
+                    }
+                </ol>
+            </div>
+        </section>
+    }
+
     @if (TempData["NewIssueAddress"] is string newIssue)
     {
         @* US-106 R4: GitHub's "new issue" page, filled in from the accepted draft *@
@@ -590,7 +645,7 @@
         </section>
     </div>
 
-    <section class="mt-3" aria-label="Waiting for your decision">
+    <section class="mt-3" aria-label="Waiting for your decision" id="waiting-for-decision">
                 @if (row.FailingTests > 0)
                 {
                     @* US-058 *@
