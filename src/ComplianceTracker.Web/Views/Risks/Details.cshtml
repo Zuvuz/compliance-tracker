@@ -41,10 +41,10 @@
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
 
 <dl class="row">
-    <dt class="col-sm-3">Likelihood × impact</dt>
+    <dt class="col-sm-3"><term name="Risk level">Likelihood × impact</term></dt>
     <dd class="col-sm-9">@risk.Likelihood × @risk.Impact = @risk.Score (@risk.Level)</dd>
     @* US-165 R1, R2: the level before the measures never changes by itself; the residual is set by a person *@
-    <dt class="col-sm-3">Residual risk</dt>
+    <dt class="col-sm-3"><term name="Residual risk">Residual risk</term></dt>
     <dd class="col-sm-9" id="risk-residual">@risk.ResidualText@(risk.ResidualToReview ? " – to review: measures were removed after it was set" : "")
         @if (editable)
         {
@@ -78,7 +78,7 @@
     </dd>
     <dt class="col-sm-3">Owner</dt>
     <dd class="col-sm-9" id="risk-owner">@Model.OwnerOf(risk.OwnerId)</dd>
-    <dt class="col-sm-3">Treatment</dt>
+    <dt class="col-sm-3"><term name="Treatment">Treatment</term></dt>
     <dd class="col-sm-9">@risk.Treatment</dd>
     <dt class="col-sm-3">Status</dt>
     <dd class="col-sm-9"><span id="risk-status">@risk.DisplayStatus</span>
@@ -101,7 +101,7 @@
 </dl>
 
 <section class="mb-4">
-    <h2 class="h5">Measures</h2>
+    <h2 class="h5"><term name="Measure">Measures</term></h2>
     @if (editable && Model.Compliance is { } compliance)
     {
         @* #52: adding comes before the list. R5: a requirement of the project, or one of its user stories *@
