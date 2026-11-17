@@ -84,7 +84,12 @@
 
 @if (Model.Documents.Count == 0)
 {
-    <p class="text-muted" id="no-documents">No documents yet.</p>
+    @* US-172 *@
+    <empty-state id="no-documents" title="No documents yet"
+                 why="Policies, procedures and risk tables are kept here once and count as evidence in every project that follows the requirement they are linked to."
+                 can-act="@Model.CanManage" cannot-text="Your role can only read them. A member who manages documents uploads them.">
+        <span class="small text-muted">Add the first one with "Add a document" above.</span>
+    </empty-state>
 }
 
 <ul class="list-unstyled" id="organisation-documents">

@@ -134,7 +134,16 @@
 
     @if (scans is null || scans.LatestPerTool.Count == 0)
     {
-        <p class="text-muted" id="no-scans">No scans yet</p>
+        @* US-172: what belongs here, why, and the first step *@
+        <empty-state id="no-scans" title="No scans yet"
+                     why="Scan results (SARIF) show the product's known vulnerabilities, which the CRA (Annex I, Part II) asks you to find and fix."
+                     can-act="@canChange" cannot-text="Your role can only read the scans. A member who links work uploads them.">
+            <a class="btn btn-primary btn-sm" href="#upload-scan">Upload a scan</a>
+            @if (project.GitHub is { IsProject: false })
+            {
+                <button type="submit" form="fetch-from-github" class="btn btn-outline-primary btn-sm">Fetch from GitHub</button>
+            }
+        </empty-state>
     }
     else
     {
@@ -294,7 +303,12 @@
 
         @if (sboms is null || !sboms.HasAny)
         {
-            <p class="text-muted small" id="no-sbom">No SBOM yet</p>
+            @* US-172 *@
+            <empty-state id="no-sbom" title="No SBOM yet"
+                         why="The CRA (Annex I, Part II (1)) asks for a software bill of materials of each version of the product."
+                         can-act="@canChange" cannot-text="Your role can only read it. A member who links work uploads it, or a pipeline sends it.">
+                <a class="btn btn-primary btn-sm" href="#upload-sbom">Upload an SBOM</a>
+            </empty-state>
         }
         else
         {

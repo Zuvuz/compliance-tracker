@@ -79,7 +79,12 @@
 
         @if (Model.SecurityEvents.Count == 0)
         {
-            <p class="text-muted" id="no-security-events">No security events recorded.</p>
+            @* US-172 *@
+            <empty-state id="no-security-events" title="No security events recorded"
+                         why="An actively exploited vulnerability or a severe incident must be reported within 24 hours (CRA Art. 14); record it here to follow the deadlines."
+                         can-act="@canChange" cannot-text="Your role can only read them. A member who manages risks records them.">
+                <a class="btn btn-outline-primary btn-sm" href="#record-security-event">Record an event</a>
+            </empty-state>
         }
 
         @foreach (var securityEvent in Model.SecurityEvents)
