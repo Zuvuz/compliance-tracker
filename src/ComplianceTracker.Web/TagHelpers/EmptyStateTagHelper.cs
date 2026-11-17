@@ -26,19 +26,20 @@ namespace ComplianceTracker.Web.TagHelpers
             output.Attributes.SetAttribute("class", "empty-state border rounded p-3 mb-3" + extra);
 
             var html = new System.Text.StringBuilder();
-            html.Append("<p class=\"fw-semibold mb-1 empty-state-title\">").Append(e.Encode(Title)).Append("</p>");
+            // Each part on its own line, so the page's text reads as separate lines
+            html.Append("<p class=\"fw-semibold mb-1 empty-state-title\">").Append(e.Encode(Title)).Append("</p>").Append('\n');
             if (!string.IsNullOrWhiteSpace(Why))
             {
-                html.Append("<p class=\"small text-muted mb-2 empty-state-why\">").Append(e.Encode(Why)).Append("</p>");
+                html.Append("<p class=\"small text-muted mb-2 empty-state-why\">").Append(e.Encode(Why)).Append("</p>").Append('\n');
             }
 
             if (CanAct && !string.IsNullOrWhiteSpace(actions))
             {
-                html.Append("<div class=\"d-flex flex-wrap gap-2 empty-state-actions\">").Append(actions).Append("</div>");
+                html.Append("<div class=\"d-flex flex-wrap gap-2 empty-state-actions\">").Append(actions).Append("</div>").Append('\n');
             }
             else if (!CanAct && !string.IsNullOrWhiteSpace(CannotText))
             {
-                html.Append("<p class=\"small text-muted mb-0 empty-state-cannot\">").Append(e.Encode(CannotText)).Append("</p>");
+                html.Append("<p class=\"small text-muted mb-0 empty-state-cannot\">").Append(e.Encode(CannotText)).Append("</p>").Append('\n');
             }
 
             output.Content.SetHtmlContent(html.ToString());
