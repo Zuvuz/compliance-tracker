@@ -80,9 +80,14 @@
         var pageImplements = pageFramework.Framework.ImplementsFrameworkId is { } pageImplementsId
             ? compliance.Frameworks.FirstOrDefault(f => f.Framework.Id == pageImplementsId)?.Framework.ShortName ?? "the directive"
             : null;
-        <partial name="_RequirementPage" model="new RequirementRowModel(project, pageFramework, pageRow, Model.Sub, null, canLink, canDecide,
+        var pageFilter = Model.ComplianceFilter;
+        <partial name="_RequirementPage" model="new RequirementRowModel(project, pageFramework, pageRow, Model.Sub, pageFilter == ComplianceFilters.All ? null : pageFilter, canLink, canDecide,
             pageStories, Model.EvidenceTab?.Evidence ?? [], Model.AllRisks.Where(r => r.Status != ComplianceTracker.Domain.Risks.RiskStatus.Closed).ToList(),
-            NameOf, Model.Language, pageTranslations, 0, false, true, pageImplements)" />
+            NameOf, Model.Language, pageTranslations, 0, false, true, pageImplements)
+            {
+                StoryEvidence = compliance.StoryEvidence, // US-200
+                NextRequirement = RequirementPath.Next(pageFramework, pageRow.Requirement.Id, pageFilter)
+            }" />
         return;
     }
 

@@ -25,13 +25,21 @@ namespace ComplianceTracker.Web.Models
         bool Open,
         string? ImplementsName)
     {
+        // US-200: the evidence linked straight to the stories (US-146), for the step list
+        public IReadOnlyList<StoryEvidence> StoryEvidence { get; init; } = [];
+
+        // US-200 R6: the next requirement in the order and filter the user came with; null at the end
+        public RequirementCoverage? NextRequirement { get; init; }
+
+        // US-200 R6: the requirement's page keeps the filter it was opened with, so "Next requirement" follows it
         public string Address(Microsoft.AspNetCore.Mvc.IUrlHelper url)
             => Microsoft.AspNetCore.Mvc.UrlHelperExtensions.Action(url, "Details", "Projects", new
             {
                 id = Project.Id,
                 tab = ProjectTabs.Compliance,
                 sub = FrameworkNames.Slug(Framework.Framework.Name),
-                req = Row.Requirement.Code
+                req = Row.Requirement.Code,
+                show = string.IsNullOrEmpty(ShowFilter) ? null : ShowFilter
             })!;
     }
 }
