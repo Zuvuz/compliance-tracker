@@ -88,7 +88,27 @@ namespace ComplianceTracker.Application.Compliance
         }
     }
 
-    public record EvidenceTab(IReadOnlyList<EvidenceRow> Evidence, IReadOnlyList<LinkableRequirement> Linkable);
+    public record EvidenceTab(IReadOnlyList<EvidenceRow> Evidence, IReadOnlyList<LinkableRequirement> Linkable)
+    {
+        // US-201 R1, R3: the evidence by type, in the fixed order; a group with none is left out
+        public IReadOnlyList<EvidenceGroupView> Groups => EvidenceGroupView.Of(Evidence);
+    }
+
+    // US-201 R3, R4: a group's evidence, and how many wait for a decision or have expired (then it starts open)
+    public record EvidenceGroupView(EvidenceGroup Group, IReadOnlyList<EvidenceRow> Rows)
+    {
+        public string Name => EvidenceGroups.NameOf(Group);
+        public string Slug => EvidenceGroups.SlugOf(Group);
+        public int Waiting => Rows.Count(r => r.Suggestions.Count > 0 || r.StorySuggestions.Count > 0);
+        public int Expired => Rows.Count(r => r.IsExpired);
+        public bool NeedsAttention => Waiting > 0 || Expired > 0;
+
+        public static IReadOnlyList<EvidenceGroupView> Of(IEnumerable<EvidenceRow> rows)
+            => rows.GroupBy(r => r.Evidence.Group)
+                .OrderBy(g => g.Key)
+                .Select(g => new EvidenceGroupView(g.Key, g.ToList()))
+                .ToList();
+    }
 
     public record EvidenceRow(Evidence Evidence, bool IsExpired, IReadOnlyList<LinkedRequirement> Links, IReadOnlyList<SuggestedRequirement> Suggestions)
     {

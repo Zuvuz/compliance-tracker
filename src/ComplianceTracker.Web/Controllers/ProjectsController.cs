@@ -1109,7 +1109,7 @@ namespace ComplianceTracker.Web.Controllers
             var (sbom, content) = await sboms.FileAsync(projectId, sbomId, cancellationToken)
                 ?? throw new Domain.Common.DomainException("SBOM not found");
             await _compliance.AddEvidenceFileAsync(projectId, requirementId, $"SBOM {sbom.ProductVersion} ({sbom.Format})",
-                sbom.FileName, content, null, cancellationToken);
+                sbom.FileName, content, null, cancellationToken, Domain.Mappings.EvidenceSource.Sbom);
             TempData["ScanImported"] = $"SBOM {sbom.ProductVersion} added as evidence";
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans, sbom = sbom.ProductVersion });
         }
@@ -1125,7 +1125,7 @@ namespace ComplianceTracker.Web.Controllers
                 ?? throw new Domain.Common.DomainException("Scan not found");
             var fileName = Path.ChangeExtension(scan.FileName, ".sarif");
             await _compliance.AddEvidenceFileAsync(projectId, requirementId, $"{scan.Tool} scan {scan.ScannedAt.ToLocalTime():dd-MM-yyyy}",
-                fileName, content, null, cancellationToken);
+                fileName, content, null, cancellationToken, Domain.Mappings.EvidenceSource.Scan);
             TempData["ScanImported"] = $"{scan.Tool} scan added as evidence";
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Scans });
         }

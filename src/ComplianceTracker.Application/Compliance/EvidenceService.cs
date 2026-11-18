@@ -387,7 +387,7 @@ namespace ComplianceTracker.Application.Compliance
             }
 
             var file = EvidenceFile.Create(snapshot.FileName, content);
-            var evidence = Evidence.ForFile(project.Id, snapshot.Title, file, null, user.Id, user.Role, Now);
+            var evidence = Evidence.ForFile(project.Id, snapshot.Title, file, null, user.Id, user.Role, Now, EvidenceSource.Report);
             await _evidence.AddAsync(evidence, file.Content, cancellationToken);
             await _evidence.AddLinkAsync(EvidenceLink.Create(project.Id, evidence.Id, requirement.Id, user.Id, user.Role, Now), cancellationToken);
             await _log.LogAsync(ActivityAction.EvidenceAdded, project.Id, $"{evidence.Title} (locked report, SHA-256 {snapshot.Sha256})", cancellationToken);
