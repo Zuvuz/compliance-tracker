@@ -49,25 +49,6 @@ namespace ComplianceTracker.Application.WorkItems
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
-        // R3: replaces the token; checked with Azure DevOps first
-        public async Task SetAzureDevOpsTokenAsync(Guid projectId, string? token, CancellationToken cancellationToken = default)
-        {
-            var (organization, _) = await _member.RequireAsync(Permission.EditProjects, cancellationToken);
-            var project = await _projects.GetAsync(organization.Id, projectId, cancellationToken)
-                ?? throw new DomainException("Project not found");
-            var link = project.AzureDevOps ?? throw new DomainException("Link the project to Azure DevOps first");
-            var value = (token ?? "").Trim();
-            if (value.Length == 0)
-            {
-                throw new DomainException("Enter a token");
-            }
-
-            await CheckAzureTokenAsync(link.Organization, link.Project, link.AreaPath, value, cancellationToken);
-            link.SetToken(_secrets.Protect(value), Now);
-            await _log.LogAsync(ActivityAction.AccessTokenChanged, project.Id, "Azure DevOps token set", cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-
         // R3: removes the link and its token; the work items read before are kept
         public async Task UnlinkAzureDevOpsAsync(Guid projectId, CancellationToken cancellationToken = default)
         {

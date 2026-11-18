@@ -64,6 +64,11 @@ namespace ComplianceTracker.Web.Models
         public static string ClassOf(string? status)
             => $"badge {BootstrapClass(ToneOf(status))} ct-status ct-status-{Slug(status)}";
 
+        // #52: the colour only, for a table cell or a block: "badge" would make a td an inline pill
+        // e.g. "High" -> "ct-bg-attention ct-status-high"
+        public static string CellClassOf(string? status)
+            => $"{BootstrapClass(ToneOf(status))} ct-status-{Slug(status)}";
+
         public static string BootstrapClass(Tone tone) => tone switch
         {
             Tone.Good => "text-bg-success",

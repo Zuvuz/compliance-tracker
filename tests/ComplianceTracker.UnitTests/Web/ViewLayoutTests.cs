@@ -47,6 +47,20 @@ public partial class ViewLayoutTests
         return problems;
     }
 
+    [GeneratedRegex("""<(td|th|tr|table|div|li|ul)\b[^>]*class="[^"]*@(StatusBadges\.ClassOf|Badge)\(""")]
+    private static partial Regex BadgeOnABlock();
+
+    // #52: the risk matrix's cells had the badge class and were shown as pills in one column
+    [Fact]
+    public void No_table_cell_or_block_in_the_views_gets_the_badge_class()
+    {
+        var problems = Directory.GetFiles(Path.Combine(Web, "Views"), "*.cshtml", SearchOption.AllDirectories)
+            .SelectMany(file => BadgeOnABlock().Matches(File.ReadAllText(file)).Select(m => $"{Path.GetRelativePath(Web, file)}: <{m.Groups[1].Value}>"))
+            .ToList();
+
+        Assert.True(problems.Count == 0, "Use StatusBadges.CellClassOf for these:\n" + string.Join("\n", problems));
+    }
+
     [Fact]
     public void Every_row_with_a_select_in_the_views_can_wrap()
     {

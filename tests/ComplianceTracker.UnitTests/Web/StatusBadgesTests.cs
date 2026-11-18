@@ -7,6 +7,19 @@ namespace ComplianceTracker.UnitTests.Web;
 // US-168: edge cases of the shared status colours and the two components. Arrange / Act / Assert.
 public class StatusBadgesTests
 {
+    // #52: a table cell gets the colour of the status, never the badge
+    [Theory]
+    [InlineData("High", "ct-bg-attention ct-status-high")]
+    [InlineData("Critical", "text-bg-danger ct-status-critical")]
+    [InlineData(null, "text-bg-light border ct-status-none")]
+    public void A_cell_gets_the_colour_without_the_badge(string? status, string expected)
+    {
+        var css = StatusBadges.CellClassOf(status);
+
+        Assert.Equal(expected, css);
+        Assert.DoesNotContain("badge", css.Split(' '));
+    }
+
     [Theory]
     [InlineData("Covered", "text-bg-success")]
     [InlineData("Covered, needs review", "text-bg-warning")]

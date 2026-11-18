@@ -113,7 +113,7 @@
                                 var count = open.Count(r => r.Likelihood == likelihood && r.Impact == impact);
                                 var chosen = Model.RiskCell is { } c && c.Likelihood == likelihood && c.Impact == impact;
                                 @* US-147 R2: a cell filters the list; the chosen one again clears it *@
-                                <td class="@Badge(Risk.LevelOf(likelihood * impact)) bg-opacity-50 @(chosen ? "risk-cell-chosen" : "")" data-likelihood="@likelihood" data-impact="@impact">
+                                <td class="@StatusBadges.CellClassOf(Risk.LevelOf(likelihood * impact).ToString()) bg-opacity-50 @(chosen ? "risk-cell-chosen" : "")" data-likelihood="@likelihood" data-impact="@impact">
                                     <a class="risk-cell d-block text-reset text-decoration-none" aria-current="@(chosen ? "true" : null)"
                                        aria-label="Likelihood @likelihood, impact @impact: @count open"
                                        href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks, status = Model.RiskStatusFilter, due = Model.OnlyReviewDue ? "1" : null, cell = chosen ? null : RiskCells.Format(likelihood, impact) })">@(count == 0 ? "\u00a0" : count)</a>
