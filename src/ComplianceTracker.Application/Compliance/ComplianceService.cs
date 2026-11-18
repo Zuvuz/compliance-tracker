@@ -237,14 +237,15 @@ namespace ComplianceTracker.Application.Compliance
                 cancellationToken);
 
         // US-057 R2: a file as evidence; EvidenceFile checks the size, type and name
+        // US-201: source says where the file came from, e.g. an SBOM or a scan used as evidence
         public Task AddEvidenceFileAsync(
             Guid projectId, Guid requirementId, string title, string fileName, byte[] content, DateOnly? validUntil,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default, EvidenceSource source = EvidenceSource.Uploaded)
             => AddEvidenceAsync(projectId, requirementId,
                 (userId, role, at) =>
                 {
                     var file = EvidenceFile.Create(fileName, content);
-                    return (Evidence.ForFile(projectId, title, file, validUntil, userId, role, at), file.Content);
+                    return (Evidence.ForFile(projectId, title, file, validUntil, userId, role, at, source), file.Content);
                 },
                 cancellationToken);
 

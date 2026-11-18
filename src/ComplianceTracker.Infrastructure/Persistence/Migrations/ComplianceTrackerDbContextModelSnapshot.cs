@@ -3477,6 +3477,13 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<long?>("SizeInBytes")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Uploaded");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)

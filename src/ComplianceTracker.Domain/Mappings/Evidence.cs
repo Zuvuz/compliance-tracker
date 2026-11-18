@@ -42,6 +42,11 @@ namespace ComplianceTracker.Domain.Mappings
 
         public bool IsFromOrganisation => OrganisationDocumentId is not null;
 
+        // US-201: where it came from, for its group on the Evidence tab
+        public EvidenceSource Source { get; private set; } = EvidenceSource.Uploaded;
+
+        public EvidenceGroup Group => EvidenceGroups.Of(this);
+
         public bool IsActive => RemovedAt is null;
 
         public bool IsFile => FileName is not null;
@@ -116,9 +121,11 @@ namespace ComplianceTracker.Domain.Mappings
 
         // R2: the file has already been checked by EvidenceFile
         public static Evidence ForFile(
-            Guid projectId, string title, EvidenceFile file, DateOnly? validUntil, Guid addedById, UserRole? role, DateTime at)
+            Guid projectId, string title, EvidenceFile file, DateOnly? validUntil, Guid addedById, UserRole? role, DateTime at,
+            EvidenceSource source = EvidenceSource.Uploaded)
         {
             var evidence = New(projectId, title, validUntil, addedById, role, at);
+            evidence.Source = source;
             evidence.FileName = file.FileName;
             evidence.ContentType = file.ContentType;
             evidence.SizeInBytes = file.Content.Length;

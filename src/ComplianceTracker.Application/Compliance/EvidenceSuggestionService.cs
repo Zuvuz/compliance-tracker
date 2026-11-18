@@ -298,7 +298,7 @@ namespace ComplianceTracker.Application.Compliance
             else
             {
                 var file = EvidenceFile.Create($"test-run-{suggestion.CreatedAt:yyyy-MM-dd}-{requirement.Code}.md", TestRunReport(suggestion, requirement));
-                evidence = Evidence.ForFile(project.Id, suggestion.Title, file, null, user.Id, user.Role, Now);
+                evidence = Evidence.ForFile(project.Id, suggestion.Title, file, null, user.Id, user.Role, Now, EvidenceSource.TestResults);
                 content = file.Content;
             }
 

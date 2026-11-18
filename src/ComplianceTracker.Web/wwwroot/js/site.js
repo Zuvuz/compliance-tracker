@@ -174,6 +174,23 @@ document.querySelectorAll("[data-percent]").forEach(bar => {
     });
 })();
 
+// US-201 R4, R5: a group on the Evidence tab remembers whether the member opened or folded it, per project, in this browser
+// only. A group with something waiting or expired (data-attention="true") always starts open. Without JavaScript the
+// server's choice stands: open when it needs attention, folded otherwise.
+(() => {
+    const read = key => { try { return localStorage.getItem(key); } catch { return null; } };
+    const write = (key, value) => { try { localStorage.setItem(key, value); } catch { /* private window */ } };
+
+    document.querySelectorAll("details[data-remember-open]").forEach(group => {
+        const key = `ct-open:${group.dataset.rememberOpen}`;
+        const saved = read(key);
+        if (group.dataset.attention !== "true" && saved !== null) {
+            group.open = saved === "1";
+        }
+        group.addEventListener("toggle", () => write(key, group.open ? "1" : "0"));
+    });
+})();
+
 // US-175: the member's choices are remembered in this browser only (nothing on the server), as #52 does for folding.
 // R1: opening a project from elsewhere goes to the member's last tab of it. R2: a page's filters are remembered; an address
 // with filters of its own always wins. R3: "Reset view" forgets them. R4: a remembered value that is no longer valid is

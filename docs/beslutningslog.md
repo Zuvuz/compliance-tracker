@@ -2288,6 +2288,17 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - En ny tabel med risikoens historik. Aktivitetsloggen er allerede append-only og kædet (US-091), og en ny tabel ville ikke have de ændringer, der er sket indtil nu.
   - At give logposten et id for risikoen. Det ville ændre loggens format og fingeraftryk; titlen er nok, fordi to risici i samme projekt ikke kan have samme titel ved import, og omdøbninger følges.
+### B153 – Evidens grupperes efter type i grupper, der kan foldes (US-201)
+
+- **Beslutning:**
+  - **Grupperne** på Evidence-fanen er Files, Links, Test results, SBOMs, Scans, Reports, Diagrams og Organisation documents, i den rækkefølge og med antal. Tomme grupper vises ikke.
+  - **Hver evidens er i én gruppe.** Hvor den kom fra, vinder over hvad den er: et dokument fra organisationen, testresultater, en SBOM, en scanning og en låst rapport har hver deres gruppe; ellers et diagram, en fil eller et link.
+  - **Evidens får en kilde** (`Evidence.Source`), som sættes, når den laves. Migrationen mærker den eksisterende evidens: testresultater via det godkendte forslag, SBOM'er, scanninger og rapporter via filens SHA-256 i samme projekt eller den titel, appen gav dem.
+  - **Foldet eller åben:** en gruppe starter foldet, medmindre noget i den venter på en beslutning eller er udløbet. Browseren husker, hvad medlemmet har åbnet eller foldet, pr. projekt; uden JavaScript gælder serverens valg.
+- **Begrundelse:** En lang liste med evidens er svær at overskue i daglig brug og i en demo. ISO 27001 7.5.3 kræver, at dokumenteret information er til at finde.
+- **Fravalgt:**
+  - Egne kategorier, som brugeren navngiver. Det kræver vedligehold, og typen er nok til at finde tingene.
+  - Gruppering efter ramme. En evidens, der beviser krav i flere rammer, ville stå flere steder.
 
 ## Åbne spørgsmål til klassediagrammet
 

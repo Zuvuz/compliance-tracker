@@ -7,7 +7,8 @@
    form .remove-project-evidence, .evidence-suggestion (data-code) with .suggestion-score, .ai-generated,
    .suggestion-rationale, forms .approve-evidence-suggestion and .reject-evidence-suggestion (reason, comment),
    and form .more-evidence-suggestions. #52: .fold-toggle[data-fold-target], .fold-part[data-fold-key], .fold-summary,
-   and data-attention on the card. *@
+   and data-attention on the card. US-201: details.evidence-group (data-group, data-attention, open) with .evidence-group-name,
+   .evidence-group-count, .evidence-group-waiting and .evidence-group-expired. *@
 @using ComplianceTracker.Application.Compliance
 @inject ComplianceTracker.Application.Ai.IAiLimits AiLimits
 @model ProjectDetailsViewModel
@@ -39,12 +40,8 @@
         }
         else
         {
-            <div id="evidence-list" class="d-flex flex-column gap-3">
-                @if (single is not null)
-                {
-                    <p class="small mb-0"><a id="back-to-evidence" asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Evidence" asp-route-sub="">‹ All evidence</a></p>
-                }
-                @foreach (var row in tab.Evidence.Where(r => single is null || r.Evidence.Id == single))
+            // US-201: one piece of evidence as a card, in its group or on its own address
+                async Task Card(EvidenceRow row)
                 {
                     var evidence = row.Evidence;
                     var foldKey = $"evidence:{evidence.Id}";
@@ -390,6 +387,43 @@
                             </div>
                         </div>
                     </div>
+                }
+            <div id="evidence-list" class="d-flex flex-column gap-3">
+                @if (single is not null)
+                {
+                    <p class="small mb-0"><a id="back-to-evidence" asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Evidence" asp-route-sub="">‹ All evidence</a></p>
+                    foreach (var row in tab.Evidence.Where(r => r.Evidence.Id == single))
+                    {
+                        await Card(row);
+                    }
+                }
+                else
+                {
+                    @* US-201 R1–R5: one group per type, in a fixed order, with its count. A group starts folded unless something in it
+                       waits for a decision or has expired; the browser remembers what the member opened or folded (site.js). *@
+                    foreach (var group in tab.Groups)
+                    {
+                        <details class="evidence-group" id="evidence-group-@group.Slug" data-group="@group.Slug"
+                                 data-attention="@(group.NeedsAttention ? "true" : "false")" data-remember-open="evidence-group:@project.Id:@group.Slug" open="@group.NeedsAttention">
+                            <summary class="evidence-group-summary fw-semibold mb-2">
+                                <span class="evidence-group-name">@group.Name</span> <span class="evidence-group-count">(@group.Rows.Count)</span>
+                                @if (group.Waiting > 0)
+                                {
+                                    <span class="evidence-group-waiting small fw-normal text-muted">· @group.Waiting waiting</span>
+                                }
+                                @if (group.Expired > 0)
+                                {
+                                    <span class="evidence-group-expired small fw-normal text-muted">· @group.Expired expired</span>
+                                }
+                            </summary>
+                            <div class="d-flex flex-column gap-3 mb-3">
+                                @foreach (var row in group.Rows)
+                                {
+                                    await Card(row);
+                                }
+                            </div>
+                        </details>
+                    }
                 }
             </div>
         }
