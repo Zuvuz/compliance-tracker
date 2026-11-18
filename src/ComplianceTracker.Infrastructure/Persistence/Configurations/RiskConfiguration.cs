@@ -146,6 +146,8 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.HasOne<User>().WithMany().HasForeignKey(a => a.OwnerId).OnDelete(DeleteBehavior.Restrict);
             builder.HasOne<User>().WithMany().HasForeignKey(a => a.CreatedById).OnDelete(DeleteBehavior.Restrict);
             builder.HasOne<User>().WithMany().HasForeignKey(a => a.DoneById).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+            // US-202: the measure the action carries out; a measure with actions cannot be removed (Risk.RemoveMeasure)
+            builder.HasOne<RiskMeasure>().WithMany().HasForeignKey(a => a.MeasureId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
 
             builder.HasMany(a => a.Links).WithOne().HasForeignKey(l => l.ActionId).OnDelete(DeleteBehavior.Cascade);
             builder.Navigation(a => a.Links).HasField("_links").UsePropertyAccessMode(PropertyAccessMode.Field).AutoInclude();

@@ -18,6 +18,9 @@ namespace ComplianceTracker.Domain.Risks
         public DateOnly? DueOn { get; private set; }
         public RiskActionStatus Status { get; private set; } = RiskActionStatus.Planned;
 
+        // US-202 R2, R3: the measure (a requirement or a user story of the risk) the action carries out; null under "Other actions"
+        public Guid? MeasureId { get; private set; }
+
         public Guid CreatedById { get; private set; }
         public DateTime CreatedAt { get; private set; }
         public Guid? DoneById { get; private set; }
@@ -33,8 +36,9 @@ namespace ComplianceTracker.Domain.Risks
         // For EF Core only
         private RiskAction() { }
 
-        internal RiskAction(Guid riskId, string title, Guid ownerId, DateOnly? dueOn, Guid userId, DateTime at)
+        internal RiskAction(Guid riskId, string title, Guid ownerId, DateOnly? dueOn, Guid userId, DateTime at, Guid? measureId = null)
         {
+            MeasureId = measureId;
             var text = (title ?? "").Trim();
             if (text.Length == 0)
             {
@@ -53,6 +57,9 @@ namespace ComplianceTracker.Domain.Risks
             CreatedById = userId;
             CreatedAt = at;
         }
+
+        // US-202 R3: under another of the risk's measures, or under "Other actions"; Risk checks the measure
+        internal void MoveTo(Guid? measureId) => MeasureId = measureId;
 
         // R2: a work item or a piece of evidence of the project; the caller checks that it belongs to the project
         internal RiskActionLink Link(Guid? workItemId, Guid? evidenceId)

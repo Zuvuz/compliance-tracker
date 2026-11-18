@@ -150,6 +150,47 @@ namespace ComplianceTracker.Web.Models
         public string EvidenceTitle(Guid? evidenceId)
             => ProjectEvidence.FirstOrDefault(e => e.Id == evidenceId)?.Title ?? "(evidence removed)";
 
+        // US-202 R7: why a risk that is not reduced needs no actions
+        public static string TreatedAs(RiskTreatment treatment) => treatment switch
+        {
+            RiskTreatment.Accept => "accepted",
+            RiskTreatment.Avoid => "avoided",
+            RiskTreatment.Transfer => "transferred",
+            _ => "reduced"
+        };
+
+        // US-202 R4: up to five applicable requirements, not yet measures, that share the most words with the risk's title and
+        // description, best first. Short and common words do not count.
+        public IReadOnlyList<Application.Compliance.RequirementCoverage> RelevantRequirements(int max = 5)
+        {
+            var words = Words($"{Risk.Title} {Risk.Description}");
+            if (Compliance is null || words.Count == 0)
+            {
+                return [];
+            }
+
+            return Compliance.Frameworks.SelectMany(f => f.Requirements)
+                .Where(r => r.IsApplicable && Risk.Measures.All(m => m.RequirementId != r.Requirement.Id))
+                .Select(r => (Row: r, Score: Words($"{r.Requirement.Title} {r.Requirement.Description}").Count(words.Contains)))
+                .Where(x => x.Score > 0)
+                .OrderByDescending(x => x.Score).ThenBy(x => x.Row.Requirement.Code, StringComparer.Ordinal)
+                .Take(max)
+                .Select(x => x.Row)
+                .ToList();
+        }
+
+        private static readonly HashSet<string> CommonWords = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "that", "this", "with", "from", "have", "been", "into", "their", "they", "them", "when", "which", "where", "shall",
+            "should", "could", "would", "about", "other", "there", "these", "those", "than", "then", "also", "such", "only",
+            "must", "will", "each", "every", "after", "before", "under", "over", "more", "most", "some", "user", "users", "system"
+        };
+
+        private static HashSet<string> Words(string text)
+            => new(System.Text.RegularExpressions.Regex.Split(text.ToLowerInvariant(), "[^a-z0-9]+")
+                .Where(w => w.Length >= 4 && !CommonWords.Contains(w))
+                .Select(w => w.Length > 5 && w.EndsWith('s') ? w[..^1] : w), StringComparer.Ordinal);
+
         public static string StatusText(RiskActionStatus status) => status switch
         {
             RiskActionStatus.InProgress => "In progress",

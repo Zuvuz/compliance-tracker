@@ -243,18 +243,30 @@ namespace ComplianceTracker.Application.Risks
         // ---------------------------------------------------------- Treatment actions (US-111)
 
         // R1: an action with an owner from the organisation and an optional due date
+        // US-202 R3: measureId puts it under one of the risk's measures; null under "Other actions"
         public async Task<RiskAction> AddActionAsync(
-            Guid projectId, Guid riskId, string title, Guid ownerId, DateOnly? dueOn, CancellationToken cancellationToken = default)
+            Guid projectId, Guid riskId, string title, Guid ownerId, DateOnly? dueOn, CancellationToken cancellationToken = default,
+            Guid? measureId = null)
         {
             var (organization, userId, project, risk) = await RiskAsync(projectId, riskId, cancellationToken);
             EnsureMember(organization, ownerId);
 
-            var action = risk.AddAction(title, ownerId, dueOn, userId, Now);
+            var action = risk.AddAction(title, ownerId, dueOn, userId, Now, measureId);
             var owner = organization.Users.First(u => u.Id == ownerId).Name;
             await _log.LogAsync(ActivityAction.RiskActionAdded, project.Id,
                 $"{risk.Title}: {action.Title} (owner {owner}{(dueOn is { } due ? $", due {due:dd-MM-yyyy}" : "")})", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return action;
+        }
+
+        // US-202 R3: an action moves under another of the risk's measures, or to "Other actions" (null)
+        public async Task MoveActionAsync(Guid projectId, Guid riskId, Guid actionId, Guid? measureId, CancellationToken cancellationToken = default)
+        {
+            var (_, _, project, risk) = await RiskAsync(projectId, riskId, cancellationToken);
+            var action = risk.MoveAction(actionId, measureId);
+            await _log.LogAsync(ActivityAction.RiskUpdated, project.Id,
+                $"{risk.Title}: Action moved: {action.Title} → {(measureId is null ? "Other actions" : "another measure")}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         // R2: one of the project's work items, or one of its pieces of evidence
