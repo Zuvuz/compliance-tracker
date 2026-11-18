@@ -43,7 +43,8 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.IndustryProfileChosen => ActivityGroup.Organisation,
             ActivityAction.CatalogImported or ActivityAction.CatalogActivated or ActivityAction.FrameworkEnabled
                 or ActivityAction.FrameworkDisabled
-                or ActivityAction.FrameworkImportedFromEurLex or ActivityAction.FrameworkCompletenessChecked => ActivityGroup.Frameworks,
+                or ActivityAction.FrameworkImportedFromEurLex or ActivityAction.FrameworkCompletenessChecked
+                or ActivityAction.FrameworkRenamed or ActivityAction.FrameworkRemoved => ActivityGroup.Frameworks,
             ActivityAction.EvidenceLinkedToStory or ActivityAction.EvidenceUnlinkedFromStory or ActivityAction.EvidenceStorySuggested
                 or ActivityAction.EvidenceStorySuggestionRejected => ActivityGroup.Evidence,
             ActivityAction.RequirementSuggestionsAsked or ActivityAction.StoryDraftWritten or ActivityAction.StoryDraftAccepted

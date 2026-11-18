@@ -19,7 +19,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         // R4: "ISO/IEC 27001" and "iso/iec 27001" count as the same name
         public Task<bool> NameExistsAsync(Guid organizationId, string name, CancellationToken cancellationToken = default)
             => _db.Frameworks.AnyAsync(
-                f => f.OwnerOrganizationId == organizationId && f.Name.ToLower() == name.ToLower(),
+                f => f.OwnerOrganizationId == organizationId && f.RemovedAt == null && f.Name.ToLower() == name.ToLower(),
                 cancellationToken);
 
         // Only registers the framework (with its versions). Saved by IUnitOfWork.
@@ -76,7 +76,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         // The organisation's own frameworks plus the built-in ones it has switched on
         private IQueryable<Framework> Available(Guid organizationId)
             => _db.Frameworks
-                .Where(f => f.OwnerOrganizationId == organizationId
+                .Where(f => (f.OwnerOrganizationId == organizationId && f.RemovedAt == null) // #52: a removed one is hidden
                     || (f.OwnerOrganizationId == null && _db.OrganizationFrameworks.Any(s =>
                         s.OrganizationId == organizationId
                         && s.DisabledAt == null

@@ -25,8 +25,9 @@ namespace ComplianceTracker.Web.Models
                 ? profile.Check(Version.Requirements.Select(r => r.Code))
                 : Version.Completeness?.Groups ?? [];
 
-        // US-143 R7: the columns chosen before for this framework
-        public Application.Frameworks.TableColumns? Chosen => Application.Frameworks.TableColumns.Parse(Framework.TableColumns);
+        // US-143 R7: the columns chosen before for this framework; #52: otherwise the ones its header row most likely means
+        public Application.Frameworks.TableColumns? Chosen => Application.Frameworks.TableColumns.Parse(Framework.TableColumns)
+            ?? (Columns is { Count: > 0 } headers ? Application.Frameworks.TableColumns.Guess(headers) : null);
 
         // US-143 R4: how deep a requirement sits in the standard's tree
         public int Depth(Requirement requirement)

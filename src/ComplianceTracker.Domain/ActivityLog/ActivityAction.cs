@@ -270,6 +270,11 @@ namespace ComplianceTracker.Domain.ActivityLog
         FrameworkImportedFromEurLex,
         FrameworkCompletenessChecked,
 
+        // #52: an uploaded framework was renamed (Details: old → new name and test tags) or removed. SubjectId points at the
+        // framework.
+        FrameworkRenamed,
+        FrameworkRemoved,
+
         // US-146: evidence was linked to or unlinked from a user story (by hand or by approving an AI suggestion), the AI
         // suggested stories for a piece of evidence, and a suggestion was rejected. SubjectId points at the project.
         EvidenceLinkedToStory,

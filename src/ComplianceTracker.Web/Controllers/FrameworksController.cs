@@ -354,6 +354,28 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(BuiltIn));
         }
 
+        // POST /Frameworks/Rename: #52, a name typed wrong is fixed; the test tags follow the name
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> Rename(Guid frameworkId, string? name, CancellationToken cancellationToken)
+        {
+            await _service.RenameAsync(frameworkId, name, cancellationToken);
+            TempData["Success"] = "The framework is renamed.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST /Frameworks/Remove: #52, a framework no project uses is hidden; it is kept for the history
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> Remove(Guid frameworkId, CancellationToken cancellationToken)
+        {
+            await _service.RemoveAsync(frameworkId, cancellationToken);
+            TempData["Success"] = "The framework is removed.";
+            return RedirectToAction(nameof(Index));
+        }
+
         // POST /Frameworks/Disable: switches it off again; the history is kept (R4)
         [HttpPost]
         [ValidateAntiForgeryToken]

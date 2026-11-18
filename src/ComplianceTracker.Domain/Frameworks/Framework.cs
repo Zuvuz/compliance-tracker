@@ -20,6 +20,13 @@ namespace ComplianceTracker.Domain.Frameworks
         public string Name { get; private set; } = "";
         public IReadOnlyList<FrameworkVersion> Versions => _versions;
 
+        // #52: an uploaded framework removed by the organisation is hidden everywhere; it is kept, so the history stays
+        public DateTime? RemovedAt { get; private set; }
+        public Guid? RemovedById { get; private set; }
+        public bool IsRemoved => RemovedAt is not null;
+
+        public const int MaxNameLength = 200;
+
         // US-142 R2: whether a project (a product) or the whole organisation follows it. Uploaded frameworks are for products.
         public FrameworkLevel Level { get; private set; } = FrameworkLevel.Product;
 
@@ -105,6 +112,53 @@ namespace ComplianceTracker.Domain.Frameworks
             var framework = new Framework { OwnerOrganizationId = organizationId, Name = name.Trim(), Level = level };
             framework.AddVersion(file, uploadedById, uploadedAt);
             return framework;
+        }
+
+        // #52: a name typed wrong at upload can be fixed. The name also gives the test tags (the part before " – "), so the
+        // caller says which tags change. Returns the old name.
+        public string Rename(string name)
+        {
+            if (IsBuiltIn)
+            {
+                throw new DomainException("Built-in frameworks cannot be changed");
+            }
+
+            var text = (name ?? "").Trim();
+            if (text.Length == 0)
+            {
+                throw new DomainException("Framework name is required");
+            }
+
+            if (text.Length > MaxNameLength)
+            {
+                throw new DomainException($"The name must be {MaxNameLength} characters or fewer");
+            }
+
+            if (text == Name)
+            {
+                throw new DomainException("The framework already has that name");
+            }
+
+            var old = Name;
+            Name = text;
+            return old;
+        }
+
+        // #52: removed by the organisation; the caller checks that no project uses it
+        public void Remove(Guid userId, DateTime at)
+        {
+            if (IsBuiltIn)
+            {
+                throw new DomainException("A built-in framework is switched off, not removed");
+            }
+
+            if (IsRemoved)
+            {
+                throw new DomainException("The framework is already removed");
+            }
+
+            RemovedAt = at;
+            RemovedById = userId;
         }
 
         // A new upload gets the next number; earlier versions are kept (R3)

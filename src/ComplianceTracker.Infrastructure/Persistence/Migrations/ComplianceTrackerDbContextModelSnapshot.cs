@@ -469,6 +469,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("OwnerOrganizationId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("RemovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RemovedById")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("TableColumns")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
