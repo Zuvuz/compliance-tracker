@@ -193,12 +193,6 @@ namespace ComplianceTracker.Specs.StepDefinitions
         private async Task OpenUsersAsync()
             => await _web.OpenAsync("/Users");
 
-        private async Task<Guid> OrganisationIdAsync()
-        {
-            await using var db = _web.CreateDbContext();
-            return await db.Organizations.Where(o => o.Name == Organisation).Select(o => o.Id).SingleAsync();
-        }
-
         private async Task<Guid> MemberIdAsync(string userName)
         {
             await using var db = _web.CreateDbContext();

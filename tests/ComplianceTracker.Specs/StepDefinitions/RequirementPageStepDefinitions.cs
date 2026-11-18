@@ -1,6 +1,5 @@
 using AngleSharp.Dom;
 using ComplianceTracker.Specs.Support;
-using Microsoft.EntityFrameworkCore;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {

@@ -7,8 +7,6 @@ using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Specs.Support;
 using Microsoft.Extensions.DependencyInjection;
-using Reqnroll;
-using Xunit;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {

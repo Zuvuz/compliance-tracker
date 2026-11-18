@@ -1,7 +1,6 @@
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Projects;
-using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Domain.Projects;
 using ComplianceTracker.Domain.Users;
 

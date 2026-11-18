@@ -282,7 +282,7 @@ namespace ComplianceTracker.Application.Compliance
         {
             var (organizationId, user, project) = await OpenProjectAsync(projectId, cancellationToken);
             var suggestion = await RequireAsync(project, suggestionId, cancellationToken);
-            var requirement = (await RequirementsAsync(organizationId, project, cancellationToken)).GetValueOrDefault(suggestion.RequirementId)
+            var requirement = (await RequirementsAsync(project, cancellationToken)).GetValueOrDefault(suggestion.RequirementId)
                 ?? throw new DomainException("The requirement is not in a framework version the project follows");
             if ((await NotApplicableAsync(project, cancellationToken)).Contains(requirement.Id))
             {
@@ -314,7 +314,7 @@ namespace ComplianceTracker.Application.Compliance
         {
             var (organizationId, user, project) = await OpenProjectAsync(projectId, cancellationToken);
             var suggestion = await RequireAsync(project, suggestionId, cancellationToken);
-            var code = (await RequirementsAsync(organizationId, project, cancellationToken)).GetValueOrDefault(suggestion.RequirementId)?.Code ?? "?";
+            var code = (await RequirementsAsync(project, cancellationToken)).GetValueOrDefault(suggestion.RequirementId)?.Code ?? "?";
 
             suggestion.Reject(reason, user.Id, user.Role, Now);
             await _log.LogAsync(ActivityAction.EvidenceSuggestionRejected, project.Id, $"{code}: {suggestion.Title} ({suggestion.RejectionReason})", cancellationToken);
@@ -360,7 +360,7 @@ namespace ComplianceTracker.Application.Compliance
             return result;
         }
 
-        private async Task<Dictionary<Guid, Requirement>> RequirementsAsync(Guid organizationId, Project project, CancellationToken cancellationToken)
+        private async Task<Dictionary<Guid, Requirement>> RequirementsAsync(Project project, CancellationToken cancellationToken)
             => (await RequirementsByTagAsync(project, cancellationToken)).Values.SelectMany(c => c.Values).ToDictionary(r => r.Id);
 
         private async Task<HashSet<Guid>> NotApplicableAsync(Project project, CancellationToken cancellationToken)

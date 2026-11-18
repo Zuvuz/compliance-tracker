@@ -1,5 +1,3 @@
-using AngleSharp.Dom;
-
 namespace ComplianceTracker.Specs.Support
 {
     // #52: a project's tab groups are links to their first tab, and only the current group's tabs are shown.

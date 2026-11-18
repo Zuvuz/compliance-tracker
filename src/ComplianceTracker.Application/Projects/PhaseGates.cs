@@ -43,10 +43,6 @@ namespace ComplianceTracker.Application.Projects
             _member = member;
         }
 
-        // The Overview: the gate to the project's next phase, or null when its phase has none. Null for other organisations.
-        public async Task<PhaseGate?> NextAsync(Guid projectId, CancellationToken cancellationToken = default)
-            => (await OverviewAsync(projectId, cancellationToken)).Gate;
-
         // US-047: the gate to the next phase and the current phase's checklist, from one look-up of the facts
         public async Task<(PhaseGate? Gate, PhaseChecklistView? Checklist)> OverviewAsync(Guid projectId, CancellationToken cancellationToken = default)
         {

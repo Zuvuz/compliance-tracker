@@ -1,7 +1,6 @@
 using ComplianceTracker.Application.WorkItems;
 using ComplianceTracker.Domain.WorkItems;
 using ComplianceTracker.Domain.Common;
-using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using System.Globalization;

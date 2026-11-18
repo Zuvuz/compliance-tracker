@@ -5,7 +5,6 @@ using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Projects;
 using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Domain.Common;
-using ComplianceTracker.Domain.Frameworks;
 using ComplianceTracker.Domain.Mappings;
 using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Domain.Projects;

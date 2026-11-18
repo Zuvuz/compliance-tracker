@@ -3,7 +3,6 @@ using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Domain.Mappings;
 using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Domain.Users;
-using ComplianceTracker.Infrastructure.Persistence;
 using ComplianceTracker.Specs.Support;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;

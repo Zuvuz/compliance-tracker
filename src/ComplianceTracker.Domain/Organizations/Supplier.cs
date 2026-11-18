@@ -1,5 +1,4 @@
 using ComplianceTracker.Domain.Common;
-using ComplianceTracker.Domain.Users;
 
 namespace ComplianceTracker.Domain.Organizations
 {

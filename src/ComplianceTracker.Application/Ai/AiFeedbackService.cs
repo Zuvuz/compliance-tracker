@@ -1,13 +1,8 @@
 using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
-using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Projects;
-using ComplianceTracker.Application.WorkItems;
 using ComplianceTracker.Domain.ActivityLog;
-using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Domain.Users;
-using System.Text;
-using System.Text.Json;
 
 namespace ComplianceTracker.Application.Ai
 {
@@ -15,8 +10,6 @@ namespace ComplianceTracker.Application.Ai
     public class AiFeedbackService
     {
         private readonly IMappingSuggestionRepository _suggestions;
-        private readonly IFrameworkRepository _frameworks;
-        private readonly IWorkItemRepository _workItems;
         private readonly CurrentMember _member;
         private readonly IActivityLogger _log;
         private readonly IUnitOfWork _unitOfWork;
@@ -25,8 +18,6 @@ namespace ComplianceTracker.Application.Ai
 
         public AiFeedbackService(
             IMappingSuggestionRepository suggestions,
-            IFrameworkRepository frameworks,
-            IWorkItemRepository workItems,
             CurrentMember member,
             IActivityLogger log,
             IUnitOfWork unitOfWork,
@@ -36,8 +27,6 @@ namespace ComplianceTracker.Application.Ai
             _clock = clock;
             _projects = projects;
             _suggestions = suggestions;
-            _frameworks = frameworks;
-            _workItems = workItems;
             _member = member;
             _log = log;
             _unitOfWork = unitOfWork;

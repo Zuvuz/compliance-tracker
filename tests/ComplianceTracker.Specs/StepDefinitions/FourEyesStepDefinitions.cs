@@ -3,8 +3,6 @@ using ComplianceTracker.Domain.Approvals;
 using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Specs.Support;
 using Microsoft.EntityFrameworkCore;
-using Reqnroll;
-using Xunit;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {

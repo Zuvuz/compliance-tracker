@@ -1,9 +1,6 @@
 using ComplianceTracker.Domain.Projects;
 using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Domain.Users;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace ComplianceTracker.Domain.Organizations
 {

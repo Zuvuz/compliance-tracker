@@ -13,8 +13,6 @@ namespace ComplianceTracker.Specs.StepDefinitions
     [Binding]
     public class NeedsActionFollowsProductStepDefinitions
     {
-        private const string Project = "Acme Portal";
-
         private readonly WebScenario _web;
         private readonly ScenarioClock _clock;
         private readonly ComplianceTabStepDefinitions _compliance;
