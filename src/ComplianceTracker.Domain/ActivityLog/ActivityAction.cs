@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace ComplianceTracker.Domain.ActivityLog
 {
     // The kinds of actions that are written to the activity log (ISO 27001 A.8.15).

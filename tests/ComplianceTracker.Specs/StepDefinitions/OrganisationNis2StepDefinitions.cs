@@ -1,5 +1,4 @@
 using ComplianceTracker.Domain.Projects;
-using ComplianceTracker.Infrastructure.Persistence;
 using ComplianceTracker.Specs.Support;
 using Microsoft.EntityFrameworkCore;
 

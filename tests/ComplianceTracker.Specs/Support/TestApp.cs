@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using ComplianceTracker.Application.Ai;
 using ComplianceTracker.Infrastructure.WorkItems;
 using Microsoft.AspNetCore.Authentication;

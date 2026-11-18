@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace ComplianceTracker.Domain.Users
 {
     // A member's role in the organisation (US-010). What each role may do is in RolePermissions.

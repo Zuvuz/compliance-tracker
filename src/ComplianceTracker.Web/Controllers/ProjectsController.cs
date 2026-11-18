@@ -13,7 +13,6 @@ using ComplianceTracker.Domain.Projects;
 using ComplianceTracker.Web.Filters;
 using ComplianceTracker.Web.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing;
 
 namespace ComplianceTracker.Web.Controllers
 {

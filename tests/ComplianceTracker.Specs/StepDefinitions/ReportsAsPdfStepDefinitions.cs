@@ -1,4 +1,3 @@
-using AngleSharp.Dom;
 using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Specs.Support;
 using Microsoft.EntityFrameworkCore;

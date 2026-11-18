@@ -185,8 +185,6 @@ namespace ComplianceTracker.Application.Approvals
         public static bool AnyoneElseMayApprove(Organization organization, Guid requestedById, Permission permission)
             => organization.Members.Any(u => u.Id != requestedById && u.Can(permission));
 
-        public Permission PermissionFor(ApprovalAction action) => Executor(action).Permission;
-
         private ApprovalView View(Organization organization, User user, ApprovalRequest request)
         {
             var open = request.IsPending && !request.IsDue(Now);

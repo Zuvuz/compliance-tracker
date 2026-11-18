@@ -4,7 +4,6 @@ using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Domain.Common;
-using ComplianceTracker.Domain.Frameworks;
 using ComplianceTracker.Domain.Projects;
 using ComplianceTracker.Domain.Users;
 

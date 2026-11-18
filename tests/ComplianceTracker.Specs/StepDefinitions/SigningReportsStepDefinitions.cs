@@ -1,7 +1,6 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using AngleSharp.Dom;
-using ComplianceTracker.Domain.ActivityLog;
 using ComplianceTracker.Infrastructure.Reports;
 using ComplianceTracker.Specs.Support;
 using Microsoft.EntityFrameworkCore;

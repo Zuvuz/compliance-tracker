@@ -1,7 +1,6 @@
 using System.Globalization;
 using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
-using ComplianceTracker.Application.Compliance;
 using ComplianceTracker.Application.Frameworks;
 using ComplianceTracker.Application.Projects;
 using ComplianceTracker.Domain.ActivityLog;

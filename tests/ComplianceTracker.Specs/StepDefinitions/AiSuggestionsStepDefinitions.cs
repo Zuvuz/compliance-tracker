@@ -3,7 +3,6 @@ using ComplianceTracker.Domain.Mappings;
 using ComplianceTracker.Specs.Support;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
-using System.Text.Json;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {

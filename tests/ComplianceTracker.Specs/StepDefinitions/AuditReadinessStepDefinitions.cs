@@ -1,5 +1,4 @@
 using System.IO.Compression;
-using System.Text;
 using AngleSharp.Dom;
 using ComplianceTracker.Specs.Support;
 using Microsoft.EntityFrameworkCore;

@@ -1,6 +1,5 @@
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Compliance;
-using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Application.Projects;
 
 namespace ComplianceTracker.Web.Security
