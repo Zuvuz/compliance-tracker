@@ -444,6 +444,27 @@
     }
 </section>
 
+@* US-203 R4, R5: every change of the risk, from the activity log; nothing here can be edited *@
+<section class="mb-4" id="risk-history">
+    <h2 class="h5">History</h2>
+    @if (Model.History.Count == 0)
+    {
+        <p class="text-muted small" id="no-risk-history">No changes logged yet.</p>
+    }
+    else
+    {
+        <ul class="list-unstyled small mb-0">
+            @foreach (var entry in Model.History)
+            {
+                <li class="risk-history-entry border-bottom py-1" data-kind="@entry.Kind">
+                    <span class="text-muted">@entry.At.ToLocalTime().ToString("dd-MM-yyyy HH:mm") · @(entry.UserId is null ? "The system" : Model.NameOf(entry.UserId))</span>
+                    · <strong>@entry.Kind</strong>@(entry.What.Length > 0 ? ": " : "")<span class="risk-history-what">@entry.What</span>
+                </li>
+            }
+        </ul>
+    }
+</section>
+
 @if (canReopen && risk.Status != RiskStatus.Open && !risk.IsWithdrawn)
 {
     @* US-176 R1: accepted or closed by mistake *@

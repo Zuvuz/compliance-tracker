@@ -9,6 +9,9 @@
     // US-168 R2: the shared colours of the risk levels
     string Badge(RiskLevel level) => StatusBadges.ClassOf(level.ToString());
     var open = Model.AllRisks.Where(r => r.Status != RiskStatus.Closed).ToList();
+    // US-203 R2, R3: the matrix before or after the measures; every link of the tab keeps the choice
+    var after = Model.RiskMatrixAfter;
+    var matrix = after ? RiskMatrix.After : RiskMatrix.Before;
 }
 
 <section id="project-risks">
@@ -101,8 +104,17 @@
 
     <div class="row g-4">
         <div class="col-lg-4">
+            @* US-203 R2: before or after the measures, remembered in this browser (US-175) *@
+            <div class="btn-group btn-group-sm mb-2" role="group" aria-label="Risk matrix" id="risk-matrix-mode"
+                 data-remember="risk-matrix:@project.Id" data-remember-params="matrix">
+                @foreach (var (text, value) in new[] { ("Before measures", RiskMatrix.Before), ("After measures", RiskMatrix.After) })
+                {
+                    <a class="btn @(matrix == value ? "btn-secondary" : "btn-outline-secondary")" aria-current="@(matrix == value ? "true" : null)" data-matrix="@value"
+                       href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks, status = Model.RiskStatusFilter, due = Model.OnlyReviewDue ? "1" : null, matrix = value })">@text</a>
+                }
+            </div>
             @* R8: the open risks per cell; likelihood up, impact to the right *@
-            <table class="table table-bordered table-sm text-center small" id="risk-matrix" aria-label="Risk matrix">
+            <table class="table table-bordered table-sm text-center small" id="risk-matrix" aria-label="Risk matrix" data-matrix="@matrix">
                 <tbody>
                     @for (var likelihood = Risk.MaxScale; likelihood >= Risk.MinScale; likelihood--)
                     {
@@ -110,13 +122,13 @@
                             <th class="text-end">@likelihood</th>
                             @for (var impact = Risk.MinScale; impact <= Risk.MaxScale; impact++)
                             {
-                                var count = open.Count(r => r.Likelihood == likelihood && r.Impact == impact);
+                                var count = open.Count(r => after ? r.LikelihoodAfter == likelihood && r.ImpactAfter == impact : r.Likelihood == likelihood && r.Impact == impact);
                                 var chosen = Model.RiskCell is { } c && c.Likelihood == likelihood && c.Impact == impact;
                                 @* US-147 R2: a cell filters the list; the chosen one again clears it *@
                                 <td class="@Badge(Risk.LevelOf(likelihood * impact)) bg-opacity-50 @(chosen ? "risk-cell-chosen" : "")" data-likelihood="@likelihood" data-impact="@impact">
                                     <a class="risk-cell d-block text-reset text-decoration-none" aria-current="@(chosen ? "true" : null)"
                                        aria-label="Likelihood @likelihood, impact @impact: @count open"
-                                       href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks, status = Model.RiskStatusFilter, due = Model.OnlyReviewDue ? "1" : null, cell = chosen ? null : RiskCells.Format(likelihood, impact) })">@(count == 0 ? "\u00a0" : count)</a>
+                                       href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks, status = Model.RiskStatusFilter, due = Model.OnlyReviewDue ? "1" : null, cell = chosen ? null : RiskCells.Format(likelihood, impact), matrix })">@(count == 0 ? "\u00a0" : count)</a>
                                 </td>
                             }
                         </tr>
@@ -130,7 +142,12 @@
                     </tr>
                 </tbody>
             </table>
-            <p class="small text-muted">Rows: likelihood. Columns: impact. Open risks only.</p>
+            <p class="small text-muted" id="risk-matrix-note">Rows: likelihood. Columns: impact. Open risks only@(after ? ", placed by their residual risk" : ", before the measures").
+                @if (after && open.Count(r => !r.HasResidual) is var withoutResidual and > 0)
+                {
+                    <span id="risks-without-residual">@withoutResidual @(withoutResidual == 1 ? "risk has" : "risks have") no residual yet and @(withoutResidual == 1 ? "is" : "are") placed as before.</span>
+                }
+            </p>
         </div>
 
         <div class="col-lg-8">
@@ -150,13 +167,13 @@
                     @foreach (var b in buttons)
                     {
                         <a class="btn @(b.Active ? "btn-secondary" : "btn-outline-secondary")" aria-current="@(b.Active ? "true" : null)" data-status-button="@b.Text"
-                           href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks, status = b.Status, due = b.Due ? "1" : null, cell = cellText })">@b.Text</a>
+                           href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks, status = b.Status, due = b.Due ? "1" : null, cell = cellText, matrix })">@b.Text</a>
                     }
                 </div>
                 @if (Model.RiskCell is { } shownCell)
                 {
                     <span class="small text-muted" id="risk-cell-filter">Likelihood @shownCell.Likelihood × impact @shownCell.Impact ·
-                        <a href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks, status = Model.RiskStatusFilter, due = Model.OnlyReviewDue ? "1" : null })">clear</a></span>
+                        <a href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks, status = Model.RiskStatusFilter, due = Model.OnlyReviewDue ? "1" : null, matrix })">clear</a></span>
                 }
             </div>
             @* R8: GET, so a filtered register can be linked to *@
@@ -165,6 +182,7 @@
             <form method="get" class="row g-2 mb-3" id="risk-filter"
                   action="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Risks })"
                   data-remember="risks:@project.Id" data-remember-params="status,level,treatment,due,nothing">
+                <input type="hidden" name="matrix" value="@matrix" />
                 <div class="col-auto">
                     <select name="status" class="form-select form-select-sm" aria-label="Status">
                         <option value="">Not closed</option>
@@ -274,7 +292,7 @@
                                         }
                                     </div>
                                 </td>
-                                <td class="text-nowrap">@risk.Likelihood × @risk.Impact = @risk.Score</td>
+                                <td class="text-nowrap risk-score">@risk.ScoreText</td>
                                 <td class="risk-owner">@RiskPageViewModel.OwnerName(Model.Organization, risk.OwnerId)</td>
                                 <td>@risk.Treatment</td>
                                 @* US-159 R1 *@

@@ -234,7 +234,9 @@ namespace ComplianceTracker.Web.Controllers
                 ProjectEvidence = (await evidence.ForProjectAsync(project.Id, cancellationToken))?.Evidence.Select(e => e.Evidence).ToList() ?? [],
                 // US-106 R12
                 MeasureSuggestions = (await measures.ListAsync(project.Id, cancellationToken)).Where(s => s.RiskId == risk.Id && s.IsPending)
-                    .OrderByDescending(s => s.Score).ToList()
+                    .OrderByDescending(s => s.Score).ToList(),
+                // US-203 R4: from the project's activity log
+                History = Application.Risks.RiskHistory.For(risk.Title, await _projects.ActivityAsync(project.Id, cancellationToken))
             });
         }
 

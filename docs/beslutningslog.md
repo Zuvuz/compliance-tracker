@@ -2278,6 +2278,17 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Værktøjer som axe eller Lighthouse i CI. De kræver en browser og installation, og de vigtigste regler kan læses direkte af siden.
   - Kontrastberegning. Farverne kommer fra designreglerne (B142).
 
+### B152 – En risiko viser, hvad den er gået fra og til, med sin historik (US-203)
+
+- **Beslutning:**
+  - **Registret:** "L × I" viser både før og efter tiltag, fx "3 × 4 = 12 → 2 × 3 = 6". Uden residual vises kun det første.
+  - **Matrixen:** "Before measures" og "After measures". Efter tiltag placeres en risiko efter sin residual; en risiko uden residual står, hvor den stod, og noten siger, hvor mange der mangler en. Valget ligger i adressen (`matrix=after`), huskes i browseren (US-175), og en celle filtrerer efter den position, der vises.
+  - **Historikken** på risikosiden læses fra aktivitetsloggen, nyeste først. Loggen siger, hvilken risiko en linje handler om, ved at starte teksten med risikoens titel; en omdøbning ("Title: Gammel → Ny") følges bagud, så linjer skrevet under den gamle titel også kommer med.
+- **Begrundelse:** ISO 27001 8.2 og 8.3 kræver, at resultatet af risikovurdering og -behandling gemmes. Ændringerne blev allerede logget, men de var svære at finde, og registret og matrixen viste kun risikoen før tiltag.
+- **Fravalgt:**
+  - En ny tabel med risikoens historik. Aktivitetsloggen er allerede append-only og kædet (US-091), og en ny tabel ville ikke have de ændringer, der er sket indtil nu.
+  - At give logposten et id for risikoen. Det ville ændre loggens format og fingeraftryk; titlen er nok, fordi to risici i samme projekt ikke kan have samme titel ved import, og omdøbninger følges.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
