@@ -78,6 +78,9 @@ namespace ComplianceTracker.Web.Models
         public string NameOf(Guid? userId)
             => Organization.Users.FirstOrDefault(u => u.Id == userId)?.Name ?? "Unknown";
 
+        // US-203 R4: the risk's history, newest first
+        public IReadOnlyList<Application.Risks.RiskHistoryEntry> History { get; init; } = [];
+
         // US-106 R12: the AI's pending measure suggestions for this risk, best first
         public IReadOnlyList<Domain.Risks.RiskMeasureSuggestion> MeasureSuggestions { get; init; } = [];
 

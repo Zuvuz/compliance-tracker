@@ -164,6 +164,8 @@ namespace ComplianceTracker.Web.Controllers
             string? sbom,
             // US-147 R2, R4: a cell of the risk matrix ("3x4") filters the register; risk opens one in the side panel
             string? cell, Guid? risk,
+            // US-203 R2: "after" shows the risk matrix by the residual risk; a cell then filters by it too
+            string? matrix,
             [FromServices] ClassificationService classifications,
             [FromServices] Application.Projects.GapFinder gapFinder,
             [FromServices] Application.Security.SecurityEventQueries securityEventQueries,
@@ -270,7 +272,9 @@ namespace ComplianceTracker.Web.Controllers
                 .Where(r => nothing != "1" || (backing.TryGetValue(r.Id, out var b) && b.NothingBehind))
                 .Where(r => string.IsNullOrEmpty(level) || r.Level.ToString().Equals(level, StringComparison.OrdinalIgnoreCase))
                 .Where(r => due != "1" || r.IsReviewDue(now))
-                .Where(r => RiskCells.Parse(cell) is not { } c || (r.Likelihood == c.Likelihood && r.Impact == c.Impact))
+                .Where(r => RiskCells.Parse(cell) is not { } c || (RiskMatrix.IsAfter(matrix)
+                    ? r.LikelihoodAfter == c.Likelihood && r.ImpactAfter == c.Impact
+                    : r.Likelihood == c.Likelihood && r.Impact == c.Impact))
                 // US-147 R1: highest level first, then by title
                 .OrderByDescending(r => r.Score).ThenBy(r => r.Title, StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -361,6 +365,7 @@ namespace ComplianceTracker.Web.Controllers
                 OnlyReviewDue = due == "1",
                 OnlyNothingBehind = nothing == "1",
                 RiskCell = RiskCells.Parse(cell), // US-147
+                RiskMatrixAfter = RiskMatrix.IsAfter(matrix), // US-203
                 RiskInPanel = risk is { } inPanel && allRisks.Any(r => r.Id == inPanel) ? inPanel : null,
                 RiskBacking = backing,
                 Now = now

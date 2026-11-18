@@ -368,6 +368,9 @@ namespace ComplianceTracker.Web.Models
         // US-147 R2: the matrix cell the register is filtered to, or null
         public (int Likelihood, int Impact)? RiskCell { get; init; }
 
+        // US-203 R2: the risk matrix after the measures (by the residual) instead of before
+        public bool RiskMatrixAfter { get; init; }
+
         // US-147 R4: the risk opened in the side panel (its own address), or null
         public Guid? RiskInPanel { get; init; }
 

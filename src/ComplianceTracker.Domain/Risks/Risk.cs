@@ -107,6 +107,16 @@ namespace ComplianceTracker.Domain.Risks
             => Status == RiskStatus.Open && Treatment == RiskTreatment.Reduce && _measures.Count > 0 && measuresBacked && ResidualLevel is null;
 
         // US-165 R2: e.g. "2 × 3 (Medium)", or "–" without a residual
+        // US-203 R1, R3: where the risk stands after the measures: the residual, or the risk itself while none is set
+        public bool HasResidual => ResidualLikelihood is not null && ResidualImpact is not null;
+        public int LikelihoodAfter => ResidualLikelihood ?? Likelihood;
+        public int ImpactAfter => ResidualImpact ?? Impact;
+
+        // US-203 R1: "3 × 4 = 12 → 2 × 3 = 6", or "3 × 4 = 12" without a residual
+        public string ScoreText => HasResidual
+            ? $"{Likelihood} × {Impact} = {Score} → {LikelihoodAfter} × {ImpactAfter} = {LikelihoodAfter * ImpactAfter}"
+            : $"{Likelihood} × {Impact} = {Score}";
+
         public string ResidualText => ResidualLikelihood is { } l && ResidualImpact is { } i ? $"{l} × {i} ({ResidualLevel})" : "–";
 
         // US-165 R1, R4, R5: a person sets the residual risk after the measures. Returns the change, or null when nothing changed.
