@@ -61,6 +61,18 @@ public partial class ViewLayoutTests
         Assert.True(problems.Count == 0, "Use StatusBadges.CellClassOf for these:\n" + string.Join("\n", problems));
     }
 
+    // #52: a menu's form placed with position-absolute was cut off by the card it sat in; menus open in the shared dialog
+    [Fact]
+    public void No_menu_in_the_views_places_its_form_with_position_absolute()
+    {
+        var problems = Directory.GetFiles(Path.Combine(Web, "Views"), "*.cshtml", SearchOption.AllDirectories)
+            .Where(file => System.Text.RegularExpressions.Regex.IsMatch(File.ReadAllText(file), """<details[^>]*>\s*<summary[^>]*>[^<]*</summary>\s*<form[^>]*position-absolute"""))
+            .Select(file => Path.GetRelativePath(Web, file))
+            .ToList();
+
+        Assert.True(problems.Count == 0, "Open these menus in the shared dialog (data-dialog-title):" + Environment.NewLine + string.Join(Environment.NewLine, problems));
+    }
+
     [Fact]
     public void Every_row_with_a_select_in_the_views_can_wrap()
     {

@@ -1,9 +1,10 @@
 @* US-177: "⋯" next to an upload: withdraw it with a reason (R4). Classes used by the tests: details.withdraw-menu with
-   form.withdraw-upload (reason). *@
+   form.withdraw-upload (reason). #52: it opens in the shared dialog (US-166), so it is never cut off by the card it sits in;
+   without JavaScript it opens in place. *@
 @model WithdrawMenu
-<details class="withdraw-menu d-inline-block position-relative">
+<details class="withdraw-menu d-inline-block" data-dialog-title="Withdraw @Model.What">
     <summary class="btn btn-sm btn-outline-secondary" aria-label="More for @Model.What">⋯</summary>
-    <form asp-controller="Projects" asp-action="@Model.Action" method="post" class="withdraw-upload card card-body p-2 mt-1 shadow-sm position-absolute end-0" style="z-index: 5; min-width: 16rem">
+    <form asp-controller="Projects" asp-action="@Model.Action" method="post" class="withdraw-upload mt-1">
         <input type="hidden" name="projectId" value="@Model.ProjectId" />
         <input type="hidden" name="@Model.IdName" value="@Model.IdValue" />
         <label class="form-label small mb-1" for="withdraw-@Model.IdValue">Withdraw @Model.What: why?</label>

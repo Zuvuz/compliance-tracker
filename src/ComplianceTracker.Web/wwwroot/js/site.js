@@ -174,6 +174,30 @@ document.querySelectorAll("[data-percent]").forEach(bar => {
     });
 })();
 
+// #52: after a button further down the page (Approve, Reject, Link, Accept …) the page comes back where it was, not at the
+// top. The position is kept for the one reload that follows a form sent from this page, and only when the page is the same
+// one again. A page that comes back with an error stays at the top, where the error is. Without JavaScript the page opens
+// at the top as before.
+(() => {
+    const key = "ct-scroll";
+    const read = () => { try { return JSON.parse(sessionStorage.getItem(key) || "null"); } catch { return null; } };
+    const write = value => { try { value ? sessionStorage.setItem(key, JSON.stringify(value)) : sessionStorage.removeItem(key); } catch { /* private window */ } };
+
+    const saved = read();
+    write(null);
+    const error = document.querySelector(".message-error, .validation-summary-errors li");
+    if (saved && !error && saved.path === location.pathname && Date.now() - saved.at < 30000 && !location.hash) {
+        window.scrollTo(0, saved.y);
+    }
+
+    document.addEventListener("submit", event => {
+        const form = event.target;
+        if (form instanceof HTMLFormElement && (form.method || "").toLowerCase() === "post" && !event.defaultPrevented) {
+            write({ path: location.pathname, y: window.scrollY, at: Date.now() });
+        }
+    });
+})();
+
 // US-201 R4, R5: a group on the Evidence tab remembers whether the member opened or folded it, per project, in this browser
 // only. A group with something waiting or expired (data-attention="true") always starts open. Without JavaScript the
 // server's choice stands: open when it needs attention, folded otherwise.
