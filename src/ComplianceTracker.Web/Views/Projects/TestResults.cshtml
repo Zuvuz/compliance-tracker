@@ -1,5 +1,8 @@
-@* US-177: the uploads of test results whose suggestions still wait, each with "⋯ Withdraw". Ids used by the tests:
-   #test-results-uploads with .test-results-upload (data-file), #no-test-results. *@
+@* US-177: the uploads of test results, each that still has suggestions waiting with "⋯ Withdraw". #52: every upload is listed,
+   with what it led to and why it made no suggestions, the suggestions that wait (each leading to its requirement), and
+   "Accept all". Ids used by the tests: #test-results-summary, #test-results-uploads with .test-results-upload (data-file,
+   data-waiting) holding .test-results-what, .test-results-why, .test-results-waiting li (data-code) and form.accept-all-test-results;
+   #no-test-results. *@
 @model TestResultsUploadsViewModel
 @{
     var project = Model.Project;
@@ -8,24 +11,89 @@
 
 <page-header heading="Test results" heading-id="test-results-title"
              back-href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Evidence })" back-text="@project.Name" />
-<p class="text-muted">The uploads whose suggested evidence still waits. Withdraw one uploaded by mistake; accepted evidence stays.</p>
+<p class="text-muted">Every upload of test results, what it suggested, and the suggestions that wait for your decision. Withdraw an upload made by mistake; accepted evidence stays.</p>
+
+@if (TempData["TestResults"] is string testResults)
+{
+    <div class="alert alert-info small py-2" id="test-results-summary" role="status">@testResults</div>
+}
 
 @if (Model.Uploads.Count == 0)
 {
-    <empty-state id="no-test-results" title="No test results wait." why="Suggestions from uploaded test results show here until each is accepted or rejected." />
+    <empty-state id="no-test-results" title="No test results uploaded yet." why="Upload a TRX or JUnit file on the Evidence tab. Scenarios tagged with a requirement, e.g. @@cra-I.2(d), become suggested evidence." />
 }
 else
 {
-    <ul class="list-unstyled border rounded mb-0" id="test-results-uploads">
+    <ul class="list-unstyled d-flex flex-column gap-3 mb-0" id="test-results-uploads">
         @foreach (var upload in Model.Uploads)
         {
-            <li class="test-results-upload d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom" data-file="@upload.FileName">
-                <span>@upload.FileName</span>
-                <span class="text-muted small">@upload.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm") · @upload.Waiting waiting</span>
-                @if (Model.CanWithdraw)
-                {
-                    <span class="ms-auto">@await Html.PartialAsync("_WithdrawMenu", new WithdrawMenu(project.Id, "WithdrawTestResults", "sha256", upload.Sha256, $"the test results {upload.FileName}", "The suggestions that wait are withdrawn; accepted evidence stays."))</span>
-                }
+            var record = upload.Record;
+            <li class="test-results-upload card" data-file="@upload.FileName" data-waiting="@upload.Waiting">
+                <div class="card-body">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <strong>@upload.FileName</strong>
+                        <span class="text-muted small">
+                            @upload.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")@(record is null ? "" : $" · {Model.NameOf(record.UploadedById)}")
+                        </span>
+                        @if (Model.CanWithdraw && upload.Waiting > 0)
+                        {
+                            <span class="ms-auto">@await Html.PartialAsync("_WithdrawMenu", new WithdrawMenu(project.Id, "WithdrawTestResults", "sha256", upload.Sha256, $"the test results {upload.FileName}", "The suggestions that wait are withdrawn; accepted evidence stays."))</span>
+                        }
+                    </div>
+                    @if (record is not null)
+                    {
+                        <p class="small mb-1 test-results-what">@record.Summary@(upload.Accepted > 0 ? $" · {upload.Accepted} accepted" : "")</p>
+                        @if (record.WhyNothing is { } why)
+                        {
+                            <p class="small text-muted mb-1 test-results-why">@why</p>
+                        }
+                        @if (record.UnknownTags.Length > 0)
+                        {
+                            <p class="small text-muted mb-1">Unknown tags ignored: @record.UnknownTags</p>
+                        }
+                        @if (record.OtherFrameworks.Length > 0 && record.WhyNothing is null)
+                        {
+                            <p class="small text-muted mb-1">Tags of frameworks this project does not follow: @record.OtherFrameworks</p>
+                        }
+                    }
+                    @if (upload.WaitingItems.Count > 0)
+                    {
+                        <div class="waiting-box mt-2">
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <span class="small fw-semibold">Waiting for your decision (@upload.WaitingItems.Count)</span>
+                                @if (Model.CanWithdraw && upload.Acceptable > 0)
+                                {
+                                    <form asp-action="AcceptAllTestResults" method="post" class="accept-all-test-results ms-auto"
+                                          data-confirm="@upload.Acceptable passing test runs become evidence on their requirements.">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="sha256" value="@upload.Sha256" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success">Accept all @upload.Acceptable</button>
+                                    </form>
+                                }
+                            </div>
+                            <ul class="list-unstyled small mb-0 mt-1 test-results-waiting">
+                                @foreach (var item in upload.WaitingItems)
+                                {
+                                    <li class="d-flex flex-wrap gap-2 py-1 border-top" data-code="@item.Code">
+                                        @if (item.FrameworkSlug.Length > 0)
+                                        {
+                                            <a href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Compliance, sub = item.FrameworkSlug, req = item.Code })"><strong>@item.Code</strong> @item.Title</a>
+                                        }
+                                        else
+                                        {
+                                            <span><strong>@item.Code</strong> @item.Title</span>
+                                        }
+                                        <span class="text-muted">@item.SuggestionTitle</span>
+                                        @if (item.Blocked)
+                                        {
+                                            <span class="badge text-bg-danger">Blocked by a failing test</span>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                </div>
             </li>
         }
     </ul>

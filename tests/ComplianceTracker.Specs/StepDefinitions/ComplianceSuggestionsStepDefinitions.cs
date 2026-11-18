@@ -150,7 +150,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
             await _web.OpenAsync(badge.GetAttribute("href")!);
             Assert.Equal([subTab], _web.Page!.QuerySelectorAll("#compliance-tabs a.active").Select(a => a.TextContent.Trim()));
-            Assert.Equal("Has suggestions", _web.Page!.QuerySelector("#compliance-filters a[aria-current='true']")?.TextContent.Trim());
+            Assert.Equal("Waiting for decision", _web.Page!.QuerySelector("#compliance-filters a[aria-current='true']")?.TextContent.Trim());
             Assert.Contains(story, (await RequirementRowLookup.SuggestionsAsync(_web)).Select(s => s.GetAttribute("data-story")));
         }
 

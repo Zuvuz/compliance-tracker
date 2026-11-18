@@ -111,6 +111,7 @@ namespace ComplianceTracker.Specs.Support
                 DELETE FROM "ScanFiles";
                 DELETE FROM "Scans";
                 DELETE FROM "ScanUploadTokens";
+                DELETE FROM "TestRunUploads";
                 DELETE FROM "EvidenceSuggestions";
                 DELETE FROM "StoryDrafts";
                 DELETE FROM "GapDismissals";
