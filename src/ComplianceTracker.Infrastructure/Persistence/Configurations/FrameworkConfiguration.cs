@@ -15,7 +15,8 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             // The id is set by the domain (Guid.NewGuid), not by the database
             builder.HasKey(f => f.Id);
             builder.Property(f => f.Id).ValueGeneratedNever();
-            builder.Property(f => f.Name).IsRequired().HasMaxLength(200);
+            builder.Property(f => f.Name).IsRequired().HasMaxLength(Framework.MaxNameLength);
+            builder.Ignore(f => f.IsRemoved); // #52
 
             // US-142: the level, and the directive a national law implements in a country
             builder.Property(f => f.Level).HasConversion<string>().HasMaxLength(20).HasDefaultValue(FrameworkLevel.Product);

@@ -152,6 +152,8 @@ else
 }
 else
 {
+    @* #52: a wide table scrolls inside itself, not the page (US-167) *@
+    <div class="table-responsive">
     <table class="table table-sm align-middle" id="requirements">
         <thead>
             <tr>
@@ -223,6 +225,7 @@ else
             }
         </tbody>
     </table>
+    </div>
 }
 
 @if (!version.IsActive && version.Extraction is { } extraction)
@@ -296,7 +299,7 @@ else
     </form>
 
     @* US-035 R1, R2: the day the version starts to apply; empty = as soon as it is activated *@
-    <form asp-action="SetAppliesFrom" method="post" class="d-flex align-items-center gap-2 mb-3" id="set-applies-from">
+    <form asp-action="SetAppliesFrom" method="post" class="d-flex flex-wrap align-items-center gap-2 mb-3" id="set-applies-from">
         <input type="hidden" name="versionId" value="@version.Id" />
         <label for="appliesFrom" class="small text-nowrap">Applies from</label>
         <input id="appliesFrom" name="appliesFrom" type="date" class="form-control form-control-sm ct-max-w-11"

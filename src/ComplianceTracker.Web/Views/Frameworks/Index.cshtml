@@ -4,6 +4,7 @@
 @model FrameworksPageViewModel
 @{
     ViewData["Title"] = "Frameworks";
+    var canManage = await Permissions.CanAsync(Permission.ManageFrameworks); // #52: rename and remove
 }
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -11,8 +12,8 @@
     @* US-037 *@
     <a asp-action="CrossMapping" class="btn btn-sm btn-outline-secondary" id="cross-mapping-link">Cross-mapping between frameworks</a>
 </div>
-<p>The standards and policies @Model.Organization.Name follows. Upload each as a PDF of at most 20 MB.</p>
-<p><a id="built-in-link" asp-action="BuiltIn">Built-in frameworks (CRA, AI Act)</a> can be switched on without uploading anything.</p>
+<p>The standards and policies @Model.Organization.Name follows. Upload each as a PDF, Word, Excel, CSV or HTML file of at most 20 MB.</p>
+<p><a id="built-in-link" asp-action="BuiltIn">Built-in frameworks (CRA, NIS2, AI Act)</a> can be switched on without uploading anything.</p>
 
 @* Shows the domain's error messages, e.g. "Only PDF, Word (.docx), Excel (.xlsx), CSV or HTML files are allowed" *@
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
@@ -63,6 +64,8 @@
     </details>
 }
 
+@* #52: a wide table scrolls inside itself, not the page (US-167) *@
+<div class="table-responsive">
 <table class="table" id="frameworks">
     <thead>
         <tr>
@@ -81,7 +84,14 @@
             @* The newest upload, which may still be a draft (US-007) *@
             var current = framework.LatestVersion;
             <tr data-framework-id="@framework.Id">
-                <td class="framework-name">@framework.Name</td>
+                <td>
+                    <span class="framework-name">@framework.Name</span>
+                    @if (!framework.IsBuiltIn)
+                    {
+                        @* #52: the name gives the test tags (the part before " – ") *@
+                        <div class="small text-muted framework-tags">Test tags: <code>@@@ComplianceTracker.Application.Frameworks.FrameworkSlugs.Slug(framework.Name)-…</code></div>
+                    }
+                </td>
                 <td class="framework-source">
                     @(framework.IsBuiltIn ? "Built-in" : "Uploaded")
                     @* US-142 R2 *@
@@ -124,22 +134,48 @@
                     <td>@current.UploadedAt.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
                     <td>@Model.UploadedBy(current)</td>
                     <td>
-                        <a class="open-pdf" asp-action="Document" asp-route-id="@current.Id">Open PDF</a>
+                        <a class="open-pdf" asp-action="Document" asp-route-id="@current.Id">Download the file</a>
                         · <a class="version-link" asp-action="Version" asp-route-id="@current.Id">@(current.IsActive ? "Requirements" : "Review draft")</a>
                         · <a asp-action="Versions" asp-route-id="@framework.Id">All versions</a>
-                        @* One small upload form per row, so you never have to type the framework name again *@
-                        <form asp-action="UploadVersion" method="post" enctype="multipart/form-data" class="mt-1" data-busy="Uploading…">
-                            <input type="hidden" name="frameworkId" value="@framework.Id" />
-                            <div class="d-flex gap-1">
-                                <input name="file" type="file" accept=".pdf,.docx,.xlsx,.csv,.html,.htm,application/pdf" class="form-control form-control-sm" aria-label="New version of @framework.Name" />
-                                <input name="appliesFrom" type="date" class="form-control form-control-sm ct-max-w-10"
-                                       title="Applies from (optional)" aria-label="Applies from" />
-                                <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Upload new version</button>
-                            </div>
-                        </form>
+                        <div class="d-flex flex-wrap gap-2 mt-1">
+                            @* One small upload form per row, so you never have to type the framework name again. #52: in the shared
+                               dialog, so the row is not wider than the window. *@
+                            <details class="upload-version-menu" data-dialog-title="Upload a new version of @framework.Name">
+                                <summary class="btn btn-sm btn-outline-primary">Upload new version…</summary>
+                                <form asp-action="UploadVersion" method="post" enctype="multipart/form-data" class="mt-1" data-busy="Uploading…">
+                                    <input type="hidden" name="frameworkId" value="@framework.Id" />
+                                    <div class="d-flex flex-wrap gap-1">
+                                        <input name="file" type="file" accept=".pdf,.docx,.xlsx,.csv,.html,.htm,application/pdf" class="form-control form-control-sm" aria-label="New version of @framework.Name" />
+                                        <input name="appliesFrom" type="date" class="form-control form-control-sm ct-max-w-10"
+                                               title="Applies from (optional)" aria-label="Applies from" />
+                                        <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Upload new version</button>
+                                    </div>
+                                </form>
+                            </details>
+                            @if (canManage)
+                            {
+                                @* #52: a name typed wrong is fixed; a framework no project uses is removed (hidden, kept for the history) *@
+                                <details class="rename-framework-menu" data-dialog-title="Rename @framework.Name">
+                                    <summary class="btn btn-sm btn-outline-secondary">Rename…</summary>
+                                    <form asp-action="Rename" method="post" class="rename-framework mt-1">
+                                        <input type="hidden" name="frameworkId" value="@framework.Id" />
+                                        <label class="form-label small" for="rename-@framework.Id">New name</label>
+                                        <input id="rename-@framework.Id" name="name" value="@framework.Name" maxlength="@ComplianceTracker.Domain.Frameworks.Framework.MaxNameLength" class="form-control form-control-sm mb-1" required />
+                                        <p class="small text-muted mb-1">The part before " – " gives the test tags, e.g. "ISO27001 – Demo" gives <code>@@iso27001-A.8.28</code>.</p>
+                                        <button type="submit" class="btn btn-sm btn-primary">Rename</button>
+                                    </form>
+                                </details>
+                                <form asp-action="Remove" method="post" class="remove-framework" data-confirm-final="true"
+                                      data-confirm="@framework.Name is removed from the list. It is kept for the history and can only be removed when no project uses it.">
+                                    <input type="hidden" name="frameworkId" value="@framework.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                </form>
+                            }
+                        </div>
                     </td>
                 }
             </tr>
         }
     </tbody>
 </table>
+</div>

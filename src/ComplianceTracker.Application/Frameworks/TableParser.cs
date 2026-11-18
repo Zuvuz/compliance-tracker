@@ -22,6 +22,31 @@ namespace ComplianceTracker.Application.Frameworks
             return new TableColumns(parts[0], parts[1], parts[2], Blank(parts[3]), Blank(parts[4]));
         }
 
+        // #52: the columns a file most likely uses, from the names in its header row (English and Danish), so "Read the
+        // requirements" works at once for a usual file. Otherwise the first, second and third columns.
+        public static TableColumns Guess(IReadOnlyList<string> headers)
+        {
+            string? Find(params string[] names)
+                => headers.FirstOrDefault(h => names.Any(n => string.Equals(h.Trim(), n, StringComparison.OrdinalIgnoreCase)))
+                   ?? headers.FirstOrDefault(h => names.Any(n => h.Trim().StartsWith(n, StringComparison.OrdinalIgnoreCase)));
+
+            var code = Find("code", "id", "ref", "reference", "control", "clause", "krav-id", "kode", "nr", "no");
+            var title = Find("title", "name", "heading", "titel", "navn", "overskrift");
+            var text = Find("text", "description", "requirement", "content", "tekst", "beskrivelse", "krav");
+            var parent = Find("parent", "parent code", "forælder");
+            var kind = Find("kind", "type", "art");
+
+            var rest = headers.Where(h => h != code && h != title && h != text).ToList();
+            code ??= rest.Count > 0 ? rest[0] : headers.FirstOrDefault() ?? "";
+            rest.Remove(code);
+            title ??= rest.Count > 0 ? rest[0] : code;
+            rest.Remove(title);
+            text ??= rest.Count > 0 ? rest[0] : title;
+            return new TableColumns(code, title, text,
+                parent is not null && parent != code && parent != title && parent != text ? parent : null,
+                kind is not null && kind != code && kind != title && kind != text ? kind : null);
+        }
+
         // The form's choice; the code, title and text must be three columns of the file
         public static TableColumns Choose(IReadOnlyList<string> headers, string? code, string? title, string? text, string? parent, string? kind)
         {

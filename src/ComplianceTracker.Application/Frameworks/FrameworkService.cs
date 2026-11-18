@@ -456,6 +456,52 @@ namespace ComplianceTracker.Application.Frameworks
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        // #52: an uploaded framework gets a new name; the name must be free in the organisation. The test tags follow the
+        // name (the part before " – "), so the log says how they change.
+        public async Task RenameAsync(Guid frameworkId, string? name, CancellationToken cancellationToken = default)
+        {
+            var (organization, _) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
+            var framework = await _frameworks.GetAsync(organization.Id, frameworkId, cancellationToken);
+            if (framework is null || framework.IsRemoved)
+            {
+                throw new DomainException("Framework not found");
+            }
+
+            var text = (name ?? "").Trim();
+            if (!string.Equals(text, framework.Name, StringComparison.OrdinalIgnoreCase)
+                && await _frameworks.NameExistsAsync(organization.Id, text, cancellationToken))
+            {
+                throw new DomainException("Another framework already has that name");
+            }
+
+            var old = framework.Rename(text);
+            var (oldTag, newTag) = (FrameworkSlugs.Slug(old), FrameworkSlugs.Slug(framework.Name));
+            await _log.LogAsync(ActivityAction.FrameworkRenamed, framework.Id,
+                $"{old} → {framework.Name}" + (oldTag == newTag ? "" : $" (test tags @{oldTag}-… → @{newTag}-…)"), cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // #52: an uploaded framework that no project uses is removed: hidden everywhere, kept for the history
+        public async Task RemoveAsync(Guid frameworkId, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
+            var framework = await _frameworks.GetAsync(organization.Id, frameworkId, cancellationToken);
+            if (framework is null || framework.IsRemoved)
+            {
+                throw new DomainException("Framework not found");
+            }
+
+            var projects = await _projects.ListUsingFrameworkAsync(organization.Id, framework.Id, cancellationToken);
+            if (projects.Count > 0)
+            {
+                throw new DomainException($"Remove {framework.Name} from these projects first: {string.Join(", ", projects.Select(p => p.Name))}");
+            }
+
+            framework.Remove(user.Id, Now);
+            await _log.LogAsync(ActivityAction.FrameworkRemoved, framework.Id, framework.Name, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
         // US-006: switches a built-in framework off again. The history is kept (R4).
         // Switching off a framework that is already off does nothing.
         public async Task DisableBuiltInAsync(Guid frameworkId, CancellationToken cancellationToken = default)
