@@ -310,6 +310,14 @@ namespace ComplianceTracker.Domain.Risks
             EnsureNotClosed();
             var measure = _measures.FirstOrDefault(m => m.Id == measureId)
                 ?? throw new DomainException("Measure not found");
+
+            // US-202 R6: the actions under it would lose their place
+            var under = _actions.Count(a => a.MeasureId == measure.Id);
+            if (under > 0)
+            {
+                throw new DomainException($"Move or remove the {under} {(under == 1 ? "action" : "actions")} under the measure first");
+            }
+
             _measures.Remove(measure);
 
             // US-165 R5: the residual was set with this measure in place
@@ -319,13 +327,42 @@ namespace ComplianceTracker.Domain.Risks
             }
         }
 
-        // US-111 R1: the caller checks that the owner is a member of the organisation
-        public RiskAction AddAction(string title, Guid ownerId, DateOnly? dueOn, Guid userId, DateTime at)
+        // US-111 R1: the caller checks that the owner is a member of the organisation.
+        // US-202 R3: under one of the risk's measures, or under "Other actions" (null).
+        public RiskAction AddAction(string title, Guid ownerId, DateOnly? dueOn, Guid userId, DateTime at, Guid? measureId = null)
         {
             EnsureNotClosed();
-            var action = new RiskAction(Id, title, ownerId, dueOn, userId, at);
+            EnsureMeasure(measureId);
+            var action = new RiskAction(Id, title, ownerId, dueOn, userId, at, measureId);
             _actions.Add(action);
             return action;
+        }
+
+        // US-202 R3: an action moves to another of the risk's measures, or to "Other actions" (null)
+        public RiskAction MoveAction(Guid actionId, Guid? measureId)
+        {
+            EnsureNotClosed();
+            EnsureMeasure(measureId);
+            var action = Action(actionId);
+            if (action.MeasureId == measureId)
+            {
+                throw new DomainException("The action is already there");
+            }
+
+            action.MoveTo(measureId);
+            return action;
+        }
+
+        // US-202: the actions under a measure, and those under "Other actions" (null)
+        public IReadOnlyList<RiskAction> ActionsUnder(Guid? measureId)
+            => _actions.Where(a => a.MeasureId == measureId).OrderBy(a => a.IsDone).ThenBy(a => a.DueOn ?? DateOnly.MaxValue).ToList();
+
+        private void EnsureMeasure(Guid? measureId)
+        {
+            if (measureId is { } id && _measures.All(m => m.Id != id))
+            {
+                throw new DomainException("The measure is not linked to the risk");
+            }
         }
 
         // US-111 R2: the caller checks that the work item or evidence belongs to the project

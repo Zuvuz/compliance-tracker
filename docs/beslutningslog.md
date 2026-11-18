@@ -2300,6 +2300,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Egne kategorier, som brugeren navngiver. Det kræver vedligehold, og typen er nok til at finde tingene.
   - Gruppering efter ramme. En evidens, der beviser krav i flere rammer, ville stå flere steder.
 
+### B154 – Ét sted på risikosiden for det, der mindsker risikoen (US-202)
+
+- **Beslutning:**
+  - **Én sektion,** "What reduces this risk", i stedet for "Measures", "Treatment actions" og "Trace". Først kommer risikoens measures (krav og user stories), hver med de handlinger, der udfører den, og "+ Add action". Derefter "Other actions" for handlinger, der ikke hører til en measure.
+  - **En handling kan høre til en measure** (`RiskAction.MeasureId`) og flyttes til en anden measure eller til "Other actions". En measure med handlinger kan ikke fjernes, før handlingerne er flyttet eller fjernet.
+  - **De mest relevante krav kommer først,** når man vælger en measure: op til fem krav, der deler ord med risikoens titel og beskrivelse. AI-forslagene (US-106) er uændrede.
+  - **Den fulde tråd** (US-124) ligger foldet inde i sektionen i stedet for som en sektion for sig.
+  - **En risiko, der ikke mindskes** (accepteret, overført eller undgået), siger, at der ikke er brug for handlinger.
+- **Begrundelse:** Measures og handlinger svarede begge på "hvad mindsker risikoen", uden at de var koblet sammen, og "Trace" gentog handlingerne. ISO 27001 6.1.3 og 8.3: de valgte kontroller og planen, der udfører dem, hører sammen.
+- **Afveget fra historien:**
+  - User stories forbliver measures i stedet for at blive lavet om til handlinger (R8). En handling kan ligge under en story-measure lige så vel som under et krav, så der er intet at flytte, og ingen data ændres.
+  - Fejlbeskeden ved fjernelse nævner ikke kravets kode ("Move or remove the 1 action under the measure first"), fordi domænet ikke kender koderne.
+  - Kravlisten er stadig en dropdown med en gruppe "Most relevant" øverst, ikke et søgefelt.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

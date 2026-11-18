@@ -410,10 +410,22 @@ namespace ComplianceTracker.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "id")]
-        public async Task<IActionResult> AddAction(Guid id, string? title, Guid? ownerId, DateOnly? dueOn, CancellationToken cancellationToken)
+        // US-202 R3: measureId puts it under one of the risk's measures; without it, under "Other actions"
+        public async Task<IActionResult> AddAction(Guid id, string? title, Guid? ownerId, DateOnly? dueOn, Guid? measureId, CancellationToken cancellationToken)
         {
             await _service.AddActionAsync(await ProjectOfAsync(id, cancellationToken), id, title ?? "",
-                ownerId ?? throw new DomainException("Choose an owner"), dueOn, cancellationToken);
+                ownerId ?? throw new DomainException("Choose an owner"), dueOn, cancellationToken, measureId);
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // POST /Risks/MoveAction: US-202 R3. "to" is a measure's id, or empty for "Other actions".
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "id")]
+        public async Task<IActionResult> MoveAction(Guid id, Guid actionId, string? to, CancellationToken cancellationToken)
+        {
+            await _service.MoveActionAsync(await ProjectOfAsync(id, cancellationToken), id, actionId,
+                Guid.TryParse(to, out var measureId) ? measureId : null, cancellationToken);
             return RedirectToAction(nameof(Details), new { id });
         }
 

@@ -5918,6 +5918,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<DateOnly?>("DueOn")
                         .HasColumnType("date");
 
+                    b.Property<Guid?>("MeasureId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uuid");
 
@@ -5939,6 +5942,8 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("DoneById");
+
+                    b.HasIndex("MeasureId");
 
                     b.HasIndex("OwnerId");
 
@@ -8286,6 +8291,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasOne("ComplianceTracker.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("DoneById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ComplianceTracker.Domain.Risks.RiskMeasure", null)
+                        .WithMany()
+                        .HasForeignKey("MeasureId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ComplianceTracker.Domain.Users.User", null)

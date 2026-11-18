@@ -5,7 +5,10 @@
    li.risk-action-link (data-kind), the forms .link-risk-action and .complete-risk-action; #add-risk-action; #no-risk-actions.
    US-176: #withdraw-risk (reason), #reopen-risk (reason), form.remove-risk-action, form.unlink-risk-action-link.
    US-124: #risk-trace with li.trace-node (data-kind: measure-requirement, measure-story, action, story, requirement, evidence;
-   data-name), nested as the thread goes; #no-trace. *@
+   data-name), nested as the thread goes; #no-trace.
+   US-202: section#what-reduces; each li.risk-measure holds ul.measure-actions (li.risk-action) and details.add-measure-action
+   with form.add-risk-action-form (measureId); #other-actions with #risk-actions and form#add-risk-action; form.move-risk-action
+   (to); #relevant-measures in #add-measure; #no-actions-needed; the trace in details#risk-trace-details. *@
 @using ComplianceTracker.Domain.Risks
 @model RiskPageViewModel
 @{
@@ -100,155 +103,10 @@
     </dd>
 </dl>
 
-<section class="mb-4">
-    <h2 class="h5"><term name="Measure">Measures</term></h2>
-    @if (editable && Model.Compliance is { } compliance)
+@{
+    // US-111: one treatment action with its stories and evidence. US-202: shown under its measure or under "Other actions".
+    async Task ActionItem(RiskAction action)
     {
-        @* #52: adding comes before the list. R5: a requirement of the project, or one of its user stories *@
-        <form asp-action="AddMeasure" method="post" class="d-flex flex-wrap gap-2" id="add-measure">
-            <input type="hidden" name="id" value="@risk.Id" />
-            <select name="measure" class="form-select form-select-sm" aria-label="Measure">
-                @foreach (var framework in compliance.Frameworks)
-                {
-                    <optgroup label="@FrameworkNames.Short(framework.Framework.Name)">
-                        @foreach (var row in framework.Requirements.Where(r => r.IsApplicable))
-                        {
-                            <option value="requirement:@row.Requirement.Id">@row.Requirement.Code @row.Requirement.Title</option>
-                        }
-                    </optgroup>
-                }
-                <optgroup label="User stories">
-                    @foreach (var story in compliance.WorkItems.Where(w => w.State != ComplianceTracker.Domain.WorkItems.WorkItemState.Removed))
-                    {
-                        <option value="story:@story.Id">@story.Title</option>
-                    }
-                </optgroup>
-            </select>
-            <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Link measure</button>
-        </form>
-
-        @* US-106 R12: the AI suggests measures; a person approves each one *@
-        <form asp-action="SuggestMeasures" method="post" class="mt-2 mb-3" id="suggest-measures" data-busy="Working… this can take a minute">
-            <input type="hidden" name="id" value="@risk.Id" />
-            <button type="submit" class="btn btn-sm btn-outline-info">Suggest measures</button>
-        </form>
-    }
-    @if (risk.Measures.Count == 0)
-    {
-        <p class="text-muted">@(risk.Treatment == RiskTreatment.Reduce ? "No measures yet" : "None")</p>
-    }
-    <ul id="risk-measures" class="list-unstyled">
-        @foreach (var measure in risk.Measures)
-        {
-            var view = Model.ViewOf(measure);
-            string RequirementPage(string sub, string code, string? fragment = null)
-                => Url.Action("Details", "Projects", new { id = project.Id, tab = ProjectTabs.Compliance, sub, req = code, risk = risk.Id }) + (fragment is null ? "" : "#" + fragment);
-            <li class="risk-measure d-flex flex-wrap gap-2 align-items-center" data-measure="@Model.MeasureName(measure)">
-                @* #52: a measure leads on to its requirement's page, where stories and evidence are linked, and back here *@
-                @if (view.Code is { } code)
-                {
-                    <a class="measure-link" href="@RequirementPage(view.Sub!, code)">@Model.MeasureName(measure)</a>
-                }
-                else
-                {
-                    <span class="measure-link-none">@Model.MeasureName(measure)</span>
-                }
-                @if (view.Behind.Length > 0)
-                {
-                    <span class="small text-muted measure-behind">@view.Behind</span>
-                }
-                @foreach (var (sub, storyCode) in view.StoryRequirements)
-                {
-                    <a class="small measure-story-requirement" href="@RequirementPage(sub, storyCode)">@storyCode</a>
-                }
-                @if (canLinkWork && view.NeedsEvidence)
-                {
-                    @* US-158 R4: where the evidence is added: the requirement's page, or for a story the Evidence tab *@
-                    <a class="btn btn-sm btn-link py-0 measure-add-evidence"
-                       href="@(view.Code is { } evidenceCode ? RequirementPage(view.Sub!, evidenceCode, "add-evidence-section") : Url.Action("Details", "Projects", new { id = project.Id, tab = ProjectTabs.Evidence }))">Add evidence</a>
-                }
-                @if (editable)
-                {
-                    @* US-174: no question; the message after it offers Undo *@
-                    <form asp-action="RemoveMeasure" method="post" class="remove-measure">
-                        <input type="hidden" name="id" value="@risk.Id" />
-                        <input type="hidden" name="measureId" value="@measure.Id" />
-                        <button type="submit" class="btn btn-sm btn-link text-danger p-0" aria-label="Remove measure">×</button>
-                    </form>
-                }
-            </li>
-        }
-    </ul>
-    @if (TempData["MeasureMessage"] is string measureMessage)
-    {
-        <p class="small text-muted mt-1" id="measure-message" role="status">@measureMessage</p>
-    }
-    @if (Model.MeasureSuggestions.Count > 0)
-    {
-        <div class="waiting-box mt-2" id="measure-suggestions">
-            <div class="small fw-semibold">Waiting for your decision (@Model.MeasureSuggestions.Count)</div>
-            @foreach (var suggestion in Model.MeasureSuggestions)
-            {
-                var name = Model.MeasureName(suggestion);
-                <div class="row-item measure-suggestion" data-measure="@name">
-                    <span>@name</span>
-                    <div class="small text-muted item-source"><span class="badge text-bg-info">AI-generated</span> Suggested measure · score @suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</div>
-                    @if (editable)
-                    {
-                        <div class="d-flex flex-wrap gap-1 mt-1">
-                            <form asp-action="ApproveMeasure" method="post" enctype="multipart/form-data" class="approve-measure d-flex flex-wrap align-items-start gap-1" data-busy="Uploading…">
-                                <input type="hidden" name="id" value="@risk.Id" />
-                                <input type="hidden" name="suggestionId" value="@suggestion.Id" />
-                                <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
-                                @if (canLinkWork)
-                                {
-                                    @* US-158 R1: optional evidence, approved and proven in one step *@
-                                    <details class="approve-with-evidence" data-dialog-title="Approve the measure with evidence">
-                                        <summary class="btn btn-sm btn-link py-0">+ Evidence</summary>
-                                        <div class="d-flex flex-column gap-1 mt-1">
-                                            <input name="evidenceTitle" class="form-control form-control-sm" maxlength="200" placeholder="Title, e.g. MFA policy" aria-label="Evidence title" />
-                                            <input name="evidenceUrl" type="url" class="form-control form-control-sm" placeholder="Link (https://…)" aria-label="Evidence link" />
-                                            <input name="evidenceFile" type="file" class="form-control form-control-sm" aria-label="Or a file (max 10 MB)" />
-                                            <div class="d-flex gap-1 align-items-center">
-                                                <label class="small text-muted text-nowrap" for="valid-until-@suggestion.Id">Valid until</label>
-                                                <input name="evidenceValidUntil" id="valid-until-@suggestion.Id" type="date" class="form-control form-control-sm" />
-                                            </div>
-                                            <button type="submit" class="btn btn-sm btn-success align-self-start">Approve with evidence</button>
-                                        </div>
-                                    </details>
-                                }
-                            </form>
-                            <form asp-action="RejectMeasure" method="post" class="d-flex flex-wrap gap-1 reject-measure">
-                                <input type="hidden" name="id" value="@risk.Id" />
-                                <input type="hidden" name="suggestionId" value="@suggestion.Id" />
-                                <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason">
-                                    <option value="">Reason…</option>
-                                    @foreach (var reason in Enum.GetValues<ComplianceTracker.Domain.Mappings.RejectionReason>())
-                                    {
-                                        <option value="@reason">@reason</option>
-                                    }
-                                </select>
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
-                            </form>
-                        </div>
-                    }
-                </div>
-            }
-        </div>
-    }
-</section>
-
-<section class="mb-4">
-    @* US-111: the trace from the risk through what is done to the proof *@
-    <h2 class="h5">Treatment actions</h2>
-    <p class="small text-muted">What is done about the risk, and the user stories and evidence that carry it out. An action is done when a linked story is closed or evidence is linked.</p>
-    @if (risk.Actions.Count == 0)
-    {
-        <p class="text-muted" id="no-risk-actions">No actions yet</p>
-    }
-    <ul id="risk-actions" class="list-unstyled">
-        @foreach (var action in risk.Actions.OrderBy(a => a.IsDone).ThenBy(a => a.DueOn ?? DateOnly.MaxValue))
-        {
             var overdue = action.IsOverdue(Model.Today);
             <li class="risk-action border rounded p-2 mb-2" data-title="@action.Title">
                 <div class="d-flex flex-wrap gap-2 align-items-center">
@@ -329,13 +187,37 @@
                         </form>
                     </div>
                 }
+                @if (editable && !action.IsDone && risk.Measures.Count > 0)
+                {
+                    @* US-202 R3: under another measure, or under "Other actions" *@
+                    <form asp-action="MoveAction" method="post" class="d-flex flex-wrap gap-1 mt-1 move-risk-action">
+                        <input type="hidden" name="id" value="@risk.Id" />
+                        <input type="hidden" name="actionId" value="@action.Id" />
+                        <select name="to" class="form-select form-select-sm w-auto" aria-label="Move @action.Title to">
+                            @foreach (var target in risk.Measures.Where(m => m.Id != action.MeasureId))
+                            {
+                                <option value="@target.Id">@Model.MeasureName(target)</option>
+                            }
+                            @if (action.MeasureId is not null)
+                            {
+                                <option value="">Other actions</option>
+                            }
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-link py-0">Move</button>
+                    </form>
+                }
             </li>
-        }
-    </ul>
-    @if (editable)
+    }
+
+    // US-202 R2, R3: adding an action under a measure, or under "Other actions" (measureId null)
+    async Task AddActionForm(Guid? measureId, string formId)
     {
-        <form asp-action="AddAction" method="post" class="row g-2" id="add-risk-action">
+        <form asp-action="AddAction" method="post" class="row g-2 add-risk-action-form" id="@formId">
             <input type="hidden" name="id" value="@risk.Id" />
+            @if (measureId is { } underMeasure)
+            {
+                <input type="hidden" name="measureId" value="@underMeasure" />
+            }
             <div class="col-md-5">
                 <input name="title" required maxlength="@RiskAction.MaxTitleLength" class="form-control form-control-sm" placeholder="What will be done, e.g. Shorter session lifetime" aria-label="Action" />
             </div>
@@ -355,11 +237,200 @@
             </div>
         </form>
     }
-</section>
+}
 
-<section class="mb-4">
-    @* US-124 R1: risk → measures and actions → user stories → requirements → evidence *@
-    <h2 class="h5">Trace</h2>
+@* US-202 R1: one section for what reduces the risk: the measures (requirements and user stories), each with the actions
+   that carry it out, then "Other actions", and the full thread folded away *@
+<section class="mb-4" id="what-reduces">
+    <h2 class="h5">What reduces this risk</h2>
+    <p class="small text-muted">The requirements and user stories that reduce the risk (<term name="Measure">measures</term>), each with the actions that carry it out. An action is done when a linked story is closed or evidence is linked.</p>
+    @if (risk.Treatment != RiskTreatment.Reduce)
+    {
+        @* R7 *@
+        <p class="small" id="no-actions-needed">No actions needed: the risk is @RiskPageViewModel.TreatedAs(risk.Treatment)</p>
+    }
+    @if (editable && Model.Compliance is { } compliance)
+    {
+        @* #52: adding comes before the list. R5: a requirement of the project, or one of its user stories *@
+        <form asp-action="AddMeasure" method="post" class="d-flex flex-wrap gap-2" id="add-measure">
+            <input type="hidden" name="id" value="@risk.Id" />
+            <select name="measure" class="form-select form-select-sm" aria-label="Measure">
+                @{
+                    // US-202 R4: the requirements that share words with the risk come first
+                    var relevant = Model.RelevantRequirements();
+                }
+                @if (relevant.Count > 0)
+                {
+                    <optgroup label="Most relevant" id="relevant-measures">
+                        @foreach (var row in relevant)
+                        {
+                            <option value="requirement:@row.Requirement.Id">@row.Requirement.Code @row.Requirement.Title</option>
+                        }
+                    </optgroup>
+                }
+                @foreach (var framework in compliance.Frameworks)
+                {
+                    <optgroup label="@FrameworkNames.Short(framework.Framework.Name)">
+                        @foreach (var row in framework.Requirements.Where(r => r.IsApplicable && relevant.All(x => x.Requirement.Id != r.Requirement.Id)))
+                        {
+                            <option value="requirement:@row.Requirement.Id">@row.Requirement.Code @row.Requirement.Title</option>
+                        }
+                    </optgroup>
+                }
+                <optgroup label="User stories">
+                    @foreach (var story in compliance.WorkItems.Where(w => w.State != ComplianceTracker.Domain.WorkItems.WorkItemState.Removed))
+                    {
+                        <option value="story:@story.Id">@story.Title</option>
+                    }
+                </optgroup>
+            </select>
+            <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Link a requirement or story</button>
+        </form>
+
+        @* US-106 R12: the AI suggests measures; a person approves each one *@
+        <form asp-action="SuggestMeasures" method="post" class="mt-2 mb-3" id="suggest-measures" data-busy="Working… this can take a minute">
+            <input type="hidden" name="id" value="@risk.Id" />
+            <button type="submit" class="btn btn-sm btn-outline-info">Suggest measures</button>
+        </form>
+    }
+    @if (risk.Measures.Count == 0)
+    {
+        <p class="text-muted">@(risk.Treatment == RiskTreatment.Reduce ? "No measures yet" : "None")</p>
+    }
+    <ul id="risk-measures" class="list-unstyled">
+        @foreach (var measure in risk.Measures)
+        {
+            var view = Model.ViewOf(measure);
+            string RequirementPage(string sub, string code, string? fragment = null)
+                => Url.Action("Details", "Projects", new { id = project.Id, tab = ProjectTabs.Compliance, sub, req = code, risk = risk.Id }) + (fragment is null ? "" : "#" + fragment);
+            <li class="risk-measure d-flex flex-wrap gap-2 align-items-center" data-measure="@Model.MeasureName(measure)">
+                @* #52: a measure leads on to its requirement's page, where stories and evidence are linked, and back here *@
+                @if (view.Code is { } code)
+                {
+                    <a class="measure-link" href="@RequirementPage(view.Sub!, code)">@Model.MeasureName(measure)</a>
+                }
+                else
+                {
+                    <span class="measure-link-none">@Model.MeasureName(measure)</span>
+                }
+                @if (view.Behind.Length > 0)
+                {
+                    <span class="small text-muted measure-behind">@view.Behind</span>
+                }
+                @foreach (var (sub, storyCode) in view.StoryRequirements)
+                {
+                    <a class="small measure-story-requirement" href="@RequirementPage(sub, storyCode)">@storyCode</a>
+                }
+                @if (canLinkWork && view.NeedsEvidence)
+                {
+                    @* US-158 R4: where the evidence is added: the requirement's page, or for a story the Evidence tab *@
+                    <a class="btn btn-sm btn-link py-0 measure-add-evidence"
+                       href="@(view.Code is { } evidenceCode ? RequirementPage(view.Sub!, evidenceCode, "add-evidence-section") : Url.Action("Details", "Projects", new { id = project.Id, tab = ProjectTabs.Evidence }))">Add evidence</a>
+                }
+                @if (editable)
+                {
+                    @* US-174: no question; the message after it offers Undo *@
+                    <form asp-action="RemoveMeasure" method="post" class="remove-measure">
+                        <input type="hidden" name="id" value="@risk.Id" />
+                        <input type="hidden" name="measureId" value="@measure.Id" />
+                        <button type="submit" class="btn btn-sm btn-link text-danger p-0" aria-label="Remove measure">×</button>
+                    </form>
+                }
+                @* US-202 R2: the actions that carry out this measure *@
+                <ul class="list-unstyled measure-actions w-100 ms-3 mb-0" data-measure-id="@measure.Id">
+                    @foreach (var action in risk.ActionsUnder(measure.Id))
+                    {
+                        await ActionItem(action);
+                    }
+                </ul>
+                @if (editable)
+                {
+                    <details class="add-measure-action w-100 ms-3" data-measure="@Model.MeasureName(measure)">
+                        <summary class="btn btn-sm btn-link py-0">+ Add action</summary>
+                        @{ await AddActionForm(measure.Id, $"add-action-{measure.Id}"); }
+                    </details>
+                }
+            </li>
+        }
+    </ul>
+    @if (TempData["MeasureMessage"] is string measureMessage)
+    {
+        <p class="small text-muted mt-1" id="measure-message" role="status">@measureMessage</p>
+    }
+    @if (Model.MeasureSuggestions.Count > 0)
+    {
+        <div class="waiting-box mt-2" id="measure-suggestions">
+            <div class="small fw-semibold">Waiting for your decision (@Model.MeasureSuggestions.Count)</div>
+            @foreach (var suggestion in Model.MeasureSuggestions)
+            {
+                var name = Model.MeasureName(suggestion);
+                <div class="row-item measure-suggestion" data-measure="@name">
+                    <span>@name</span>
+                    <div class="small text-muted item-source"><span class="badge text-bg-info">AI-generated</span> Suggested measure · score @suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</div>
+                    @if (editable)
+                    {
+                        <div class="d-flex flex-wrap gap-1 mt-1">
+                            <form asp-action="ApproveMeasure" method="post" enctype="multipart/form-data" class="approve-measure d-flex flex-wrap align-items-start gap-1" data-busy="Uploading…">
+                                <input type="hidden" name="id" value="@risk.Id" />
+                                <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
+                                @if (canLinkWork)
+                                {
+                                    @* US-158 R1: optional evidence, approved and proven in one step *@
+                                    <details class="approve-with-evidence" data-dialog-title="Approve the measure with evidence">
+                                        <summary class="btn btn-sm btn-link py-0">+ Evidence</summary>
+                                        <div class="d-flex flex-column gap-1 mt-1">
+                                            <input name="evidenceTitle" class="form-control form-control-sm" maxlength="200" placeholder="Title, e.g. MFA policy" aria-label="Evidence title" />
+                                            <input name="evidenceUrl" type="url" class="form-control form-control-sm" placeholder="Link (https://…)" aria-label="Evidence link" />
+                                            <input name="evidenceFile" type="file" class="form-control form-control-sm" aria-label="Or a file (max 10 MB)" />
+                                            <div class="d-flex gap-1 align-items-center">
+                                                <label class="small text-muted text-nowrap" for="valid-until-@suggestion.Id">Valid until</label>
+                                                <input name="evidenceValidUntil" id="valid-until-@suggestion.Id" type="date" class="form-control form-control-sm" />
+                                            </div>
+                                            <button type="submit" class="btn btn-sm btn-success align-self-start">Approve with evidence</button>
+                                        </div>
+                                    </details>
+                                }
+                            </form>
+                            <form asp-action="RejectMeasure" method="post" class="d-flex flex-wrap gap-1 reject-measure">
+                                <input type="hidden" name="id" value="@risk.Id" />
+                                <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason">
+                                    <option value="">Reason…</option>
+                                    @foreach (var reason in Enum.GetValues<ComplianceTracker.Domain.Mappings.RejectionReason>())
+                                    {
+                                        <option value="@reason">@reason</option>
+                                    }
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    @* US-111; US-202 R3: actions not tied to a measure *@
+    <h3 class="h6 mt-3" id="other-actions">Other actions</h3>
+    @if (risk.Actions.Count == 0)
+    {
+        <p class="text-muted" id="no-risk-actions">No actions yet</p>
+    }
+    <ul id="risk-actions" class="list-unstyled">
+        @foreach (var action in risk.ActionsUnder(null))
+        {
+            await ActionItem(action);
+        }
+    </ul>
+    @if (editable)
+    {
+        await AddActionForm(null, "add-risk-action");
+    }
+
+    @* US-124 R1: risk → measures and actions → user stories → requirements → evidence. US-202 R1: folded into this section. *@
+    <details class="mt-3" id="risk-trace-details">
+    <summary class="small">Show the full thread: measures and actions → user stories → requirements → evidence</summary>
     @{
         var trace = Model.Trace;
         async Task Requirement(ComplianceTracker.Application.Risks.TraceRequirement requirement, string kind)
@@ -442,6 +513,7 @@
             }
         </ul>
     }
+    </details>
 </section>
 
 @* US-203 R4, R5: every change of the risk, from the activity log; nothing here can be edited *@
