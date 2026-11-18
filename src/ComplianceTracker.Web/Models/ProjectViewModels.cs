@@ -171,7 +171,7 @@ namespace ComplianceTracker.Web.Models
             (NotCovered, "Not covered"),
             (NeedsAction, "Needs action"),
             (WithoutEvidence, "Without evidence"),
-            (HasSuggestions, "Has suggestions"),
+            (HasSuggestions, "Waiting for decision"),
             (NotApplicable, "Not applicable"),
             (NeedsReview, "Needs review"),
             (Recommendations, "Recommendations")
@@ -186,7 +186,8 @@ namespace ComplianceTracker.Web.Models
             // Not applicable is not "not covered" (US-043 R6), nor is a recommendation (US-143 R6)
             NotCovered => row.IsApplicable && !row.IsCovered && !row.Requirement.IsRecommendation,
             Recommendations => row.Requirement.IsRecommendation,
-            HasSuggestions => row.HasSuggestions,
+            // #52: everything that waits for a decision, also evidence from test results and pull requests
+            HasSuggestions => Application.Compliance.RequirementRows.Waiting(row) > 0,
             NotApplicable => !row.IsApplicable,
             NeedsReview => row.NeedsReview,
             NeedsAction => row.NeedsAction is not null,

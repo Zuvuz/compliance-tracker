@@ -688,9 +688,21 @@ namespace ComplianceTracker.Web.Controllers
             using var buffer = new MemoryStream();
             await file.CopyToAsync(buffer, cancellationToken);
             var result = await suggestions.UploadTestResultsAsync(projectId, file.FileName, buffer.ToArray(), cancellationToken);
-            TempData["TestResults"] = $"{result.Suggested} suggested, {result.Blocked} blocked by failing tests"
-                + (result.UnknownTags.Count > 0 ? $"; unknown tags ignored: {string.Join(", ", result.UnknownTags)}" : "");
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+            // #52: what the upload led to, and why nothing was suggested; the page lists what waits, with "Accept all"
+            TempData["TestResults"] = result.Message;
+            return RedirectToAction(nameof(TestResults), new { id = projectId });
+        }
+
+        // POST /Projects/AcceptAllTestResults: #52, every passing suggestion from one upload becomes evidence
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(TestResults), IdFrom = "projectId")]
+        public async Task<IActionResult> AcceptAllTestResults(Guid projectId, string? sha256,
+            [FromServices] EvidenceSuggestionService suggestions, CancellationToken cancellationToken)
+        {
+            var count = await suggestions.AcceptAllAsync(projectId, sha256, cancellationToken);
+            TempData["Success"] = $"{count} {(count == 1 ? "test run is" : "test runs are")} now evidence on their requirements.";
+            return RedirectToAction(nameof(TestResults), new { id = projectId });
         }
 
         // POST /Projects/AcceptSuggestedEvidence: R4
@@ -1922,8 +1934,10 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound();
             }
 
+            var names = (await _organizations.MineAsync(cancellationToken))?.Users.ToDictionary(u => u.Id, u => u.Name) ?? [];
             return View(new TestResultsUploadsViewModel(project, await suggestions.UploadsAsync(id, cancellationToken),
-                !project.IsClosed && await HttpContext.RequestServices.GetRequiredService<Application.Common.CurrentMember>().CanAsync(Domain.Users.Permission.LinkWork, cancellationToken)));
+                !project.IsClosed && await HttpContext.RequestServices.GetRequiredService<Application.Common.CurrentMember>().CanAsync(Domain.Users.Permission.LinkWork, cancellationToken),
+                names));
         }
 
         // POST /Projects/WithdrawTestResults: US-177 R4

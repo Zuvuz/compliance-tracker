@@ -56,23 +56,43 @@ namespace ComplianceTracker.Domain.Mappings
         public static EvidenceSuggestion FromTestRun(
             Guid projectId, Guid requirementId, string resultsSha256, string resultsFileName,
             IReadOnlyCollection<string> passing, IReadOnlyCollection<string> failing, DateTime at)
-            => new()
+        {
+            var suggestion = new EvidenceSuggestion
             {
                 ProjectId = projectId,
                 RequirementId = requirementId,
                 Source = EvidenceSourceKind.TestRun,
-                Title = Cut(failing.Count > 0
-                    ? $"Tests failed: {failing.Count} of {passing.Count + failing.Count} scenarios (test run {at:dd-MM-yyyy})"
-                    : $"Tests passed: {passing.Count} {(passing.Count == 1 ? "scenario" : "scenarios")} (test run {at:dd-MM-yyyy})", MaxTitleLength),
-                ExternalId = resultsSha256,
-                ResultsFileName = Cut(resultsFileName, 200),
-                PassingCount = passing.Count,
-                FailingCount = failing.Count,
-                PassingScenarios = Lines(passing),
-                FailingScenarios = Lines(failing),
-                CreatedAt = at,
-                Status = failing.Count > 0 ? EvidenceSuggestionStatus.Blocked : EvidenceSuggestionStatus.Pending
+                ExternalId = resultsSha256
             };
+            suggestion.SetRun(resultsFileName, passing, failing, at);
+            return suggestion;
+        }
+
+        // #52: the same test results uploaded again after they were withdrawn (US-177) are suggested again; the suggestion is
+        // the same row, as one source is suggested once per requirement (R5)
+        public void SuggestAgain(string resultsFileName, IReadOnlyCollection<string> passing, IReadOnlyCollection<string> failing, DateTime at)
+        {
+            if (Source != EvidenceSourceKind.TestRun || Status != EvidenceSuggestionStatus.Withdrawn)
+            {
+                throw new DomainException("Only withdrawn test results can be suggested again");
+            }
+
+            SetRun(resultsFileName, passing, failing, at);
+        }
+
+        private void SetRun(string resultsFileName, IReadOnlyCollection<string> passing, IReadOnlyCollection<string> failing, DateTime at)
+        {
+            Title = Cut(failing.Count > 0
+                ? $"Tests failed: {failing.Count} of {passing.Count + failing.Count} scenarios (test run {at:dd-MM-yyyy})"
+                : $"Tests passed: {passing.Count} {(passing.Count == 1 ? "scenario" : "scenarios")} (test run {at:dd-MM-yyyy})", MaxTitleLength);
+            ResultsFileName = Cut(resultsFileName, 200);
+            PassingCount = passing.Count;
+            FailingCount = failing.Count;
+            PassingScenarios = Lines(passing);
+            FailingScenarios = Lines(failing);
+            CreatedAt = at;
+            Status = failing.Count > 0 ? EvidenceSuggestionStatus.Blocked : EvidenceSuggestionStatus.Pending;
+        }
 
         // R3: e.g. "PR 42 – Keycloak sign-in". The story's reference is part of the id ("acme/portal#4>acme/portal#42"),
         // so the next sync knows which stories were already asked about.

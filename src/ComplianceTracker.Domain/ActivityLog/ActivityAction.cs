@@ -376,6 +376,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         ScanWithdrawn,
         SbomWithdrawn,
         TestResultsWithdrawn,
-        RequirementDocumentVersionWithdrawn
+        RequirementDocumentVersionWithdrawn,
+
+        // #52: test results were uploaded, whatever they led to. SubjectId points at the project; Details holds the file and
+        // what it led to (passed, suggested, already suggested, unknown tags).
+        TestResultsUploaded
     }
 }

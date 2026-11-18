@@ -84,6 +84,42 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await _web.PostFormAsync(form.GetAttribute("action")!, HiddenFields(form));
         }
 
+        // #52: the page with every upload (Views/Projects/TestResults.cshtml)
+        [When("I upload the same test results again")]
+        public Task WhenIUploadTheSameAgain()
+            => _lastUpload is { } last ? UploadAsync(last.Name, last.Content) : throw new Xunit.Sdk.XunitException("Nothing was uploaded yet.");
+
+        [When("I accept all the test results that wait")]
+        public async Task WhenIAcceptAll()
+        {
+            await _web.OpenAsync($"/Projects/TestResults/{await ProjectIdAsync()}");
+            var form = _web.Page!.QuerySelector("form.accept-all-test-results") ?? throw new Xunit.Sdk.XunitException("No \"Accept all\" on the test results page.");
+            await _web.PostFormAsync(form.GetAttribute("action")!, HiddenFields(form));
+        }
+
+        [Then("the test results page lists {int} uploads, the newest saying {string}")]
+        public async Task ThenTheTestResultsPageLists(int count, string text)
+        {
+            await _web.OpenAsync($"/Projects/TestResults/{await ProjectIdAsync()}");
+            var uploads = _web.Page!.QuerySelectorAll("#test-results-uploads .test-results-upload").ToList();
+            Assert.Equal(count, uploads.Count);
+            Assert.Contains(text, uploads[0].TextContent, StringComparison.Ordinal);
+        }
+
+        [Then("{int} test run is evidence, from the test results")]
+        public async Task ThenTestRunsAreEvidence(int count)
+        {
+            await using var db = _web.CreateDbContext();
+            Assert.Equal(count, await db.Evidence.CountAsync(e => e.Source == ComplianceTracker.Domain.Mappings.EvidenceSource.TestResults && e.RemovedAt == null));
+        }
+
+        [Then("the test results page lists {string} as waiting")]
+        public async Task ThenWaiting(string code)
+        {
+            await _web.OpenAsync($"/Projects/TestResults/{await ProjectIdAsync()}");
+            Assert.Contains(_web.Page!.QuerySelectorAll(".test-results-waiting li"), li => li.GetAttribute("data-code") == code);
+        }
+
         // ---------------------------------------------------------- Then
 
         [Then("the row {string} has the suggested evidence {string}")]
@@ -123,8 +159,12 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         // ---------------------------------------------------------- Helpers
 
+        // #52: the last file uploaded, to upload the same one again
+        private (string Name, string Content)? _lastUpload;
+
         private async Task UploadAsync(string fileName, string content)
         {
+            _lastUpload = (fileName, content);
             var projectId = await ProjectIdAsync();
             await _web.OpenAsync($"/Projects/Details/{projectId}/evidence");
             var form = _web.Page!.QuerySelector("#test-results-upload")

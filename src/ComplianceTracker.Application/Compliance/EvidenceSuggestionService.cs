@@ -23,6 +23,11 @@ namespace ComplianceTracker.Application.Compliance
         Task<IReadOnlyList<EvidenceSuggestion>> ListAsync(Guid projectId, CancellationToken cancellationToken = default);
 
         Task AddRangeAsync(IEnumerable<EvidenceSuggestion> suggestions, CancellationToken cancellationToken = default);
+
+        // #52: every upload of test results to the project, newest first
+        Task<IReadOnlyList<TestRunUpload>> ListUploadsAsync(Guid projectId, CancellationToken cancellationToken = default);
+
+        Task AddUploadAsync(TestRunUpload upload, CancellationToken cancellationToken = default);
     }
 
     // R1, R9: reads a test results file (TRX or JUnit XML). Throws DomainException when the file is neither.
@@ -45,7 +50,13 @@ namespace ComplianceTracker.Application.Compliance
     public record ClosingPullRequest(int Number, string Title, string Url);
 
     // What an upload of test results found
-    public record TestRunResult(int Suggested, int Blocked, IReadOnlyList<string> UnknownTags);
+    // #52: what an upload led to; Upload holds the counts and why nothing was suggested
+    public record TestRunResult(int Suggested, int Blocked, IReadOnlyList<string> UnknownTags, TestRunUpload Upload)
+    {
+        public string Message => Upload.Summary
+            + (UnknownTags.Count > 0 ? $"; unknown tags ignored: {string.Join(", ", UnknownTags)}" : "")
+            + (Upload.WhyNothing is { } why ? $". {why}" : "");
+    }
 
     // US-058: evidence suggestions from passing tests and from the pull requests that closed stories. Tags and links
     // decide them; a person with LinkWork accepts (it becomes normal evidence, US-057/US-059) or rejects (R4, R5).
@@ -53,6 +64,9 @@ namespace ComplianceTracker.Application.Compliance
     {
         // R9
         public const long MaxResultsSize = 10 * 1024 * 1024;
+
+        // #52: a story's own id used as a tag, e.g. "US-004", is not a framework's tag
+        private static readonly System.Text.RegularExpressions.Regex StoryId = new(@"^[A-Za-z]{2,10}-\d+$");
 
         // GitHub's limits: at most this many closed stories are asked about per sync
         public const int MaxStoriesPerSync = 20;
@@ -101,8 +115,8 @@ namespace ComplianceTracker.Application.Compliance
             _clock = clock;
         }
 
-        // US-177: the uploads of test results whose suggestions still wait (or are blocked), newest first; those are the
-        // ones that can be withdrawn
+        // US-177: the uploads of test results; those whose suggestions still wait (or are blocked) can be withdrawn.
+        // #52: every upload, also those that made no suggestions, with what waits and the requirement each is for.
         public async Task<IReadOnlyList<TestResultsUpload>> UploadsAsync(Guid projectId, CancellationToken cancellationToken = default)
         {
             if (await _member.FindOrganizationAsync(cancellationToken) is not { } organization
@@ -111,7 +125,34 @@ namespace ComplianceTracker.Application.Compliance
                 return [];
             }
 
-            return TestResultsUpload.From(await _suggestions.ListAsync(project.Id, cancellationToken));
+            var requirements = (await RequirementsByTagAsync(project, cancellationToken))
+                .SelectMany(f => f.Value.Values.Select(r => (Slug: f.Key, Requirement: r)))
+                .GroupBy(x => x.Requirement.Id)
+                .ToDictionary(g => g.Key, g => (g.First().Requirement.Code, g.First().Requirement.Title, g.First().Slug));
+            return TestResultsUpload.From(await _suggestions.ListAsync(project.Id, cancellationToken),
+                await _suggestions.ListUploadsAsync(project.Id, cancellationToken), requirements);
+        }
+
+        // #52: "Accept all" on one upload: every suggestion from the file that waits becomes evidence, as Accept does one by
+        // one; blocked ones (a failing test) stay. Returns how many were accepted.
+        public async Task<int> AcceptAllAsync(Guid projectId, string? sha256, CancellationToken cancellationToken = default)
+        {
+            var (_, _, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var pending = (await _suggestions.ListAsync(project.Id, cancellationToken))
+                .Where(s => s.Source == EvidenceSourceKind.TestRun && s.ExternalId == sha256 && s.Status == EvidenceSuggestionStatus.Pending)
+                .Select(s => s.Id)
+                .ToList();
+            if (pending.Count == 0)
+            {
+                throw new DomainException("Nothing from these test results waits to be accepted");
+            }
+
+            foreach (var id in pending)
+            {
+                await AcceptAsync(projectId, id, cancellationToken);
+            }
+
+            return pending.Count;
         }
 
         // US-177 R2, R4: test results uploaded by mistake are withdrawn with a reason, by a member who may upload them:
@@ -144,7 +185,7 @@ namespace ComplianceTracker.Application.Compliance
         // where the framework is the short name of one the project follows, as in the Compliance tab's address.
         public async Task<TestRunResult> UploadTestResultsAsync(Guid projectId, string fileName, byte[] content, CancellationToken cancellationToken = default)
         {
-            var (_, _, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var (_, uploader, project) = await OpenProjectAsync(projectId, cancellationToken);
             if (content.Length == 0)
             {
                 throw new DomainException("Choose a test results file");
@@ -163,6 +204,7 @@ namespace ComplianceTracker.Application.Compliance
 
             var perRequirement = new Dictionary<Guid, (Requirement Requirement, List<string> Passing, List<string> Failing)>();
             var unknown = new SortedSet<string>(StringComparer.Ordinal);
+            var otherFrameworks = new SortedSet<string>(StringComparer.Ordinal);
             foreach (var test in tests)
             {
                 foreach (var tag in test.Tags.Select(t => t.TrimStart('@')).Distinct())
@@ -176,7 +218,13 @@ namespace ComplianceTracker.Application.Compliance
                     var (slug, code) = (tag[..dash].ToLowerInvariant(), tag[(dash + 1)..]);
                     if (!requirements.TryGetValue(slug, out var codes))
                     {
-                        continue; // not a framework the project follows, e.g. "US-004"
+                        // not a framework the project follows; a story's own id such as "US-004" is not a framework
+                        if (!StoryId.IsMatch(tag))
+                        {
+                            otherFrameworks.Add(slug);
+                        }
+
+                        continue;
                     }
 
                     if (!codes.TryGetValue(code, out var requirement))
@@ -200,17 +248,45 @@ namespace ComplianceTracker.Application.Compliance
                 }
             }
 
-            var made = perRequirement.Values
-                .Where(r => !existing.Any(s => s.RequirementId == r.Requirement.Id && s.ExternalId == sha256)) // the same file twice
-                .Select(r => EvidenceSuggestion.FromTestRun(project.Id, r.Requirement.Id, sha256, fileName, r.Passing, r.Failing, Now))
-                .ToList();
+            // The same file twice gives no second suggestion for a requirement; one withdrawn before (US-177) is suggested again
+            var made = new List<EvidenceSuggestion>();
+            var created = new List<EvidenceSuggestion>();
+            var already = 0;
+            foreach (var r in perRequirement.Values)
+            {
+                var earlier = existing.FirstOrDefault(s => s.RequirementId == r.Requirement.Id && s.ExternalId == sha256);
+                if (earlier is null)
+                {
+                    var suggestion = EvidenceSuggestion.FromTestRun(project.Id, r.Requirement.Id, sha256, fileName, r.Passing, r.Failing, Now);
+                    created.Add(suggestion);
+                    made.Add(suggestion);
+                }
+                else if (earlier.Status == EvidenceSuggestionStatus.Withdrawn && earlier.Source == EvidenceSourceKind.TestRun)
+                {
+                    earlier.SuggestAgain(fileName, r.Passing, r.Failing, Now);
+                    made.Add(earlier);
+                }
+                else
+                {
+                    already++;
+                }
+            }
 
-            await _suggestions.AddRangeAsync(made, cancellationToken);
+            await _suggestions.AddRangeAsync(created, cancellationToken);
             var blocked = made.Count(s => s.Status == EvidenceSuggestionStatus.Blocked);
-            await _log.LogAsync(ActivityAction.EvidenceSuggested, project.Id,
-                $"Test results {fileName}: {made.Count - blocked} suggestions, {blocked} blocked by failing tests", cancellationToken);
+            var upload = new TestRunUpload(project.Id, fileName, sha256, uploader.Id, Now, tests.Count(t => t.Passed), tests.Count(t => !t.Passed),
+                made.Count, blocked, already, unknown, otherFrameworks);
+            await _suggestions.AddUploadAsync(upload, cancellationToken);
+            await _log.LogAsync(ActivityAction.TestResultsUploaded, project.Id,
+                $"Test results {fileName}: {upload.Summary}{(unknown.Count > 0 ? $"; unknown tags: {string.Join(" ", unknown)}" : "")}", cancellationToken);
+            if (made.Count > 0)
+            {
+                await _log.LogAsync(ActivityAction.EvidenceSuggested, project.Id,
+                    $"Test results {fileName}: {made.Count - blocked} suggestions, {blocked} blocked by failing tests", cancellationToken);
+            }
+
             await _unitOfWork.SaveChangesAsync(cancellationToken);
-            return new TestRunResult(made.Count - blocked, blocked, unknown.ToList());
+            return new TestRunResult(made.Count - blocked, blocked, unknown.ToList(), upload);
         }
 
         // R3: after a GitHub sync (US-018). For closed stories linked to requirements, the merged pull requests that

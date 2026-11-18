@@ -75,7 +75,7 @@ namespace ComplianceTracker.Domain.ActivityLog
             ActivityAction.RisksDrafted or ActivityAction.RiskDraftDiscarded => ActivityGroup.Risks, // US-112
             ActivityAction.EvidenceAdded or ActivityAction.EvidenceRemoved or ActivityAction.EvidenceLinked
                 or ActivityAction.EvidenceUnlinked or ActivityAction.EvidenceLinkSuggested or ActivityAction.EvidenceLinkApproved
-                or ActivityAction.EvidenceLinkRejected or ActivityAction.EvidenceSuggested or ActivityAction.EvidenceSuggestionAccepted
+                or ActivityAction.EvidenceLinkRejected or ActivityAction.EvidenceSuggested or ActivityAction.TestResultsUploaded or ActivityAction.EvidenceSuggestionAccepted
                 or ActivityAction.EvidenceSuggestionRejected
                 or ActivityAction.OrganisationDocumentUploaded or ActivityAction.OrganisationDocumentReviewed
                 or ActivityAction.OrganisationDocumentLinked or ActivityAction.OrganisationDocumentUnlinked

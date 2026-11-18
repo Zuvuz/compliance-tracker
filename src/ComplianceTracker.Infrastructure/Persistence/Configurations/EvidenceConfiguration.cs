@@ -153,6 +153,26 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
         }
     }
 
+    // #52: every upload of test results, in "TestRunUploads"
+    public class TestRunUploadConfiguration : IEntityTypeConfiguration<TestRunUpload>
+    {
+        public void Configure(EntityTypeBuilder<TestRunUpload> builder)
+        {
+            builder.ToTable("TestRunUploads");
+            builder.HasKey(u => u.Id);
+            builder.Property(u => u.Id).ValueGeneratedNever();
+            builder.Property(u => u.FileName).IsRequired().HasMaxLength(200);
+            builder.Property(u => u.Sha256).IsRequired().HasMaxLength(64);
+            builder.Property(u => u.UnknownTags).IsRequired().HasMaxLength(TestRunUpload.MaxListLength);
+            builder.Property(u => u.OtherFrameworks).IsRequired().HasMaxLength(TestRunUpload.MaxListLength);
+            builder.Ignore(u => u.Summary);
+            builder.Ignore(u => u.WhyNothing);
+            builder.HasOne<Project>().WithMany().HasForeignKey(u => u.ProjectId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<User>().WithMany().HasForeignKey(u => u.UploadedById).OnDelete(DeleteBehavior.Restrict);
+            builder.HasIndex(u => new { u.ProjectId, u.UploadedAt });
+        }
+    }
+
     // US-058: suggestions from tests and pull requests, in "EvidenceSuggestions"
     public class EvidenceSuggestionConfiguration : IEntityTypeConfiguration<EvidenceSuggestion>
     {

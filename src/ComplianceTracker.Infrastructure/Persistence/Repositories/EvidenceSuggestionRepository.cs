@@ -19,5 +19,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
 
         public Task AddRangeAsync(IEnumerable<EvidenceSuggestion> suggestions, CancellationToken cancellationToken = default)
             => _db.EvidenceSuggestions.AddRangeAsync(suggestions, cancellationToken);
+
+        // #52
+        public async Task<IReadOnlyList<TestRunUpload>> ListUploadsAsync(Guid projectId, CancellationToken cancellationToken = default)
+            => await _db.TestRunUploads.Where(u => u.ProjectId == projectId).OrderByDescending(u => u.UploadedAt).ToListAsync(cancellationToken);
+
+        public async Task AddUploadAsync(TestRunUpload upload, CancellationToken cancellationToken = default)
+            => await _db.TestRunUploads.AddAsync(upload, cancellationToken);
     }
 }

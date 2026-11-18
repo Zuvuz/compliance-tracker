@@ -4489,6 +4489,64 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("StoryDrafts", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Mappings.TestRunUpload", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AlreadySuggested")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Blocked")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Failed")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("OtherFrameworks")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("Passed")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("Suggested")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UnknownTags")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UploadedById")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UploadedById");
+
+                    b.HasIndex("ProjectId", "UploadedAt");
+
+                    b.ToTable("TestRunUploads", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Organizations.AuditorGrant", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7709,6 +7767,21 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasOne("ComplianceTracker.Domain.Frameworks.Requirement", null)
                         .WithMany()
                         .HasForeignKey("RequirementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Mappings.TestRunUpload", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UploadedById")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

@@ -105,11 +105,12 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.Contains($"{count} components", row.QuerySelector(".sbom-summary")!.TextContent);
         }
 
+        [Given("I withdraw the test results because {string}")]
         [When("I withdraw the test results because {string}")]
         public async Task WhenIWithdrawTheTestResults(string reason)
         {
             await OpenTestResultsAsync();
-            var row = _web.Page!.QuerySelectorAll("#test-results-uploads .test-results-upload").FirstOrDefault()
+            var row = _web.Page!.QuerySelectorAll("#test-results-uploads .test-results-upload").FirstOrDefault(u => u.GetAttribute("data-waiting") != "0")
                 ?? throw new Xunit.Sdk.XunitException("No test results can be withdrawn.");
             await WithdrawAsync(row, reason);
         }
@@ -135,7 +136,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task ThenNoTestResultsWait()
         {
             await OpenTestResultsAsync();
-            Assert.Null(_web.Page!.QuerySelector("#test-results-uploads"));
+            Assert.DoesNotContain(_web.Page!.QuerySelectorAll("#test-results-uploads .test-results-upload"), u => u.GetAttribute("data-waiting") != "0");
         }
     }
 }
