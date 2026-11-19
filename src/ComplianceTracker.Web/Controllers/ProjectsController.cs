@@ -590,6 +590,7 @@ namespace ComplianceTracker.Web.Controllers
         }
 
         // POST /Projects/DecideDocumentationEnough: US-204 R5, R8, "documentation is enough" or proof is needed, with a reason
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
@@ -600,6 +601,7 @@ namespace ComplianceTracker.Web.Controllers
         }
 
         // POST /Projects/ChangeEvidenceKind: US-204 R2, documentation or proof
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
