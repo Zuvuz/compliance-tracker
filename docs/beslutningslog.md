@@ -2355,6 +2355,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - En fælles liste over organisationens egne kontroller (vej 2). Den er uden for denne historie.
   - Flere end fem rammeværker på én gang. Det giver for mange par for den lokale AI.
 
+### B158 – Organisationens egen compliance, arvet af projekterne (US-115)
+
+- **Beslutning:**
+  - **Hvor et krav opfyldes** (`RequirementScope`): et krav, som organisationen selv følger, er enten organisationsdækkende eller udføres i projekterne. ISO 27001's udviklings- og ændringskontroller (A.8.25–A.8.32) udføres i projekterne som standard, og alt andet er organisationsdækkende. En person med `DecideCompliance` ændrer det med en begrundelse på kravets side i organisationsområdet. Rækkerne ændres aldrig, og den nyeste gælder.
+  - **"Ned":** et produkt har siden "From the organisation" (linket fra Compliance-fanen). Den viser organisationens krav og deres status, mærket "Inherited from the organisation". Produktet skal ikke selv følge rammeværket.
+  - **Fravalg (R4, besluttet af brugeren 19-11-2026):** et produkt kan markere et arvet krav "Not applicable here" med en begrundelse, fx uden for ISMS'ets scope. Det er en almindelig `RequirementApplicability` på produktet, så historikken og loggen er de samme som for andre krav.
+  - **"Op" (begge retninger nu, besluttet af brugeren 19-11-2026):** for et krav, der udføres i projekterne, lægger hvert produkt sit eget bevis til på siden "From the organisation". Organisationens krav viser "Proven in …" og "No proof yet: …" og er dækket, når alle produkter, der ikke har fravalgt det, har bevis. Udløbet bevis og dokumentation alene tæller ikke (B155).
+  - **Egen side i stedet for en fane på Compliance-fanen,** så produktets sider ikke laver flere databaseforespørgsler.
+- **Begrundelse:** ISO 27001 er et ledelsessystem for organisationen, men nogle kontroller udføres i produkternes arbejde. Uden arv skulle hvert produkt uploade de samme politikker igen, og organisationen kunne ikke se, hvilke produkter der mangler bevis.
+- **Fravalgt:**
+  - At produktet automatisk følger organisationens rammeværker. Så blandes organisationens krav sammen med produktets egne.
+  - Flere juridiske enheder med hver sit ISMS. Det er uden for historien.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

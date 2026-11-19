@@ -40,6 +40,18 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         public async Task AddLinkAsync(EvidenceLink link, CancellationToken cancellationToken = default)
             => await _db.EvidenceLinks.AddAsync(link, cancellationToken);
 
+        // US-115: one query; the callers give the organisation's own projects
+        public async Task<IReadOnlyList<(EvidenceLink Link, Evidence Evidence)>> ListLinksToAsync(
+            IReadOnlyCollection<Guid> projectIds, IReadOnlyCollection<Guid> requirementIds, CancellationToken cancellationToken = default)
+            => (await (from link in _db.EvidenceLinks
+                       join evidence in _db.Evidence on link.EvidenceId equals evidence.Id
+                       where projectIds.Contains(link.ProjectId) && requirementIds.Contains(link.RequirementId)
+                             && link.RemovedAt == null && evidence.RemovedAt == null
+                       select new { link, evidence })
+                    .ToListAsync(cancellationToken))
+                .Select(x => (x.link, x.evidence))
+                .ToList();
+
         // US-136: evidence from an organisation's document has no file of its own; the document's current one is used
         public async Task<byte[]?> GetContentAsync(Guid evidenceId, CancellationToken cancellationToken = default)
             => await _db.EvidenceDocuments

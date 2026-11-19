@@ -1,0 +1,131 @@
+@* US-115 R4: the requirements a product inherits from the organisation ("down"), and where the organisation carries a
+   requirement out in the projects, this product's own proof ("up"). Ids and classes used by the tests: #back-to-compliance,
+   #no-organisation-frameworks, table.inherited-requirements with tr.inherited-row (data-code, data-framework, data-scope,
+   data-opted-out) holding .inherited-status, .inherited-label, .opt-out-reason, .proof-here, and the forms
+   .inherited-opt-out (reason), .inherited-opt-in and .inherited-link-proof (evidenceId). *@
+@model ComplianceTracker.Application.Compliance.InheritedView
+@using ComplianceTracker.Application.Compliance
+@using ComplianceTracker.Domain.Mappings
+@{
+    var project = Model.Project;
+    ViewData["Title"] = $"From the organisation – {project.Name}";
+    var canDecide = !project.IsClosed && await Permissions.CanAsync(Permission.DecideCompliance);
+    var canLink = !project.IsClosed && await Permissions.CanAsync(Permission.LinkWork);
+}
+
+<p class="mb-1"><a id="back-to-compliance" asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Compliance">← @project.Name: Compliance</a></p>
+<h1 class="h3">From the organisation</h1>
+<p class="text-muted small">The requirements the organisation follows itself, such as its ISO/IEC 27001 management system or NIS2. Most are met once for
+    the whole organisation, and @project.Name inherits them. Some are carried out in each product, like secure development; @project.Name proves those with its own evidence.</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+@if (Model.Rows.Count == 0)
+{
+    <p class="text-muted" id="no-organisation-frameworks">The organisation follows no framework itself yet, so @project.Name inherits nothing.
+        @if (Model.Area is { } area)
+        {
+            <a asp-action="Details" asp-route-id="@area.Id">Open the organisation's page</a>
+        }
+    </p>
+}
+
+@foreach (var group in Model.ByFramework)
+{
+    var framework = group.Key;
+    <h2 class="h6 mt-3">@FrameworkNames.Short(framework.Framework.Name)</h2>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle inherited-requirements" data-framework="@FrameworkNames.Short(framework.Framework.Name)">
+            <thead><tr><th>Code</th><th>Requirement</th><th>In the organisation</th><th>For @project.Name</th></tr></thead>
+            <tbody>
+                @foreach (var row in group)
+                {
+                    var organisation = row.Organisation;
+                    var requirement = organisation.Requirement;
+                    <tr class="inherited-row @(row.IsOptedOut ? "text-muted" : "")" id="inherited-@requirement.Id" data-code="@requirement.Code"
+                        data-framework="@FrameworkNames.Short(framework.Framework.Name)" data-scope="@organisation.Scope" data-opted-out="@(row.IsOptedOut ? "true" : "false")">
+                        <td class="text-nowrap">
+                            @if (Model.Area is { } area)
+                            {
+                                <a href="@Url.Action("Details", new { id = area.Id, tab = ProjectTabs.Compliance, sub = FrameworkNames.Slug(framework.Framework.Name), req = requirement.Code })">@requirement.Code</a>
+                            }
+                        </td>
+                        <td>@requirement.Title</td>
+                        <td>
+                            <span class="inherited-status @RequirementPages.StatusClass(organisation)">@RequirementPages.Status(organisation)</span>
+                            @if (organisation.CarriedOut is { } carried)
+                            {
+                                <div class="small text-muted">@carried.Text</div>
+                            }
+                        </td>
+                        <td class="small">
+                            @if (row.IsOptedOut)
+                            {
+                                <span class="badge text-bg-secondary inherited-label">Not applicable here</span>
+                                <div class="opt-out-reason">@row.OptOutReason</div>
+                                @if (canDecide)
+                                {
+                                    <form asp-action="InheritedOptIn" method="post" class="inherited-opt-in">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="requirementId" value="@requirement.Id" />
+                                        <button type="submit" class="btn btn-sm btn-link p-0">Make applicable</button>
+                                    </form>
+                                }
+                            }
+                            else if (row.IsCarriedOut)
+                            {
+                                @* "Up": this product's own proof *@
+                                <span class="badge text-bg-light border inherited-label">Carried out here</span>
+                                <ul class="list-unstyled mb-1 proof-here">
+                                    @foreach (var evidence in row.ProofHere)
+                                    {
+                                        <li data-title="@evidence.Title">@evidence.Title <span class="text-muted">· @EvidenceKinds.NameOf(evidence.Kind)</span></li>
+                                    }
+                                </ul>
+                                @if (row.ProofHere.Count == 0)
+                                {
+                                    <div class="text-warning-emphasis">No proof from @project.Name yet</div>
+                                }
+                                var pickable = Model.Pickable.Where(e => row.ProofHere.All(p => p.Id != e.Id)).ToList();
+                                @if (canLink && pickable.Count > 0)
+                                {
+                                    <form asp-action="InheritedLinkProof" method="post" class="d-flex flex-wrap gap-1 inherited-link-proof">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="requirementId" value="@requirement.Id" />
+                                        <select name="evidenceId" class="form-select form-select-sm w-auto" aria-label="Evidence of @project.Name that proves @requirement.Code">
+                                            @foreach (var evidence in pickable)
+                                            {
+                                                <option value="@evidence.Id">@evidence.Title</option>
+                                            }
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">Add as proof</button>
+                                    </form>
+                                }
+                                else if (canLink)
+                                {
+                                    <a class="small" asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Evidence">Upload evidence first</a>
+                                }
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-light border inherited-label">Inherited from the organisation</span>
+                            }
+                            @if (!row.IsOptedOut && canDecide)
+                            {
+                                <details class="mt-1 inherited-opt-out-menu">
+                                    <summary class="btn btn-sm btn-link p-0 text-muted">Not applicable here</summary>
+                                    <form asp-action="InheritedOptOut" method="post" class="d-flex flex-wrap gap-1 mt-1 inherited-opt-out">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="requirementId" value="@requirement.Id" />
+                                        <input name="reason" maxlength="1000" required class="form-control form-control-sm w-auto" placeholder="Why, e.g. outside the ISMS's scope" aria-label="Why @requirement.Code does not apply to @project.Name" />
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary">Mark</button>
+                                    </form>
+                                </details>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

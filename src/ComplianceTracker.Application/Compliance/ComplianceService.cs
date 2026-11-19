@@ -29,6 +29,9 @@ namespace ComplianceTracker.Application.Compliance
         // The project's requirements that are not applicable now
         Task<IReadOnlyList<RequirementApplicability>> ListActiveAsync(Guid projectId, CancellationToken cancellationToken = default);
 
+        // US-115 R4: the active decisions of several projects, in one query
+        Task<IReadOnlyList<RequirementApplicability>> ListActiveForProjectsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default);
+
         Task AddAsync(RequirementApplicability applicability, CancellationToken cancellationToken = default);
     }
 
@@ -49,6 +52,10 @@ namespace ComplianceTracker.Application.Compliance
         Task<IReadOnlyList<EvidenceLink>> ListActiveLinksAsync(Guid projectId, CancellationToken cancellationToken = default);
 
         Task AddLinkAsync(EvidenceLink link, CancellationToken cancellationToken = default);
+
+        // US-115 "up": the active links of these projects to these requirements, with their evidence, in one query
+        Task<IReadOnlyList<(EvidenceLink Link, Evidence Evidence)>> ListLinksToAsync(
+            IReadOnlyCollection<Guid> projectIds, IReadOnlyCollection<Guid> requirementIds, CancellationToken cancellationToken = default);
     }
 
     // US-204 R5, R8: "documentation is enough" decisions of an organisation. Rows are only added.

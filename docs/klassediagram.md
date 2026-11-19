@@ -535,6 +535,24 @@ classDiagram
     +Decide(organizationId, requirementId, enough, reason, userId, role, at)$ DocumentationDecision
   }
   DocumentationDecision --> Requirement : documentation is enough for
+  class RequirementScopeDecision {
+    -id: Guid
+    -organizationId: Guid
+    -requirementId: Guid
+    -scope: RequirementScope
+    -reason: string
+    -decidedById: Guid
+    -decidedRole: UserRole?
+    -decidedAt: DateTime
+    +Decide(organizationId, requirementId, scope, reason, userId, role, at)$ RequirementScopeDecision
+  }
+  class RequirementScope {
+    <<enumeration>>
+    OrganisationWide
+    CarriedOutInProjects
+  }
+  RequirementScopeDecision --> RequirementScope : scope
+  RequirementScopeDecision --> Requirement : where it is met
   class RequirementApplicability {
     -id: Guid
     -projectId: Guid
