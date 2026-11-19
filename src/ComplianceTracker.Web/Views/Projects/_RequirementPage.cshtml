@@ -792,6 +792,7 @@
                                 <div class="ai-evidence-suggestion row-item" data-evidence="@entry.Evidence.Title">
                                     <span class="suggested-evidence-for-requirement">@entry.Evidence.Title</span>
                                     <div class="small text-muted item-source"><span class="badge text-bg-info">AI-generated</span> Suggested evidence · score @entry.Suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) @if (entry.Suggestion.SearchScore is { } search){<span class="suggestion-search-score">(search @search.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))</span>}</div>
+                                    <partial name="_PassageCheck" model="PassageCheckView.Of(entry.Suggestion)" />
                                     @if (entry.Suggestion.EarlierRejection is { } earlierEvidence)
                                     {
                                         <div class="small text-muted earlier-rejection">@earlierEvidence</div>

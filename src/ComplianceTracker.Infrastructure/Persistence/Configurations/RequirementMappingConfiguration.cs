@@ -24,6 +24,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(m => m.Comment).HasMaxLength(1000);
             builder.Ignore(m => m.IsPending);
             builder.Ignore(m => m.IsApprovedSame);
+            // US-205 R13: the checking model and what differs
+            builder.Property(m => m.CheckModel).HasMaxLength(200);
+            builder.Property(m => m.Differs).HasMaxLength(RequirementMapping.MaxDiffersLength);
+            builder.Ignore(m => m.IsChecked);
             // US-206 R3, R4: the projects an approved match applies to; empty means all
             builder.Property(m => m.ProjectIds).HasDefaultValueSql("'{}'::uuid[]");
             builder.HasOne<Organization>().WithMany().HasForeignKey(m => m.OrganizationId).OnDelete(DeleteBehavior.Restrict);

@@ -58,10 +58,27 @@ else
     }
 
     <h2 class="h6">Waiting for a decision (@Model.Groups.Sum(g => g.Matches.Count) in @Model.Groups.Count @(Model.Groups.Count == 1 ? "requirement" : "requirements"))</h2>
-    @if (Model.Groups.Count > 0)
+    var notChecked = Model.Groups.SelectMany(g => g.Matches).Count(m => !m.Row.Mapping.IsChecked);
+    @if (notChecked > 0)
     {
-        @* R6: until the AI has read the texts (US-205), a match only says the wording is alike *@
-        <p class="small text-warning-emphasis" id="not-checked">These matches are not checked: the AI found that the requirements are worded alike, not that they ask for the same thing. Read both before you approve.</p>
+        @* R6, US-205 R13: a match the AI did not read only says the wording is alike *@
+        <p class="small text-warning-emphasis" id="not-checked">@notChecked @(notChecked == 1 ? "match is" : "matches are") not checked: the AI found that the requirements are worded alike, not that they ask for the same thing. Read both before you approve.</p>
+    }
+    @if (canDecide && notChecked > 0)
+    {
+        @* US-205 R14: the matches the model did not read, cleared in one step with a reason *@
+        <form asp-action="RejectUncheckedCrossMappings" method="post" class="d-flex flex-wrap gap-1 mb-2 reject-unchecked">
+            @foreach (var id in chosenIds) { <input type="hidden" name="v" value="@id" /> }
+            <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason" required>
+                <option value="">Reason…</option>
+                @foreach (var reason in Enum.GetValues<RejectionReason>())
+                {
+                    <option value="@reason">@reason</option>
+                }
+            </select>
+            <input name="comment" maxlength="1000" class="form-control form-control-sm w-auto" placeholder="Comment" aria-label="Comment" />
+            <button type="submit" class="btn btn-sm btn-outline-secondary">Reject all not checked (notChecked)</button>
+        </form>
     }
     <ul class="list-unstyled small" id="match-groups">
         @foreach (var group in Model.Groups)
@@ -75,6 +92,20 @@ else
                             <span class="badge @Badge(match.Row.Mapping.Strength) match-strength">@match.Row.Mapping.Strength</span>
                             <strong>@match.ToVersion.Framework.ShortName @match.Row.To.Code</strong> @match.Row.To.Title
                             <span class="text-muted">· @match.Row.Mapping.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span>
+                <div class="small match-check" data-checked="@(match.Row.Mapping.IsChecked ? "true" : "false")">
+                    @if (match.Row.Mapping.IsChecked)
+                    {
+                        <span class="text-muted checked-by">Checked by @match.Row.Mapping.CheckModel</span>
+                        @if (match.Row.Mapping.Differs is { } differs)
+                        {
+                            <span class="match-differs">· Differs: @differs</span>
+                        }
+                    }
+                    else
+                    {
+                        <span class="badge text-bg-light border not-checked" title="The AI did not read both requirements; an approved &quot;Same&quot; that is not checked carries no coverage">Not checked</span>
+                    }
+                </div>
                             @if (canDecide && group.Matches.Count > 1)
                             {
                                 <span class="d-inline-flex gap-1 ms-1">

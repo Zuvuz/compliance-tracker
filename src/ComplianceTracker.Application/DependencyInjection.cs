@@ -113,6 +113,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<Compliance.IReportSnapshotSource, Compliance.ReportSnapshotSource>(); // US-146 R8
             services.AddScoped<Organizations.OrganisationDocumentService>(); // US-136
             services.AddScoped<Organizations.OrganisationAreaService>(); // US-142
+            services.AddScoped<Ai.PassageChecker>(); // US-205
             services.AddScoped<Organizations.DocumentSuggestionService>(); // US-136 R2
             services.AddScoped<Organizations.GapAnalysisService>(); // US-188
             services.AddScoped<Organizations.GapQuestionService>(); // US-189

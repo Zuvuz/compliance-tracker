@@ -77,7 +77,11 @@ namespace ComplianceTracker.Application.Compliance
                     Rejected = rejected.Where(s => s.EvidenceId == e.Id && requirements.ContainsKey(s.RequirementId))
                         .OrderByDescending(s => s.DecidedAt).Select(s => new SuggestedRequirement(s, requirements[s.RequirementId].Requirement)).ToList()
                 })
-                .Select(row => row with { Trace = EvidenceTraces.For(row, compliance, risks) })
+                .Select(row => row with
+                {
+                    Trace = EvidenceTraces.For(row, compliance, risks),
+                    Through = EvidenceThrough.For(row.Stories.Select(s => s.Story).ToList(), compliance.Frameworks, row.Links.Select(l => l.Requirement.Id).ToHashSet())
+                })
                 .ToList();
 
             // "+ Link requirement" offers the requirements that apply (R5)
@@ -121,6 +125,38 @@ namespace ComplianceTracker.Application.Compliance
 
         // US-146 R2: the thread the evidence is part of
         public EvidenceTrace Trace { get; init; } = EvidenceTrace.Empty;
+
+        // US-205 R11: the requirements the evidence reaches through its linked stories, not linked to it directly
+        public IReadOnlyList<ThroughStory> Through { get; init; } = [];
+    }
+
+    // US-205 R11: "Through [US-012] Lock account: CRA I.2(d)"
+    public record ThroughStory(Domain.WorkItems.WorkItem Story, Requirement Requirement, string Label);
+
+    public static class EvidenceThrough
+    {
+        // Known without asking the AI: each linked story's requirements (applicable, not waiting for review), except those the
+        // evidence is linked to directly; each requirement once, under the first story that reaches it
+        public static IReadOnlyList<ThroughStory> For(IReadOnlyList<Domain.WorkItems.WorkItem> stories, IReadOnlyList<FrameworkCompliance> frameworks,
+            IReadOnlySet<Guid> direct)
+        {
+            var through = new List<ThroughStory>();
+            foreach (var story in stories.OrderBy(s => s.Title, StringComparer.OrdinalIgnoreCase))
+            {
+                foreach (var framework in frameworks)
+                {
+                    foreach (var row in framework.Requirements.Where(r => r.IsApplicable && r.Links.Any(l => l.WorkItem.Id == story.Id && !l.Link.NeedsReview)))
+                    {
+                        if (!direct.Contains(row.Requirement.Id) && through.All(t => t.Requirement.Id != row.Requirement.Id))
+                        {
+                            through.Add(new ThroughStory(story, row.Requirement, $"{Frameworks.FrameworkSlugs.Short(framework.Framework.Name)} {row.Requirement.Code}"));
+                        }
+                    }
+                }
+            }
+
+            return through;
+        }
     }
 
     public record LinkedStory(EvidenceStoryLink Link, Domain.WorkItems.WorkItem Story);

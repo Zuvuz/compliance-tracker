@@ -42,7 +42,33 @@ namespace ComplianceTracker.Domain.Mappings
         public string? Comment { get; private set; }
 
         public bool IsPending => Status == SuggestionStatus.Pending;
-        public bool IsApprovedSame => Status == SuggestionStatus.Approved && Strength == MappingStrength.Same;
+
+        // US-205 R13: only a checked "Same" carries coverage; an unchecked one is a hint like "Partly"
+        public bool IsApprovedSame => Status == SuggestionStatus.Approved && Strength == MappingStrength.Same && IsChecked;
+
+        // US-205 R13: the checking model read both requirements; Strength is then its answer, and Differs says what differs
+        public const int MaxDiffersLength = 500;
+        public string? CheckModel { get; private set; }
+        public string? Differs { get; private set; }
+        public bool IsChecked => CheckModel is not null;
+
+        public void Checked(MappingStrength strength, string? differs, string model)
+        {
+            if (!Enum.IsDefined(strength))
+            {
+                throw new DomainException("Unknown strength");
+            }
+
+            if (string.IsNullOrWhiteSpace(model))
+            {
+                throw new DomainException("A checked match names the model that checked it");
+            }
+
+            Strength = strength;
+            var cleaned = string.IsNullOrWhiteSpace(differs) || differs.Trim().Trim('.').Equals("nothing", StringComparison.OrdinalIgnoreCase) ? null : differs.Trim();
+            Differs = cleaned is null ? null : cleaned.Length <= MaxDiffersLength ? cleaned : cleaned[..MaxDiffersLength];
+            CheckModel = model.Trim().Length <= 200 ? model.Trim() : model.Trim()[..200];
+        }
 
         // US-206 R3, R4: the projects an approved match carries coverage in; empty means every project that follows both sides
         public Guid[] ProjectIds { get; private set; } = [];

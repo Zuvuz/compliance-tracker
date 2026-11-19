@@ -90,6 +90,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
         public void Configure(EntityTypeBuilder<EvidenceLinkSuggestion> builder)
         {
             builder.ToTable("EvidenceLinkSuggestions");
+            // US-205 R2, R10: what the checking model found, and which model
+            builder.Property(s => s.CheckVerdict).HasConversion<string>().HasMaxLength(20);
+            builder.Property(s => s.CheckPassage).HasMaxLength(Domain.Mappings.PassageCheck.MaxPassageLength);
+            builder.Property(s => s.CheckMissing).HasMaxLength(Domain.Mappings.PassageCheck.MaxMissingLength);
+            builder.Property(s => s.CheckModel).HasMaxLength(200);
+            builder.Ignore(s => s.IsChecked);
             builder.HasKey(s => s.Id);
             builder.Property(s => s.Id).ValueGeneratedNever();
             builder.Property(s => s.RankingModel).HasMaxLength(200); // US-118

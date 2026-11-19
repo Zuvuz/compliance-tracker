@@ -61,6 +61,22 @@ namespace ComplianceTracker.Domain.Mappings
                 CreatedAt = at
             };
 
+        // US-205 R2, R3, R10: what the checking model found; null when the suggestion was made without the check (R7)
+        public PassageVerdict? CheckVerdict { get; private set; }
+        public string? CheckPassage { get; private set; }
+        public string? CheckMissing { get; private set; }
+        public string? CheckModel { get; private set; }
+
+        public bool IsChecked => CheckModel is not null;
+
+        public void Checked(PassageCheck check)
+        {
+            CheckVerdict = check.Verdict;
+            CheckPassage = check.Passage;
+            CheckMissing = check.Missing;
+            CheckModel = check.Model;
+        }
+
         // US-118 R4: made from a reranked candidate
         public EvidenceLinkSuggestion Reranked(double? searchScore, string? model)
         {

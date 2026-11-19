@@ -37,6 +37,15 @@
 </section>
 
 <section class="mb-4">
+    @* US-205 R9 *@
+    <h2 class="h5">Document suggestions</h2>
+    <p class="small text-muted">How many suggestions people approved when the AI had read the document and quoted it, against those made without that check, and how many of the right links the AI found (those made by hand are the ones it missed). It uses the model of the task "EvidenceCheck".</p>
+    <form asp-action="EvaluatePassageCheck" method="post" id="evaluate-passage-check">
+        <button type="submit" class="btn btn-sm btn-outline-primary">Measure document suggestions</button>
+    </form>
+</section>
+
+<section class="mb-4">
     <h2 class="h5">Rationales</h2>
     @if (Model.Sample.Count == 0)
     {
@@ -82,7 +91,7 @@
     else
     {
         <table class="table table-sm" id="ai-runs">
-            <thead><tr><th>When</th><th>Step</th><th>Model</th><th>Decisions</th><th>Top 1</th><th>Top 3</th><th>Top 10</th><th>Rejected above limit</th><th>Grade</th><th>By</th></tr></thead>
+            <thead><tr><th>When</th><th>Step</th><th>Model</th><th>Decisions</th><th>Top 1</th><th>Top 3</th><th>Top 10</th><th>Rejected above limit</th><th>Grade</th><th>Right, checked</th><th>Right, not checked</th><th>Found</th><th>By</th></tr></thead>
             <tbody>
                 @foreach (var run in Model.Runs)
                 {
@@ -96,6 +105,9 @@
                         <td class="run-top10">@(run.Top10 is { } t10 ? $"{t10:0.#} %" : "")</td>
                         <td class="run-rejected-above">@(run.RejectedAboveLimit is { } ra ? $"{ra:0.#} %" : "")</td>
                         <td class="run-grade">@(run.AverageGrade is { } g ? $"{g:0.0#} of 5 ({run.Graded})" : "")</td>
+                        <td class="run-checked-right">@(run.CheckedRight is { } cr ? $"{cr:0.#} %" : "")</td>
+                        <td class="run-not-checked-right">@(run.NotCheckedRight is { } nr ? $"{nr:0.#} %" : "")</td>
+                        <td class="run-found">@(run.Found is { } fd ? $"{fd:0.#} %" : "")</td>
                         <td class="small">@run.RunBy</td>
                     </tr>
                 }

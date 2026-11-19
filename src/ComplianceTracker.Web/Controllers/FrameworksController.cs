@@ -185,6 +185,28 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(CrossMapping), new { v });
         }
 
+        // POST /Frameworks/RejectUncheckedCrossMappings: US-205 R14, every pending match the AI did not read, with one reason
+        [Authorize] // also in the global policy; said here so CodeQL sees the check
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RejectUncheckedCrossMappings(List<Guid> v, Domain.Mappings.RejectionReason? reason, string? comment,
+            [FromServices] Application.Ai.CrossMappingService crossMapping, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var count = await crossMapping.RejectUncheckedAsync(v, reason, comment, cancellationToken);
+                TempData["CrossMapping"] = $"{count} matches that were not checked are rejected";
+            }
+            catch (Domain.Common.DomainException error)
+            {
+                TempData[Filters.DomainExceptionFilter.TempDataKey] = error.Message;
+            }
+
+            return v.Count == 2 && Request.Form["pair"] == "true"
+                ? RedirectToAction(nameof(CrossMapping), new { from = v[0], to = v[1] })
+                : RedirectToAction(nameof(CrossMapping), new { v });
+        }
+
         // POST /Frameworks/ChangeCrossMappingProjects: US-206 R3, R4, the projects an approved match applies to; none means all
         [Authorize] // also in the global policy; said here so CodeQL sees the check
         [HttpPost]

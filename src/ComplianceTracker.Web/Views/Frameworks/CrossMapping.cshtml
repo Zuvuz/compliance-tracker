@@ -64,6 +64,23 @@ else if (Model.From is { } from && Model.To is { } to)
     }
 
     <h2 class="h6">Waiting for a decision (@Model.Pending.Count)</h2>
+    @if (canDecide && Model.Pending.Count(r => !r.Mapping.IsChecked) > 0)
+    {
+        @* US-205 R14: the matches the model did not read, cleared in one step with a reason *@
+        <form asp-action="RejectUncheckedCrossMappings" method="post" class="d-flex flex-wrap gap-1 mb-2 reject-unchecked">
+            @foreach (var id in new[] { from.Version.Id, to.Version.Id }) { <input type="hidden" name="v" value="@id" /> }
+            <input type="hidden" name="pair" value="true" />
+            <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason" required>
+                <option value="">Reason…</option>
+                @foreach (var reason in Enum.GetValues<RejectionReason>())
+                {
+                    <option value="@reason">@reason</option>
+                }
+            </select>
+            <input name="comment" maxlength="1000" class="form-control form-control-sm w-auto" placeholder="Comment" aria-label="Comment" />
+            <button type="submit" class="btn btn-sm btn-outline-secondary">Reject all not checked (Model.Pending.Count(r => !r.Mapping.IsChecked))</button>
+        </form>
+    }
     <ul class="list-unstyled small" id="pending-matches">
         @foreach (var row in Model.Pending)
         {
@@ -72,6 +89,20 @@ else if (Model.From is { } from && Model.To is { } to)
                 <span class="badge @Badge(row.Mapping.Strength) match-strength">@row.Mapping.Strength</span>
                 <strong>@from.Framework.ShortName @row.From.Code</strong> @row.From.Title ↔ <strong>@to.Framework.ShortName @row.To.Code</strong> @row.To.Title
                 <div class="text-muted">@row.Mapping.Rationale</div>
+                <div class="small match-check" data-checked="@(row.Mapping.IsChecked ? "true" : "false")">
+                    @if (row.Mapping.IsChecked)
+                    {
+                        <span class="text-muted checked-by">Checked by @row.Mapping.CheckModel</span>
+                        @if (row.Mapping.Differs is { } differs)
+                        {
+                            <span class="match-differs">· Differs: @differs</span>
+                        }
+                    }
+                    else
+                    {
+                        <span class="badge text-bg-light border not-checked" title="The AI did not read both requirements; an approved &quot;Same&quot; that is not checked carries no coverage">Not checked</span>
+                    }
+                </div>
                 @if (canDecide)
                 {
                     <div class="d-flex flex-wrap gap-1 mt-1">
