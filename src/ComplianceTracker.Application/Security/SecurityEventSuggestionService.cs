@@ -238,6 +238,7 @@ namespace ComplianceTracker.Application.Security
         {
             { IsUpgrade: true } => $"{suggestion.Key} is now exploited – upgrade \"{suggestion.Title}\"?",
             { Kind: SecurityEventKind.ActivelyExploitedVulnerability } => $"{suggestion.Key} is actively exploited and found in {projectName}",
+            { Source: SuggestionSource.GitHubAlert or SuggestionSource.Monitoring } => $"Alert in {projectName}: {suggestion.Title}", // US-160
             _ => $"New critical finding in {projectName}: {suggestion.Title}"
         };
 
@@ -246,12 +247,16 @@ namespace ComplianceTracker.Application.Security
         {
             { IsUpgrade: true } => $"{suggestion.Key} is now exploited ({suggestion.SourceName}): upgrade \"{suggestion.Title}\"",
             { Kind: SecurityEventKind.ActivelyExploitedVulnerability } => $"{suggestion.Key} is actively exploited ({suggestion.SourceName})",
+            { Source: SuggestionSource.GitHubAlert or SuggestionSource.Monitoring } => $"Alert {suggestion.Title} ({suggestion.SourceName})",
             _ => $"New critical finding {suggestion.Title} ({suggestion.SourceName})"
         };
 
-        private static string Description(SecurityEventSuggestion suggestion) => suggestion.Source == SuggestionSource.ExploitedList
-            ? $"Suggested by the tracker: {suggestion.Key} is on {suggestion.SourceName} and found by a scan of the project."
-            : $"Suggested by the tracker: a new critical finding from {suggestion.SourceName}.";
+        private static string Description(SecurityEventSuggestion suggestion) => suggestion.Source switch
+        {
+            SuggestionSource.ExploitedList => $"Suggested by the tracker: {suggestion.Key} is on {suggestion.SourceName} and found by a scan of the project.",
+            SuggestionSource.GitHubAlert or SuggestionSource.Monitoring => $"Suggested by the tracker: an alert from {suggestion.SourceName}: {suggestion.Title}.",
+            _ => $"Suggested by the tracker: a new critical finding from {suggestion.SourceName}."
+        };
 
         // CVE id → the first switched-on list it is on
         private async Task<IReadOnlyDictionary<string, string>> ExploitedAsync(CancellationToken cancellationToken)

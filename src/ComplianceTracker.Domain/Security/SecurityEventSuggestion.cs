@@ -50,9 +50,11 @@ namespace ComplianceTracker.Domain.Security
                 throw new DomainException("A suggestion needs what it is about");
             }
 
-            if (kind is not (SecurityEventKind.ActivelyExploitedVulnerability or SecurityEventKind.VulnerabilityNotExploited))
+            // US-160 R2, R4: a leaked secret or a monitoring alert is suggested as an incident
+            if (kind is not (SecurityEventKind.ActivelyExploitedVulnerability or SecurityEventKind.VulnerabilityNotExploited)
+                && !(kind == SecurityEventKind.IncidentNotSevere && source is SuggestionSource.GitHubAlert or SuggestionSource.Monitoring))
             {
-                throw new DomainException("Only vulnerabilities are suggested");
+                throw new DomainException("Only vulnerabilities, leaked secrets and monitoring alerts are suggested");
             }
 
             if (upgradeEventId is not null && kind != SecurityEventKind.ActivelyExploitedVulnerability)
@@ -133,7 +135,9 @@ namespace ComplianceTracker.Domain.Security
     public enum SuggestionSource
     {
         ExploitedList,
-        CriticalFinding
+        CriticalFinding,
+        GitHubAlert,    // US-160 R1, R2: Dependabot, code scanning or secret scanning
+        Monitoring      // US-160 R3, R4: an alert the organisation's monitoring sent
     }
 
     public enum SuggestionStatus

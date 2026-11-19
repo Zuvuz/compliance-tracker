@@ -129,6 +129,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<Reports.ReportService>(); // US-050
             services.AddScoped<Reports.ReportSigningService>(); // US-132
             services.AddScoped<Security.SecurityEventSuggestionService>(); // US-128
+            services.AddScoped<Security.MonitoringAlertService>(); // US-160
             services.AddScoped<Security.SecurityEventQueries>();
             services.AddScoped<Reports.TechnicalDocumentationQueries>(); // US-056
             services.AddScoped<MemberQueries>();

@@ -1,3 +1,4 @@
+using ComplianceTracker.Application.Scanning;
 using ComplianceTracker.Domain.Scanning;
 using ComplianceTracker.Domain.Security;
 using System.Text.RegularExpressions;
@@ -74,31 +75,57 @@ namespace ComplianceTracker.Application.Security
                         projectId, cve, notExploited?.Title ?? cve, SuggestionSource.ExploitedList, list,
                         SecurityEventKind.ActivelyExploitedVulnerability, notExploited?.Id, ids, now));
                 }
-                else if (group.FirstOrDefault(f => f.Severity == FindingSeverity.Critical && newFindingIds.Contains(f.Id)) is { } critical
+                else if (group.FirstOrDefault(f => Serious(f) && newFindingIds.Contains(f.Id)) is { } critical
                          && known.Count == 0
                          && !Blocked(suggestions, cve, SecurityEventKind.VulnerabilityNotExploited, null, ids))
                 {
-                    // R3
+                    // R3; US-160 R1: a GitHub alert says where it came from, and a Dependabot alert names the package
+                    var github = GitHubAlertsSarif.SourceOf(critical.Fingerprint);
                     added.Add(SecurityEventSuggestion.Create(
-                        projectId, cve, cve, SuggestionSource.CriticalFinding, critical.Tool,
+                        projectId, cve, github == "Dependabot" && PackageOf(critical.Message) is { } package ? $"Vulnerability in {package} ({cve})" : cve,
+                        github is null ? SuggestionSource.CriticalFinding : SuggestionSource.GitHubAlert, github ?? critical.Tool,
                         SecurityEventKind.VulnerabilityNotExploited, null, ids, now));
                 }
             }
 
-            // R3: a new critical finding without a CVE, e.g. a CodeQL rule
-            foreach (var finding in open.Where(f => f.Severity == FindingSeverity.Critical && newFindingIds.Contains(f.Id)
-                                                    && CveIds.In(f.RuleId, f.Message).Count == 0))
+            // R3: a new critical finding without a CVE, e.g. a CodeQL rule. US-160 R2: a leaked secret is an incident.
+            foreach (var finding in open.Where(f => Serious(f) && newFindingIds.Contains(f.Id) && CveIds.In(f.RuleId, f.Message).Count == 0))
             {
+                var github = GitHubAlertsSarif.SourceOf(finding.Fingerprint);
+                var secret = github == "Secret scanning";
+                var kind = secret ? SecurityEventKind.IncidentNotSevere : SecurityEventKind.VulnerabilityNotExploited;
                 var key = $"finding:{finding.Id}";
-                if (!Blocked(suggestions, key, SecurityEventKind.VulnerabilityNotExploited, null, [finding.Id]))
+                if (!Blocked(suggestions, key, kind, null, [finding.Id]))
                 {
                     added.Add(SecurityEventSuggestion.Create(
-                        projectId, key, $"{finding.RuleId}: {finding.Message}", SuggestionSource.CriticalFinding, finding.Tool,
-                        SecurityEventKind.VulnerabilityNotExploited, null, [finding.Id], now));
+                        projectId, key, secret ? $"Leaked secret: {finding.Message}" : $"{finding.RuleId}: {finding.Message}",
+                        github is null ? SuggestionSource.CriticalFinding : SuggestionSource.GitHubAlert, github ?? finding.Tool,
+                        kind, null, [finding.Id], now));
                 }
             }
 
             return added;
+        }
+
+        // R3: critical; US-160 R1: from GitHub also high
+        public static bool Serious(Finding finding)
+            => finding.Severity == FindingSeverity.Critical
+               || (finding.Severity == FindingSeverity.High && GitHubAlertsSarif.SourceOf(finding.Fingerprint) is not null);
+
+        // US-160: the package of a Dependabot alert's message, "… (npm: log-lib)" → "log-lib"
+        public static string? PackageOf(string? message)
+        {
+            var text = (message ?? "").TrimEnd();
+            var open = text.LastIndexOf('(');
+            if (open < 0 || !text.EndsWith(')'))
+            {
+                return null;
+            }
+
+            var inside = text[(open + 1)..^1];
+            var colon = inside.IndexOf(':');
+            var name = (colon >= 0 ? inside[(colon + 1)..] : inside).Trim();
+            return name.Length == 0 ? null : name;
         }
 
         // R2 "once per CVE"; R6: a dismissed suggestion comes back only for a finding it was not based on

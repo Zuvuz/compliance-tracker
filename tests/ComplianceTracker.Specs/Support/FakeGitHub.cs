@@ -33,6 +33,9 @@ namespace ComplianceTracker.Specs.Support
         // US-121: each repository's code scanning and Dependabot alerts, and sources that are switched off
         public Dictionary<string, List<FakeAlert>> CodeScanningAlerts { get; } = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, List<FakeAlert>> DependabotAlerts { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        // US-160 R2: secret scanning alerts; RuleId is the secret type, Message its display name
+        public Dictionary<string, List<FakeAlert>> SecretScanningAlerts { get; } = new(StringComparer.OrdinalIgnoreCase);
         public HashSet<string> DependabotOff { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         // US-148: each repository's SBOM from the dependency graph (an SPDX 2.3 document); none means 404
@@ -110,7 +113,7 @@ namespace ComplianceTracker.Specs.Support
 
                 // US-121: repos/{owner}/{name}/code-scanning/alerts and repos/{owner}/{name}/dependabot/alerts?state=…&page=…
                 if (request.Method == HttpMethod.Get && path.Length == 5 && path[0] == "repos" && path[4] == "alerts"
-                    && path[3] is "code-scanning" or "dependabot")
+                    && path[3] is "code-scanning" or "dependabot" or "secret-scanning")
                 {
                     return Alerts($"{path[1]}/{path[2]}", path[3], request.RequestUri);
                 }
@@ -220,10 +223,13 @@ namespace ComplianceTracker.Specs.Support
 
             var state = System.Web.HttpUtility.ParseQueryString(uri.Query)["state"] ?? "open";
             var page = int.TryParse(System.Web.HttpUtility.ParseQueryString(uri.Query)["page"], out var p) ? p : 1;
-            var all = (kind == "dependabot" ? DependabotAlerts : CodeScanningAlerts).GetValueOrDefault(repository) ?? [];
+            var all = (kind switch { "dependabot" => DependabotAlerts, "secret-scanning" => SecretScanningAlerts, _ => CodeScanningAlerts })
+                .GetValueOrDefault(repository) ?? [];
             var alerts = page > 1 ? [] : all.Where(a => a.State == state).ToList();
 
-            object body = kind == "dependabot"
+            object body = kind == "secret-scanning"
+                ? alerts.Select(a => new { number = a.Number, state = a.State, secret_type = a.RuleId, secret_type_display_name = a.Message })
+                : kind == "dependabot"
                 ? alerts.Select(a => new
                 {
                     number = a.Number,
@@ -231,7 +237,7 @@ namespace ComplianceTracker.Specs.Support
                     dismissed_reason = a.DismissedReason,
                     dismissed_comment = (string?)null,
                     security_advisory = new { ghsa_id = $"GHSA-{a.Number}", cve_id = a.RuleId, summary = a.Message, severity = a.Severity },
-                    security_vulnerability = new { severity = a.Severity, package = new { ecosystem = "npm", name = "left-pad" } },
+                    security_vulnerability = new { severity = a.Severity, package = new { ecosystem = "npm", name = a.Package } },
                     dependency = new { manifest_path = "package-lock.json" }
                 })
                 : alerts.Select(a => new
@@ -346,6 +352,7 @@ namespace ComplianceTracker.Specs.Support
         public string Tool { get; init; } = "CodeQL";
         public string RuleId { get; init; } = "";
         public string Severity { get; init; } = "high";
+        public string Package { get; init; } = "left-pad"; // US-160: a Dependabot alert's package
         public string Message { get; init; } = "";
         public string State { get; set; } = "open";
         public string? DismissedReason { get; set; }
