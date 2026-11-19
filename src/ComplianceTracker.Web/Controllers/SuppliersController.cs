@@ -3,11 +3,14 @@ using ComplianceTracker.Application.Organizations;
 using ComplianceTracker.Domain.Organizations;
 using ComplianceTracker.Domain.Users;
 using ComplianceTracker.Web.Filters;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ComplianceTracker.Web.Controllers
 {
     // US-191: the organisation's suppliers, under "Organisation" in the top bar
+    // US-207: [Authorize] says it here as well as in the global policy, so CodeQL sees the check
+    [Authorize]
     public class SuppliersController : Controller
     {
         private const long MaxRequestSize = Domain.Mappings.EvidenceFile.MaxSizeInBytes + 1024 * 1024;
