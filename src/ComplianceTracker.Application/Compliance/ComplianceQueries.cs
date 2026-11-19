@@ -263,7 +263,7 @@ namespace ComplianceTracker.Application.Compliance
             result = NationalLayers.Apply(result);
 
             // US-037 R5: an approved "Same" match between two frameworks passes coverage on too
-            result = CrossMappings.Apply(result, await _crossMappings.ListAsync(project.OrganizationId, cancellationToken));
+            result = CrossMappings.Apply(result, await _crossMappings.ListAsync(project.OrganizationId, cancellationToken), project.Id); // US-206 R3
 
             // US-020: the pending AI suggestions, best first per story
             var requirements = result.SelectMany(f => f.Requirements).ToDictionary(r => r.Requirement.Id, r => r.Requirement);

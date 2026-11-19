@@ -1889,6 +1889,9 @@ classDiagram
     -strength: MappingStrength
     -score: double
     -status: SuggestionStatus
+    -projectIds: Guid[]
+    +AppliesTo(projectId: Guid) bool
+    +LimitTo(projectIds: Guid[]) bool
     +Approve(userId, role, at)
     +Reject(reason, comment, userId, role, at)
     +StrengthOf(score)$ MappingStrength
@@ -2259,6 +2262,37 @@ classDiagram
   OrganizationService ..> Organization : opretter
   IOrganizationRepository ..> Organization
   IActivityLogRepository ..> ActivityLogEntry
+
+  class Supplier {
+    -id: Guid
+    -organizationId: Guid
+    -name: string
+    -criticality: SupplierCriticality
+    -contact: string?
+    -registrationNumber: string?
+    -address: string?
+    -country: string?
+    -website: string?
+    -securityEmail: string?
+    +PrimaryContact: SupplierContact?
+    +LacksSecurityContact: bool
+    +ChangeCompany(registrationNumber, address, country, website, securityEmail) List~string~
+    +AddContact(name, role, email, phone, primary, securityContact) SupplierContact
+    +ChangeContact(contactId, name, role, email, phone, primary, securityContact) SupplierContact
+    +RemoveContact(contactId: Guid) SupplierContact
+  }
+  class SupplierContact {
+    -id: Guid
+    -supplierId: Guid
+    -name: string
+    -role: string?
+    -email: string?
+    -phone: string?
+    -isPrimary: bool
+    -isSecurityContact: bool
+  }
+  Organization "1" -- "*" Supplier
+  Supplier "1" *-- "*" SupplierContact : contact persons
 
   note for MappingSuggestion "{xor} workItemId eller controlId"
   note for RequirementAssessment "{xor} releaseId eller organizationId"

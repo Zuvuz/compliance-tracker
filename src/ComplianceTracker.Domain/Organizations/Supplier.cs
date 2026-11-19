@@ -42,7 +42,31 @@ namespace ComplianceTracker.Domain.Organizations
         public string Name { get; private set; } = "";
         public string Delivers { get; private set; } = "";
         public SupplierCriticality Criticality { get; private set; }
+
+        // US-207 R7: the free-text contact from before contact persons; kept as a note until a person is added
         public string? Contact { get; private set; }
+
+        // US-207 R1: the company's details, all optional
+        public const int MaxRegistrationLength = 50;
+        public const int MaxCountryLength = 100;
+        public string? RegistrationNumber { get; private set; }
+        public string? Address { get; private set; }
+        public string? Country { get; private set; }
+        public string? Website { get; private set; }
+        public string? SecurityEmail { get; private set; }
+
+        // US-207 R2: the people at the supplier, the primary first
+        private readonly List<SupplierContact> _contacts = [];
+        public IReadOnlyList<SupplierContact> Contacts => _contacts.OrderByDescending(c => c.IsPrimary).ThenBy(c => c.Name, StringComparer.OrdinalIgnoreCase).ToList();
+
+        public SupplierContact? PrimaryContact => _contacts.FirstOrDefault(c => c.IsPrimary);
+
+        // R5: a critical supplier with nobody to write to about security: no security contact and no security e-mail
+        public bool LacksSecurityContact
+            => Criticality == SupplierCriticality.High && SecurityEmail is null && !_contacts.Any(c => c.IsSecurityContact && c.Email is not null);
+
+        // R7: the old note is shown only until a person is added
+        public string? ContactNote => _contacts.Count == 0 ? Contact : null;
 
         // R2: e.g. "NIS2 Art. 21(2)(d); GDPR Art. 28"
         public string Rules { get; private set; } = "";
@@ -98,6 +122,98 @@ namespace ComplianceTracker.Domain.Organizations
             Criticality = criticality.Value;
             Contact = string.IsNullOrWhiteSpace(contact) ? null : Cut(contact);
             Rules = string.Join("; ", chosen);
+        }
+
+        // US-207 R1: the company's details. Returns the names of what changed, for the log (R6), never the values.
+        public IReadOnlyList<string> ChangeCompany(string? registrationNumber, string? address, string? country, string? website, string? securityEmail)
+        {
+            RequireActive();
+            var registration = Optional(registrationNumber, MaxRegistrationLength, "registration number");
+            var cleanAddress = Optional(address, MaxTextLength, "address");
+            var cleanCountry = Optional(country, MaxCountryLength, "country");
+            var cleanWebsite = SupplierContacts.CleanWebsite(website);
+            var cleanEmail = SupplierContacts.CleanEmail(securityEmail);
+
+            var changed = new List<string>();
+            if (registration != RegistrationNumber) { changed.Add("registration number"); }
+            if (cleanAddress != Address) { changed.Add("address"); }
+            if (cleanCountry != Country) { changed.Add("country"); }
+            if (cleanWebsite != Website) { changed.Add("website"); }
+            if (cleanEmail != SecurityEmail) { changed.Add("security e-mail"); }
+
+            RegistrationNumber = registration;
+            Address = cleanAddress;
+            Country = cleanCountry;
+            Website = cleanWebsite;
+            SecurityEmail = cleanEmail;
+            return changed;
+        }
+
+        // US-207 R2: the first person is primary; a new primary takes over from the old one
+        public SupplierContact AddContact(string? name, string? role, string? email, string? phone, bool primary, bool securityContact)
+        {
+            RequireActive();
+            var contact = SupplierContact.Create(Id, name, role, email, phone, securityContact);
+            _contacts.Add(contact);
+            SetPrimary(primary || _contacts.Count == 1 ? contact : PrimaryContact);
+            return contact;
+        }
+
+        public SupplierContact ChangeContact(Guid contactId, string? name, string? role, string? email, string? phone, bool primary, bool securityContact)
+        {
+            RequireActive();
+            var contact = ContactOf(contactId);
+            contact.Change(name, role, email, phone, securityContact);
+            if (primary)
+            {
+                SetPrimary(contact);
+            }
+
+            return contact;
+        }
+
+        // R2: removing the primary makes the next person primary; removing the last one leaves the note (R7) shown again
+        public SupplierContact RemoveContact(Guid contactId)
+        {
+            RequireActive();
+            var contact = ContactOf(contactId);
+            _contacts.Remove(contact);
+            if (contact.IsPrimary)
+            {
+                SetPrimary(_contacts.OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase).FirstOrDefault());
+            }
+
+            return contact;
+        }
+
+        private SupplierContact ContactOf(Guid contactId)
+            => _contacts.FirstOrDefault(c => c.Id == contactId) ?? throw new DomainException("Contact person not found");
+
+        private void SetPrimary(SupplierContact? primary)
+        {
+            foreach (var contact in _contacts)
+            {
+                contact.MakePrimary(ReferenceEquals(contact, primary));
+            }
+        }
+
+        private void RequireActive()
+        {
+            if (!IsActive)
+            {
+                throw new DomainException("The supplier has been removed");
+            }
+        }
+
+        private static string? Optional(string? text, int max, string what)
+        {
+            var clean = (text ?? "").Trim();
+            if (clean.Length > max)
+            {
+                throw new DomainException($"The {what} must be {max} characters or fewer");
+            }
+
+            return clean.Length == 0 ? null : clean;
         }
 
         public SupplierEvidence AddEvidence(SupplierEvidenceKind? kind, string? title, DateOnly? validUntil, string fileName, string contentType,

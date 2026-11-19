@@ -2328,6 +2328,32 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - Mærket pr. projekt. En politik gælder hele organisationen, så beslutningen gør det også.
   - En kolonne på `Requirement` til de indbyggede mærker. Det ville kræve en migration med data for hver version af hvert katalog.
+### B156 – Kontaktoplysninger til leverandører (US-207)
+
+- **Beslutning:**
+  - **Firmaet:** CVR- eller momsnummer, adresse, land, hjemmeside og en e-mail til sikkerhedssager. Alt er frivilligt. En hjemmeside uden `https://` får det sat foran.
+  - **Kontaktpersoner** (`SupplierContact`) med navn, rolle, e-mail og telefon. Den første er primær, og en ny primær tager over fra den gamle. Fjernes den primære, bliver den næste primær. En rolle kan vælges fra en liste eller skrives.
+  - **"Write"** er et `mailto:`-link med et emne, fx "Security – Demo ApS" eller "Updated evidence – Demo ApS", når evidens mangler eller snart udløber. Trackeren sender intet selv.
+  - **"No security contact"** vises på en leverandør med høj kritikalitet, når hverken en sikkerhedskontakt med e-mail eller en sikkerheds-e-mail er givet. En sikkerhedskontakt uden e-mail tæller ikke, for man kan ikke skrive til den.
+  - **Loggen** nævner, hvad der ændrede sig, og personens navn og rolle, aldrig e-mail eller telefon.
+  - **Det gamle fritekstfelt "Contact"** vises som en note, indtil den første kontaktperson er tilføjet.
+  - **Påmindelsen om udløbende evidens** linker til leverandørens række, hvor den primære kontakt kan spørges. Selve mailen nævner ingen navne, som før (US-183 R3).
+- **Begrundelse:** NIS2 Art. 21(2)(d) og ISO 27001 A.5.19–A.5.22 kræver, at organisationen kan følge op på sine leverandører. Det kræver, at man ved, hvem man skriver til.
+- **Fravalgt:**
+  - At sende mails fra trackeren. Medlemmets eget mailprogram er nok og kræver ingen mailopsætning.
+  - Opslag i CVR-registeret. Det kommer som en historie for sig (besluttet 18-11-2026).
+### B157 – Cross-mapping på tværs af flere rammeværker, for valgte projekter (US-206)
+
+- **Beslutning:**
+  - **Flere rammeværker på én gang** (vej 1, valgt af brugeren 18-11-2026). Man vælger 2–5 versioner. AI'en sammenligner hvert par i den valgte rækkefølge, (A, B), (A, C), (B, C), ud fra én indlejring af alle teksterne. Forslagene gemmes pr. par som før, så siden for to rammeværker virker uændret.
+  - **Grupperet pr. krav:** siden viser hvert krav med dets matches i de andre valgte rammeværker. "Approve all" og "Reject all" afgør dem alle på én gang. Et enkelt match kan stadig afgøres for sig.
+  - **Et godkendt match gælder for valgte projekter** (`RequirementMapping.ProjectIds`). Tom liste betyder alle projekter, der følger begge sider. Kun projekter, der følger begge sider, kan vælges, og ændringen logges som `MappingProjectsChanged`.
+  - **Kun den, der styrer rammeværker** (`ManageFrameworks`), vælger projekterne. Det svarer på historiens åbne spørgsmål: et projekt kan ikke selv slå et match fra.
+  - **Matches er ikke tjekket endnu (R6):** indtil AI'en læser teksterne (US-205), siger siden, at et match kun betyder, at kravene er formuleret ens. "Same" kan stadig godkendes, så US-037 virker som før.
+- **Begrundelse:** Med tre rammeværker skulle man før køre og afgøre tre par hver for sig, og et match gjaldt i alle produkter. ISO 27001 6.1.3 d) beder om at sammenligne de valgte kontroller med flere kilder.
+- **Fravalgt:**
+  - En fælles liste over organisationens egne kontroller (vej 2). Den er uden for denne historie.
+  - Flere end fem rammeværker på én gang. Det giver for mange par for den lokale AI.
 
 ### B158 – Organisationens egen compliance, arvet af projekterne (US-115)
 

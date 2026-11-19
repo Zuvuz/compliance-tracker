@@ -40,6 +40,8 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.OrganisationClosed // US-184
                 or ActivityAction.ChecklistItemsSuggested or ActivityAction.ChecklistSuggestionRejected // US-193
                 or ActivityAction.SupplierAdded or ActivityAction.SupplierEvidenceAdded or ActivityAction.SupplierRemoved // US-191
+                or ActivityAction.SupplierDetailsChanged or ActivityAction.SupplierContactAdded or ActivityAction.SupplierContactChanged
+                or ActivityAction.SupplierContactRemoved // US-207
                 or ActivityAction.IndustryProfileChosen => ActivityGroup.Organisation,
             ActivityAction.CatalogImported or ActivityAction.CatalogActivated or ActivityAction.FrameworkEnabled
                 or ActivityAction.FrameworkDisabled
@@ -95,7 +97,7 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.SecurityEventSuggestionDismissed
                 or ActivityAction.ScanImported or ActivityAction.FindingAccepted or ActivityAction.FindingAcceptanceUndone or ActivityAction.SbomImported
                 or ActivityAction.ScanUploadTokenCreated or ActivityAction.ScanUploadTokenRevoked => ActivityGroup.SecurityEvents,
-            ActivityAction.MappingsSuggested or ActivityAction.MappingApproved or ActivityAction.MappingRejected
+            ActivityAction.MappingsSuggested or ActivityAction.MappingApproved or ActivityAction.MappingProjectsChanged or ActivityAction.MappingRejected
                 or ActivityAction.AiFeedbackSharingChanged or ActivityAction.ProjectAiSharingChanged or ActivityAction.AiFeedbackExported
                 or ActivityAction.TrainingDataExported => ActivityGroup.Ai,
             _ => throw new ArgumentOutOfRangeException(nameof(action), action, "The action has no group; add it in ActivityGroups.Of")
