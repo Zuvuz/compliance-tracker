@@ -155,6 +155,28 @@ namespace ComplianceTracker.Application.Ai
                 throw new DomainException("Every applicable requirement of this framework is covered");
             }
 
+            return await SuggestForRequirementsAsync(context, targets, $"{targets.Count} not-covered requirements", cancellationToken);
+        }
+
+        // #52 (US-155, US-020): the project's own stories for one requirement, from its page, e.g. one marked "Needs action".
+        // The same matching as for the not-covered requirements; returns how many stories were suggested.
+        public async Task<int> SuggestForRequirementAsync(Guid projectId, Guid requirementId, CancellationToken cancellationToken = default)
+        {
+            var context = await LoadAsync(projectId, cancellationToken);
+            var requirement = context.Requirements.FirstOrDefault(r => r.Id == requirementId)
+                ?? throw new DomainException("The requirement is not one the project follows, or it does not apply");
+            if (context.Linked.Any(l => l.RequirementId == requirementId))
+            {
+                throw new DomainException($"{requirement.Code} is already covered by a story");
+            }
+
+            return await SuggestForRequirementsAsync(context, [requirement], requirement.Code, cancellationToken);
+        }
+
+        // The best stories for each target become suggestions; pending ones for those requirements are replaced
+        private async Task<int> SuggestForRequirementsAsync(
+            Context context, IReadOnlyList<Requirement> targets, string what, CancellationToken cancellationToken)
+        {
             var vectors = await EmbedAsync(context.Stories.Select(StoryText).Concat(targets.Select(RequirementText)).ToList(), cancellationToken);
             var storyVectors = vectors.Take(context.Stories.Count).ToList();
             var requirementVectors = vectors.Skip(context.Stories.Count).ToList();
@@ -192,7 +214,7 @@ namespace ComplianceTracker.Application.Ai
             await NoteEarlierRejectionsAsync(context, made, cancellationToken);
             await _suggestions.AddRangeAsync(made, cancellationToken);
             await _log.LogAsync(ActivityAction.MappingsSuggested, context.Project.Id,
-                $"{made.Count} suggestions for {targets.Count} not-covered requirements ({Models}, {RationalePrompt.Version})", cancellationToken);
+                $"{made.Count} suggestions for {what} ({Models}, {RationalePrompt.Version})", cancellationToken);
             await SaveAndNotifyAsync(context.Project.Id, cancellationToken);
             return made.Count;
         }

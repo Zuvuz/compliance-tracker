@@ -1744,6 +1744,21 @@ namespace ComplianceTracker.Web.Controllers
             return BackToCompliance(projectId, sub);
         }
 
+        // POST /Projects/SuggestStoriesForRequirement: #52. The project's own stories for one requirement (US-020), from its
+        // page; they are shown there with score and reason, to approve or reject.
+        [AiRateLimit] // US-097 R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> SuggestStoriesForRequirement(Guid projectId, Guid requirementId, string? sub, CancellationToken cancellationToken)
+        {
+            var made = await _suggestions.SuggestForRequirementAsync(projectId, requirementId, cancellationToken);
+            TempData["ApplicabilityMessage"] = made == 0
+                ? "No story in the project matches this requirement well enough. A new story can be drafted under More."
+                : made == 1 ? "1 story from the project is suggested below." : $"{made} stories from the project are suggested below.";
+            return BackToCompliance(projectId, sub);
+        }
+
         // POST /Projects/CreateStoryForNeedsAction: R5. The person agrees; the AI drafts a story (US-106).
         [AiRateLimit] // US-097 R1
         [HttpPost]
