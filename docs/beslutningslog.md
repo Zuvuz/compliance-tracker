@@ -2368,6 +2368,37 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At produktet automatisk følger organisationens rammeværker. Så blandes organisationens krav sammen med produktets egne.
   - Flere juridiske enheder med hver sit ISMS. Det er uden for historien.
 
+### B159 – AI-forslag, der har læst dokumentet (US-205)
+
+- **Beslutning:**
+  - **Tre trin for dokumenter og projektets evidens:**
+    1. **Shortlist:** dokumentet deles i afsnit på højst 1.200 tegn, og et krav får sit bedste afsnits score.
+    2. **Rerank:** rerankeren (US-118) ordner kandidaterne, når den er sat op.
+    3. **Tjek:** chatmodellen for opgaven `EvidenceCheck` læser kravet og de tre bedste afsnit. Den svarer "Meets", "Partly meets" eller "Does not meet", med et citat og hvad der mangler.
+
+    Kun "Meets" og "Partly" bliver forslag, og citatet skal stå ordret i dokumentet. Mellemrum og store/små bogstaver må afvige.
+  - **Uden tjek (R7):** når modellen ikke kan nås, svarer i et forkert format, eller dokumentet ikke har tekst, laves forslaget som før og mærkes "Not checked".
+  - **Hvert forslag viser** dommen, citatet, hvad der mangler, og hvilken model der tjekkede det (R2, R10).
+  - **Cross-mapping (R13, R14):**
+    - Kun de to bedste matches pr. krav, og intet under "Partly" ud fra teksternes lighed.
+    - Modellen læser begge krav og svarer "Same", "Partly" eller "Related" med det, der adskiller dem. "Related" foreslås ikke.
+    - Kun et tjekket "Same" giver dækning.
+    - "Reject all not checked" afviser resten på én gang med én begrundelse.
+  - **Evidens gennem stories (R11):** evidenskortet viser de krav, evidensen når gennem sine stories, fx "Through [US-004] Sign in: CRA I.2(d)", uden at spørge AI'en, og tilbyder "Link directly".
+  - **Evalueringen (R9)** måles på folks beslutninger, ligesom US-116, på AI-kvalitetssiden. Den viser:
+    - andelen af tjekkede forslag, der blev godkendt
+    - den samme andel for forslag uden tjek (før/efter)
+    - andelen af de rigtige links, AI'en fandt, regnet som godkendte mod dem, der blev lavet i hånden
+  - **Modellen vælges af systemejeren** med `Ai:Tasks:EvidenceCheck:Model`, fx en 14B-model i Ollama. Kun lokale modeller (R6).
+- **Begrundelse:** Indlejring alene svarer på "samme emne?", ikke på "står der det, kravet beder om?". I demoen gav en hændelsesprocedure høje scorer på alle hændelseskrav, og CRA × ISO-demoen gav 288 forslag omkring 0,65.
+- **Åbne spørgsmål fra historien, besvaret:**
+  - Story-forslagene (US-020, US-118) tjekkes ikke endnu. De har allerede reranker og begrundelse, og et ekstra kald pr. forslag gør dem langsomme.
+  - Evidenstjekket (US-038) bruger allerede `EvidenceCheck`-modellen. Citatreglen gælder endnu ikke der.
+  - Hvilken modelstørrelse der er bedst, afgør evalueringen.
+- **Fravalgt:**
+  - Et fast testsæt af dokumenter i repoet til evalueringen. Folks egne beslutninger er et bedre og ærligere testsæt, og standarderne må ikke ligge i repoet.
+  - At ændre forslagene til en eksisterende `MappingSuggestion`. Kun dokumenter, projektets evidens og cross-mapping er med.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

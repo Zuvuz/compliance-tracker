@@ -91,6 +91,16 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(AiQuality));
         }
 
+        // POST /System/EvaluatePassageCheck: US-205 R9
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(AiQuality))]
+        public async Task<IActionResult> EvaluatePassageCheck([FromServices] Application.Ai.AiEvaluationService evaluations, CancellationToken cancellationToken)
+        {
+            await evaluations.EvaluatePassageCheckAsync(cancellationToken);
+            return RedirectToAction(nameof(AiQuality));
+        }
+
         // POST /System/GradeRationales: R3. The form sends "grade-{suggestionId}" = 1..5; empty ones are left out.
         [HttpPost]
         [ValidateAntiForgeryToken]

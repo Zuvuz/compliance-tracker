@@ -83,6 +83,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<double?>("AverageGrade")
                         .HasColumnType("double precision");
 
+                    b.Property<double?>("CheckedRight")
+                        .HasColumnType("double precision");
+
                     b.Property<int>("Decisions")
                         .HasColumnType("integer");
 
@@ -92,6 +95,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("DecisionsTo")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<double?>("Found")
+                        .HasColumnType("double precision");
+
                     b.Property<int>("Graded")
                         .HasColumnType("integer");
 
@@ -99,6 +105,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<double?>("NotCheckedRight")
+                        .HasColumnType("double precision");
 
                     b.Property<string>("PromptVersion")
                         .IsRequired()
@@ -3731,6 +3740,22 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("CheckMissing")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("CheckModel")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("CheckPassage")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("CheckVerdict")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<string>("Comment")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
@@ -4387,6 +4412,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("CheckModel")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<string>("Comment")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
@@ -4403,6 +4432,10 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<string>("DecidedRole")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Differs")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<Guid>("FromRequirementId")
                         .HasColumnType("uuid");
@@ -4706,6 +4739,22 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("CheckMissing")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("CheckModel")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("CheckPassage")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("CheckVerdict")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("Comment")
                         .HasMaxLength(1000)

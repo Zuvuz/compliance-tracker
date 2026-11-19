@@ -76,6 +76,12 @@ namespace ComplianceTracker.Specs.Support
         string IEmbeddingModel.Name => "fake-embed";
         string IRationaleWriter.Name => "fake-chat";
 
+        // US-205: the passage check's answer per requirement code, e.g. "VERDICT: Partly meets\nPASSAGE: …\nMISSING: …"
+        public Dictionary<string, string> PassageAnswers { get; } = new();
+
+        // US-205 R13: the cross-mapping check's answer per pair of codes, "SP-1|I.2(d)"
+        public Dictionary<string, string> MappingAnswers { get; } = new();
+
         public void Rate(string storyTitle, string code, double score)
         {
             lock (this)
@@ -131,6 +137,30 @@ namespace ComplianceTracker.Specs.Support
                 if (prompt.Contains(ApplicabilityPrompt.Marker, StringComparison.Ordinal))
                 {
                     return Task.FromResult(NotApplicable.TryGetValue(code, out var reason) ? $"NOT APPLICABLE: {reason}" : "APPLIES");
+                }
+
+                // US-205 R13: the cross-mapping check; without answers it cannot be reached, so matches are "not checked"
+                if (prompt.Contains(MappingCheckPrompt.Marker, StringComparison.Ordinal))
+                {
+                    if (MappingAnswers.Count == 0)
+                    {
+                        throw new AiUnavailableException("No cross-mapping check is set up");
+                    }
+
+                    var otherAt = prompt.IndexOf("Other requirement ", StringComparison.Ordinal) + "Other requirement ".Length;
+                    var other = prompt[otherAt..prompt.IndexOf(':', otherAt)];
+                    return Task.FromResult(MappingAnswers.TryGetValue($"{code}|{other}", out var same) ? same : "VERDICT: Related\nDIFFERS: Everything");
+                }
+
+                // US-205: the passage check; without answers it cannot be reached, so suggestions are "not checked" (R7)
+                if (prompt.Contains(PassageCheckPrompt.Marker, StringComparison.Ordinal))
+                {
+                    if (PassageAnswers.Count == 0)
+                    {
+                        throw new AiUnavailableException("No passage check is set up");
+                    }
+
+                    return Task.FromResult(PassageAnswers.TryGetValue(code, out var found) ? found : "VERDICT: Does not meet\nPASSAGE: \nMISSING: Nothing");
                 }
 
                 // US-038: the evidence check's labelled answer

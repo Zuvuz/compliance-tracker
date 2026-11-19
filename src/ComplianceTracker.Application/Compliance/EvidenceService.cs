@@ -78,6 +78,8 @@ namespace ComplianceTracker.Application.Compliance
         private readonly IAiLimits _limits;
         private readonly DiagramReaders _diagrams; // US-149
 
+        private readonly PassageChecker _checker; // US-205 R12
+
         public EvidenceService(
             IProjectRepository projects,
             IFrameworkRepository frameworks,
@@ -95,8 +97,10 @@ namespace ComplianceTracker.Application.Compliance
             IUnitOfWork unitOfWork,
             TimeProvider clock,
             IAiLimits limits,
-            DiagramReaders diagrams)
+            DiagramReaders diagrams,
+            PassageChecker checker)
         {
+            _checker = checker;
             _limits = limits;
             _diagrams = diagrams;
             _projects = projects;
@@ -502,10 +506,28 @@ namespace ComplianceTracker.Application.Compliance
             var best = await Reranking.BestAsync(_reranker, evidenceText,
                 candidates.Select((requirement, i) => (Item: requirement, Search: Similarity.Cosine(vectors[0], vectors[i + 1]))),
                 Ai.MappingSuggestionService.RequirementText, _limits.MinimumScoreForEvidence, BatchSize, cancellationToken);
-            var made = best
-                .Select(c => EvidenceLinkSuggestion.Create(project.Id, evidence.Id, c.Item.Id, c.Score, rank++,
-                    _embeddings.Name, EvidenceRationalePrompt.Version, Now, _limits.MinimumScoreForEvidence).Reranked(c.SearchScore, _reranker?.Name))
-                .ToList();
+            // US-205 R12: the same check as for documents: only "meets" and "partly" with a quote found in the evidence's text
+            // are kept; without the checking model or a text they are kept as "not checked" (R7)
+            var sections = Ai.DocumentSections.Of(text);
+            var made = new List<EvidenceLinkSuggestion>();
+            foreach (var c in best)
+            {
+                var check = await _checker.CheckAsync(c.Item, evidence.Title, text,
+                    Ai.PassageChecker.BestSections(sections, null, null, Ai.MappingSuggestionService.RequirementText(c.Item)), cancellationToken);
+                if (!check.Suggest)
+                {
+                    continue;
+                }
+
+                var suggestion = EvidenceLinkSuggestion.Create(project.Id, evidence.Id, c.Item.Id, c.Score, rank++,
+                    _embeddings.Name, EvidenceRationalePrompt.Version, Now, _limits.MinimumScoreForEvidence).Reranked(c.SearchScore, _reranker?.Name);
+                if (check.Check is { } found)
+                {
+                    suggestion.Checked(found);
+                }
+
+                made.Add(suggestion);
+            }
 
             // US-145 R4
             var users = (await _member.FindOrganizationAsync(cancellationToken))?.Users ?? [];

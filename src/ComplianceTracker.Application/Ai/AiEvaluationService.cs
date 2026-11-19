@@ -50,8 +50,12 @@ namespace ComplianceTracker.Application.Ai
             ICurrentUser currentUser,
             IUnitOfWork unitOfWork,
             TimeProvider clock,
-            Projects.IProjectRepository projects)
+            Projects.IProjectRepository projects,
+            Organizations.IDocumentLinkSuggestionRepository documentSuggestions,
+            Organizations.IOrganisationDocumentRepository documents)
         {
+            _documentSuggestions = documentSuggestions;
+            _documents = documents;
             _projects = projects;
             _organizations = organizations;
             _suggestions = suggestions;
@@ -63,6 +67,38 @@ namespace ComplianceTracker.Application.Ai
             _currentUser = currentUser;
             _unitOfWork = unitOfWork;
             _clock = clock;
+        }
+
+        private readonly Organizations.IDocumentLinkSuggestionRepository _documentSuggestions; // US-205 R9
+        private readonly Organizations.IOrganisationDocumentRepository _documents;
+
+        // US-205 R9: the document suggestions people decided, in the organisations that share them, and the links they made
+        // by hand (right answers the AI did not find). Nothing is changed.
+        public async Task<AiEvaluation> EvaluatePassageCheckAsync(CancellationToken cancellationToken = default)
+        {
+            EnsureOperator();
+            var decided = new List<Domain.Organizations.DocumentLinkSuggestion>();
+            var byHand = 0;
+            foreach (var organization in (await _organizations.ListAllAsync(cancellationToken)).Where(o => o.ShareAiFeedback))
+            {
+                var suggestions = await _documentSuggestions.ListAsync(organization.Id, cancellationToken);
+                decided.AddRange(suggestions.Where(s => s.Status is SuggestionStatus.Approved or SuggestionStatus.Rejected));
+                byHand += PassageCheckEvaluation.LinkedByHand(await _documents.ListAsync(organization.Id, cancellationToken: cancellationToken), suggestions);
+            }
+
+            var minimum = _limits.MinimumDecisionsForEvaluation;
+            if (decided.Count == 0 || decided.Count < minimum)
+            {
+                throw new DomainException($"Too few decisions to measure: {decided.Count} of at least {Math.Max(1, minimum)}");
+            }
+
+            var result = PassageCheckEvaluation.Measure(decided, byHand);
+            var evaluation = AiEvaluation.ForPassageCheck(result.Model, PassageCheckPrompt.Version, decided.Count,
+                decided.Min(d => d.DecidedAt), decided.Max(d => d.DecidedAt), result.CheckedRight, result.NotCheckedRight, result.Found,
+                _currentUser.Identity.Name, Now);
+            await _evaluations.AddAsync(evaluation, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return evaluation;
         }
 
         // R5: every run, newest first, for the operator only

@@ -32,6 +32,53 @@ namespace ComplianceTracker.Application.Ai
     public record CrossMappingView(IReadOnlyList<FollowedVersion> Versions, FollowedVersion? From, FollowedVersion? To,
         IReadOnlyList<MappingRow> Pending, IReadOnlyList<MappingRow> Approved);
 
+    // US-205 R13: the check of a cross-mapping: the model reads both requirements and says how much they ask for the same
+    public static class MappingCheckPrompt
+    {
+        public const string Version = "mapping-check-v1";
+        public const string Marker = "Compare the two requirements";
+
+        public static string For(Requirement from, Requirement to)
+            => $"""
+                {Marker} below. Do they ask for the same thing, so that meeting one meets the other?
+                Use only these texts. Answer in exactly this shape:
+                VERDICT: Same | Partly | Related
+                DIFFERS: <what one asks for that the other does not, or "Nothing">
+
+                Requirement {from.Code}: {from.Title}
+                {from.Description}
+
+                Other requirement {to.Code}: {to.Title}
+                {to.Description}
+                """;
+
+        public static (MappingStrength Strength, string? Differs) Parse(string answer)
+        {
+            string? verdict = null, differs = null;
+            foreach (var raw in (answer ?? "").Replace("\r\n", "\n").Split('\n'))
+            {
+                var line = raw.Trim().TrimStart('*', '-', ' ');
+                if (line.StartsWith("VERDICT:", StringComparison.OrdinalIgnoreCase))
+                {
+                    verdict = line["VERDICT:".Length..].Trim().ToLowerInvariant().Trim('.', '"', '*', ' ');
+                }
+                else if (line.StartsWith("DIFFERS:", StringComparison.OrdinalIgnoreCase))
+                {
+                    differs = line["DIFFERS:".Length..].Trim();
+                }
+            }
+
+            return verdict switch
+            {
+                null or "" => throw new AiUnavailableException("The AI's answer had no verdict"),
+                _ when verdict.StartsWith("same") => (MappingStrength.Same, differs),
+                _ when verdict.StartsWith("partly") || verdict.StartsWith("partial") => (MappingStrength.Partly, differs),
+                _ when verdict.StartsWith("related") || verdict.StartsWith("different") || verdict.StartsWith("not") => (MappingStrength.Related, differs),
+                _ => throw new AiUnavailableException("The AI's answer had no verdict")
+            };
+        }
+    }
+
     // US-206 R2: one requirement with its pending matches in every other chosen framework
     public record MatchGroup(FollowedVersion FromVersion, Requirement From, IReadOnlyList<GroupMatch> Matches);
 
@@ -56,7 +103,8 @@ namespace ComplianceTracker.Application.Ai
     // US-206: or in several at once, every pair in one run.
     public class CrossMappingService
     {
-        public const int PerRequirement = 4;
+        // US-205 R14: only the best match or two per requirement
+        public const int PerRequirement = 2;
 
         // US-206 R1: more would ask the local AI to compare too many pairs in one go
         public const int MostAtOnce = 5;
@@ -146,6 +194,7 @@ namespace ComplianceTracker.Application.Ai
             var vectorOf = all.Select((r, i) => (r.Id, Vector: embedded[i])).ToDictionary(x => x.Id, x => x.Vector);
             var existing = await _mappings.ListAsync(organization.Id, cancellationToken);
             var made = new List<RequirementMapping>();
+            var checking = true; // US-205 R7: once the checking model cannot be reached, the rest is not checked either
             foreach (var (from, to) in Pairs(chosen))
             {
                 var pair = existing.Where(m => SamePair(m, from.Version.Id, to.Version.Id)).ToList();
@@ -156,11 +205,34 @@ namespace ComplianceTracker.Application.Ai
 
                 var fromRequirements = requirements[from.Version.Id];
                 var toRequirements = requirements[to.Version.Id];
-                made.AddRange(Best(fromRequirements, toRequirements, fromRequirements.Concat(toRequirements).Select(r => vectorOf[r.Id]).ToList(),
-                        Math.Max(_limits.MinimumScoreForStories, RequirementMapping.RelatedFrom),
+                // US-205 R14: nothing below "Partly" is suggested
+                var candidates = Best(fromRequirements, toRequirements, fromRequirements.Concat(toRequirements).Select(r => vectorOf[r.Id]).ToList(),
+                        Math.Max(_limits.MinimumScoreForStories, RequirementMapping.PartlyFrom),
                         (a, b) => pair.Any(m => !m.IsPending && m.Status != SuggestionStatus.Replaced && m.Joins(a, b)))
-                    .Select(m => RequirementMapping.Suggest(organization.Id, from.Version.Id, to.Version.Id, m.From.Id, m.To.Id, m.Score, m.Rank,
-                        Rationale(m.From, m.To, m.Score), model.Name, _clock.GetUtcNow().UtcDateTime)));
+                    .Select(m => (Found: m, Mapping: RequirementMapping.Suggest(organization.Id, from.Version.Id, to.Version.Id, m.From.Id, m.To.Id, m.Score, m.Rank,
+                        Rationale(m.From, m.To, m.Score), model.Name, _clock.GetUtcNow().UtcDateTime)))
+                    .ToList();
+
+                // US-205 R13: the checking model reads both requirements; "Related" is dropped, and without the model a match
+                // stays as the texts' likeness says, marked "not checked"
+                foreach (var (found, mapping) in candidates)
+                {
+                    if (checking && await CheckAsync(found.From, found.To, cancellationToken) is { } answer)
+                    {
+                        if (answer.Strength == MappingStrength.Related)
+                        {
+                            continue;
+                        }
+
+                        mapping.Checked(answer.Strength, answer.Differs, _models.Writer(AiTask.EvidenceCheck).Name);
+                    }
+                    else
+                    {
+                        checking = false;
+                    }
+
+                    made.Add(mapping);
+                }
             }
 
             await _mappings.AddRangeAsync(made, cancellationToken);
@@ -168,6 +240,43 @@ namespace ComplianceTracker.Application.Ai
                 $"{made.Count} cross-mapping suggestions between {Names(chosen.Select(v => v.Label).ToList())} ({model.Name})", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return made.Count;
+        }
+
+        // US-205 R13: one pair read by the checking model; null when it cannot be reached or answers in a wrong format
+        private async Task<(MappingStrength Strength, string? Differs)?> CheckAsync(Requirement from, Requirement to, CancellationToken cancellationToken)
+        {
+            try
+            {
+                return MappingCheckPrompt.Parse(await _models.Writer(AiTask.EvidenceCheck).WriteAsync(MappingCheckPrompt.For(from, to), cancellationToken));
+            }
+            catch (AiUnavailableException)
+            {
+                return null;
+            }
+        }
+
+        // US-205 R14: "Reject all not checked" clears the matches the model did not read, in one step with a reason
+        public async Task<int> RejectUncheckedAsync(IReadOnlyList<Guid> versionIds, RejectionReason? reason, string? comment, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
+            var chosen = versionIds.Distinct().ToHashSet();
+            var unchecked_ = (await _mappings.ListAsync(organization.Id, cancellationToken))
+                .Where(m => m.IsPending && !m.IsChecked && chosen.Contains(m.FromVersionId) && chosen.Contains(m.ToVersionId))
+                .ToList();
+            if (unchecked_.Count == 0)
+            {
+                throw new DomainException("No match waits that is not checked");
+            }
+
+            var at = _clock.GetUtcNow().UtcDateTime;
+            foreach (var mapping in unchecked_)
+            {
+                mapping.Reject(reason, comment, user.Id, user.Role, at);
+            }
+
+            await _log.LogAsync(ActivityAction.MappingRejected, organization.Id, $"{unchecked_.Count} cross-mappings that were not checked ({reason})", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return unchecked_.Count;
         }
 
         // US-206 R1: the versions chosen, in the order given, each once; at least two and at most MostAtOnce

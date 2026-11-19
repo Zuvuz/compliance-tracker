@@ -535,6 +535,21 @@ classDiagram
     +Decide(organizationId, requirementId, enough, reason, userId, role, at)$ DocumentationDecision
   }
   DocumentationDecision --> Requirement : documentation is enough for
+  class PassageCheck {
+    <<value object>>
+    +Verdict: PassageVerdict
+    +Passage: string
+    +Missing: string?
+    +Model: string
+  }
+  class PassageVerdict {
+    <<enumeration>>
+    Meets
+    Partly
+  }
+  PassageCheck --> PassageVerdict
+  DocumentLinkSuggestion ..> PassageCheck : checked
+  EvidenceLinkSuggestion ..> PassageCheck : checked
   class RequirementScopeDecision {
     -id: Guid
     -organizationId: Guid
@@ -1890,6 +1905,10 @@ classDiagram
     -score: double
     -status: SuggestionStatus
     -projectIds: Guid[]
+    -checkModel: string?
+    -differs: string?
+    +IsChecked: bool
+    +Checked(strength, differs, model)
     +AppliesTo(projectId: Guid) bool
     +LimitTo(projectIds: Guid[]) bool
     +Approve(userId, role, at)

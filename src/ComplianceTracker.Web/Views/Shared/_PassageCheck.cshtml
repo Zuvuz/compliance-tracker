@@ -1,0 +1,20 @@
+@* US-205 R2, R10: what the checking model found for one suggestion: the verdict, the passage quoted from the document,
+   what is missing for "partly", and the model; or "not checked" when it was made without the check (R7). Classes used by
+   the tests: .passage-check (data-checked) with .check-verdict, .check-passage, .check-missing, .checked-by, .not-checked. *@
+@model ComplianceTracker.Web.Models.PassageCheckView
+<div class="small passage-check mt-1" data-checked="@(Model.IsChecked ? "true" : "false")">
+    @if (Model.IsChecked)
+    {
+        <span class="badge @(Model.Verdict == ComplianceTracker.Domain.Mappings.PassageVerdict.Meets ? "text-bg-success" : "text-bg-warning") check-verdict">@ComplianceTracker.Domain.Mappings.PassageCheck.NameOf(Model.Verdict!.Value)</span>
+        <span class="fst-italic check-passage">“@Model.Passage”</span>
+        @if (Model.Missing is { } missing)
+        {
+            <div class="check-missing">Missing: @missing</div>
+        }
+        <div class="text-muted checked-by">Checked by @Model.Model</div>
+    }
+    else
+    {
+        <span class="badge text-bg-light border not-checked" title="The AI did not read the text against the requirement; the suggestion only says the two are about the same topic">Not checked</span>
+    }
+</div>

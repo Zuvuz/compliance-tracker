@@ -33,6 +33,7 @@ public class CrossMappingSeveralTests
     {
         var mapping = RequirementMapping.Suggest(Org, from.LatestVersion.Id, to.LatestVersion.Id, from.LatestVersion.Requirements[0].Id,
             to.LatestVersion.Requirements[0].Id, 0.9, 1, "why", "fake-embed", Monday);
+        mapping.Checked(MappingStrength.Same, null, "fake-chat"); // US-205 R13
         mapping.Approve(Anna, null, Monday);
         return mapping;
     }

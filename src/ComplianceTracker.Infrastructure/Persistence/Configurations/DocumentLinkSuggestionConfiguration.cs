@@ -20,6 +20,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(s => s.RejectionReason).HasConversion<string>().HasMaxLength(50);
             builder.Property(s => s.Comment).HasMaxLength(1000);
             builder.Property(s => s.Quote).HasMaxLength(DocumentLinkSuggestion.MaxQuoteLength); // US-188 R2
+            // US-205 R2, R10: what the checking model found, and which model
+            builder.Property(s => s.CheckVerdict).HasConversion<string>().HasMaxLength(20);
+            builder.Property(s => s.CheckPassage).HasMaxLength(Domain.Mappings.PassageCheck.MaxPassageLength);
+            builder.Property(s => s.CheckMissing).HasMaxLength(Domain.Mappings.PassageCheck.MaxMissingLength);
+            builder.Property(s => s.CheckModel).HasMaxLength(200);
+            builder.Ignore(s => s.IsChecked);
             builder.Ignore(s => s.IsPending);
 
             builder.HasOne<Organization>().WithMany().HasForeignKey(s => s.OrganizationId).OnDelete(DeleteBehavior.Cascade);

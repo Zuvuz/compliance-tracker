@@ -42,6 +42,8 @@ namespace ComplianceTracker.Application.Organizations
         private readonly OrganisationDocumentService _documentService;
         private readonly IEvidenceTextReader _text;
         private readonly IEmbeddingModel _embeddings;
+        private readonly IReranker? _reranker; // US-205: the shortlist is reranked (US-118)
+        private readonly PassageChecker _checker; // US-205: and checked with a quote
         private readonly IAiLimits _limits;
         private readonly CurrentMember _member;
         private readonly IActivityLogger _log;
@@ -59,8 +61,11 @@ namespace ComplianceTracker.Application.Organizations
             CurrentMember member,
             IActivityLogger log,
             IUnitOfWork unitOfWork,
-            TimeProvider clock)
+            TimeProvider clock,
+            PassageChecker checker)
         {
+            _checker = checker;
+            _reranker = models.Reranker();
             _documents = documents;
             _suggestions = suggestions;
             _frameworks = frameworks;
@@ -119,21 +124,52 @@ namespace ComplianceTracker.Application.Organizations
 
             var content = await _documents.GetContentAsync(document.Id, document.Sha256, cancellationToken);
             var text = content is null ? null : _text.Read(document.ContentType, content);
+
+            // US-205 R5: 1. shortlist: each section of the document against each requirement; a requirement's score is its
+            // best section's. A document without text is read by its title alone.
+            var sections = DocumentSections.Of(text);
+            var heads = sections.Count == 0 ? [DocumentText(document, text)] : sections.Select(s => $"{document.Title}\n{s}").ToList();
             var vectors = await _embeddings.EmbedAsync(
-                [DocumentText(document, text), .. candidates.Select(c => MappingSuggestionService.RequirementText(c.Requirement))], cancellationToken);
+                [.. heads, .. candidates.Select(c => MappingSuggestionService.RequirementText(c.Requirement))], cancellationToken);
+            var sectionVectors = vectors.Take(heads.Count).ToList();
+            var requirementVectors = candidates.Select((c, i) => (c, Vector: vectors[heads.Count + i])).ToDictionary(x => x.c, x => x.Vector);
+
+            // 2. rerank (US-118): the limit applies to the rerank score when there is a reranker (US-105 R1)
+            var shortlist = await Reranking.BestAsync(_reranker, DocumentText(document, text),
+                candidates.Select(c => (Item: c, Search: sectionVectors.Max(s => Similarity.Cosine(s, requirementVectors[c])))),
+                c => MappingSuggestionService.RequirementText(c.Requirement), _limits.MinimumScoreForEvidence, EvidenceService.BatchSize, cancellationToken);
+
+            // 3. check: the checking model reads the requirement and its best sections; only "meets" and "partly" with a quote
+            // found in the document are kept (R1, R3, R4); without the model they are kept as "not checked" (R7)
+            var kept = new List<((Guid FrameworkId, string Framework, Requirement Requirement) Candidate, double Score, CheckResult Check)>();
+            foreach (var c in shortlist)
+            {
+                var requirementText = MappingSuggestionService.RequirementText(c.Item.Requirement);
+                var check = await _checker.CheckAsync(c.Item.Requirement, document.Title, text,
+                    PassageChecker.BestSections(sections, sections.Count == 0 ? null : sectionVectors, requirementVectors[c.Item], requirementText), cancellationToken);
+                if (check.Suggest)
+                {
+                    kept.Add((c.Item, c.Score, check));
+                }
+            }
 
             var rank = existing.Select(s => s.Rank).DefaultIfEmpty(0).Max() + 1;
-            var made = candidates
-                .Select((c, i) => (Candidate: c, Score: Similarity.Cosine(vectors[0], vectors[i + 1])))
-                .Where(c => c.Score >= _limits.MinimumScoreForEvidence) // US-105 R1: the same limit as for evidence
-                .OrderByDescending(c => c.Score)
-                .Take(EvidenceService.BatchSize)
+            var made = kept
                 .Select(c =>
                 {
                     var suggestion = DocumentLinkSuggestion.Create(organization.Id, document.Id, c.Candidate.FrameworkId, c.Candidate.Requirement.Code,
                         c.Score, rank++, _embeddings.Name, PromptVersion, Now, _limits.MinimumScoreForEvidence);
-                    // US-188 R2: the sentence that fits best, quoted as the reason
-                    suggestion.SetQuote(Passages.Best(text, MappingSuggestionService.RequirementText(c.Candidate.Requirement)));
+                    if (c.Check.Check is { } found)
+                    {
+                        // US-205 R2: the checked passage is the quote
+                        suggestion.Checked(found);
+                        suggestion.SetQuote(found.Passage);
+                    }
+                    else
+                    {
+                        // US-188 R2: the sentence that fits best, quoted as the reason
+                        suggestion.SetQuote(Passages.Best(text, MappingSuggestionService.RequirementText(c.Candidate.Requirement)));
+                    }
 
                     // US-145 R4: a pair that was rejected before (and has changed since) says so
                     if (existing.Where(s => s.IsFor(c.Candidate.FrameworkId, c.Candidate.Requirement.Code) && s.Status == SuggestionStatus.Rejected)

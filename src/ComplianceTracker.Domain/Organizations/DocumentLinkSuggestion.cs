@@ -156,6 +156,22 @@ namespace ComplianceTracker.Domain.Organizations
         public void SetQuote(string? quote)
             => Quote = string.IsNullOrWhiteSpace(quote) ? null : quote.Length <= MaxQuoteLength ? quote : quote[..MaxQuoteLength];
 
+        // US-205 R2, R3, R10: what the checking model found; null when the suggestion was made without the check (R7)
+        public PassageVerdict? CheckVerdict { get; private set; }
+        public string? CheckPassage { get; private set; }
+        public string? CheckMissing { get; private set; }
+        public string? CheckModel { get; private set; }
+
+        public bool IsChecked => CheckModel is not null;
+
+        public void Checked(PassageCheck check)
+        {
+            CheckVerdict = check.Verdict;
+            CheckPassage = check.Passage;
+            CheckMissing = check.Missing;
+            CheckModel = check.Model;
+        }
+
         public void NoteEarlierRejection(string? note)
             => EarlierRejection = string.IsNullOrWhiteSpace(note) ? null : note.Length <= 300 ? note : note[..300];
 

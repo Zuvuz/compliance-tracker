@@ -29,6 +29,12 @@ namespace ComplianceTracker.Domain.Ai
         public int Graded { get; private set; }
         public double? AverageGrade { get; private set; }
 
+        // US-205 R9: document suggestions: the share of checked ones people approved, the same for those made without the
+        // check (before and after), and the share of the right links the AI found (approved, against those made by hand)
+        public double? CheckedRight { get; private set; }
+        public double? NotCheckedRight { get; private set; }
+        public double? Found { get; private set; }
+
         // The operator's name; the system admin is not a member of an organisation
         public string RunBy { get; private set; } = "";
         public DateTime RunAt { get; private set; }
@@ -80,6 +86,24 @@ namespace ComplianceTracker.Domain.Ai
             };
         }
 
+        // US-205 R9: null when there was nothing of that kind to measure
+        public static AiEvaluation ForPassageCheck(string model, string promptVersion, int decisions, DateTime? from, DateTime? to,
+            double? checkedRight, double? notCheckedRight, double? found, string runBy, DateTime at)
+            => new()
+            {
+                Step = AiEvaluationStep.PassageCheck,
+                Model = model,
+                PromptVersion = promptVersion,
+                Decisions = decisions,
+                DecisionsFrom = from,
+                DecisionsTo = to,
+                CheckedRight = checkedRight is { } c ? Percent(c) : null,
+                NotCheckedRight = notCheckedRight is { } n ? Percent(n) : null,
+                Found = found is { } f ? Percent(f) : null,
+                RunBy = runBy,
+                RunAt = at
+            };
+
         private static double Percent(double share) => Math.Round(100 * Math.Clamp(share, 0, 1), 1);
     }
 
@@ -87,6 +111,7 @@ namespace ComplianceTracker.Domain.Ai
     public enum AiEvaluationStep
     {
         StoryMatching,
-        Rationale
+        Rationale,
+        PassageCheck // US-205 R9
     }
 }

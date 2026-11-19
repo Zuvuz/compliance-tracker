@@ -189,6 +189,27 @@
                                     </li>
                                 }
                             </ul>
+                            @if (row.Through.Count > 0)
+                            {
+                                @* US-205 R11: what the evidence reaches through its stories, known without asking the AI *@
+                                <ul class="list-unstyled small mb-2 through-stories">
+                                    @foreach (var through in row.Through)
+                                    {
+                                        <li class="through-story d-flex flex-wrap align-items-center gap-1" data-code="@through.Requirement.Code">
+                                            <span class="text-muted">Through @through.Story.Title:</span> <span class="fw-semibold">@through.Label</span>
+                                            @if (canChange)
+                                            {
+                                                <form asp-action="LinkEvidence" method="post" class="d-inline link-directly">
+                                                    <input type="hidden" name="projectId" value="@project.Id" />
+                                                    <input type="hidden" name="evidenceId" value="@evidence.Id" />
+                                                    <input type="hidden" name="requirementIds" value="@through.Requirement.Id" />
+                                                    <button type="submit" class="btn btn-sm btn-link p-0">Link directly</button>
+                                                </form>
+                                            }
+                                        </li>
+                                    }
+                                </ul>
+                            }
 
                             @if (canChange && tab.Linkable.Count > 0 && single is null)
                             {
@@ -335,6 +356,7 @@
                                                 <span class="badge text-bg-info ai-generated">AI-generated</span>
                                             </div>
                                             <div class="text-muted suggestion-rationale">@(suggestion.Rationale ?? "The AI is writing a rationale…")</div>
+                                            <partial name="_PassageCheck" model="PassageCheckView.Of(suggestion)" />
                                             @if (suggestion.EarlierRejection is { } earlier)
                                             {
                                                 @* US-145 R4 *@

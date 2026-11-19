@@ -156,6 +156,7 @@
                             <li class="document-suggestion border-start border-3 border-info ps-2 my-1" data-code="@suggestion.RequirementCode" data-framework="@entry.Framework">
                                 <span class="small"><strong>@entry.Framework @suggestion.RequirementCode</strong> @entry.Title
                                     <span class="text-muted">· score @suggestion.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span></span>
+                                <partial name="_PassageCheck" model="PassageCheckView.Of(suggestion)" />
                                 @if (suggestion.EarlierRejection is { } earlier)
                                 {
                                     @* US-145 R4 *@

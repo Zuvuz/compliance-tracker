@@ -142,7 +142,7 @@ namespace ComplianceTracker.Specs.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/CrossMapping.feature.ndjson", 7);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/CrossMapping.feature.ndjson", 10);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -262,20 +262,177 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.GivenAsync("the AI rates \"SP-1 Users must sign in securely\" against \"I.2(d)\" with 0.9", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 32
-    await testRunner.AndAsync("I ask the AI to match \"Security policy\" with \"CRA\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the AI check finds \"SP-1\" and \"I.2(d)\" the same", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 33
-    await testRunner.WhenAsync("I approve the cross-mapping of \"SP-1\" and \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.AndAsync("I ask the AI to match \"Security policy\" with \"CRA\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 34
-    await testRunner.ThenAsync("the approved matches list \"SP-1\" and \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.WhenAsync("I approve the cross-mapping of \"SP-1\" and \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 35
-    await testRunner.AndAsync("the requirement \"SP-1\" of \"Acme Portal\" is covered through \"CRA I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.ThenAsync("the approved matches list \"SP-1\" and \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 36
+    await testRunner.AndAsync("the requirement \"SP-1\" of \"Acme Portal\" is covered through \"CRA I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 37
     await testRunner.AndAsync("the activity log has \"MappingApproved\" with \"Cross-mapping Same: Security policy " +
                         "SP-1 ↔ CRA I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="A Same match the AI did not check does not pass the coverage on")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Cross-mapping between frameworks")]
+        [global::Xunit.TraitAttribute("Description", "A Same match the AI did not check does not pass the coverage on")]
+        [global::Xunit.TraitAttribute("Category", "US-205")]
+        [global::Xunit.TraitAttribute("Category", "aiact-art14")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task ASameMatchTheAIDidNotCheckDoesNotPassTheCoverageOn()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-205",
+                    "aiact-art14",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "2";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A Same match the AI did not check does not pass the coverage on", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 40
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 41
+    await testRunner.GivenAsync("the AI rates \"SP-1 Users must sign in securely\" against \"I.2(d)\" with 0.9", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 42
+    await testRunner.AndAsync("I ask the AI to match \"Security policy\" with \"CRA\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 43
+    await testRunner.WhenAsync("I approve the cross-mapping of \"SP-1\" and \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 44
+    await testRunner.ThenAsync("the requirement \"SP-1\" of \"Acme Portal\" is not covered", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="A match the AI finds only related is not suggested, however alike the texts are")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Cross-mapping between frameworks")]
+        [global::Xunit.TraitAttribute("Description", "A match the AI finds only related is not suggested, however alike the texts are")]
+        [global::Xunit.TraitAttribute("Category", "US-205")]
+        [global::Xunit.TraitAttribute("Category", "iso27001-6.1.3")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task AMatchTheAIFindsOnlyRelatedIsNotSuggestedHoweverAlikeTheTextsAre()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-205",
+                    "iso27001-6.1.3",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "3";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A match the AI finds only related is not suggested, however alike the texts are", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 47
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 48
+    await testRunner.GivenAsync("the AI rates \"SP-1 Users must sign in securely\" against \"I.2(d)\" with 0.9", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 49
+    await testRunner.AndAsync("the AI rates \"SP-2 Backups\" against \"I.2(d)\" with 0.75", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 50
+    await testRunner.AndAsync("the AI check finds \"SP-1\" and \"I.2(d)\" only related", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 51
+    await testRunner.AndAsync("the AI check finds \"SP-2\" and \"I.2(d)\" the same", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 52
+    await testRunner.WhenAsync("I ask the AI to match \"Security policy\" with \"CRA\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 53
+    await testRunner.ThenAsync("the cross-mapping does not suggest \"SP-1\" and \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 54
+    await testRunner.AndAsync("the cross-mapping suggests \"SP-2\" and \"I.2(d)\" as \"Same\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="The matches the AI did not check are rejected at once")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Cross-mapping between frameworks")]
+        [global::Xunit.TraitAttribute("Description", "The matches the AI did not check are rejected at once")]
+        [global::Xunit.TraitAttribute("Category", "US-205")]
+        [global::Xunit.TraitAttribute("Category", "iso27001-6.1.3")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task TheMatchesTheAIDidNotCheckAreRejectedAtOnce()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-205",
+                    "iso27001-6.1.3",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "4";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The matches the AI did not check are rejected at once", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 57
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 58
+    await testRunner.GivenAsync("the AI rates \"SP-1 Users must sign in securely\" against \"I.2(d)\" with 0.9", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 59
+    await testRunner.AndAsync("the AI rates \"SP-2 Backups\" against \"I.2(d)\" with 0.75", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 60
+    await testRunner.AndAsync("I ask the AI to match \"Security policy\" with \"CRA\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 61
+    await testRunner.WhenAsync("I reject every cross-mapping that is not checked because \"WrongRequirement\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 62
+    await testRunner.ThenAsync("the cross-mapping has no suggestions", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 63
+    await testRunner.AndAsync("the activity log has \"MappingRejected\" with \"2 cross-mappings that were not check" +
+                        "ed (WrongRequirement)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -294,11 +451,11 @@ namespace ComplianceTracker.Specs.Features
                     "aiact-art14",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "2";
+            string pickleIndex = "5";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("An approved Partly match does not count as coverage", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 39
+#line 66
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -311,16 +468,16 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 40
+#line 67
     await testRunner.GivenAsync("the AI rates \"SP-1 Users must sign in securely\" against \"I.2(d)\" with 0.75", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 41
+#line 68
     await testRunner.AndAsync("I ask the AI to match \"Security policy\" with \"CRA\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 42
+#line 69
     await testRunner.WhenAsync("I approve the cross-mapping of \"SP-1\" and \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 43
+#line 70
     await testRunner.ThenAsync("the requirement \"SP-1\" of \"Acme Portal\" is not covered", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -340,11 +497,11 @@ namespace ComplianceTracker.Specs.Features
                     "aiact-art14",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "3";
+            string pickleIndex = "6";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Rejecting needs a reason and a rejected match is not suggested again", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 46
+#line 73
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -357,32 +514,32 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 47
+#line 74
     await testRunner.GivenAsync("the AI rates \"SP-1 Users must sign in securely\" against \"I.2(d)\" with 0.9", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 48
+#line 75
     await testRunner.AndAsync("I ask the AI to match \"Security policy\" with \"CRA\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 49
+#line 76
     await testRunner.WhenAsync("I reject the cross-mapping of \"SP-1\" and \"I.2(d)\" without a reason", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 50
+#line 77
     await testRunner.ThenAsync("I see the error \"Choose a reason\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 51
+#line 78
     await testRunner.AndAsync("the cross-mapping suggests \"SP-1\" and \"I.2(d)\" as \"Same\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 52
+#line 79
     await testRunner.WhenAsync("I reject the cross-mapping of \"SP-1\" and \"I.2(d)\" because \"WrongRequirement\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 53
+#line 80
     await testRunner.AndAsync("I ask the AI to match \"Security policy\" with \"CRA\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 54
+#line 81
     await testRunner.ThenAsync("the cross-mapping page says \"The AI found no requirements that ask for the same t" +
                         "hing\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 55
+#line 82
     await testRunner.AndAsync("the activity log has \"MappingRejected\" with \"Cross-mapping: Security policy SP-1 " +
                         "↔ CRA I.2(d) (WrongRequirement)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
@@ -403,11 +560,11 @@ namespace ComplianceTracker.Specs.Features
                     "aiact-art14",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "4";
+            string pickleIndex = "7";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Without the local AI nothing is suggested", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 58
+#line 85
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -420,17 +577,17 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 59
+#line 86
     await testRunner.GivenAsync("the local AI is not available", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 60
+#line 87
     await testRunner.WhenAsync("I ask the AI to match \"Security policy\" with \"CRA\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 61
+#line 88
     await testRunner.ThenAsync("I see the error \"The local AI cannot be reached right now, so nothing was compare" +
                         "d\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 62
+#line 89
     await testRunner.AndAsync("the cross-mapping has no suggestions", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
