@@ -2409,6 +2409,26 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** Det er ofte den samme politik eller rapport, der beviser flere foranstaltninger. At finde den i samme trin sparer en ny upload af det samme dokument.
 - **Fravalgt:** at gemme forslagene som `EvidenceLinkSuggestion`. De gælder kun i godkendelsesøjeblikket, og projektets egne evidensforslag (US-059) dækker resten.
 
+### B161 – AI'en skriver arbejde til hullerne (US-108)
+
+- **Beslutning:**
+  - **"Draft for the gaps"** ligger under "Ask the AI…" på en regulerings Compliance-fane. Den tager op til 10 krav ad gangen: de krav, der gælder, ikke er dækket, ikke har et AI-forslag til en story, og ikke allerede har et åbent udkast.
+  - **Formen følger projektets metode** (US-104): user stories, use cases eller krav. Med flere metoder vælger man formen.
+  - **Et udkast dækker højst 3 krav** (besluttet af brugeren 19-11-2026). Det fortæller i én linje, hvordan det passer til produktets formål.
+  - **Et krav, der ikke passer til formålet,** får et "not applicable"-forslag (US-060) i stedet for et udkast.
+  - **US-106's `StoryDraft` er udvidet** med form, de ekstra krav, "passer til" og en use cases postconditions, så de to historier deler udkastet.
+  - **Et oprettet udkast:**
+    - En user story åbner GitHubs "new issue"-side udfyldt, som US-106. Trackeren skriver ikke til GitHub (B12, besluttet af brugeren 19-11-2026).
+    - En use case eller et krav står som tekst at kopiere ind i teamets dokument (besluttet af brugeren 19-11-2026).
+    - Når issuet eller den næste version af dokumentet kommer ind, kobles det til alle de krav, udkastet dækker, med kilden "AI-drafted". Titlen skal matche, også med dokumentets ID foran, fx "UC-12 …".
+  - **Et kasseret udkast** gemmer begrundelsen, og de samme krav skrives ikke igen i samme form.
+  - **Siden "Drafts"** viser de åbne udkast efter form og dem, der venter på at komme ind. Auditoren ser dem uden knapper.
+  - **Modellen er opgaven `GapDrafts`'s** (US-117), så systemejeren kan give den en større model.
+- **Begrundelse:** En liste over artikler er svær at handle på. Et udkast i teamets egen form og med produktets egne ord gør hullet til arbejde.
+- **Fravalgt:**
+  - At trackeren selv opretter issues eller skriver nye versioner af teamets dokumenter.
+  - At skrive udkast til alle reguleringer på én gang. En ad gangen kan gennemgås.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

@@ -275,14 +275,23 @@ namespace ComplianceTracker.Application.Ai
         // R4: accepted with the person's changes. The address opens GitHub's "new issue" page filled in (B12: the tracker does
         // not write to GitHub); null when the project has no GitHub repository.
         public async Task<(StoryDraft Draft, string? NewIssueAddress)> AcceptDraftAsync(
-            Guid projectId, Guid draftId, string? title, string? role, string? story, string? rules, string? examples, CancellationToken cancellationToken = default)
+            Guid projectId, Guid draftId, string? title, string? role, string? story, string? rules, string? examples, CancellationToken cancellationToken = default,
+            string? postconditions = null)
         {
             var (organizationId, user, project) = await OpenAsync(projectId, Permission.LinkWork, cancellationToken);
             var draft = await DraftOfAsync(project, draftId, cancellationToken);
-            draft.Accept(title, role, story, rules, examples, user.Id, Now, user.Role);
-            var code = (await RequirementsAsync(organizationId, project, cancellationToken)).GetValueOrDefault(draft.RequirementId)?.Code ?? "?";
-            await _log.LogAsync(ActivityAction.StoryDraftAccepted, project.Id, $"{code}: {draft.Title}{(draft.EditedByPerson ? " (edited)" : "")}", cancellationToken);
+            draft.Accept(title, role, story, rules, examples, user.Id, Now, user.Role, postconditions);
+            var requirements = await RequirementsAsync(organizationId, project, cancellationToken);
+            var code = string.Join(", ", draft.RequirementIds.Select(id => requirements.GetValueOrDefault(id)?.Code ?? "?")); // US-108 R4
+            await _log.LogAsync(draft.FromGaps ? ActivityAction.GapDraftAccepted : ActivityAction.StoryDraftAccepted, project.Id,
+                $"{code}: {draft.Title}{(draft.EditedByPerson ? " (edited)" : "")}", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            // US-108 R7: a use case or a requirement is text for the team's own document, not an issue
+            if (draft.Form != DraftForm.UserStory)
+            {
+                return (draft, null);
+            }
 
             var address = project.GitHub is { } github
                 ? $"https://github.com/{github.Repository}/issues/new?title={Uri.EscapeDataString(draft.Title)}&labels={Uri.EscapeDataString(github.Label)}&body={Uri.EscapeDataString(draft.IssueBody(code))}"
@@ -296,7 +305,8 @@ namespace ComplianceTracker.Application.Ai
             var (_, user, project) = await OpenAsync(projectId, Permission.LinkWork, cancellationToken);
             var draft = await DraftOfAsync(project, draftId, cancellationToken);
             draft.Discard(reason, user.Id, Now, user.Role);
-            await _log.LogAsync(ActivityAction.StoryDraftDiscarded, project.Id, $"{draft.Title}: {draft.DiscardReason}", cancellationToken);
+            await _log.LogAsync(draft.FromGaps ? ActivityAction.GapDraftDiscarded : ActivityAction.StoryDraftDiscarded, project.Id,
+                $"{draft.Title}: {draft.DiscardReason}", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
@@ -466,16 +476,19 @@ namespace ComplianceTracker.Application.Ai
             var linked = 0;
             foreach (var draft in waiting)
             {
-                var story = stories.FirstOrDefault(s => string.Equals(s.Title.Trim(), draft.Title.Trim(), StringComparison.OrdinalIgnoreCase));
+                // US-108: a use case or a requirement from the team's document may carry its ID too, e.g. "UC-12 Sign in"
+                var story = stories.FirstOrDefault(s => string.Equals(s.Title.Trim(), draft.Title.Trim(), StringComparison.OrdinalIgnoreCase)
+                    || string.Equals($"{s.ExternalReference} {s.Title}".Trim(), draft.Title.Trim(), StringComparison.OrdinalIgnoreCase));
                 if (story is null)
                 {
                     continue;
                 }
 
                 draft.LinkedTo(story.Id);
-                if (!links.Any(l => l.WorkItemId == story.Id && l.RequirementId == draft.RequirementId))
+                // US-108 R7: every requirement the draft covers
+                foreach (var requirementId in draft.RequirementIds.Where(r => !links.Any(l => l.WorkItemId == story.Id && l.RequirementId == r)))
                 {
-                    await _links.AddAsync(RequirementLink.Create(project.Id, draft.RequirementId, story.Id, draft.DecidedById!.Value,
+                    await _links.AddAsync(RequirementLink.Create(project.Id, requirementId, story.Id, draft.DecidedById!.Value,
                         _clock.GetUtcNow().UtcDateTime, LinkSource.AiDrafted, draft.DecidedRole), cancellationToken);
                 }
 

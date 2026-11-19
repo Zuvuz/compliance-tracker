@@ -235,7 +235,7 @@
         @* US-052, US-120: the traceability matrix is downloaded on the Reports tab (#52) *@
 
         @{
-            var aiActions = !all && !project.IsClosed && active!.NotCovered > 0 && ((canLink && openStories.Count > 0) || canDecide);
+            var aiActions = !all && !project.IsClosed && active!.NotCovered > 0 && (canLink || canDecide);
         }
         @if (aiActions)
         {
@@ -251,6 +251,26 @@
                     <input type="hidden" name="frameworkId" value="@active.Framework.Id" />
                     <input type="hidden" name="sub" value="@activeSlug" />
                     <button type="submit" class="btn btn-sm btn-link text-start p-0" title="The local AI suggests user stories for each requirement that is not covered. You approve or reject each suggestion.">Suggest stories for requirements without one</button>
+                </form>
+            }
+            @if (!all && !project.IsClosed && canLink && active!.NotCovered > 0)
+            {
+                @* US-108 R1, R2: drafts of the work for this regulation's gaps, in the project's form; with several forms a person chooses *@
+                var draftForms = ComplianceTracker.Application.Ai.DraftForms.Of(project.RequirementMethods);
+                <form asp-action="DraftForGaps" method="post" id="draft-for-gaps" class="d-flex flex-wrap gap-1 align-items-center" data-busy="Working… this can take a few minutes">
+                    <input type="hidden" name="projectId" value="@project.Id" />
+                    <input type="hidden" name="frameworkId" value="@active.Framework.Id" />
+                    <input type="hidden" name="sub" value="@activeSlug" />
+                    @if (draftForms.Count > 1)
+                    {
+                        <select name="form" class="form-select form-select-sm w-auto" aria-label="Form of the drafts">
+                            @foreach (var draftForm in draftForms)
+                            {
+                                <option value="@draftForm">@(ComplianceTracker.Application.Ai.DraftForms.NameOf(draftForm))s</option>
+                            }
+                        </select>
+                    }
+                    <button type="submit" class="btn btn-sm btn-link text-start p-0" title="The local AI drafts what the team could build to cover the requirements that have no story yet, fitted to the product's purpose. Nothing becomes work until you create it.">Draft for the gaps</button>
                 </form>
             }
             @if (!all && !project.IsClosed && canDecide && active!.NotCovered > 0)

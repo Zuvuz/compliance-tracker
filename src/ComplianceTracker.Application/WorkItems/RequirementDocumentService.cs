@@ -61,6 +61,7 @@ namespace ComplianceTracker.Application.WorkItems
         private readonly TimeProvider _clock;
 
         private readonly Reports.IReportSnapshotRepository _reports; // US-177
+        private readonly Ai.StoryDraftLinker _drafts; // US-108 R7
 
         public RequirementDocumentService(
             IProjectRepository projects,
@@ -72,8 +73,10 @@ namespace ComplianceTracker.Application.WorkItems
             IActivityLogger log,
             IUnitOfWork unitOfWork,
             TimeProvider clock,
-            Reports.IReportSnapshotRepository reports)
+            Reports.IReportSnapshotRepository reports,
+            Ai.StoryDraftLinker drafts)
         {
+            _drafts = drafts;
             _reports = reports;
             _projects = projects;
             _workItems = workItems;
@@ -172,6 +175,12 @@ namespace ComplianceTracker.Application.WorkItems
                 $"{file.FileName} version {version.Number}: {added} added, {changed} changed, {removed} removed, {read.Skipped.Count} skipped",
                 cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            // US-108 R7: an accepted use case or requirement the team added to its document is linked to what it covers
+            if (await _drafts.LinkAcceptedAsync(project, cancellationToken) > 0)
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
 
             // Open project pages update themselves, like after a GitHub sync (US-018 R7)
             await _notifier.WorkItemsChangedAsync(project.Id, cancellationToken);

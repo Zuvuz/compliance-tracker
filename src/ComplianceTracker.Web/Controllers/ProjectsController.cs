@@ -978,6 +978,66 @@ namespace ComplianceTracker.Web.Controllers
             return BackToCompliance(projectId, sub);
         }
 
+        // POST /Projects/DraftForGaps: US-108 R1–R5, the AI drafts work for one regulation's gaps in the project's form
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
+        [AiRateLimit] // US-097 R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> DraftForGaps(Guid projectId, Guid frameworkId, Domain.Mappings.DraftForm? form, string? sub,
+            [FromServices] Application.Ai.GapDraftService drafts, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var result = await drafts.DraftAsync(projectId, frameworkId, form, cancellationToken);
+                TempData["DraftsMessage"] = result.Drafts + result.NotApplicable == 0
+                    ? "Every requirement that is not covered already has a story, a suggestion or a draft"
+                    : $"The AI drafted {result.Drafts} {(result.Drafts == 1 ? "item" : "items")} and suggested {result.NotApplicable} that may not apply"
+                      + (result.Left > 0 ? $"; {result.Left} more requirements wait for the next round" : "");
+            }
+            catch (Application.Ai.AiUnavailableException error)
+            {
+                // R10: without the AI nothing changes, and the page says why
+                TempData["DraftsMessage"] = $"No drafts: {error.Message}";
+            }
+
+            return RedirectToAction(nameof(Drafts), new { id = projectId });
+        }
+
+        // GET /Projects/Drafts/{id}: US-108 R6, R7, the AI's drafts of the project, to edit, create or discard
+        [HttpGet]
+        public async Task<IActionResult> Drafts(Guid id, [FromServices] Application.Ai.GapDraftService drafts, CancellationToken cancellationToken)
+            => await drafts.ListAsync(id, cancellationToken) is { } page ? View(page) : NotFound();
+
+        // POST /Projects/CreateDraft: US-108 R6, R7, a person creates the draft with their changes
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Drafts), IdFrom = "projectId")]
+        public async Task<IActionResult> CreateDraft(Guid projectId, Guid draftId, string? title, string? role, string? story, string? rules, string? examples,
+            string? postconditions, [FromServices] Application.Ai.AskTheAiService ai, CancellationToken cancellationToken)
+        {
+            var (draft, address) = await ai.AcceptDraftAsync(projectId, draftId, title, role, story, rules, examples, cancellationToken, postconditions);
+            TempData["DraftsMessage"] = draft.Form == Domain.Mappings.DraftForm.UserStory
+                ? address is null
+                    ? $"\"{draft.Title}\" is created. Add it to the project's user stories; it is linked when it comes in."
+                    : $"\"{draft.Title}\" is created. Create the issue in GitHub; it is linked to its requirements at the next sync."
+                : $"\"{draft.Title}\" is created. Add it to your {(draft.Form == Domain.Mappings.DraftForm.UseCase ? "use case document" : "requirement specification")}; it is linked when you upload the next version.";
+            TempData["NewIssueAddress"] = address;
+            return RedirectToAction(nameof(Drafts), new { id = projectId });
+        }
+
+        // POST /Projects/DiscardDraft: US-108 R8, with a reason
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Drafts), IdFrom = "projectId")]
+        public async Task<IActionResult> DiscardDraft(Guid projectId, Guid draftId, string? reason, [FromServices] Application.Ai.AskTheAiService ai, CancellationToken cancellationToken)
+        {
+            await ai.DiscardDraftAsync(projectId, draftId, reason, cancellationToken);
+            return RedirectToAction(nameof(Drafts), new { id = projectId });
+        }
+
         // POST /Projects/AcceptStoryDraft: US-106 R4, with the person's changes
         [HttpPost]
         [ValidateAntiForgeryToken]

@@ -4548,6 +4548,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.PrimitiveCollection<Guid[]>("AlsoCovers")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid[]")
+                        .HasDefaultValueSql("'{}'::uuid[]");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -4573,10 +4579,31 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasMaxLength(4000)
                         .HasColumnType("character varying(4000)");
 
+                    b.Property<string>("Fits")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Form")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("UserStory");
+
+                    b.Property<bool>("FromGaps")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Model")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Postconditions")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasDefaultValue("");
 
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");

@@ -82,6 +82,43 @@ namespace ComplianceTracker.Specs.Support
         // US-205 R13: the cross-mapping check's answer per pair of codes, "SP-1|I.2(d)"
         public Dictionary<string, string> MappingAnswers { get; } = new();
 
+        // US-108: requirement codes the AI puts in one draft, e.g. ["I.2(d)", "I.2(e)"]; others get a draft each
+        public List<string[]> GapGroups { get; } = [];
+
+        // US-108: one draft per code (or group), in the form the prompt asks for; codes in NotApplicable get that instead
+        private string GapDrafts(string prompt)
+        {
+            var form = prompt.Contains("Unified Process use cases", StringComparison.Ordinal) ? "usecase"
+                : prompt.Contains("requirement specification", StringComparison.Ordinal) ? "requirement" : "story";
+            var codes = prompt.Split('\n').Where(l => l.StartsWith("Requirement ", StringComparison.Ordinal) && l.Contains(':'))
+                .Select(l => l["Requirement ".Length..l.IndexOf(':')]).ToList();
+            var answer = new System.Text.StringBuilder();
+            var done = new HashSet<string>();
+            foreach (var code in codes.Where(c => !done.Contains(c)))
+            {
+                if (NotApplicable.TryGetValue(code, out var reason))
+                {
+                    answer.AppendLine($"NOT APPLICABLE: {code}: {reason}");
+                    done.Add(code);
+                    continue;
+                }
+
+                var group = GapGroups.FirstOrDefault(g => g.Contains(code))?.Where(codes.Contains).ToArray() ?? [code];
+                done.UnionWith(group);
+                var covers = string.Join(", ", group);
+                answer.AppendLine("DRAFT").AppendLine($"COVERS: {covers}");
+                answer.AppendLine(form switch
+                {
+                    "usecase" => $"TITLE: Meet {covers}\nACTOR: Customer\nPRECONDITIONS: The customer has an account\nSCENARIO: 1. The customer signs in\n2. The system checks {covers}\nEXTENSIONS: 2a. The check fails\nPOSTCONDITIONS: {covers} is met",
+                    "requirement" => $"TITLE: Meet {covers}\nDESCRIPTION: The portal shall meet {covers}\nACCEPTANCE: A test shows {covers}",
+                    _ => $"TITLE: Meet {covers}\nROLE: Customer\nSTORY: As a customer, I want {covers} met, so that my orders are safe\nRULES: R1: {covers} is met\nEXAMPLES: A test shows {covers}"
+                });
+                answer.AppendLine($"FITS: The portal handles customers' orders, so {covers} matters").AppendLine("END");
+            }
+
+            return answer.ToString();
+        }
+
         public void Rate(string storyTitle, string code, double score)
         {
             lock (this)
@@ -137,6 +174,12 @@ namespace ComplianceTracker.Specs.Support
                 if (prompt.Contains(ApplicabilityPrompt.Marker, StringComparison.Ordinal))
                 {
                     return Task.FromResult(NotApplicable.TryGetValue(code, out var reason) ? $"NOT APPLICABLE: {reason}" : "APPLIES");
+                }
+
+                // US-108: drafts for the gaps
+                if (prompt.Contains(GapDraftPrompt.Marker, StringComparison.Ordinal))
+                {
+                    return Task.FromResult(GapDrafts(prompt));
                 }
 
                 // US-205 R13: the cross-mapping check; without answers it cannot be reached, so matches are "not checked"
