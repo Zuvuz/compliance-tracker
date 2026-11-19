@@ -68,6 +68,14 @@ namespace ComplianceTracker.Application.Frameworks
             ])
         ];
 
+        [GeneratedRegex(@"^(?:[4-9]|10)(?:\.\d{1,2}){0,2}$")]
+        private static partial Regex ManagementClause();
+
+        // #52: a clause of ISO/IEC 27001's management system (4–10, e.g. "5.1 Leadership"), not an Annex A control. It is
+        // about how the organisation is run, so a product (a project) is never asked to cover it with a story (US-155).
+        public static bool IsManagementClause(string frameworkName, string code)
+            => Iso27001().IsMatch(frameworkName ?? "") && ManagementClause().IsMatch((code ?? "").Trim());
+
         // The profile a framework's name points at, e.g. "ISO/IEC 27001" or "ISO 27001:2022"; null for any other
         public static FrameworkProfile? For(string frameworkName) => All.FirstOrDefault(p => p.Matches.IsMatch(frameworkName ?? ""));
     }
