@@ -7,10 +7,13 @@ using ComplianceTracker.Domain.Users;
 namespace ComplianceTracker.Application.Risks
 {
     // US-158: the evidence a person adds while approving a measure the AI suggested
-    public record MeasureEvidence(string? Title, string? Url, string? FileName, byte[]? Content, DateOnly? ValidUntil)
+    // US-161: or one of the project's existing evidence, picked from the AI's suggestions (ExistingId)
+    public record MeasureEvidence(string? Title, string? Url, string? FileName, byte[]? Content, DateOnly? ValidUntil, Guid? ExistingId = null)
     {
-        // R1: nothing typed and no file means no evidence
-        public bool IsGiven => !string.IsNullOrWhiteSpace(Url) || Content is { Length: > 0 };
+        // R1: nothing typed, no file and nothing picked means no evidence
+        public bool IsGiven => !string.IsNullOrWhiteSpace(Url) || Content is { Length: > 0 } || ExistingId is not null;
+
+        private bool IsNew => !string.IsNullOrWhiteSpace(Url) || Content is { Length: > 0 };
 
         // R3: the rule of US-057, checked before anything is saved
         public void Check()
@@ -18,6 +21,12 @@ namespace ComplianceTracker.Application.Risks
             if (!string.IsNullOrWhiteSpace(Url) && Content is { Length: > 0 })
             {
                 throw new DomainException("Give a link or a file, not both");
+            }
+
+            // US-161: one piece of evidence per approval
+            if (ExistingId is not null && IsNew)
+            {
+                throw new DomainException("Pick a suggested evidence or give a new one, not both");
             }
         }
     }
@@ -54,7 +63,19 @@ namespace ComplianceTracker.Application.Risks
             var suggestion = await _ai.PendingMeasureAsync(projectId, suggestionId, cancellationToken);
             var title = string.IsNullOrWhiteSpace(evidence.Title) ? evidence.FileName ?? evidence.Url ?? "" : evidence.Title.Trim();
 
-            if (suggestion.RequirementId is { } requirementId)
+            if (evidence.ExistingId is { } existingId)
+            {
+                // US-161 R3: the picked evidence goes on the measure's requirement, or on its story
+                if (suggestion.RequirementId is { } onRequirement)
+                {
+                    await _compliance.LinkExistingEvidenceAsync(projectId, onRequirement, existingId, cancellationToken);
+                }
+                else if (suggestion.WorkItemId is { } onStory)
+                {
+                    await _evidence.LinkStoryAsync(projectId, existingId, onStory, cancellationToken);
+                }
+            }
+            else if (suggestion.RequirementId is { } requirementId)
             {
                 // R2: on the requirement, through the evidence rules of US-057
                 if (evidence.Content is { Length: > 0 } content)

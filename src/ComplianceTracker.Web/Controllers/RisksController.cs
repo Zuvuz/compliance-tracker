@@ -216,7 +216,8 @@ namespace ComplianceTracker.Web.Controllers
 
         // GET /Risks/Details/{id}: the risk, its measures, and accept / close / review (R11: only the organisation's)
         [HttpGet]
-        public async Task<IActionResult> Details(Guid id, [FromServices] EvidenceQueries evidence, [FromServices] Application.Ai.IRiskMeasureSuggestionRepository measures, CancellationToken cancellationToken)
+        public async Task<IActionResult> Details(Guid id, [FromServices] EvidenceQueries evidence, [FromServices] Application.Ai.IRiskMeasureSuggestionRepository measures,
+            [FromServices] MeasureEvidenceSuggestions measureEvidence, CancellationToken cancellationToken)
         {
             var risk = await _risks.GetAsync(id, cancellationToken);
             var project = risk is null ? null : await _projects.GetAsync(risk.ProjectId, cancellationToken);
@@ -227,14 +228,18 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             ViewData["OrganisationArea"] = project.IsOrganisationArea; // #52: the top bar marks "Organisation"
-            return View(new RiskPageViewModel(risk, project, organization,
-                await _compliance.ForProjectAsync(project.Id, cancellationToken), _clock.GetUtcNow().UtcDateTime)
+            var compliance = await _compliance.ForProjectAsync(project.Id, cancellationToken);
+            var evidenceRows = (await evidence.ForProjectAsync(project.Id, cancellationToken))?.Evidence ?? [];
+            var pending = (await measures.ListAsync(project.Id, cancellationToken)).Where(s => s.RiskId == risk.Id && s.IsPending)
+                .OrderByDescending(s => s.Score).ToList();
+            return View(new RiskPageViewModel(risk, project, organization, compliance, _clock.GetUtcNow().UtcDateTime)
             {
                 // US-111 R2: the project's evidence, to link to an action
-                ProjectEvidence = (await evidence.ForProjectAsync(project.Id, cancellationToken))?.Evidence.Select(e => e.Evidence).ToList() ?? [],
+                ProjectEvidence = evidenceRows.Select(e => e.Evidence).ToList(),
                 // US-106 R12
-                MeasureSuggestions = (await measures.ListAsync(project.Id, cancellationToken)).Where(s => s.RiskId == risk.Id && s.IsPending)
-                    .OrderByDescending(s => s.Score).ToList(),
+                MeasureSuggestions = pending,
+                // US-161: the project's evidence the AI suggests for each suggested measure
+                MeasureEvidence = await measureEvidence.ForAsync(pending, evidenceRows, compliance, DateOnly.FromDateTime(_clock.GetUtcNow().UtcDateTime), cancellationToken),
                 // US-203 R4: from the project's activity log
                 History = Application.Risks.RiskHistory.For(risk.Title, await _projects.ActivityAsync(project.Id, cancellationToken))
             });
@@ -260,7 +265,7 @@ namespace ComplianceTracker.Web.Controllers
         [RequestFormLimits(MultipartBodyLengthLimit = MaxEvidenceRequestSize)]
         public async Task<IActionResult> ApproveMeasure(
             Guid id, Guid suggestionId, string? evidenceTitle, string? evidenceUrl, IFormFile? evidenceFile, DateOnly? evidenceValidUntil,
-            [FromServices] MeasureEvidenceService measures, CancellationToken cancellationToken)
+            [FromServices] MeasureEvidenceService measures, CancellationToken cancellationToken, Guid? existingEvidenceId = null)
         {
             byte[]? content = null;
             if (evidenceFile is { Length: > 0 })
@@ -271,7 +276,7 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             await measures.ApproveAsync(await ProjectOfAsync(id, cancellationToken), suggestionId,
-                new MeasureEvidence(evidenceTitle, evidenceUrl, evidenceFile?.FileName, content, evidenceValidUntil), cancellationToken);
+                new MeasureEvidence(evidenceTitle, evidenceUrl, evidenceFile?.FileName, content, evidenceValidUntil, existingEvidenceId), cancellationToken);
             return RedirectToAction(nameof(Details), new { id });
         }
 
