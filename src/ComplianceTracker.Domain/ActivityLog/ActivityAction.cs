@@ -400,6 +400,10 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-204 R5, R8: a person marked a requirement "documentation is enough", or removed the mark, with a reason.
         // SubjectId points at the project; Details holds the requirement, the decision and the reason.
-        DocumentationEnoughDecided
+        DocumentationEnoughDecided,
+
+        // US-206 R4: an approved cross-mapping was limited to chosen projects, or opened to all again. SubjectId points at
+        // the organisation; Details holds the match and the projects, e.g. "CRA I.2(d) ↔ ISO A.8.5: Compliance Tracker".
+        MappingProjectsChanged
     }
 }

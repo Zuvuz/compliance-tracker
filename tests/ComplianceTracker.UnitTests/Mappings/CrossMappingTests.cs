@@ -175,7 +175,7 @@ public class CrossMappingTests
         mapping.Approve(Anna, null, Monday);
 
         // Act
-        var result = CrossMappings.Apply([Compliance(cra, true), Compliance(policy, false)], [mapping]);
+        var result = CrossMappings.Apply([Compliance(cra, true), Compliance(policy, false)], [mapping], Guid.NewGuid());
 
         // Assert
         var row = result[1].Requirements.Single();
@@ -198,7 +198,7 @@ public class CrossMappingTests
             mapping.Approve(Anna, null, Monday);
         }
 
-        var result = CrossMappings.Apply([Compliance(cra, true), Compliance(policy, false)], [mapping]);
+        var result = CrossMappings.Apply([Compliance(cra, true), Compliance(policy, false)], [mapping], Guid.NewGuid());
 
         Assert.Null(result[1].Requirements.Single().CoveredThrough);
     }
@@ -216,7 +216,7 @@ public class CrossMappingTests
         bc.Approve(Anna, null, Monday);
 
         // Act
-        var result = CrossMappings.Apply([Compliance(a, false), Compliance(b, false), Compliance(c, true)], [ab, bc]);
+        var result = CrossMappings.Apply([Compliance(a, false), Compliance(b, false), Compliance(c, true)], [ab, bc], Guid.NewGuid());
 
         // Assert
         Assert.Equal("C C-1", result[1].Requirements.Single().CoveredThrough);
@@ -234,7 +234,7 @@ public class CrossMappingTests
         notApplicable.Approve(Anna, null, Monday);
         notFollowed.Approve(Anna, null, Monday);
 
-        var result = CrossMappings.Apply([Compliance(cra, true, notApplicable: "Not our product"), Compliance(policy, false)], [notApplicable, notFollowed]);
+        var result = CrossMappings.Apply([Compliance(cra, true, notApplicable: "Not our product"), Compliance(policy, false)], [notApplicable, notFollowed], Guid.NewGuid());
 
         Assert.Null(result[1].Requirements.Single().CoveredThrough);
     }

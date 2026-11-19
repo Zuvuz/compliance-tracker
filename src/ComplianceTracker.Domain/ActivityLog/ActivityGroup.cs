@@ -96,7 +96,7 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.SecurityEventSuggestionDismissed
                 or ActivityAction.ScanImported or ActivityAction.FindingAccepted or ActivityAction.FindingAcceptanceUndone or ActivityAction.SbomImported
                 or ActivityAction.ScanUploadTokenCreated or ActivityAction.ScanUploadTokenRevoked => ActivityGroup.SecurityEvents,
-            ActivityAction.MappingsSuggested or ActivityAction.MappingApproved or ActivityAction.MappingRejected
+            ActivityAction.MappingsSuggested or ActivityAction.MappingApproved or ActivityAction.MappingProjectsChanged or ActivityAction.MappingRejected
                 or ActivityAction.AiFeedbackSharingChanged or ActivityAction.ProjectAiSharingChanged or ActivityAction.AiFeedbackExported
                 or ActivityAction.TrainingDataExported => ActivityGroup.Ai,
             _ => throw new ArgumentOutOfRangeException(nameof(action), action, "The action has no group; add it in ActivityGroups.Of")

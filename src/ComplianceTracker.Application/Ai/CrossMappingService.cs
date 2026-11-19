@@ -32,10 +32,34 @@ namespace ComplianceTracker.Application.Ai
     public record CrossMappingView(IReadOnlyList<FollowedVersion> Versions, FollowedVersion? From, FollowedVersion? To,
         IReadOnlyList<MappingRow> Pending, IReadOnlyList<MappingRow> Approved);
 
-    // US-037: the AI suggests which requirements in two framework versions ask for the same thing; a person decides
+    // US-206 R2: one requirement with its pending matches in every other chosen framework
+    public record MatchGroup(FollowedVersion FromVersion, Requirement From, IReadOnlyList<GroupMatch> Matches);
+
+    public record GroupMatch(MappingRow Row, FollowedVersion ToVersion);
+
+    // US-206 R3, R4: a project that follows both sides of an approved match, and whether the match is limited to it
+    public record ProjectChoice(Guid Id, string Name, bool Chosen);
+
+    public record ApprovedMatch(MappingRow Row, FollowedVersion FromVersion, FollowedVersion ToVersion, IReadOnlyList<ProjectChoice> Projects)
+    {
+        // e.g. "All projects" or "Compliance Tracker, Acme Portal"
+        public string AppliesTo => Row.Mapping.ProjectIds.Length == 0
+            ? "All projects"
+            : string.Join(", ", Projects.Where(p => p.Chosen).Select(p => p.Name));
+    }
+
+    // US-206: the Cross-mapping page for two or more frameworks at once
+    public record CrossMappingSetView(IReadOnlyList<FollowedVersion> Versions, IReadOnlyList<FollowedVersion> Chosen,
+        IReadOnlyList<MatchGroup> Groups, IReadOnlyList<ApprovedMatch> Approved);
+
+    // US-037: the AI suggests which requirements in two framework versions ask for the same thing; a person decides.
+    // US-206: or in several at once, every pair in one run.
     public class CrossMappingService
     {
         public const int PerRequirement = 4;
+
+        // US-206 R1: more would ask the local AI to compare too many pairs in one go
+        public const int MostAtOnce = 5;
 
         private readonly IProjectRepository _projects;
         private readonly IFrameworkRepository _frameworks;
@@ -92,54 +116,206 @@ namespace ComplianceTracker.Application.Ai
         // R1–R4: compares every requirement of one version with the other's, by their texts' vectors (the Embedding task's
         // model); the best 4 per requirement over the limit become suggestions. Pending ones of the pair are replaced; a
         // decided pair is never suggested again.
-        public async Task<int> SuggestAsync(Guid fromVersionId, Guid toVersionId, CancellationToken cancellationToken = default)
+        public Task<int> SuggestAsync(Guid fromVersionId, Guid toVersionId, CancellationToken cancellationToken = default)
+            => SuggestManyAsync([fromVersionId, toVersionId], cancellationToken);
+
+        // US-206 R1: two or more versions in one run: every pair, in the order chosen, from one embedding of all their texts
+        public async Task<int> SuggestManyAsync(IReadOnlyList<Guid> versionIds, CancellationToken cancellationToken = default)
         {
             var (organization, _) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
-            var versions = await FollowedAsync(organization.Id, cancellationToken);
-            var from = versions.FirstOrDefault(v => v.Version.Id == fromVersionId) ?? throw new DomainException("Choose a framework the organisation follows");
-            var to = versions.FirstOrDefault(v => v.Version.Id == toVersionId) ?? throw new DomainException("Choose a framework the organisation follows");
-            if (from.Version.Id == to.Version.Id)
+            var chosen = Choose(await FollowedAsync(organization.Id, cancellationToken), versionIds);
+
+            var requirements = chosen.ToDictionary(v => v.Version.Id, v => v.Version.Requirements.Where(r => !r.IsRecommendation).ToList());
+            if (requirements.Values.Any(r => r.Count == 0))
             {
-                throw new DomainException("Choose two different frameworks");
+                throw new DomainException(chosen.Count == 2 ? "Both frameworks need requirements to compare" : "Every framework needs requirements to compare");
             }
 
-            var fromRequirements = from.Version.Requirements.Where(r => !r.IsRecommendation).ToList();
-            var toRequirements = to.Version.Requirements.Where(r => !r.IsRecommendation).ToList();
-            if (fromRequirements.Count == 0 || toRequirements.Count == 0)
-            {
-                throw new DomainException("Both frameworks need requirements to compare");
-            }
-
+            var all = chosen.SelectMany(v => requirements[v.Version.Id]).ToList();
             var model = _models.Embedding(AiTask.Embedding);
-            IReadOnlyList<float[]> vectors;
+            IReadOnlyList<float[]> embedded;
             try
             {
-                vectors = await model.EmbedAsync(fromRequirements.Concat(toRequirements).Select(MappingSuggestionService.RequirementText).ToList(), cancellationToken);
+                embedded = await model.EmbedAsync(all.Select(MappingSuggestionService.RequirementText).ToList(), cancellationToken);
             }
             catch (AiUnavailableException)
             {
                 throw new DomainException("The local AI cannot be reached right now, so nothing was compared");
             }
 
-            var existing = (await _mappings.ListAsync(organization.Id, cancellationToken))
-                .Where(m => m.FromVersionId == from.Version.Id && m.ToVersionId == to.Version.Id).ToList();
-            foreach (var pending in existing.Where(m => m.IsPending))
+            var vectorOf = all.Select((r, i) => (r.Id, Vector: embedded[i])).ToDictionary(x => x.Id, x => x.Vector);
+            var existing = await _mappings.ListAsync(organization.Id, cancellationToken);
+            var made = new List<RequirementMapping>();
+            foreach (var (from, to) in Pairs(chosen))
             {
-                pending.Replace();
-            }
+                var pair = existing.Where(m => SamePair(m, from.Version.Id, to.Version.Id)).ToList();
+                foreach (var pending in pair.Where(m => m.IsPending))
+                {
+                    pending.Replace();
+                }
 
-            var made = Best(fromRequirements, toRequirements, vectors, Math.Max(_limits.MinimumScoreForStories, RequirementMapping.RelatedFrom),
-                    (a, b) => existing.Any(m => !m.IsPending && m.Status != SuggestionStatus.Replaced && m.Joins(a, b)))
-                .Select(m => RequirementMapping.Suggest(organization.Id, from.Version.Id, to.Version.Id, m.From.Id, m.To.Id, m.Score, m.Rank,
-                    Rationale(m.From, m.To, m.Score), model.Name, _clock.GetUtcNow().UtcDateTime))
-                .ToList();
+                var fromRequirements = requirements[from.Version.Id];
+                var toRequirements = requirements[to.Version.Id];
+                made.AddRange(Best(fromRequirements, toRequirements, fromRequirements.Concat(toRequirements).Select(r => vectorOf[r.Id]).ToList(),
+                        Math.Max(_limits.MinimumScoreForStories, RequirementMapping.RelatedFrom),
+                        (a, b) => pair.Any(m => !m.IsPending && m.Status != SuggestionStatus.Replaced && m.Joins(a, b)))
+                    .Select(m => RequirementMapping.Suggest(organization.Id, from.Version.Id, to.Version.Id, m.From.Id, m.To.Id, m.Score, m.Rank,
+                        Rationale(m.From, m.To, m.Score), model.Name, _clock.GetUtcNow().UtcDateTime)));
+            }
 
             await _mappings.AddRangeAsync(made, cancellationToken);
             await _log.LogAsync(ActivityAction.MappingsSuggested, organization.Id,
-                $"{made.Count} cross-mapping suggestions between {from.Label} and {to.Label} ({model.Name})", cancellationToken);
+                $"{made.Count} cross-mapping suggestions between {Names(chosen.Select(v => v.Label).ToList())} ({model.Name})", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return made.Count;
         }
+
+        // US-206 R1: the versions chosen, in the order given, each once; at least two and at most MostAtOnce
+        public static IReadOnlyList<FollowedVersion> Choose(IReadOnlyList<FollowedVersion> followed, IReadOnlyList<Guid> versionIds)
+        {
+            var chosen = new List<FollowedVersion>();
+            foreach (var id in versionIds.Distinct())
+            {
+                chosen.Add(followed.FirstOrDefault(v => v.Version.Id == id) ?? throw new DomainException("Choose a framework the organisation follows"));
+            }
+
+            if (chosen.Count < 2)
+            {
+                throw new DomainException("Choose two different frameworks");
+            }
+
+            if (chosen.Count > MostAtOnce)
+            {
+                throw new DomainException($"Choose at most {MostAtOnce} frameworks at once");
+            }
+
+            return chosen;
+        }
+
+        // US-206 R1: every pair once, the earlier chosen on the left: A, B, C → (A, B), (A, C), (B, C)
+        public static IReadOnlyList<(T From, T To)> Pairs<T>(IReadOnlyList<T> items)
+        {
+            var pairs = new List<(T, T)>();
+            for (var i = 0; i < items.Count; i++)
+            {
+                for (var j = i + 1; j < items.Count; j++)
+                {
+                    pairs.Add((items[i], items[j]));
+                }
+            }
+
+            return pairs;
+        }
+
+        // e.g. "CRA v1, NIS2 v1 and ISO v1"
+        public static string Names(IReadOnlyList<string> names)
+            => names.Count <= 1 ? string.Join("", names) : $"{string.Join(", ", names.Take(names.Count - 1))} and {names[^1]}";
+
+        // A match between the two versions, whichever side it was suggested from
+        public static bool SamePair(RequirementMapping mapping, Guid a, Guid b)
+            => (mapping.FromVersionId == a && mapping.ToVersionId == b) || (mapping.FromVersionId == b && mapping.ToVersionId == a);
+
+        // US-206 R2, R3: the chosen frameworks' pending matches grouped by requirement, and the approved ones with their projects.
+        // Null outside an organisation; with fewer than two chosen, only the versions to choose from.
+        public async Task<CrossMappingSetView?> ForSetAsync(IReadOnlyList<Guid> versionIds, CancellationToken cancellationToken = default)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is not { } organization)
+            {
+                return null;
+            }
+
+            var versions = await FollowedAsync(organization.Id, cancellationToken);
+            var chosen = versionIds.Distinct().Select(id => versions.FirstOrDefault(v => v.Version.Id == id)).OfType<FollowedVersion>().ToList();
+            if (chosen.Count < 2)
+            {
+                return new CrossMappingSetView(versions, chosen, [], []);
+            }
+
+            var versionOf = chosen.SelectMany(v => v.Version.Requirements.Select(r => (r.Id, Version: v))).ToDictionary(x => x.Id, x => x.Version);
+            var requirementOf = chosen.SelectMany(v => v.Version.Requirements).ToDictionary(r => r.Id);
+            var rows = (await _mappings.ListAsync(organization.Id, cancellationToken))
+                .Where(m => requirementOf.ContainsKey(m.FromRequirementId) && requirementOf.ContainsKey(m.ToRequirementId))
+                .Select(m => new MappingRow(m, requirementOf[m.FromRequirementId], requirementOf[m.ToRequirementId]))
+                .ToList();
+
+            var order = chosen.SelectMany(v => v.Version.Requirements).Select((r, i) => (r.Id, i)).ToDictionary(x => x.Id, x => x.i);
+            var groups = rows.Where(r => r.Mapping.IsPending)
+                .GroupBy(r => r.From.Id)
+                .OrderBy(g => order[g.Key])
+                .Select(g => new MatchGroup(versionOf[g.Key], requirementOf[g.Key],
+                    g.OrderBy(r => order[r.To.Id]).Select(r => new GroupMatch(r, versionOf[r.To.Id])).ToList()))
+                .ToList();
+
+            var projects = (await _projects.ListAsync(organization.Id, cancellationToken)).Where(p => !p.IsArchived).ToList();
+            var approved = rows.Where(r => r.Mapping.Status == SuggestionStatus.Approved)
+                .OrderBy(r => order[r.From.Id]).ThenBy(r => order[r.To.Id])
+                .Select(r => new ApprovedMatch(r, versionOf[r.From.Id], versionOf[r.To.Id],
+                    projects.Where(p => Follows(p, r.Mapping))
+                        .Select(p => new ProjectChoice(p.Id, p.IsOrganisationArea ? "Organisation" : p.Name, r.Mapping.ProjectIds.Contains(p.Id)))
+                        .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase).ToList()))
+                .ToList();
+
+            return new CrossMappingSetView(versions, chosen, groups, approved);
+        }
+
+        // US-206 R2: one decision for all of a requirement's pending matches in the chosen frameworks
+        public async Task<int> DecideAllAsync(Guid fromRequirementId, IReadOnlyList<Guid> versionIds, bool approve, RejectionReason? reason, string? comment,
+            CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.ManageFrameworks, cancellationToken);
+            var chosen = versionIds.Distinct().ToHashSet();
+            var pending = (await _mappings.ListAsync(organization.Id, cancellationToken))
+                .Where(m => m.IsPending && m.FromRequirementId == fromRequirementId && chosen.Contains(m.FromVersionId) && chosen.Contains(m.ToVersionId))
+                .ToList();
+            if (pending.Count == 0)
+            {
+                throw new DomainException("Nothing waits for a decision");
+            }
+
+            var at = _clock.GetUtcNow().UtcDateTime;
+            foreach (var mapping in pending)
+            {
+                if (approve)
+                {
+                    mapping.Approve(user.Id, user.Role, at);
+                    await _log.LogAsync(ActivityAction.MappingApproved, organization.Id, $"Cross-mapping {mapping.Strength}: {await PairAsync(organization.Id, mapping, cancellationToken)}", cancellationToken);
+                }
+                else
+                {
+                    mapping.Reject(reason, comment, user.Id, user.Role, at);
+                    await _log.LogAsync(ActivityAction.MappingRejected, organization.Id, $"Cross-mapping: {await PairAsync(organization.Id, mapping, cancellationToken)} ({reason})", cancellationToken);
+                }
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return pending.Count;
+        }
+
+        // US-206 R3, R4: limit an approved match to projects that follow both sides; none chosen means all of them
+        public async Task ChangeProjectsAsync(Guid mappingId, IReadOnlyList<Guid> projectIds, CancellationToken cancellationToken = default)
+        {
+            var (organization, _, mapping) = await DecideAsync(mappingId, cancellationToken);
+            var projects = await _projects.ListAsync(organization.Id, cancellationToken);
+            var chosen = projectIds.Distinct().Select(id => projects.FirstOrDefault(p => p.Id == id)).ToList();
+            if (chosen.Any(p => p is null || !Follows(p, mapping)))
+            {
+                throw new DomainException("Choose projects that follow both frameworks");
+            }
+
+            if (!mapping.LimitTo(projectIds))
+            {
+                return;
+            }
+
+            var names = chosen.OfType<Domain.Projects.Project>().Select(p => p.IsOrganisationArea ? "Organisation" : p.Name).OrderBy(n => n, StringComparer.OrdinalIgnoreCase).ToList();
+            await _log.LogAsync(ActivityAction.MappingProjectsChanged, organization.Id,
+                $"{await PairAsync(organization.Id, mapping, cancellationToken)}: {(names.Count == 0 ? "all projects" : string.Join(", ", names))}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // R3: a project follows a match when it uses both versions
+        public static bool Follows(Domain.Projects.Project project, RequirementMapping mapping)
+            => project.Frameworks.Any(f => f.FrameworkVersionId == mapping.FromVersionId) && project.Frameworks.Any(f => f.FrameworkVersionId == mapping.ToVersionId);
 
         // R2: for each requirement on the left, the best 4 on the right over the limit, best first; decided pairs are left out
         public static IReadOnlyList<(Requirement From, Requirement To, double Score, int Rank)> Best(

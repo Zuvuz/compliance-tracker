@@ -101,6 +101,15 @@ namespace ComplianceTracker.Specs.Support
             Page = await ParseAsync(Response);
         }
 
+        // US-206: a form where a name comes more than once, e.g. several "v"
+        public async Task PostFormAsync(string path, IEnumerable<KeyValuePair<string, string>> fields)
+        {
+            var all = fields.Where(f => f.Key != "__RequestVerificationToken")
+                .Append(new KeyValuePair<string, string>("__RequestVerificationToken", AntiforgeryToken())).ToList();
+            Response = await Client.PostAsync(path, new FormUrlEncodedContent(all));
+            Page = await ParseAsync(Response);
+        }
+
         // The hidden antiforgery token in the current page's form, with a clear error if there is none
         public string AntiforgeryToken()
      => Page?.QuerySelector<IHtmlInputElement>("input[name='__RequestVerificationToken']")?.Value

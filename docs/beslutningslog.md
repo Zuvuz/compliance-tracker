@@ -2342,6 +2342,18 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Fravalgt:**
   - At sende mails fra trackeren. Medlemmets eget mailprogram er nok og kræver ingen mailopsætning.
   - Opslag i CVR-registeret. Det kommer som en historie for sig (besluttet 18-11-2026).
+### B157 – Cross-mapping på tværs af flere rammeværker, for valgte projekter (US-206)
+
+- **Beslutning:**
+  - **Flere rammeværker på én gang** (vej 1, valgt af brugeren 18-11-2026). Man vælger 2–5 versioner. AI'en sammenligner hvert par i den valgte rækkefølge, (A, B), (A, C), (B, C), ud fra én indlejring af alle teksterne. Forslagene gemmes pr. par som før, så siden for to rammeværker virker uændret.
+  - **Grupperet pr. krav:** siden viser hvert krav med dets matches i de andre valgte rammeværker. "Approve all" og "Reject all" afgør dem alle på én gang. Et enkelt match kan stadig afgøres for sig.
+  - **Et godkendt match gælder for valgte projekter** (`RequirementMapping.ProjectIds`). Tom liste betyder alle projekter, der følger begge sider. Kun projekter, der følger begge sider, kan vælges, og ændringen logges som `MappingProjectsChanged`.
+  - **Kun den, der styrer rammeværker** (`ManageFrameworks`), vælger projekterne. Det svarer på historiens åbne spørgsmål: et projekt kan ikke selv slå et match fra.
+  - **Matches er ikke tjekket endnu (R6):** indtil AI'en læser teksterne (US-205), siger siden, at et match kun betyder, at kravene er formuleret ens. "Same" kan stadig godkendes, så US-037 virker som før.
+- **Begrundelse:** Med tre rammeværker skulle man før køre og afgøre tre par hver for sig, og et match gjaldt i alle produkter. ISO 27001 6.1.3 d) beder om at sammenligne de valgte kontroller med flere kilder.
+- **Fravalgt:**
+  - En fælles liste over organisationens egne kontroller (vej 2). Den er uden for denne historie.
+  - Flere end fem rammeværker på én gang. Det giver for mange par for den lokale AI.
 
 ## Åbne spørgsmål til klassediagrammet
 

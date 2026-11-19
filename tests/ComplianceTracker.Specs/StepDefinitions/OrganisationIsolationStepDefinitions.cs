@@ -367,6 +367,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "frameworkid" => ids.Framework,
                 "frameworkversionid" => ids.FrameworkVersion,
                 "from" or "to" => ids.FrameworkVersion, // US-037: the Cross-mapping page's two versions
+                "v" => ids.FrameworkVersion, // US-206: the versions chosen on the page for several frameworks
+                "projectids" => ids.Project, // US-206: the projects an approved match applies to
                 "memberid" or "ownerid" => ids.Member,
                 "invitationid" => ids.Invitation,
                 "measureid" => ids.Measure,
