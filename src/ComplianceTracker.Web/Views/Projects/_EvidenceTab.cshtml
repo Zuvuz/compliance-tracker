@@ -205,14 +205,15 @@
                                 </details>
                             }
 
-                            <h3 class="h6 mt-3 mb-1">Stories it shows are done</h3>
+                            @* #52: the story's own state says whether it is done; linking evidence does not close it *@
+                            <h3 class="h6 mt-3 mb-1">User stories it is evidence for</h3>
                             <ul class="list-unstyled small mb-2 trace-stories">
                                 @foreach (var story in row.Trace.Stories)
                                 {
                                     var direct = row.Stories.FirstOrDefault(s => s.Story.Id == story.Id);
                                     <li class="trace-story d-flex flex-wrap align-items-center gap-1" data-title="@story.Title">
                                         <span>@story.Title</span>
-                                        <span class="badge text-bg-light border">@story.Detail</span>
+                                        <span class="badge text-bg-light border story-state">@(story.Detail == "Open" ? "Open – not done yet" : story.Detail)</span>
                                         <span class="text-muted trace-via">@story.Via</span>
                                         @if (canChange && direct is not null)
                                         {
@@ -257,7 +258,8 @@
                             @* R3, R4: the AI only suggests; a person decides. US-146 R6: also user stories. *@
                             @if (row.StorySuggestions.Count > 0)
                             {
-                                <h3 class="h6 mt-3 mb-1">Stories suggested by the AI</h3>
+                                <h3 class="h6 mt-3 mb-1">Could be evidence for these stories</h3>
+                                <p class="small text-muted mb-1">Suggested by the AI. Approving links the evidence to the story; it does not close the story.</p>
                                 <ul class="list-unstyled small mb-1">
                                     @foreach (var suggested in row.StorySuggestions)
                                     {

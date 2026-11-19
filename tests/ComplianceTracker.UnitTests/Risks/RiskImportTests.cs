@@ -35,8 +35,24 @@ public class RiskImportTests
 
     [Fact]
     public void A_file_without_the_needed_columns_is_refused()
-        => Assert.Equal(["The file needs the columns Title, Likelihood and Impact in its first row"],
+        => Assert.Equal(["The file needs the columns Title, Likelihood and Impact in its first row. It has: Name, Score"],
             RiskImportRows.FileErrors(Sheet("Name;Score", "Phishing;4")));
+
+    // #52: the names a risk register often uses, in English and Danish
+    [Theory]
+    [InlineData("Risk ID;Risk;Threat;Likelihood (1-5);Impact (1-5);Level;Owner;Treatment;Measures;Due date",
+        "R-01;Stolen admin account;Phishing;3;5;High;Bo;Reduce;MFA;2026-12-01")]
+    [InlineData("Risiko;Beskrivelse;Sandsynlighed;Konsekvens;Ejer;Behandling", "Stolen admin account;Phishing;3;5;Bo;Reduce")]
+    [InlineData("Risk title;Probability;Consequence", "Stolen admin account;3;5")]
+    public void Common_column_names_are_read(string header, string row)
+    {
+        var sheet = Sheet(header, row);
+
+        var read = Assert.Single(RiskImportRows.Read(sheet, [], [], new DateOnly(2026, 11, 19)));
+
+        Assert.Empty(RiskImportRows.FileErrors(sheet));
+        Assert.Equal(("Stolen admin account", (int?)3, (int?)5), (read.Title, read.Likelihood, read.Impact));
+    }
 
     [Fact]
     public void An_empty_file_and_a_header_only_file_are_refused()
