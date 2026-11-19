@@ -2429,6 +2429,22 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At trackeren selv opretter issues eller skriver nye versioner af teamets dokumenter.
   - At skrive udkast til alle reguleringer på én gang. En ad gangen kan gennemgås.
 
+### B162 – Definition of Done og en audit af færdigt arbejde (US-109)
+
+- **Beslutning:**
+  - **Pr. projekt** (besluttet af brugeren 19-11-2026): én liste kriterier for hver slags arbejdselement (user stories, use cases og krav fra en kravspec). Et projekt uden egen liste bruger standarden (version 0), og den første ændring gemmer den som version 1.
+  - **Kriterier, trackeren tjekker selv:** skabelonen er udfyldt, der er koblet et krav, hvert koblet krav har bevis (US-204), test er bestået (US-058), og intet AI-forslag venter. De kan ikke krydses af i hånden.
+  - **Manuelle kriterier,** fx "Code reviewed", krydses af af en med `LinkWork`, med hvem og hvornår. Når fluebenet fjernes, bliver rækken stående.
+  - **Færdig:** en user story, når den er lukket i GitHub. En use case eller et krav, når en person markerer det "Done", for de har ingen tilstand selv.
+  - **Genåbnes en story i GitHub, tæller de manuelle flueben fra før ikke længere** (besluttet af brugeren 19-11-2026). Det sker ved at sammenligne med tidspunktet for genåbningen, så historikken bevares.
+  - **Auditten bruger altid den nuværende Definition of Done** (besluttet af brugeren 19-11-2026). CSV-eksporten skriver versionen på hver linje, og ændringer logges med gamle og nye kriterier.
+  - **Siden "Definition of Done"** ligger under Product requirements og viser færdigt arbejde, filteret "Done, but not meeting it", det, der ikke er færdigt endnu, og kriterierne. Overview viser antallet under "Needs attention".
+- **Begrundelse:** En auditor skal kunne se, at "done" betyder det samme hver gang, og at intet kaldes færdigt med huller. Det følger ISO 27001 A.8.25 og 9.2.
+- **Fravalgt:**
+  - At gemme et øjebliksbillede pr. færdigt element.
+  - Mærket "no compliance impact" på en story. Det findes ikke endnu, så en story uden krav mangler "Linked".
+  - At vise kriterierne på hver story på fanen Work items. Det ville gøre den fane dyrere, og auditsiden viser dem allerede.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

@@ -51,7 +51,8 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.EvidenceStorySuggestionRejected => ActivityGroup.Evidence,
             ActivityAction.RequirementSuggestionsAsked or ActivityAction.StoryDraftWritten or ActivityAction.StoryDraftAccepted
                 or ActivityAction.StoryDraftDiscarded or ActivityAction.StoryDraftLinked
-                or ActivityAction.GapDraftsMade or ActivityAction.GapDraftAccepted or ActivityAction.GapDraftDiscarded or ActivityAction.GapDismissed
+                or ActivityAction.GapDraftsMade or ActivityAction.GapDraftAccepted or ActivityAction.GapDraftDiscarded
+                or ActivityAction.DefinitionOfDoneChanged or ActivityAction.DoneCriterionTicked or ActivityAction.WorkItemMarkedDone or ActivityAction.GapDismissed
                 or ActivityAction.SuggestionRejectionUndone => ActivityGroup.Ai,
             ActivityAction.RiskMeasuresSuggested or ActivityAction.RiskMeasureSuggestionApproved
                 or ActivityAction.RiskMeasureSuggestionRejected => ActivityGroup.Risks,

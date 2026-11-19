@@ -117,6 +117,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<Compliance.OrganisationScopes>(); // US-115
             services.AddScoped<Compliance.InheritedRequirements>(); // US-115
             services.AddScoped<Ai.PassageChecker>(); // US-205
+            services.AddScoped<WorkItems.DefinitionOfDoneService>(); // US-109
             services.AddScoped<Risks.MeasureEvidenceSuggestions>(); // US-161
             services.AddScoped<Organizations.DocumentSuggestionService>(); // US-136 R2
             services.AddScoped<Organizations.GapAnalysisService>(); // US-188

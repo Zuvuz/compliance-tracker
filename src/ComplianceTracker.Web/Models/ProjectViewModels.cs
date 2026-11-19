@@ -351,6 +351,9 @@ namespace ComplianceTracker.Web.Models
         // US-047: the current phase's checklist
         public Application.Projects.PhaseChecklistView? Checklist { get; init; }
 
+        // US-109 R9: finished work items that do not meet the Definition of Done (the Overview's "Needs attention")
+        public int DoneNotMeeting { get; init; }
+
         // #52: the project's evidence, to prove a checklist item with ("+ Evidence")
         public IReadOnlyList<(Guid Id, string Title)> ChecklistEvidence { get; init; } = [];
 

@@ -1,0 +1,148 @@
+@* US-109: the project's Definition of Done and the audit of its work items. R6: every finished work item with "Meets the
+   Definition of Done" or what it misses, filtered on "Done, but not meeting it" (?show=failing); R7: CSV; R4: manual criteria
+   ticked here; R5: a use case or a requirement is marked Done here; R8: those who decide compliance change the criteria.
+   Ids and classes used by the tests: #done-filter, #done-csv, .done-row (data-title, data-meets, data-finished) with
+   .done-criterion (data-criterion, data-state) holding .done-note and form.tick-criterion / form.untick-criterion,
+   form.mark-done, and form.change-definition-of-done (data-kind) with checks and manual. *@
+@model ComplianceTracker.Application.WorkItems.DoneAuditView
+@using ComplianceTracker.Application.WorkItems
+@using ComplianceTracker.Domain.WorkItems
+@{
+    var project = Model.Project;
+    ViewData["Title"] = $"Definition of Done – {project.Name}";
+    var failingOnly = ViewData["Show"] as string == "failing";
+    var canLink = !project.IsClosed && await Permissions.CanAsync(Permission.LinkWork);
+    var canDecide = !project.IsClosed && await Permissions.CanAsync(Permission.DecideCompliance);
+    var kinds = Model.Rows.Select(r => r.Item.Type).Distinct().ToHashSet();
+    if (kinds.Count == 0)
+    {
+        kinds.Add(WorkItemType.UserStory);
+    }
+    var finished = Model.Finished.Where(r => !failingOnly || !r.Meets).ToList();
+    var open = Model.Rows.Where(r => !r.Item.IsFinished).ToList();
+    string Badge(CriterionState state) => state switch
+    {
+        CriterionState.Met => "text-bg-success",
+        CriterionState.NotMet => "text-bg-danger",
+        _ => "text-bg-light border"
+    };
+}
+
+<p class="mb-1"><a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.ProductRequirements">← @project.Name: Product requirements</a></p>
+<h1 class="h3">Definition of Done</h1>
+<p class="text-muted small">What "done" means for @project.Name's work items, and which finished ones meet it. The tracker checks what it can from its own data; the rest is ticked by a person, with who and when. Version @Model.Definition.Version@(Model.Definition.Version == 0 ? " (the defaults)" : "").</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+<div class="d-flex flex-wrap gap-3 align-items-center mb-3">
+    <nav id="done-filter" class="small">
+        <a class="@(failingOnly ? "" : "fw-semibold")" asp-action="DoneAudit" asp-route-id="@project.Id">All finished (@Model.Finished.Count)</a>
+        ·
+        <a class="@(failingOnly ? "fw-semibold" : "")" asp-action="DoneAudit" asp-route-id="@project.Id" asp-route-show="failing">Done, but not meeting it (@Model.FinishedNotMeeting)</a>
+    </nav>
+    <a class="btn btn-sm btn-outline-secondary" id="done-csv" asp-action="DoneAuditCsv" asp-route-id="@project.Id">Export as CSV</a>
+</div>
+
+@{
+    async Task Row(DoneRow row)
+    {
+        var item = row.Item;
+        <section class="card mb-2 done-row" id="done-@item.Id" data-title="@item.Title" data-meets="@(row.Meets ? "true" : "false")" data-finished="@(item.IsFinished ? "true" : "false")">
+            <div class="card-body py-2">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <span class="fw-semibold">@item.Title</span>
+                    <span class="badge text-bg-light border">@DefinitionOfDoneService.KindName(item.Type)</span>
+                    @if (item.IsFinished)
+                    {
+                        <span class="badge @(row.Meets ? "text-bg-success" : "text-bg-warning") done-verdict">@(row.Meets ? "Meets the Definition of Done" : "Does not meet the Definition of Done")</span>
+                        <span class="small text-muted">finished @item.FinishedAt?.ToString("dd-MM-yyyy")</span>
+                    }
+                    @if (canLink && item.Type != WorkItemType.UserStory)
+                    {
+                        @* R5 *@
+                        <form asp-action="MarkWorkItemDone" method="post" class="ms-auto mark-done">
+                            <input type="hidden" name="projectId" value="@project.Id" />
+                            <input type="hidden" name="workItemId" value="@item.Id" />
+                            <input type="hidden" name="done" value="@(item.DoneAt is null ? "true" : "false")" />
+                            <button type="submit" class="btn btn-sm @(item.DoneAt is null ? "btn-outline-primary" : "btn-link")">@(item.DoneAt is null ? "Mark Done" : "Not done after all")</button>
+                        </form>
+                    }
+                </div>
+                <ul class="list-unstyled small mb-0 mt-1">
+                    @foreach (var status in row.Criteria)
+                    {
+                        <li class="done-criterion d-flex flex-wrap gap-1 align-items-center" data-criterion="@status.Criterion.Title" data-state="@status.State">
+                            <span class="badge @Badge(status.State)">@(status.State switch { CriterionState.Met => "✓", CriterionState.NotMet => "✗", _ => "–" })</span>
+                            <span>@status.Criterion.Title</span>
+                            @if (status.Note is { } note)
+                            {
+                                <span class="text-muted done-note">· @note</span>
+                            }
+                            @if (canLink && status.Criterion.IsManual)
+                            {
+                                @* R4: a person ticks it; the tracker's own checks cannot be ticked (R3) *@
+                                var ticked = status.State == CriterionState.Met;
+                                <form asp-action="TickDoneCriterion" method="post" class="d-inline @(ticked ? "untick-criterion" : "tick-criterion")">
+                                    <input type="hidden" name="projectId" value="@project.Id" />
+                                    <input type="hidden" name="workItemId" value="@item.Id" />
+                                    <input type="hidden" name="criterion" value="@status.Criterion.Title" />
+                                    <input type="hidden" name="tick" value="@(ticked ? "false" : "true")" />
+                                    <button type="submit" class="btn btn-sm btn-link p-0">@(ticked ? "Untick" : "Tick")</button>
+                                </form>
+                            }
+                        </li>
+                    }
+                </ul>
+            </div>
+        </section>
+    }
+}
+
+<h2 class="h5">Finished (@finished.Count)</h2>
+@if (finished.Count == 0)
+{
+    <p class="text-muted" id="no-finished">@(failingOnly ? "Every finished work item meets the Definition of Done." : "No work item is finished yet.")</p>
+}
+@foreach (var row in finished)
+{
+    await Row(row);
+}
+
+@if (!failingOnly && open.Count > 0)
+{
+    <h2 class="h5 mt-4">Not finished yet (@open.Count)</h2>
+    @foreach (var row in open)
+    {
+        await Row(row);
+    }
+}
+
+<h2 class="h5 mt-4">The criteria</h2>
+@foreach (var kind in Enum.GetValues<WorkItemType>().Where(kinds.Contains))
+{
+    var criteria = Model.Definition.For(kind);
+    <section class="card mb-2" data-kind="@kind">
+        <div class="card-body py-2 small">
+            <div class="fw-semibold">@DefinitionOfDoneService.KindName(kind)s</div>
+            <div class="definition-text">@DefinitionOfDone.Text(criteria)</div>
+            @if (canDecide)
+            {
+                @* R8 *@
+                <details class="mt-1">
+                    <summary class="btn btn-sm btn-link p-0">Change</summary>
+                    <form asp-action="ChangeDefinitionOfDone" method="post" class="d-flex flex-column gap-1 mt-1 change-definition-of-done" data-kind="@kind">
+                        <input type="hidden" name="projectId" value="@project.Id" />
+                        <input type="hidden" name="kind" value="@kind" />
+                        @foreach (var check in Enum.GetValues<DoneCheck>().Where(c => c != DoneCheck.Manual))
+                        {
+                            <label class="form-check-label"><input type="checkbox" name="checks" value="@check" class="form-check-input me-1" checked="@criteria.Any(c => c.Check == check)" />@DefinitionOfDone.TitleOf(check, kind)</label>
+                        }
+                        <label>Manual criteria, one per line
+                            <textarea name="manual" rows="3" class="form-control form-control-sm">@string.Join("\n", criteria.Where(c => c.IsManual).Select(c => c.Title))</textarea></label>
+                        <button type="submit" class="btn btn-sm btn-outline-primary align-self-start">Save</button>
+                    </form>
+                </details>
+            }
+        </div>
+    </section>
+}

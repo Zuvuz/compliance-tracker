@@ -78,6 +78,7 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<IRequirementLinkRepository, RequirementLinkRepository>();
             services.AddScoped<IRequirementApplicabilityRepository, RequirementApplicabilityRepository>();
             services.AddScoped<IDocumentationDecisionRepository, DocumentationDecisionRepository>(); // US-204
+            services.AddScoped<Application.WorkItems.IDefinitionOfDoneRepository, DefinitionOfDoneRepository>(); // US-109
             services.AddScoped<IRequirementScopeDecisionRepository, RequirementScopeDecisionRepository>(); // US-115
             services.AddScoped<IEvidenceRepository, EvidenceRepository>();
             services.AddSingleton<Application.Reports.IDocumentWriter, Reports.OpenXmlDocumentWriter>(); // US-056
