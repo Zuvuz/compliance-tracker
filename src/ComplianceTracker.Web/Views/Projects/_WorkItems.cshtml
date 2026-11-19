@@ -169,7 +169,7 @@ else
                     var storyEvidence = compliance.EvidenceOf(item.Id);
                     <p class="small mb-2">
                         Evidence:
-                        <span class="work-item-evidence">@(storyEvidence.Count == 0 ? "none yet" : string.Join("; ", storyEvidence.Select(e => $"{e.Evidence.Title} ({e.Via})")))</span>
+                        <span class="work-item-evidence">@(storyEvidence.Count == 0 ? "none yet" : string.Join("; ", storyEvidence.Select(e => $"{e.Evidence.Title} ({e.Via}) · {ComplianceTracker.Domain.Mappings.EvidenceKinds.CardText(e.Evidence.Kind)}")))</span>
                     </p>
                 }
                 @if (!string.IsNullOrEmpty(item.Description))

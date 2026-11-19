@@ -25,17 +25,19 @@ Feature: Each page has a limit on database queries
     # findings, SBOM, ticks, own items, log, per framework): fixed queries, 53 -> 63.
     # US-192: the Overview's checklist reads the organisation's own checklist items (one query): 52 -> 53.
     # #52: the phase card lists the project's evidence for "+ Evidence" on a checklist item (one query): 53 -> 54.
+    # US-204: the compliance view reads the organisation's "documentation is enough" decisions (one query each time it is
+    # built): Overview 54 -> 55, Evidence 35 -> 36, Work items 30 -> 31, Reports 30 -> 31, Traceability download 63 -> 65.
     Then each page stays within its limit and does not grow with the data:
       | Page                  | Limit |
       | Dashboard             | 12    |
       | Projects              | 12    |
-      | Overview              | 54    |
+      | Overview              | 55    |
       | Compliance            | 54    |
-      | Evidence              | 35    |
+      | Evidence              | 36    |
       | Risks                 | 18    |
-      | Work items            | 30    |
-      | Reports               | 30    |
+      | Work items            | 31    |
+      | Reports               | 31    |
       | Project activity      | 14    |
       | Frameworks            | 5     |
       | Organisation activity | 8     |
-      | Traceability download | 63    |
+      | Traceability download | 65    |

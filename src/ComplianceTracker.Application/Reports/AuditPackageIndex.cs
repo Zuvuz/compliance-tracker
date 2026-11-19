@@ -6,7 +6,8 @@ using ComplianceTracker.Application.Frameworks;
 namespace ComplianceTracker.Application.Reports
 {
     // US-179: one piece of evidence of a requirement as the package shows it: its file in the package (stored once), or its link
-    public record IndexEvidence(string Title, string? Path, string? Url, string? Sha256, string Source, bool Expired);
+    // US-204 R7: Kind is "Proven by" or "Documented by"
+    public record IndexEvidence(string Title, string? Path, string? Url, string? Sha256, string Source, bool Expired, string Kind = "Proven by");
 
     // US-179: one requirement of the package's index
     public record IndexRow(string Framework, string Code, string Title, string Text, string Status, string Folder,
@@ -43,7 +44,9 @@ namespace ComplianceTracker.Application.Reports
         public static string Status(RequirementCoverage row)
             => !row.IsApplicable ? "Not applicable"
                 : row.IsCoveredNeedingReview ? "Covered, needs review"
-                : row.IsCovered ? "Covered"
+                // US-204 R9: proof is shown next to coverage; documentation alone does not prove it
+                : row.IsCovered ? (row.IsDocumentedOnly ? "Covered, " + RequirementCoverage.DocumentedProofMissing.ToLowerInvariant() : "Covered")
+                : row.EvidenceCovers && row.IsDocumentedOnly ? RequirementCoverage.DocumentedProofMissing
                 : "Not covered";
 
         // R1–R3: the rows of the chosen frameworks; a file's place in the package comes from "files" (evidence id → path, SHA-256)
@@ -67,8 +70,8 @@ namespace ComplianceTracker.Application.Reports
                     rows.Add(new IndexRow(name, row.Requirement.Code, row.Requirement.Title, row.Requirement.Description, Status(row), folder,
                         row.Links.Select(l => $"{l.WorkItem.Title} ({RequirementRows.StoryState(l.WorkItem.State)})").ToList(),
                         row.Evidence.Select(e => files.TryGetValue(e.Evidence.Id, out var file)
-                                ? new IndexEvidence(e.Evidence.Title, file.Path, null, file.Sha256, Source(e), e.IsExpired)
-                                : new IndexEvidence(e.Evidence.Title, null, e.Evidence.Url, null, Source(e), e.IsExpired))
+                                ? new IndexEvidence(e.Evidence.Title, file.Path, null, file.Sha256, Source(e), e.IsExpired, Domain.Mappings.EvidenceKinds.ListName(e.Evidence.Kind))
+                                : new IndexEvidence(e.Evidence.Title, null, e.Evidence.Url, null, Source(e), e.IsExpired, Domain.Mappings.EvidenceKinds.ListName(e.Evidence.Kind)))
                             .ToList(),
                         row.FailingTests, row.NotApplicableReason));
                 }
@@ -129,12 +132,17 @@ namespace ComplianceTracker.Application.Reports
                     html.Append("<tr><td><a href='").Append(Href(RequirementDossier.FileName(row.Framework))).Append("'>").Append(E(row.Code)).Append("</a></td>")
                         .Append("<td>").Append(E(row.Title)).Append("</td>")
                         .Append("<td class=\"status\">").Append(E(row.Status)).Append("</td><td>");
-                    foreach (var evidence in row.Evidence)
+                    // US-204 R7: "Proven by" first, then "Documented by"
+                    foreach (var list in row.Evidence.GroupBy(e => e.Kind).OrderByDescending(g => g.Key == "Proven by"))
                     {
-                        html.Append(evidence.Path is not null
-                                ? $"<a href='{Href(evidence.Path)}'>{E(evidence.Title)}</a>"
-                                : $"{E(evidence.Title)} (link: {E(evidence.Url)})")
-                            .Append(evidence.Expired ? " (expired)" : "").Append("<br>");
+                        html.Append("<strong>").Append(E(list.Key)).Append(":</strong><br>");
+                        foreach (var evidence in list)
+                        {
+                            html.Append(evidence.Path is not null
+                                    ? $"<a href='{Href(evidence.Path)}'>{E(evidence.Title)}</a>"
+                                    : $"{E(evidence.Title)} (link: {E(evidence.Url)})")
+                                .Append(evidence.Expired ? " (expired)" : "").Append("<br>");
+                        }
                     }
 
                     html.Append("</td></tr>");

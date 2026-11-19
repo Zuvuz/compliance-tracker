@@ -161,7 +161,7 @@ namespace ComplianceTracker.Application.Projects
                         ? new Gap(GapCategory.Requirements, $"requirement:{r.Requirement.Id}:not-covered", "not-covered",
                             $"{r.Requirement.Code} {r.Requirement.Title}", "Not covered by any user story",
                             "Ask the AI for matching stories and evidence, or a draft story", GapAction.AskTheAi, name, r.Requirement.Id, Tab: "compliance", Sub: sub)
-                        : !r.HasEvidence
+                        : !r.IsProven // US-204 R3
                             ? new Gap(GapCategory.Requirements, $"requirement:{r.Requirement.Id}:no-evidence", "no-evidence",
                                 $"{r.Requirement.Code} {r.Requirement.Title}", "Covered, but no evidence proves it",
                                 "Add evidence or ask the AI for matching evidence", GapAction.AskTheAi, name, r.Requirement.Id, Tab: "compliance", Sub: sub)

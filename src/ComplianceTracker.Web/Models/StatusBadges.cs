@@ -27,6 +27,10 @@ namespace ComplianceTracker.Web.Models
             ["Needs action"] = Tone.Attention,
             ["Needs review"] = Tone.Warning,
 
+            // US-204 R9: proof is a state of its own next to coverage
+            ["Proven"] = Tone.Good,
+            ["Documented – proof missing"] = Tone.Warning,
+
             // AI (AI Act Art. 50: always marked)
             ["AI-generated"] = Tone.Ai,
             ["AI-drafted"] = Tone.Ai,

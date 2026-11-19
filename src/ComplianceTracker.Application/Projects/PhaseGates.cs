@@ -177,7 +177,7 @@ namespace ComplianceTracker.Application.Projects
             var release = new ReleaseFacts(
                 Needs(ChecklistCheck.Coverage, ChecklistCheck.Evidence) ? frameworks.Count : project.Frameworks.Count(),
                 frameworks.Sum(f => f.NotCovered),
-                frameworks.Sum(f => f.Requirements.Count(r => r.IsApplicable && !r.Requirement.IsRecommendation && r.IsCovered && !r.HasEvidence)),
+                frameworks.Sum(f => f.Requirements.Count(r => r.IsApplicable && !r.Requirement.IsRecommendation && r.IsCovered && !r.IsProven)), // US-204 R3
                 scanned,
                 findings.Count(f => f.IsOpen && f.Severity == Domain.Scanning.FindingSeverity.Critical),
                 findings.Count(f => f.IsOpen && f.Severity == Domain.Scanning.FindingSeverity.High),

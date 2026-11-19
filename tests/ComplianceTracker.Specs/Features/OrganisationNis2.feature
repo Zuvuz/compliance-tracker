@@ -47,12 +47,20 @@ Feature: NIS2 at organisation level
 
   @US-142 @nis2-art21 @integration
   Scenario: A NIS2 measure is covered by an organisation document, and the Danish law through it
+    # US-204 R8: Art. 21(2)(a) asks for the policies themselves, so documentation is enough for it
+    Given I have done the NIS2 scope check as an important entity
+    And I have uploaded the policy "Information security policy" version "v1" with the content "How we keep information safe"
+    When I link the document "Information security policy" to "Art. 21(2)(a)"
+    Then the organisation's Compliance tab for "NIS2" shows "Art. 21(2)(a)" as "Covered"
+    And the organisation's Compliance tab for "NIS 2-loven" shows "§ 6, stk. 1, nr. 1" as "Covered" through "NIS2 Art. 21(2)(a)"
+    And the organisation's Compliance tab for "NIS 2-loven" shows that "§ 6, stk. 1, nr. 1" implements "NIS2 Art. 21(2)(a)"
+
+  @US-204 @nis2-art21 @integration
+  Scenario: A procedure alone documents a NIS2 measure in the organisation area
     Given I have done the NIS2 scope check as an important entity
     And I have uploaded the policy "Incident response plan" version "v1" with the content "How we handle incidents"
     When I link the document "Incident response plan" to "Art. 21(2)(b)"
-    Then the organisation's Compliance tab for "NIS2" shows "Art. 21(2)(b)" as "Covered"
-    And the organisation's Compliance tab for "NIS 2-loven" shows "§ 6, stk. 1, nr. 2" as "Covered" through "NIS2 Art. 21(2)(b)"
-    And the organisation's Compliance tab for "NIS 2-loven" shows that "§ 6, stk. 1, nr. 2" implements "NIS2 Art. 21(2)(b)"
+    Then the organisation's Compliance tab for "NIS2" shows "Art. 21(2)(b)" as "Documented – proof missing"
 
   @US-142 @integration
   Scenario: An organisation-level framework cannot be used on a project
@@ -87,8 +95,8 @@ Feature: NIS2 at organisation level
   @US-142 @integration
   Scenario: NIS2 can be switched off and on again, and the coverage comes back
     Given I have done the NIS2 scope check as an important entity
-    And I have uploaded the policy "Incident response plan" version "v1" with the content "How we handle incidents"
-    And I link the document "Incident response plan" to "Art. 21(2)(b)"
+    And I have uploaded the policy "Information security policy" version "v1" with the content "How we keep information safe"
+    And I link the document "Information security policy" to "Art. 21(2)(a)"
     When I switch NIS2 off on the organisation's Overview
     Then NIS2 is "Off"
     And the organisation follows no framework
@@ -96,7 +104,7 @@ Feature: NIS2 at organisation level
     When I switch NIS2 on on the organisation's Overview
     Then NIS2 is "On"
     And the organisation follows "NIS2 – Directive (EU) 2022/2555" and "NIS 2-loven – Lov nr. 434 af 6. maj 2025 (Denmark)"
-    And the organisation's Compliance tab for "NIS2" shows "Art. 21(2)(b)" as "Covered"
+    And the organisation's Compliance tab for "NIS2" shows "Art. 21(2)(a)" as "Covered"
 
   @US-142 @integration
   Scenario: NIS2 can be switched on by choice without being covered

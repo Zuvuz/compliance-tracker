@@ -25,7 +25,8 @@ Feature: NIS2 gap analysis from the organisation's documents
     And I have uploaded to the NIS2 gap analysis "Incident response plan.txt" saying "Incidents are handled within 24 hours."
     Then the organisation's Compliance tab for "NIS2" shows "Art. 21(2)(b)" as "Not covered"
     When I approve the gap suggestion "Art. 21(2)(b)" for "Incident response plan"
-    Then the organisation's Compliance tab for "NIS2" shows "Art. 21(2)(b)" as "Covered"
+    # US-204: a plan describes how incidents are handled; it is not proof that they are
+    Then the organisation's Compliance tab for "NIS2" shows "Art. 21(2)(b)" as "Documented – proof missing"
     And the gap analysis has no suggestions
 
   @US-188 @nis2-art21 @integration

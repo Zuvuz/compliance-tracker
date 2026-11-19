@@ -34,6 +34,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Ignore(e => e.IsActive);
             builder.Ignore(e => e.IsFile);
 
+            // US-204 R2: a person's choice of documentation or proof; null means the default
+            builder.Property(e => e.ChosenKind).HasConversion<string>().HasMaxLength(20);
+            builder.Ignore(e => e.Kind);
+            builder.HasOne<User>().WithMany().HasForeignKey(e => e.KindChangedById).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+
             // Restrict everywhere: nothing evidence points at can be deleted while it exists
             builder.HasOne<Project>().WithMany().HasForeignKey(e => e.ProjectId).OnDelete(DeleteBehavior.Restrict);
             builder.HasOne<User>().WithMany().HasForeignKey(e => e.AddedById).OnDelete(DeleteBehavior.Restrict);
