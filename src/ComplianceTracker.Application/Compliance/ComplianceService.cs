@@ -51,6 +51,15 @@ namespace ComplianceTracker.Application.Compliance
         Task AddLinkAsync(EvidenceLink link, CancellationToken cancellationToken = default);
     }
 
+    // US-204 R5, R8: "documentation is enough" decisions of an organisation. Rows are only added.
+    public interface IDocumentationDecisionRepository
+    {
+        // The newest decision per requirement
+        Task<IReadOnlyList<DocumentationDecision>> ListNewestAsync(Guid organizationId, CancellationToken cancellationToken = default);
+
+        Task AddAsync(DocumentationDecision decision, CancellationToken cancellationToken = default);
+    }
+
     // US-021: links a project's user story to one of its requirements by hand, or removes the link.
     // US-043: marks a requirement as not applicable to the project, with a reason, or applicable again.
     // US-057: adds evidence (a link or a file) to a requirement, or removes it.
@@ -69,6 +78,7 @@ namespace ComplianceTracker.Application.Compliance
         private readonly TimeProvider _clock;
 
         private readonly Risks.IRiskRepository _risks; // US-144 R14
+        private readonly IDocumentationDecisionRepository _documentation; // US-204
 
         public ComplianceService(
             IProjectRepository projects,
@@ -81,8 +91,10 @@ namespace ComplianceTracker.Application.Compliance
             CurrentMember member,
             IActivityLogger log,
             IUnitOfWork unitOfWork,
-            TimeProvider clock)
+            TimeProvider clock,
+            IDocumentationDecisionRepository documentation)
         {
+            _documentation = documentation;
             _projects = projects;
             _frameworks = frameworks;
             _workItems = workItems;
@@ -117,6 +129,41 @@ namespace ComplianceTracker.Application.Compliance
             var role = (await _member.RequireAsync(cancellationToken)).User.Role;
             await _links.AddAsync(RequirementLink.Create(project.Id, requirementId, workItemId, userId, Now, LinkSource.Manual, role), cancellationToken);
             await _log.LogAsync(ActivityAction.RequirementLinked, project.Id, $"{requirement.Code} ↔ {workItem.Title}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-204 R2: documentation or proof; a person changes it, e.g. an uploaded incident report is proof
+        public async Task ChangeEvidenceKindAsync(Guid projectId, Guid evidenceId, EvidenceKind kind, CancellationToken cancellationToken = default)
+        {
+            var (_, userId, project) = await OpenProjectAsync(projectId, cancellationToken);
+            var evidence = await _evidence.GetAsync(project.Id, evidenceId, cancellationToken)
+                ?? throw new DomainException("Evidence not found");
+
+            var before = evidence.Kind;
+            if (!evidence.ChangeKind(kind, userId, Now))
+            {
+                return;
+            }
+
+            await _log.LogAsync(ActivityAction.EvidenceKindChanged, project.Id,
+                $"{evidence.Title}: {EvidenceKinds.NameOf(before)} → {EvidenceKinds.NameOf(kind)}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-204 R5, R8: "documentation is enough" for a requirement of a framework the project follows, or the mark removed.
+        // The decision holds for the whole organisation. Only DecideCompliance.
+        public async Task DecideDocumentationEnoughAsync(
+            Guid projectId, Guid requirementId, bool enough, string reason, CancellationToken cancellationToken = default)
+        {
+            var (organizationId, userId, project) = await OpenProjectAsync(projectId, cancellationToken, Permission.DecideCompliance);
+            var requirement = await RequirementOfProjectAsync(organizationId, project, requirementId, cancellationToken)
+                ?? throw new DomainException("The requirement is not in a framework version the project follows");
+
+            var role = (await _member.RequireAsync(cancellationToken)).User.Role;
+            var decision = DocumentationDecision.Decide(organizationId, requirement.Id, enough, reason, userId, role, Now);
+            await _documentation.AddAsync(decision, cancellationToken);
+            await _log.LogAsync(ActivityAction.DocumentationEnoughDecided, project.Id,
+                $"{requirement.Code}: {(enough ? "documentation is enough" : "proof is needed")} ({decision.Reason})", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 

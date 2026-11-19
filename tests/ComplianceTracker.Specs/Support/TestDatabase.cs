@@ -129,6 +129,7 @@ namespace ComplianceTracker.Specs.Support
                 DELETE FROM "OrganisationDocuments";
                 DELETE FROM "RequirementLinks";
                 DELETE FROM "RequirementApplicability";
+                DELETE FROM "DocumentationDecisions";
                 DELETE FROM "SealedReportFiles";
                 DELETE FROM "ReportSignatures";
                 DELETE FROM "ReportSignings";

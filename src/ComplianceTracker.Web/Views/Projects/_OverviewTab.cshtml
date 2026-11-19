@@ -25,7 +25,7 @@
     // US-048 R2: only what is not zero, each linking to the matching view
     var notCovered = frameworks.Sum(f => f.NotCovered);
     var suggestions = frameworks.Sum(f => f.SuggestionCount);
-    var withoutEvidence = frameworks.Sum(f => f.Requirements.Count(r => r.IsApplicable && r.IsCovered && !r.HasEvidence));
+    var withoutEvidence = frameworks.Sum(f => f.Requirements.Count(r => r.IsApplicable && r.IsCovered && !r.IsProven)); // US-204 R3
     var reviewDue = openRisks.Count(r => r.IsReviewDue(Model.Now));
     // US-159 R4: serious risks with nothing behind them (no measures, or measures without a story or evidence)
     var seriousWithoutMeasures = openRisks.Count(r => Model.RiskBacking.GetValueOrDefault(r.Id)?.NothingBehind == true);
@@ -81,7 +81,7 @@
     if (withoutEvidence > 0)
     {
         attention.Add((Plural(withoutEvidence, "covered requirement without evidence", "covered requirements without evidence"),
-            ComplianceUrl(SubWhere(f => f.Requirements.Any(r => r.IsApplicable && r.IsCovered && !r.HasEvidence)), null)));
+            ComplianceUrl(SubWhere(f => f.Requirements.Any(r => r.IsApplicable && r.IsCovered && !r.IsProven)), null)));
     }
     // US-073 R3: report deadlines due within 24 hours, and missed ones (shown in red)
     var missedReports = new HashSet<string>();

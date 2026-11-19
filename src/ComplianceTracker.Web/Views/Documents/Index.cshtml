@@ -144,9 +144,11 @@
 
             @if (Model.Suggestions.TryGetValue(document.Id, out var suggestions))
             {
-                @* US-136 R2: decided once for the document; approving makes it evidence wherever the requirement is followed *@
+                @* US-136 R2: decided once for the document; approving makes it evidence wherever the requirement is followed.
+                   US-204 R1: it is evidence that the requirement is described, not that it is done. *@
                 <div class="mt-2 document-suggestions">
-                    <div class="small fw-semibold">AI suggestions</div>
+                    <div class="small fw-semibold document-suggestions-title">Could be evidence for <span class="badge text-bg-info">AI-generated</span></div>
+                    <div class="small text-muted document-suggestions-note">Used as evidence, the document shows that a requirement is described, not that it is done. The requirement still needs proof, unless documentation is enough for it.</div>
                     <ul class="list-unstyled mb-0">
                         @foreach (var entry in suggestions)
                         {
@@ -164,7 +166,7 @@
                                     <div class="d-flex flex-wrap gap-2 mt-1">
                                         <form asp-action="ApproveSuggestion" method="post" class="approve-document-suggestion">
                                             <input type="hidden" name="suggestionId" value="@suggestion.Id" />
-                                            <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
+                                            <button type="submit" class="btn btn-sm btn-outline-success">Use as evidence</button>
                                         </form>
                                         <form asp-action="RejectSuggestion" method="post" class="d-flex flex-wrap gap-1 reject-document-suggestion">
                                             <input type="hidden" name="suggestionId" value="@suggestion.Id" />

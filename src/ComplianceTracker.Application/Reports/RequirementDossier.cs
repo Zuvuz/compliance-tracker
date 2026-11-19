@@ -42,11 +42,20 @@ namespace ComplianceTracker.Application.Reports
                     + (row.FailingTests > 0 ? $" · Failing tests: {row.FailingTests}" : "")));
                 blocks.Add(new(DocumentBlockKind.Paragraph, row.Stories.Count == 0 ? "User stories: none" : "User stories:"));
                 blocks.AddRange(row.Stories.Select(s => new DocumentBlock(DocumentBlockKind.Bullet, s)));
-                blocks.Add(new(DocumentBlockKind.Paragraph, row.Evidence.Count == 0 ? "Evidence: none" : "Evidence:"));
-                blocks.AddRange(row.Evidence.Select(e => new DocumentBlock(DocumentBlockKind.Bullet,
-                    $"{e.Title}{(e.Expired ? " (expired)" : "")}: "
-                    + (e.Path is not null ? $"{e.Path}, SHA-256 {e.Sha256}" : $"link {e.Url}")
-                    + $". {e.Source}")));
+                if (row.Evidence.Count == 0)
+                {
+                    blocks.Add(new(DocumentBlockKind.Paragraph, "Evidence: none"));
+                }
+
+                // US-204 R7: "Proven by" first, then "Documented by"
+                foreach (var list in row.Evidence.GroupBy(e => e.Kind).OrderByDescending(g => g.Key == "Proven by"))
+                {
+                    blocks.Add(new(DocumentBlockKind.Paragraph, $"{list.Key}:"));
+                    blocks.AddRange(list.Select(e => new DocumentBlock(DocumentBlockKind.Bullet,
+                        $"{e.Title}{(e.Expired ? " (expired)" : "")}: "
+                        + (e.Path is not null ? $"{e.Path}, SHA-256 {e.Sha256}" : $"link {e.Url}")
+                        + $". {e.Source}")));
+                }
             }
 
             // R1: the framework's lifecycle checklist items

@@ -2314,6 +2314,20 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Fejlbeskeden ved fjernelse nævner ikke kravets kode ("Move or remove the 1 action under the measure first"), fordi domænet ikke kender koderne.
   - Kravlisten er stadig en dropdown med en gruppe "Most relevant" øverst, ikke et søgefelt.
 
+### B155 – Dokumenteret er ikke det samme som bevist (US-204)
+
+- **Beslutning:**
+  - **Evidens er dokumentation eller bevis** (`Evidence.Kind`). Dokumentation beskriver, hvordan vi arbejder: politikker, procedurer og diagrammer. Bevis viser, at det er sket: filer, links, testresultater, scanninger, SBOM'er og låste rapporter. Organisationens dokumenter og diagrammer er dokumentation, alt andet er bevis, indtil en person ændrer det på Evidence-fanen. Kun personens valg gemmes (`ChosenKind`), så et diagram, der læses senere, stadig får standarden.
+  - **To tilstande for et krav i et produkt:** "Covered" kommer stadig fra en koblet user story. Ved siden af står "Proven" eller "Documented – proof missing". I organisationsområdet, som ikke har stories, står "Documented – proof missing" i stedet for "Covered", når der kun er dokumentation.
+  - **"Documentation is enough"** gælder for hele organisationen (`DocumentationDecision`) og kræver en begrundelse. Den nyeste beslutning gælder; rækkerne ændres aldrig.
+  - **Indbyggede mærker** ligger i koden (`DocumentationRules`), ikke i seed-data: NIS2 Art. 21(2)(a) og (f) og de krav i den danske lov og 2024/2690, der gennemfører dem; CRA II.5 og Art.31; AI Act Art. 11 og Art. 17. Begrundelsen er "The requirement asks for the document itself". En organisation kan fjerne mærket med sin egen begrundelse.
+  - **Udløbet bevis tæller ikke,** så et krav med gyldig dokumentation og kun udløbet bevis er "Documented – proof missing".
+  - **Rapporter, auditpakken og trinlisten** bruger bevis i stedet for "har evidens". SoA'ens "Implemented", hullerne og fasegaten spørger, om kravet er bevist.
+- **Begrundelse:** En godkendt procedure gjorde et krav dækket og "bevist", selvom intet viste, at proceduren blev fulgt. ISO 27001 9.1 og NIS2 Art. 21(2)(f) skelner mellem at have en foranstaltning og at vise, at den virker.
+- **Fravalgt:**
+  - Mærket pr. projekt. En politik gælder hele organisationen, så beslutningen gør det også.
+  - En kolonne på `Requirement` til de indbyggede mærker. Det ville kræve en migration med data for hver version af hvert katalog.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
