@@ -31,28 +31,43 @@
                         }
                         else if (report.Key == ComplianceTracker.Application.Reports.ProjectReports.Traceability)
                         {
-                            @* The same choices as on the Compliance tab (US-120); a GET form, so it is a plain download *@
-                            <form method="get" class="d-flex flex-wrap gap-1" id="reports-traceability-download"
+                            @* US-120; a GET form, so it is a plain download. #52: the only place to download it, and each choice
+                               is labelled *@
+                            <form method="get" class="d-flex flex-wrap align-items-end gap-2" id="reports-traceability-download"
                                   action="@Url.Action("Traceability", new { id = project.Id })" aria-label="Download traceability report">
-                                <select name="audience" class="form-select form-select-sm w-auto" aria-label="For whom">
+                                <div>
+                                <label class="form-label small mb-0" for="traceability-audience">For whom</label>
+                                <select name="audience" id="traceability-audience" class="form-select form-select-sm w-auto">
                                     <option value="team">For the team</option>
                                     <option value="auditor">For an auditor</option>
                                     <option value="management">For the management</option>
                                 </select>
-                                <select name="format" class="form-select form-select-sm w-auto" aria-label="Format">
+                                </div>
+                                <div>
+                                <label class="form-label small mb-0" for="traceability-format">Format</label>
+                                <select name="format" id="traceability-format" class="form-select form-select-sm w-auto">
                                     <option value="xlsx">Excel</option>
                                     <option value="csv">CSV</option>
                                     <option value="pdf">PDF</option>
                                 </select>
-                                <select name="sub" class="form-select form-select-sm w-auto" aria-label="Regulations">
+                                </div>
+                                <div>
+                                <label class="form-label small mb-0" for="traceability-sub">Framework</label>
+                                <select name="sub" id="traceability-sub" class="form-select form-select-sm w-auto">
                                     <option value="">All regulations</option>
                                     @foreach (var framework in frameworks)
                                     {
                                         <option value="@FrameworkNames.Slug(framework.Framework.Name)">@FrameworkNames.Short(framework.Framework.Name)</option>
                                     }
                                 </select>
+                                </div>
                                 <button type="submit" class="btn btn-sm btn-outline-secondary">Download</button>
                             </form>
+                            <ul class="small text-muted mt-1 mb-0 ps-3 traceability-audiences">
+                                <li><strong>Team:</strong> every requirement with its status and the stories that cover it</li>
+                                <li><strong>Auditor:</strong> every requirement with its evidence and who decided</li>
+                                <li><strong>Management:</strong> what needs attention first, with the key figures</li>
+                            </ul>
                             @if (canLock)
                             {
                                 @* US-050: locks the report as PDF for the chosen reader and regulations *@
