@@ -109,4 +109,23 @@ public partial class ViewLayoutTests
         Assert.Contains("select, .form-select, .form-control { max-width: 100%; }", css);
         Assert.Contains("main table.table { display: block; overflow-x: auto; }", css);
     }
+
+    // #52: the Compliance tab has one place for the AI's actions, and the traceability download is on the Reports tab only
+    [Fact]
+    public void The_compliance_tab_keeps_the_ai_actions_in_one_menu_and_has_no_download()
+    {
+        var tab = File.ReadAllText(Path.Combine(Web, "Views", "Projects", "_ComplianceTab.cshtml"));
+        var menu = tab.IndexOf("id=\"ask-ai-menu\"", StringComparison.Ordinal);
+        var menuEnd = tab.IndexOf("</details>", menu, StringComparison.Ordinal);
+
+        Assert.True(menu >= 0, "The Compliance tab has no \"Ask the AI…\" menu.");
+        foreach (var id in new[] { "suggest-not-covered", "find-needs-action", "suggest-not-applicable" })
+        {
+            var at = tab.IndexOf($"id=\"{id}\"", StringComparison.Ordinal);
+            Assert.True(at > menu && at < menuEnd, $"#{id} is not inside the \"Ask the AI…\" menu.");
+        }
+
+        Assert.DoesNotContain("id=\"traceability-download\"", tab);
+        Assert.Contains("id=\"reports-traceability-download\"", File.ReadAllText(Path.Combine(Web, "Views", "Projects", "_ReportsTab.cshtml")));
+    }
 }
