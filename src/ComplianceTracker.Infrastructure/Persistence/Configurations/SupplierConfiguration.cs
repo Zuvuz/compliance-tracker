@@ -25,6 +25,34 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
 
             builder.HasMany(s => s.Evidence).WithOne().HasForeignKey(e => e.SupplierId).OnDelete(DeleteBehavior.Cascade);
             builder.Navigation(s => s.Evidence).HasField("_evidence").UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            // US-207 R1, R2
+            builder.Property(s => s.RegistrationNumber).HasMaxLength(Supplier.MaxRegistrationLength);
+            builder.Property(s => s.Address).HasMaxLength(Supplier.MaxTextLength);
+            builder.Property(s => s.Country).HasMaxLength(Supplier.MaxCountryLength);
+            builder.Property(s => s.Website).HasMaxLength(500);
+            builder.Property(s => s.SecurityEmail).HasMaxLength(SupplierContact.MaxEmailLength);
+            builder.Ignore(s => s.PrimaryContact);
+            builder.Ignore(s => s.LacksSecurityContact);
+            builder.Ignore(s => s.ContactNote);
+            builder.HasMany(s => s.Contacts).WithOne().HasForeignKey(c => c.SupplierId).OnDelete(DeleteBehavior.Cascade);
+            builder.Navigation(s => s.Contacts).HasField("_contacts").UsePropertyAccessMode(PropertyAccessMode.Field);
+        }
+    }
+
+    // US-207 R2: a supplier's contact persons in "SupplierContacts"; removing one deletes the row (the log keeps who)
+    public class SupplierContactConfiguration : IEntityTypeConfiguration<SupplierContact>
+    {
+        public void Configure(EntityTypeBuilder<SupplierContact> builder)
+        {
+            builder.ToTable("SupplierContacts");
+            builder.HasKey(c => c.Id);
+            builder.Property(c => c.Id).ValueGeneratedNever();
+            builder.Property(c => c.Name).IsRequired().HasMaxLength(SupplierContact.MaxNameLength);
+            builder.Property(c => c.Role).HasMaxLength(SupplierContact.MaxRoleLength);
+            builder.Property(c => c.Email).HasMaxLength(SupplierContact.MaxEmailLength);
+            builder.Property(c => c.Phone).HasMaxLength(SupplierContact.MaxPhoneLength);
+            builder.Ignore(c => c.LogName);
         }
     }
 

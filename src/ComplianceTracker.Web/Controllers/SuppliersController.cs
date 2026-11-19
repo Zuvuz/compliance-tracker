@@ -30,7 +30,11 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             ViewData["OrganisationArea"] = true;
-            return View(new SuppliersViewModel(await _suppliers.ListAsync(cancellationToken), await _member.CanAsync(Permission.DecideCompliance, cancellationToken)));
+            var organization = await _member.FindOrganizationAsync(cancellationToken);
+            return View(new SuppliersViewModel(await _suppliers.ListAsync(cancellationToken), await _member.CanAsync(Permission.DecideCompliance, cancellationToken))
+            {
+                OrganizationName = organization?.Name ?? "" // US-207 R4: the subject of "Write"
+            });
         }
 
         // POST /Suppliers/Add: R1, R2
@@ -38,10 +42,55 @@ namespace ComplianceTracker.Web.Controllers
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Index))]
         public async Task<IActionResult> Add(string? name, string? delivers, SupplierCriticality? criticality, string? contact, List<string>? rules,
+            string? registrationNumber, string? address, string? country, string? website, string? securityEmail,
             CancellationToken cancellationToken)
         {
-            await _suppliers.AddAsync(name, delivers, criticality, contact, rules, cancellationToken);
-            return RedirectToAction(nameof(Index));
+            var supplier = await _suppliers.AddAsync(name, delivers, criticality, contact, rules, cancellationToken,
+                new CompanyDetails(registrationNumber, address, country, website, securityEmail)); // US-207 R1
+            return RedirectToAction(nameof(Index), null, $"supplier-{supplier.Id}");
+        }
+
+        // POST /Suppliers/ChangeCompany: US-207 R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> ChangeCompany(Guid supplierId, string? registrationNumber, string? address, string? country, string? website,
+            string? securityEmail, CancellationToken cancellationToken)
+        {
+            await _suppliers.ChangeCompanyAsync(supplierId, new CompanyDetails(registrationNumber, address, country, website, securityEmail), cancellationToken);
+            return RedirectToAction(nameof(Index), null, $"supplier-{supplierId}");
+        }
+
+        // POST /Suppliers/AddContact: US-207 R2, R3
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> AddContact(Guid supplierId, string? name, string? role, string? email, string? phone, bool primary,
+            bool securityContact, CancellationToken cancellationToken)
+        {
+            await _suppliers.AddContactAsync(supplierId, new ContactDetails(name, role, email, phone, primary, securityContact), cancellationToken);
+            return RedirectToAction(nameof(Index), null, $"supplier-{supplierId}");
+        }
+
+        // POST /Suppliers/ChangeContact: US-207 R2, R3
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> ChangeContact(Guid supplierId, Guid contactId, string? name, string? role, string? email, string? phone,
+            bool primary, bool securityContact, CancellationToken cancellationToken)
+        {
+            await _suppliers.ChangeContactAsync(supplierId, contactId, new ContactDetails(name, role, email, phone, primary, securityContact), cancellationToken);
+            return RedirectToAction(nameof(Index), null, $"supplier-{supplierId}");
+        }
+
+        // POST /Suppliers/RemoveContact: US-207 R2
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> RemoveContact(Guid supplierId, Guid contactId, CancellationToken cancellationToken)
+        {
+            await _suppliers.RemoveContactAsync(supplierId, contactId, cancellationToken);
+            return RedirectToAction(nameof(Index), null, $"supplier-{supplierId}");
         }
 
         // POST /Suppliers/AddEvidence: R3
@@ -85,5 +134,18 @@ namespace ComplianceTracker.Web.Controllers
                 : NotFound();
     }
 
-    public sealed record SuppliersViewModel(IReadOnlyList<SupplierView> Suppliers, bool CanManage);
+    public sealed record SuppliersViewModel(IReadOnlyList<SupplierView> Suppliers, bool CanManage)
+    {
+        public string OrganizationName { get; init; } = "";
+
+        // US-207 R4: the subject of "Write": updated evidence when it is missing or ends soon, security for a security
+        // contact, else the organisation's name, e.g. "Updated evidence – Demo ApS"
+        public static string Subject(SupplierView view, SupplierContact? contact, string organization)
+        {
+            var suffix = string.IsNullOrWhiteSpace(organization) ? "" : $" – {organization}";
+            return view.Status.State != SupplierState.Ok ? $"Updated evidence{suffix}"
+                : contact is { IsSecurityContact: true } || contact is null ? $"Security{suffix}"
+                : string.IsNullOrWhiteSpace(organization) ? view.Supplier.Name : organization;
+        }
+    }
 }

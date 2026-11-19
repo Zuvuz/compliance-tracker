@@ -2314,6 +2314,21 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Fejlbeskeden ved fjernelse nævner ikke kravets kode ("Move or remove the 1 action under the measure first"), fordi domænet ikke kender koderne.
   - Kravlisten er stadig en dropdown med en gruppe "Most relevant" øverst, ikke et søgefelt.
 
+### B156 – Kontaktoplysninger til leverandører (US-207)
+
+- **Beslutning:**
+  - **Firmaet:** CVR- eller momsnummer, adresse, land, hjemmeside og en e-mail til sikkerhedssager. Alt er frivilligt. En hjemmeside uden `https://` får det sat foran.
+  - **Kontaktpersoner** (`SupplierContact`) med navn, rolle, e-mail og telefon. Den første er primær, og en ny primær tager over fra den gamle. Fjernes den primære, bliver den næste primær. En rolle kan vælges fra en liste eller skrives.
+  - **"Write"** er et `mailto:`-link med et emne, fx "Security – Demo ApS" eller "Updated evidence – Demo ApS", når evidens mangler eller snart udløber. Trackeren sender intet selv.
+  - **"No security contact"** vises på en leverandør med høj kritikalitet, når hverken en sikkerhedskontakt med e-mail eller en sikkerheds-e-mail er givet. En sikkerhedskontakt uden e-mail tæller ikke, for man kan ikke skrive til den.
+  - **Loggen** nævner, hvad der ændrede sig, og personens navn og rolle, aldrig e-mail eller telefon.
+  - **Det gamle fritekstfelt "Contact"** vises som en note, indtil den første kontaktperson er tilføjet.
+  - **Påmindelsen om udløbende evidens** linker til leverandørens række, hvor den primære kontakt kan spørges. Selve mailen nævner ingen navne, som før (US-183 R3).
+- **Begrundelse:** NIS2 Art. 21(2)(d) og ISO 27001 A.5.19–A.5.22 kræver, at organisationen kan følge op på sine leverandører. Det kræver, at man ved, hvem man skriver til.
+- **Fravalgt:**
+  - At sende mails fra trackeren. Medlemmets eget mailprogram er nok og kræver ingen mailopsætning.
+  - Opslag i CVR-registeret. Det kommer som en historie for sig (besluttet 18-11-2026).
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

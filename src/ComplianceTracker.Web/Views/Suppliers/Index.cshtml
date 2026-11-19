@@ -1,9 +1,14 @@
 @* US-191: the organisation's suppliers. R1: criticality; R2: the rules each must meet; R3: evidence with its end date and the
    status (OK, expires soon, missing); R4: the SBOM components it delivers. Ids and classes used by the tests:
    form#add-supplier, #suppliers rows with data-supplier (data-state, .supplier-detail, .supplier-components), and per
-   supplier form.add-supplier-evidence and form.remove-supplier. *@
+   supplier form.add-supplier-evidence and form.remove-supplier.
+   US-207: .supplier-company (.supplier-registration, .supplier-country, .supplier-website, .supplier-security-email),
+   form.change-supplier-company, .supplier-contact (data-name, data-primary, data-security) with .supplier-contact-role,
+   a.write-to-contact, form.change-supplier-contact and form.remove-supplier-contact, form.add-supplier-contact,
+   .supplier-contact-note (the old free text), .no-security-contact and a.ask-for-evidence. *@
 @model ComplianceTracker.Web.Controllers.SuppliersViewModel
 @using ComplianceTracker.Domain.Organizations
+@using ComplianceTracker.Web.Controllers
 @{
     ViewData["Title"] = "Suppliers";
 }
@@ -13,6 +18,13 @@
     (NIS2 Art. 21(2)(d), GDPR Art. 28, ISO/IEC 27001 A.5.19–A.5.22, CRA Art. 13(5)). High and medium criticality need valid evidence.</p>
 
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+<datalist id="contact-roles">
+    @foreach (var role in SupplierContact.KnownRoles)
+    {
+        <option value="@role"></option>
+    }
+</datalist>
 
 @if (Model.CanManage)
 {
@@ -30,13 +42,24 @@
                         <option value="@c">@c</option>
                     }
                 </select></div>
-            <div class="col-md-4"><label for="supplier-contact" class="form-label small">Contact (optional)</label>
-                <input id="supplier-contact" name="contact" maxlength="500" class="form-control form-control-sm" /></div>
-            <fieldset class="col-md-8"><legend class="form-label small mb-1">Rules it must meet for us</legend>
+            <fieldset class="col-12"><legend class="form-label small mb-1">Rules it must meet for us</legend>
                 @foreach (var rule in Supplier.KnownRules)
                 {
                     <label class="form-check-label small me-3"><input type="checkbox" name="rules" value="@rule" class="form-check-input me-1" />@rule</label>
                 }
+            </fieldset>
+            @* US-207 R1: the company, all optional; contact persons are added on the supplier's row *@
+            <fieldset class="col-12 row g-2 m-0 p-0"><legend class="form-label small mb-1 px-2">Company (optional)</legend>
+                <div class="col-md-3"><label for="supplier-registration" class="form-label small">CVR or VAT number</label>
+                    <input id="supplier-registration" name="registrationNumber" maxlength="50" class="form-control form-control-sm" /></div>
+                <div class="col-md-3"><label for="supplier-country" class="form-label small">Country</label>
+                    <input id="supplier-country" name="country" maxlength="100" class="form-control form-control-sm" placeholder="e.g. Denmark" /></div>
+                <div class="col-md-6"><label for="supplier-address" class="form-label small">Address</label>
+                    <input id="supplier-address" name="address" maxlength="500" class="form-control form-control-sm" /></div>
+                <div class="col-md-6"><label for="supplier-website" class="form-label small">Website</label>
+                    <input id="supplier-website" name="website" maxlength="500" class="form-control form-control-sm" placeholder="https://…" /></div>
+                <div class="col-md-6"><label for="supplier-security-email" class="form-label small">E-mail for security matters</label>
+                    <input id="supplier-security-email" name="securityEmail" type="email" maxlength="254" class="form-control form-control-sm" placeholder="e.g. security@supplier.example" /></div>
             </fieldset>
             <div class="col-12"><button type="submit" class="btn btn-sm btn-primary">Add supplier</button></div>
         </form>
@@ -61,6 +84,7 @@ else
                 @foreach (var view in Model.Suppliers)
                 {
                     var supplier = view.Supplier;
+                    var primary = supplier.PrimaryContact;
                     <tr id="supplier-@supplier.Id" data-supplier="@supplier.Name" data-state="@view.Status.State">
                         <td><span class="fw-semibold">@supplier.Name</span>
                             <div class="small text-muted">@supplier.Delivers</div>
@@ -68,11 +92,130 @@ else
                             {
                                 <div class="small supplier-components">@view.Components SBOM component@(view.Components == 1 ? "" : "s")</div>
                             }
+                            @* US-207 R1 *@
+                            <div class="small supplier-company mt-1">
+                                @if (supplier.RegistrationNumber is { } registration)
+                                {
+                                    <span class="supplier-registration">CVR/VAT @registration</span>
+                                }
+                                @if (supplier.Country is { } country)
+                                {
+                                    <span class="supplier-country">@country</span>
+                                }
+                                @if (supplier.Address is { } address)
+                                {
+                                    <div class="text-muted supplier-address">@address</div>
+                                }
+                                @if (supplier.Website is { } website)
+                                {
+                                    <div><a class="supplier-website" href="@website" target="_blank" rel="noopener noreferrer">@website</a></div>
+                                }
+                                @if (supplier.SecurityEmail is { } securityEmail)
+                                {
+                                    <div>Security: <a class="supplier-security-email" href="@SupplierContacts.MailTo(securityEmail, SuppliersViewModel.Subject(view, null, Model.OrganizationName))">@securityEmail</a></div>
+                                }
+                            </div>
+                            @if (supplier.LacksSecurityContact)
+                            {
+                                @* R5 *@
+                                <div><span class="badge text-bg-warning no-security-contact" title="A critical supplier should have someone to write to about security">No security contact</span></div>
+                            }
+                            @* US-207 R2: the people, the primary first *@
+                            <ul class="list-unstyled small mb-1 mt-1 supplier-contacts">
+                                @foreach (var contact in supplier.Contacts)
+                                {
+                                    <li class="supplier-contact" data-name="@contact.Name" data-primary="@(contact.IsPrimary ? "true" : "false")" data-security="@(contact.IsSecurityContact ? "true" : "false")">
+                                        <span class="fw-semibold">@contact.Name</span>
+                                        @if (contact.Role is { } role)
+                                        {
+                                            <span class="text-muted supplier-contact-role">@role</span>
+                                        }
+                                        @if (contact.IsPrimary)
+                                        {
+                                            <span class="badge text-bg-light border">Primary</span>
+                                        }
+                                        @if (contact.IsSecurityContact)
+                                        {
+                                            <span class="badge text-bg-info">Security contact</span>
+                                        }
+                                        @if (contact.Email is { } email)
+                                        {
+                                            @* R4: the member's own e-mail program; the tracker sends nothing *@
+                                            <a class="ms-1 write-to-contact" href="@SupplierContacts.MailTo(email, SuppliersViewModel.Subject(view, contact, Model.OrganizationName))" title="@email">Write</a>
+                                        }
+                                        @if (contact.Phone is { } phone)
+                                        {
+                                            <span class="text-muted supplier-contact-phone"><a href="tel:@phone.Replace(" ", "")">@phone</a></span>
+                                        }
+                                        @if (Model.CanManage)
+                                        {
+                                            <details class="d-inline-block item-menu">
+                                                <summary class="btn btn-sm btn-link p-0 text-muted" aria-label="Change @contact.Name">⋯</summary>
+                                                <form asp-action="ChangeContact" method="post" class="d-flex flex-column gap-1 mt-1 change-supplier-contact">
+                                                    <input type="hidden" name="supplierId" value="@supplier.Id" />
+                                                    <input type="hidden" name="contactId" value="@contact.Id" />
+                                                    <input name="name" value="@contact.Name" maxlength="200" class="form-control form-control-sm" aria-label="Name" required />
+                                                    <input name="role" value="@contact.Role" maxlength="100" list="contact-roles" class="form-control form-control-sm" aria-label="Role" />
+                                                    <input name="email" value="@contact.Email" type="email" maxlength="254" class="form-control form-control-sm" aria-label="E-mail" />
+                                                    <input name="phone" value="@contact.Phone" maxlength="30" class="form-control form-control-sm" aria-label="Phone" />
+                                                    <label class="form-check-label"><input type="checkbox" name="primary" value="true" class="form-check-input me-1" checked="@contact.IsPrimary" />Primary contact</label>
+                                                    <label class="form-check-label"><input type="checkbox" name="securityContact" value="true" class="form-check-input me-1" checked="@contact.IsSecurityContact" />Security contact</label>
+                                                    <button type="submit" class="btn btn-sm btn-outline-primary align-self-start">Save</button>
+                                                </form>
+                                                <form asp-action="RemoveContact" method="post" class="mt-1 remove-supplier-contact" data-confirm="Remove @contact.Name as a contact person of @supplier.Name?">
+                                                    <input type="hidden" name="supplierId" value="@supplier.Id" />
+                                                    <input type="hidden" name="contactId" value="@contact.Id" />
+                                                    <button type="submit" class="btn btn-sm btn-link text-danger p-0">Remove contact person</button>
+                                                </form>
+                                            </details>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                            @if (supplier.ContactNote is { } note)
+                            {
+                                @* R7: the old free text, until a person is added *@
+                                <div class="small text-muted supplier-contact-note">Contact note: @note</div>
+                            }
+                            @if (Model.CanManage)
+                            {
+                                <details class="small add-supplier-contact-menu">
+                                    <summary class="btn btn-sm btn-link p-0">+ Add contact person</summary>
+                                    <form asp-action="AddContact" method="post" class="d-flex flex-column gap-1 mt-1 add-supplier-contact">
+                                        <input type="hidden" name="supplierId" value="@supplier.Id" />
+                                        <input name="name" maxlength="200" class="form-control form-control-sm" placeholder="Name" aria-label="Name of the contact person at @supplier.Name" required />
+                                        <input name="role" maxlength="100" list="contact-roles" class="form-control form-control-sm" placeholder="Role, e.g. Account manager" aria-label="Role" />
+                                        <input name="email" type="email" maxlength="254" class="form-control form-control-sm" placeholder="E-mail" aria-label="E-mail" />
+                                        <input name="phone" maxlength="30" class="form-control form-control-sm" placeholder="Phone, e.g. +45 12 34 56 78" aria-label="Phone" />
+                                        <label class="form-check-label"><input type="checkbox" name="primary" value="true" class="form-check-input me-1" checked="@(supplier.Contacts.Count == 0)" />Primary contact</label>
+                                        <label class="form-check-label"><input type="checkbox" name="securityContact" value="true" class="form-check-input me-1" />Security contact</label>
+                                        <button type="submit" class="btn btn-sm btn-outline-primary align-self-start">Add</button>
+                                    </form>
+                                </details>
+                                <details class="small change-supplier-company-menu">
+                                    <summary class="btn btn-sm btn-link p-0">Company details</summary>
+                                    <form asp-action="ChangeCompany" method="post" class="d-flex flex-column gap-1 mt-1 change-supplier-company">
+                                        <input type="hidden" name="supplierId" value="@supplier.Id" />
+                                        <input name="registrationNumber" value="@supplier.RegistrationNumber" maxlength="50" class="form-control form-control-sm" placeholder="CVR or VAT number" aria-label="CVR or VAT number" />
+                                        <input name="address" value="@supplier.Address" maxlength="500" class="form-control form-control-sm" placeholder="Address" aria-label="Address" />
+                                        <input name="country" value="@supplier.Country" maxlength="100" class="form-control form-control-sm" placeholder="Country" aria-label="Country" />
+                                        <input name="website" value="@supplier.Website" maxlength="500" class="form-control form-control-sm" placeholder="Website" aria-label="Website" />
+                                        <input name="securityEmail" value="@supplier.SecurityEmail" type="email" maxlength="254" class="form-control form-control-sm" placeholder="E-mail for security matters" aria-label="E-mail for security matters" />
+                                        <button type="submit" class="btn btn-sm btn-outline-primary align-self-start">Save</button>
+                                    </form>
+                                </details>
+                            }
                         </td>
                         <td>@supplier.Criticality</td>
                         <td class="small">@string.Join(", ", supplier.RuleList)</td>
                         <td><span class="badge @(view.Status.State switch { SupplierState.Ok => "text-bg-success", SupplierState.ExpiresSoon => "text-bg-warning", _ => "text-bg-danger" })">@(view.Status.State switch { SupplierState.ExpiresSoon => "Expires soon", SupplierState.Missing => "Missing", _ => "OK" })</span>
-                            <div class="small supplier-detail">@view.Status.Detail</div></td>
+                            <div class="small supplier-detail">@view.Status.Detail</div>
+                            @if (view.Status.State != SupplierState.Ok && primary?.Email is { } primaryEmail)
+                            {
+                                @* US-207: ask the primary contact for updated evidence; the reminder links to this row *@
+                                <div class="small"><a class="ask-for-evidence" href="@SupplierContacts.MailTo(primaryEmail, SuppliersViewModel.Subject(view, primary, Model.OrganizationName))">Ask @primary.Name for it</a></div>
+                            }
+                        </td>
                         <td class="small">
                             <ul class="list-unstyled mb-1">
                                 @foreach (var evidence in supplier.Evidence.OrderByDescending(e => e.AddedAt))
