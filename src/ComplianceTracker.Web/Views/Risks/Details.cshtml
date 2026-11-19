@@ -380,6 +380,29 @@
                                     <details class="approve-with-evidence" data-dialog-title="Approve the measure with evidence">
                                         <summary class="btn btn-sm btn-link py-0">+ Evidence</summary>
                                         <div class="d-flex flex-column gap-1 mt-1">
+                                            @{ var suggestedEvidence = Model.MeasureEvidence.For(suggestion.Id); }
+                                            @if (suggestedEvidence.Count > 0)
+                                            {
+                                                @* US-161 R1: the project's existing evidence, best first; picking one links it when approving (R3) *@
+                                                <fieldset class="suggested-measure-evidence">
+                                                    <legend class="small fw-semibold mb-1">Suggested evidence</legend>
+                                                    @foreach (var item in suggestedEvidence)
+                                                    {
+                                                        <label class="form-check-label small d-block suggested-measure-evidence-item" data-title="@item.Evidence.Title">
+                                                            <input type="radio" name="existingEvidenceId" value="@item.Evidence.Id" class="form-check-input me-1" />
+                                                            @item.Evidence.Title
+                                                            <span class="badge text-bg-info">AI-generated</span>
+                                                            <span class="text-muted">· score @item.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span>
+                                                        </label>
+                                                    }
+                                                    <div class="small text-muted">Or a new one:</div>
+                                                </fieldset>
+                                            }
+                                            else if (Model.MeasureEvidence.Unavailable is { } unavailable)
+                                            {
+                                                @* R5 *@
+                                                <p class="small text-muted mb-0 measure-evidence-unavailable">@unavailable</p>
+                                            }
                                             <input name="evidenceTitle" class="form-control form-control-sm" maxlength="200" placeholder="Title, e.g. MFA policy" aria-label="Evidence title" />
                                             <input name="evidenceUrl" type="url" class="form-control form-control-sm" placeholder="Link (https://…)" aria-label="Evidence link" />
                                             <input name="evidenceFile" type="file" class="form-control form-control-sm" aria-label="Or a file (max 10 MB)" />

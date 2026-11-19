@@ -84,6 +84,9 @@ namespace ComplianceTracker.Web.Models
         // US-106 R12: the AI's pending measure suggestions for this risk, best first
         public IReadOnlyList<Domain.Risks.RiskMeasureSuggestion> MeasureSuggestions { get; init; } = [];
 
+        // US-161: the AI's suggested evidence per suggested measure
+        public Application.Risks.MeasureEvidenceView MeasureEvidence { get; init; } = Application.Risks.MeasureEvidenceView.None;
+
         // The name of a suggested measure: the requirement's code and title, or the story's title
         public string MeasureName(Domain.Risks.RiskMeasureSuggestion suggestion)
             => suggestion.RequirementId is { } id

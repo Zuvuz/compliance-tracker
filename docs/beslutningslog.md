@@ -2399,6 +2399,16 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Et fast testsæt af dokumenter i repoet til evalueringen. Folks egne beslutninger er et bedre og ærligere testsæt, og standarderne må ikke ligge i repoet.
   - At ændre forslagene til en eksisterende `MappingSuggestion`. Kun dokumenter, projektets evidens og cross-mapping er med.
 
+### B160 – Evidens foreslået, når en foranstaltning godkendes (US-161)
+
+- **Beslutning:**
+  - **Forslagene regnes, når risikosiden vises,** og gemmes ikke. Det sker kun, når der er foreslåede foranstaltninger, der venter, og projektet har evidens, og det koster ét kald til indlejringsmodellen. Rerankeren (US-118) bruges, når den er sat op, og grænsen for evidensforslag (US-059) gælder.
+  - **Projektets evidens sammenlignes på titlen** med foranstaltningens krav eller story. Evidens, der allerede ligger på kravet eller storyen, udløbet evidens og fjernet evidens foreslås ikke.
+  - **De tre bedste vises under "+ Evidence"** som valg. Et valg og "Approve with evidence" kobler evidensen til kravet eller storyen og godkender foranstaltningen i ét trin. Ny evidens kan stadig lægges op som før (US-158), men ikke samtidig med et valg.
+  - **Uden AI** står der "No suggestions: the AI is not available", og upload og link virker som før.
+- **Begrundelse:** Det er ofte den samme politik eller rapport, der beviser flere foranstaltninger. At finde den i samme trin sparer en ny upload af det samme dokument.
+- **Fravalgt:** at gemme forslagene som `EvidenceLinkSuggestion`. De gælder kun i godkendelsesøjeblikket, og projektets egne evidensforslag (US-059) dækker resten.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

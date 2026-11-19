@@ -363,6 +363,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "workitemid" => ids.WorkItem,
                 "linkid" => documents ? ids.OrganisationDocumentLink : ids.Link,
                 "evidenceid" => ids.Evidence,
+                "existingevidenceid" => ids.Evidence, // US-161: evidence picked when approving a measure
                 "versionid" => frameworks ? ids.FrameworkVersion : ids.DocumentVersion,
                 "frameworkid" => ids.Framework,
                 "frameworkversionid" => ids.FrameworkVersion,
