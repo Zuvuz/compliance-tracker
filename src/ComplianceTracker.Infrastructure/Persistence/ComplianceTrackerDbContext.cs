@@ -33,6 +33,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<RequirementDocumentFile> RequirementDocumentFiles => Set<RequirementDocumentFile>();
         public DbSet<RequirementLink> RequirementLinks => Set<RequirementLink>();
         public DbSet<RequirementApplicability> RequirementApplicability => Set<RequirementApplicability>();
+        public DbSet<DocumentationDecision> DocumentationDecisions => Set<DocumentationDecision>(); // US-204
         public DbSet<Evidence> Evidence => Set<Evidence>();
         public DbSet<EvidenceDocument> EvidenceDocuments => Set<EvidenceDocument>();
         public DbSet<Domain.Feedback.Feedback> Feedback => Set<Domain.Feedback.Feedback>(); // US-063

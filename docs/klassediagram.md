@@ -517,6 +517,24 @@ classDiagram
   EvidenceStoryLink --> WorkItem : story
   EvidenceStorySuggestion --> Evidence
   EvidenceStorySuggestion --> WorkItem
+  class EvidenceKind {
+    <<enumeration>>
+    Proof
+    Documentation
+  }
+  Evidence --> EvidenceKind : kind
+  class DocumentationDecision {
+    -id: Guid
+    -organizationId: Guid
+    -requirementId: Guid
+    -enough: bool
+    -reason: string
+    -decidedById: Guid
+    -decidedRole: UserRole?
+    -decidedAt: DateTime
+    +Decide(organizationId, requirementId, enough, reason, userId, role, at)$ DocumentationDecision
+  }
+  DocumentationDecision --> Requirement : documentation is enough for
   class RequirementApplicability {
     -id: Guid
     -projectId: Guid
@@ -600,8 +618,13 @@ classDiagram
     -addedAt: DateTime
     -removedById: Guid?
     -removedAt: DateTime?
+    -chosenKind: EvidenceKind?
+    -kindChangedById: Guid?
+    -kindChangedAt: DateTime?
     +IsActive: bool
     +IsFile: bool
+    +Kind: EvidenceKind
+    +ChangeKind(kind: EvidenceKind, userId: Guid, at: DateTime) bool
     +ForLink(projectId, requirementId, title, url, validUntil, addedById, role, at)$ Evidence
     +ForFile(projectId, requirementId, title, file: EvidenceFile, validUntil, addedById, role, at)$ Evidence
     +CarryTo(requirementId: Guid) Evidence
@@ -2221,6 +2244,37 @@ classDiagram
   OrganizationService ..> Organization : opretter
   IOrganizationRepository ..> Organization
   IActivityLogRepository ..> ActivityLogEntry
+
+  class Supplier {
+    -id: Guid
+    -organizationId: Guid
+    -name: string
+    -criticality: SupplierCriticality
+    -contact: string?
+    -registrationNumber: string?
+    -address: string?
+    -country: string?
+    -website: string?
+    -securityEmail: string?
+    +PrimaryContact: SupplierContact?
+    +LacksSecurityContact: bool
+    +ChangeCompany(registrationNumber, address, country, website, securityEmail) List~string~
+    +AddContact(name, role, email, phone, primary, securityContact) SupplierContact
+    +ChangeContact(contactId, name, role, email, phone, primary, securityContact) SupplierContact
+    +RemoveContact(contactId: Guid) SupplierContact
+  }
+  class SupplierContact {
+    -id: Guid
+    -supplierId: Guid
+    -name: string
+    -role: string?
+    -email: string?
+    -phone: string?
+    -isPrimary: bool
+    -isSecurityContact: bool
+  }
+  Organization "1" -- "*" Supplier
+  Supplier "1" *-- "*" SupplierContact : contact persons
 
   note for MappingSuggestion "{xor} workItemId eller controlId"
   note for RequirementAssessment "{xor} releaseId eller organizationId"

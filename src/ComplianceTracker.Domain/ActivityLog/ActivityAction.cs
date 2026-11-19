@@ -330,6 +330,13 @@ namespace ComplianceTracker.Domain.ActivityLog
         SupplierEvidenceAdded,
         SupplierRemoved,
 
+        // US-207 R6: a supplier's company details or contact persons changed. SubjectId points at the supplier; Details
+        // names what changed and the person, never the e-mail address or the phone number.
+        SupplierDetailsChanged,
+        SupplierContactAdded,
+        SupplierContactChanged,
+        SupplierContactRemoved,
+
         // US-047: a lifecycle checklist item ticked, unticked, turned off or on. SubjectId points at the project; Details
         // holds the item, its regulation and what happened, e.g. "Threat model made (CRA Art. 13(3)): done".
         ChecklistItemChanged,
@@ -386,6 +393,14 @@ namespace ComplianceTracker.Domain.ActivityLog
         // #52: test results were uploaded, whatever they led to. SubjectId points at the project; Details holds the file and
         // what it led to (passed, suggested, already suggested, unknown tags).
         TestResultsUploaded,
+
+        // US-204 R2: a person changed whether a piece of evidence is documentation or proof. SubjectId points at the
+        // project; Details holds the evidence and the change, e.g. "Incident report: Documentation → Proof".
+        EvidenceKindChanged,
+
+        // US-204 R5, R8: a person marked a requirement "documentation is enough", or removed the mark, with a reason.
+        // SubjectId points at the project; Details holds the requirement, the decision and the reason.
+        DocumentationEnoughDecided,
 
         // US-206 R4: an approved cross-mapping was limited to chosen projects, or opened to all again. SubjectId points at
         // the organisation; Details holds the match and the projects, e.g. "CRA I.2(d) ↔ ISO A.8.5: Compliance Tracker".

@@ -25,6 +25,12 @@ namespace ComplianceTracker.Application.Organizations
         Task<byte[]?> GetFileAsync(Guid evidenceId, CancellationToken cancellationToken = default);
     }
 
+    // US-207 R1: a supplier's company details as typed on the page
+    public sealed record CompanyDetails(string? RegistrationNumber, string? Address, string? Country, string? Website, string? SecurityEmail);
+
+    // US-207 R2: a contact person as typed on the page
+    public sealed record ContactDetails(string? Name, string? Role, string? Email, string? Phone, bool Primary, bool SecurityContact);
+
     // One supplier on the page: its status (R1, R3) and the SBOM components it delivers (R4)
     public sealed record SupplierView(Supplier Supplier, SupplierStatus Status, int Components);
 
@@ -80,11 +86,17 @@ namespace ComplianceTracker.Application.Organizations
         public static int Delivered(string supplier, IEnumerable<Domain.Scanning.SbomComponent> components)
             => components.Count(c => c.Supplier is { } named && named.Contains(supplier, StringComparison.OrdinalIgnoreCase));
 
+        // US-207 R1: the company's details can be given right away
         public async Task<Supplier> AddAsync(string? name, string? delivers, SupplierCriticality? criticality, string? contact,
-            IReadOnlyList<string>? rules, CancellationToken cancellationToken = default)
+            IReadOnlyList<string>? rules, CancellationToken cancellationToken = default, CompanyDetails? company = null)
         {
             var (organization, user) = await _member.RequireAsync(Permission.DecideCompliance, cancellationToken);
             var supplier = Supplier.Create(organization.Id, name, delivers, criticality, contact, rules, user.Id, Now);
+            if (company is not null)
+            {
+                supplier.ChangeCompany(company.RegistrationNumber, company.Address, company.Country, company.Website, company.SecurityEmail);
+            }
+
             if ((await _suppliers.ListAsync(organization.Id, cancellationToken)).Any(s => s.IsActive && string.Equals(s.Name, supplier.Name, StringComparison.OrdinalIgnoreCase)))
             {
                 throw new DomainException($"{supplier.Name} is already a supplier");
@@ -108,6 +120,55 @@ namespace ComplianceTracker.Application.Organizations
             await _log.LogAsync(ActivityAction.SupplierEvidenceAdded, supplier.Id,
                 $"{supplier.Name}: {evidence.Title}{(evidence.ValidUntil is { } until ? $", valid until {until:dd-MM-yyyy}" : "")}", cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-207 R1, R6: the log names what changed, never the values
+        public async Task ChangeCompanyAsync(Guid supplierId, CompanyDetails company, CancellationToken cancellationToken = default)
+        {
+            var supplier = await ManagedAsync(supplierId, cancellationToken);
+            var changed = supplier.ChangeCompany(company.RegistrationNumber, company.Address, company.Country, company.Website, company.SecurityEmail);
+            if (changed.Count == 0)
+            {
+                return;
+            }
+
+            await _log.LogAsync(ActivityAction.SupplierDetailsChanged, supplier.Id, $"{supplier.Name}: {string.Join(", ", changed)}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // US-207 R2, R3, R6
+        public async Task AddContactAsync(Guid supplierId, ContactDetails contact, CancellationToken cancellationToken = default)
+        {
+            var supplier = await ManagedAsync(supplierId, cancellationToken);
+            var added = supplier.AddContact(contact.Name, contact.Role, contact.Email, contact.Phone, contact.Primary, contact.SecurityContact);
+            await _log.LogAsync(ActivityAction.SupplierContactAdded, supplier.Id, $"{supplier.Name}: {Describe(added)}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task ChangeContactAsync(Guid supplierId, Guid contactId, ContactDetails contact, CancellationToken cancellationToken = default)
+        {
+            var supplier = await ManagedAsync(supplierId, cancellationToken);
+            var changed = supplier.ChangeContact(contactId, contact.Name, contact.Role, contact.Email, contact.Phone, contact.Primary, contact.SecurityContact);
+            await _log.LogAsync(ActivityAction.SupplierContactChanged, supplier.Id, $"{supplier.Name}: {Describe(changed)}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task RemoveContactAsync(Guid supplierId, Guid contactId, CancellationToken cancellationToken = default)
+        {
+            var supplier = await ManagedAsync(supplierId, cancellationToken);
+            var removed = supplier.RemoveContact(contactId);
+            await _log.LogAsync(ActivityAction.SupplierContactRemoved, supplier.Id, $"{supplier.Name}: {removed.LogName}", cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // R6: e.g. "Mette Lund (Security contact), primary, security contact"; no e-mail or phone
+        public static string Describe(SupplierContact contact)
+            => contact.LogName + (contact.IsPrimary ? ", primary" : "") + (contact.IsSecurityContact ? ", security contact" : "");
+
+        private async Task<Supplier> ManagedAsync(Guid supplierId, CancellationToken cancellationToken)
+        {
+            var (organization, _) = await _member.RequireAsync(Permission.DecideCompliance, cancellationToken);
+            return await _suppliers.GetAsync(organization.Id, supplierId, cancellationToken) ?? throw new DomainException("Supplier not found");
         }
 
         public async Task RemoveAsync(Guid supplierId, CancellationToken cancellationToken = default)

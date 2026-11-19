@@ -52,7 +52,8 @@ Feature: AI suggestions for the organisation's documents
     And the AI rates "Incident response plan" against "Art. 21(2)(b)" with 0.9
     When I upload the policy "Incident response plan" version "v1" for the organisation
     And I approve the AI suggestion "Art. 21(2)(b)" for "Incident response plan"
-    Then the organisation's Compliance tab for "NIS2" shows "Art. 21(2)(b)" as "Covered"
+    # US-204: the plan documents the requirement; proof that it is followed is still missing
+    Then the organisation's Compliance tab for "NIS2" shows "Art. 21(2)(b)" as "Documented – proof missing"
 
   @US-136 @integration
   Scenario: Without the AI the document is still saved

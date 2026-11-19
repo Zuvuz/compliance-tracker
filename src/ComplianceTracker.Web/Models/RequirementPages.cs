@@ -46,6 +46,8 @@ namespace ComplianceTracker.Web.Models
             => !row.IsApplicable ? "Not applicable"
                 : row.IsCoveredNeedingReview ? "Covered, needs review"
                 : row.IsCovered ? "Covered"
+                // US-204 R9: in the organisation area, documentation alone takes the place of "Covered"
+                : row.EvidenceCovers && row.IsDocumentedOnly ? RequirementCoverage.DocumentedProofMissing
                 : row.NeedsAction is not null ? "Needs action" // US-155
                 : "Not covered";
 

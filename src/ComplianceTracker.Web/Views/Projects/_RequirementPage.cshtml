@@ -1,4 +1,4 @@
-@* US-153: one requirement's own page (its address is US-144 R12, e.g. /Projects/Details/{id}/compliance/cra/I.2(d)).
+﻿@* US-153: one requirement's own page (its address is US-144 R12, e.g. /Projects/Details/{id}/compliance/cra/I.2(d)).
    The Compliance tab is a light overview (_RequirementSummaryRow.cshtml); every action on a requirement is here, and
    after it this page is shown again (the forms send "req"). Layout: back link, a header with code, title, status and
    one primary action ("Add evidence"), the requirement's text, then user stories, evidence, and what waits for a
@@ -127,7 +127,12 @@
                     @* US-142 R6 *@
                     <div class="small text-muted covered-through">through @through</div>
                 }
-                @if (!row.HasEvidence)
+                @if (row.ProofState is { } proofState)
+                {
+                    @* US-204 R9: proven, or only documented, next to "Covered" *@
+                    <div><status-badge status="@proofState" class="proof-state mt-1" /></div>
+                }
+                else
                 {
                     @* US-057 R4 *@
                     <div><span class="evidence-status badge text-bg-warning mt-1">No evidence</span></div>
@@ -135,8 +140,12 @@
             }
             else
             {
-                @* US-155: "Not covered" or "Needs action" *@
+                @* US-155: "Not covered" or "Needs action". US-204 R9: "Documented – proof missing" in the organisation area. *@
                 <span class="requirement-status badge @RequirementPages.StatusClass(row)">@RequirementPages.Status(row)</span>
+                @if (!row.EvidenceCovers && row.ProofState is { } notCoveredProof)
+                {
+                    <div><status-badge status="@notCoveredProof" class="proof-state mt-1" /></div>
+                }
             }
             </div>
         </div>
@@ -490,7 +499,15 @@
                     @* R1, R2: the evidence, each with where it came from *@
                     <div class="row-group mb-2" data-group="evidence">
                         <div class="row-group-title small text-muted">Evidence (<span class="row-group-count">@row.Evidence.Count</span>)</div>
-                        @foreach (var item in row.Evidence)
+                        @* US-204 R7: proof first, then what only describes how we work *@
+                        @foreach (var kindList in new[] { (Kind: ComplianceTracker.Domain.Mappings.EvidenceKind.Proof, Items: row.ProvenBy), (Kind: ComplianceTracker.Domain.Mappings.EvidenceKind.Documentation, Items: row.DocumentedBy) })
+                        {
+                        if (kindList.Items.Count == 0)
+                        {
+                            continue;
+                        }
+                        <div class="evidence-kind-list small fw-semibold mt-2" data-kind="@kindList.Kind">@ComplianceTracker.Domain.Mappings.EvidenceKinds.ListName(kindList.Kind) (<span class="evidence-kind-count">@kindList.Items.Count</span>)</div>
+                        @foreach (var item in kindList.Items)
                         {
                             @* US-057: R3: expired is shown but does not count *@
                             var evidence = item.Evidence;
@@ -614,6 +631,36 @@
                                     </details>
                                 }
                             </div>
+                        }
+                        }
+                    </div>
+                }
+                @{
+                    var documentation = row.Documentation;
+                }
+                @if (row.IsApplicable && (documentation.Enough || (canMarkHere && row.HasDocumentation)))
+                {
+                    @* US-204 R5, R8: "documentation is enough", with the reason; those who decide can set it or remove it *@
+                    <div class="documentation-enough small border-top pt-2 mt-2" data-enough="@(documentation.Enough ? "true" : "false")" data-built-in="@(documentation.BuiltIn ? "true" : "false")">
+                        @if (documentation.Enough)
+                        {
+                            <span class="fw-semibold">Documentation is enough</span>
+                            <span class="text-muted documentation-enough-reason">: @documentation.Reason@(documentation.BuiltIn ? " (built in)" : "")</span>
+                        }
+                        @if (canMarkHere)
+                        {
+                            <details class="documentation-enough-change d-inline-block ms-1">
+                                <summary class="btn btn-sm btn-link p-0">@(documentation.Enough ? "Ask for proof" : "Documentation is enough")</summary>
+                                <form asp-action="DecideDocumentationEnough" method="post" class="d-flex flex-wrap gap-1 mt-1 decide-documentation-enough">
+                                    <input type="hidden" name="projectId" value="@project.Id" />
+                                    <input type="hidden" name="requirementId" value="@requirement.Id" />
+                                    <input type="hidden" name="enough" value="@(documentation.Enough ? "false" : "true")" />
+                                    <input type="hidden" name="sub" value="@sub" />
+                                    <input type="hidden" name="req" value="@requirement.Code" />
+                                    <input name="reason" maxlength="500" required class="form-control form-control-sm w-auto" placeholder="Why" aria-label="Why @(documentation.Enough ? "proof is needed" : "documentation is enough") for @requirement.Code" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Save</button>
+                                </form>
+                            </details>
                         }
                     </div>
                 }

@@ -73,7 +73,12 @@
             {
                 <div class="small text-muted covered-through">through @through</div>
             }
-            @if (!row.HasEvidence)
+            @if (row.ProofState is { } proofState)
+            {
+                @* US-204 R9 *@
+                <div><status-badge status="@proofState" class="proof-state mt-1" /></div>
+            }
+            else
             {
                 <div><span class="evidence-status badge text-bg-warning mt-1">No evidence</span></div>
             }

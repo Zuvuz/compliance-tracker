@@ -134,7 +134,8 @@ namespace ComplianceTracker.Application.Reports
                 string[] start = [requirement.Requirement.Code, requirement.Requirement.Title, status, Risks.RiskTraces.Text(requirement.Risks)];
                 var items = requirement.Links.Select(l => (Item: "Story", Name: l.WorkItem.Title, State: l.WorkItem.State.ToString(),
                         Details: l.WorkItem.ExternalReference + (l.Link.NeedsReview ? " (needs review)" : "")))
-                    .Concat(requirement.Evidence.Select(e => (Item: "Evidence", Name: e.Evidence.Title, State: EvidenceState(e),
+                    // US-204 R7: "Proven by" or "Documented by"
+                    .Concat(requirement.Evidence.Select(e => (Item: Domain.Mappings.EvidenceKinds.ListName(e.Evidence.Kind), Name: e.Evidence.Title, State: EvidenceState(e),
                         Details: e.Evidence.Url ?? e.Evidence.FileName ?? "")))
                     .Concat(requirement.Suggestions.Select(s => (Item: "AI suggestion", Name: s.WorkItem.Title, State: "Pending",
                         Details: $"score {s.Suggestion.Score.ToString("0.00", CultureInfo.InvariantCulture)}")))
@@ -209,12 +210,15 @@ namespace ComplianceTracker.Application.Reports
                 return ("Not covered", ReportStatus.Bad);
             }
 
-            return requirement.HasEvidence ? ("Covered", ReportStatus.Good) : ("Covered, no evidence", ReportStatus.Warning);
+            // US-204 R3, R9: documentation alone does not prove it
+            return requirement.IsProven ? ("Covered", ReportStatus.Good)
+                : requirement.IsDocumentedOnly ? ("Covered, " + RequirementCoverage.DocumentedProofMissing.ToLowerInvariant(), ReportStatus.Warning)
+                : ("Covered, no evidence", ReportStatus.Warning);
         }
 
         // R4: not covered first, then what needs review or evidence, then the rest, each in the document's order
         private static int Urgency(RequirementCoverage requirement)
-            => !requirement.IsCovered ? 0 : requirement.NeedsReview || !requirement.HasEvidence ? 1 : 2;
+            => !requirement.IsCovered ? 0 : requirement.NeedsReview || !requirement.IsProven ? 1 : 2;
 
         private static string EvidenceState(EvidenceItem item)
             => item.IsExpired ? "Expired"

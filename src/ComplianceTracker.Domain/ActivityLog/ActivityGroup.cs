@@ -40,6 +40,8 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.OrganisationClosed // US-184
                 or ActivityAction.ChecklistItemsSuggested or ActivityAction.ChecklistSuggestionRejected // US-193
                 or ActivityAction.SupplierAdded or ActivityAction.SupplierEvidenceAdded or ActivityAction.SupplierRemoved // US-191
+                or ActivityAction.SupplierDetailsChanged or ActivityAction.SupplierContactAdded or ActivityAction.SupplierContactChanged
+                or ActivityAction.SupplierContactRemoved // US-207
                 or ActivityAction.IndustryProfileChosen => ActivityGroup.Organisation,
             ActivityAction.CatalogImported or ActivityAction.CatalogActivated or ActivityAction.FrameworkEnabled
                 or ActivityAction.FrameworkDisabled
@@ -70,14 +72,14 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.RequirementMarkedApplicable or ActivityAction.LinkReviewed or ActivityAction.ReportDownloaded or ActivityAction.ActivityLogExported or ActivityAction.ApplicabilitySuggested
                 or ActivityAction.ApplicabilitySuggestionAccepted or ActivityAction.ApplicabilitySuggestionRejected
                 or ActivityAction.NeedsActionSuggested or ActivityAction.NeedsActionConfirmed or ActivityAction.NeedsActionDismissed
-                or ActivityAction.NeedsActionReassessed => ActivityGroup.Requirements,
+                or ActivityAction.NeedsActionReassessed or ActivityAction.DocumentationEnoughDecided => ActivityGroup.Requirements,
             ActivityAction.AuditRecorded or ActivityAction.AuditFindingClosed or ActivityAction.AuditPackageCreated => ActivityGroup.Evidence, // US-134, US-076
             ActivityAction.EvidenceChecked or ActivityAction.EvidenceCheckDecided => ActivityGroup.Ai, // US-038
             ActivityAction.RisksDrafted or ActivityAction.RiskDraftDiscarded => ActivityGroup.Risks, // US-112
             ActivityAction.EvidenceAdded or ActivityAction.EvidenceRemoved or ActivityAction.EvidenceLinked
                 or ActivityAction.EvidenceUnlinked or ActivityAction.EvidenceLinkSuggested or ActivityAction.EvidenceLinkApproved
                 or ActivityAction.EvidenceLinkRejected or ActivityAction.EvidenceSuggested or ActivityAction.TestResultsUploaded or ActivityAction.EvidenceSuggestionAccepted
-                or ActivityAction.EvidenceSuggestionRejected
+                or ActivityAction.EvidenceSuggestionRejected or ActivityAction.EvidenceKindChanged
                 or ActivityAction.OrganisationDocumentUploaded or ActivityAction.OrganisationDocumentReviewed
                 or ActivityAction.OrganisationDocumentLinked or ActivityAction.OrganisationDocumentUnlinked
                 or ActivityAction.OrganisationDocumentRemoved

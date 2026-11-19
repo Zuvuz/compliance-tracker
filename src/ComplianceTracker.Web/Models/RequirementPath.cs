@@ -59,8 +59,10 @@ namespace ComplianceTracker.Web.Models
                     "Upload test results", evidenceTab + "#test-results-upload"));
             }
 
-            steps.Add(new PathStep("Evidence on the requirement", row.HasEvidence, row.HasEvidence ? null : "No evidence that counts",
-                "Add evidence", "#add-evidence-section", "add-evidence"));
+            // US-204 R3: documentation alone describes the requirement; proof is still asked for, unless documentation is enough
+            steps.Add(new PathStep("Evidence on the requirement", row.IsProven,
+                row.IsProven ? null : row.IsDocumentedOnly ? "Only documentation: add proof that it is done" : "No evidence that counts",
+                row.IsDocumentedOnly ? "Add proof" : "Add evidence", "#add-evidence-section", "add-evidence"));
 
             if (row.NeedsReview && stories.All(l => !l.Link.NeedsReview))
             {

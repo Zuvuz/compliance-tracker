@@ -209,7 +209,8 @@ namespace ComplianceTracker.Application.Reminders
                 foreach (var evidence in supplier.Evidence.Where(e => e.ValidUntil is { } until && until >= today && ReminderPlan.IsDue(until, today, days)))
                 {
                     due.Add(new DueReminder(ReminderKind.SupplierEvidenceExpires, evidence.Id, evidence.ValidUntil!.Value.ToDateTime(TimeOnly.MinValue), null,
-                        "/Suppliers", ReminderPlan.Wanting(responsible, ReminderKind.SupplierEvidenceExpires)));
+                        // US-207: the supplier's row, where its primary contact can be written to; the mail itself names no one (US-183 R3)
+                        $"/Suppliers#supplier-{supplier.Id}", ReminderPlan.Wanting(responsible, ReminderKind.SupplierEvidenceExpires)));
                 }
             }
 

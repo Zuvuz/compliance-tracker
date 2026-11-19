@@ -2314,6 +2314,34 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Fejlbeskeden ved fjernelse nævner ikke kravets kode ("Move or remove the 1 action under the measure first"), fordi domænet ikke kender koderne.
   - Kravlisten er stadig en dropdown med en gruppe "Most relevant" øverst, ikke et søgefelt.
 
+### B155 – Dokumenteret er ikke det samme som bevist (US-204)
+
+- **Beslutning:**
+  - **Evidens er dokumentation eller bevis** (`Evidence.Kind`). Dokumentation beskriver, hvordan vi arbejder: politikker, procedurer og diagrammer. Bevis viser, at det er sket: filer, links, testresultater, scanninger, SBOM'er og låste rapporter. Organisationens dokumenter og diagrammer er dokumentation, alt andet er bevis, indtil en person ændrer det på Evidence-fanen. Kun personens valg gemmes (`ChosenKind`), så et diagram, der læses senere, stadig får standarden.
+  - **To tilstande for et krav i et produkt:** "Covered" kommer stadig fra en koblet user story. Ved siden af står "Proven" eller "Documented – proof missing". I organisationsområdet, som ikke har stories, står "Documented – proof missing" i stedet for "Covered", når der kun er dokumentation.
+  - **"Documentation is enough"** gælder for hele organisationen (`DocumentationDecision`) og kræver en begrundelse. Den nyeste beslutning gælder; rækkerne ændres aldrig.
+  - **Indbyggede mærker** ligger i koden (`DocumentationRules`), ikke i seed-data: NIS2 Art. 21(2)(a) og (f) og de krav i den danske lov og 2024/2690, der gennemfører dem; CRA II.5 og Art.31; AI Act Art. 11 og Art. 17. Begrundelsen er "The requirement asks for the document itself". En organisation kan fjerne mærket med sin egen begrundelse.
+  - **Udløbet bevis tæller ikke,** så et krav med gyldig dokumentation og kun udløbet bevis er "Documented – proof missing".
+  - **Rapporter, auditpakken og trinlisten** bruger bevis i stedet for "har evidens". SoA'ens "Implemented", hullerne og fasegaten spørger, om kravet er bevist.
+  - **NIS2-gapanalysen tæller stadig dokumentation** som evidens for, at en foranstaltning er på plads. Compliance-fanen viser samtidig "Documented – proof missing".
+- **Begrundelse:** En godkendt procedure gjorde et krav dækket og "bevist", selvom intet viste, at proceduren blev fulgt. ISO 27001 9.1 og NIS2 Art. 21(2)(f) skelner mellem at have en foranstaltning og at vise, at den virker.
+- **Fravalgt:**
+  - Mærket pr. projekt. En politik gælder hele organisationen, så beslutningen gør det også.
+  - En kolonne på `Requirement` til de indbyggede mærker. Det ville kræve en migration med data for hver version af hvert katalog.
+### B156 – Kontaktoplysninger til leverandører (US-207)
+
+- **Beslutning:**
+  - **Firmaet:** CVR- eller momsnummer, adresse, land, hjemmeside og en e-mail til sikkerhedssager. Alt er frivilligt. En hjemmeside uden `https://` får det sat foran.
+  - **Kontaktpersoner** (`SupplierContact`) med navn, rolle, e-mail og telefon. Den første er primær, og en ny primær tager over fra den gamle. Fjernes den primære, bliver den næste primær. En rolle kan vælges fra en liste eller skrives.
+  - **"Write"** er et `mailto:`-link med et emne, fx "Security – Demo ApS" eller "Updated evidence – Demo ApS", når evidens mangler eller snart udløber. Trackeren sender intet selv.
+  - **"No security contact"** vises på en leverandør med høj kritikalitet, når hverken en sikkerhedskontakt med e-mail eller en sikkerheds-e-mail er givet. En sikkerhedskontakt uden e-mail tæller ikke, for man kan ikke skrive til den.
+  - **Loggen** nævner, hvad der ændrede sig, og personens navn og rolle, aldrig e-mail eller telefon.
+  - **Det gamle fritekstfelt "Contact"** vises som en note, indtil den første kontaktperson er tilføjet.
+  - **Påmindelsen om udløbende evidens** linker til leverandørens række, hvor den primære kontakt kan spørges. Selve mailen nævner ingen navne, som før (US-183 R3).
+- **Begrundelse:** NIS2 Art. 21(2)(d) og ISO 27001 A.5.19–A.5.22 kræver, at organisationen kan følge op på sine leverandører. Det kræver, at man ved, hvem man skriver til.
+- **Fravalgt:**
+  - At sende mails fra trackeren. Medlemmets eget mailprogram er nok og kræver ingen mailopsætning.
+  - Opslag i CVR-registeret. Det kommer som en historie for sig (besluttet 18-11-2026).
 ### B157 – Cross-mapping på tværs af flere rammeværker, for valgte projekter (US-206)
 
 - **Beslutning:**

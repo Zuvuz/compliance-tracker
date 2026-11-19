@@ -15,11 +15,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         }
 
         public async Task<IReadOnlyList<Supplier>> ListAsync(Guid organizationId, CancellationToken cancellationToken = default)
-            => await _db.Suppliers.Include(s => s.Evidence).Where(s => s.OrganizationId == organizationId).AsSplitQuery()
+            => await _db.Suppliers.Include(s => s.Evidence).Include(s => s.Contacts).Where(s => s.OrganizationId == organizationId).AsSplitQuery()
                 .ToListAsync(cancellationToken);
 
         public Task<Supplier?> GetAsync(Guid organizationId, Guid supplierId, CancellationToken cancellationToken = default)
-            => _db.Suppliers.Include(s => s.Evidence).FirstOrDefaultAsync(s => s.OrganizationId == organizationId && s.Id == supplierId, cancellationToken);
+            => _db.Suppliers.Include(s => s.Evidence).Include(s => s.Contacts).AsSplitQuery()
+                .FirstOrDefaultAsync(s => s.OrganizationId == organizationId && s.Id == supplierId, cancellationToken);
 
         public async Task AddAsync(Supplier supplier, CancellationToken cancellationToken = default)
             => await _db.Suppliers.AddAsync(supplier, cancellationToken);
