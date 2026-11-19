@@ -286,11 +286,11 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I fetch the security alerts of \"Acme Portal\" from GitHub", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 30
-    await testRunner.ThenAsync("the Security events tab suggests \"Alert in Acme Portal: Leaked secret: GitHub Per" +
-                        "sonal Access Token\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the fetch says \"Secret scanning: 1 new, 0 fixed, 1 open (1 critical)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 31
-    await testRunner.AndAsync("the fetch says \"Secret scanning: 1 new, 0 fixed, 1 open (1 critical)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the Security events tab suggests \"Alert in Acme Portal: Leaked secret: GitHub Per" +
+                        "sonal Access Token\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

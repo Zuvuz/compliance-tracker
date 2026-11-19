@@ -27,8 +27,8 @@ Feature: Security events suggested from GitHub alerts and monitoring
   Scenario: A leaked secret is suggested as an incident
     Given GitHub has the open secret scanning alert 5 "github_personal_access_token" named "GitHub Personal Access Token" for "acme/portal"
     When I fetch the security alerts of "Acme Portal" from GitHub
-    Then the Security events tab suggests "Alert in Acme Portal: Leaked secret: GitHub Personal Access Token"
-    And the fetch says "Secret scanning: 1 new, 0 fixed, 1 open (1 critical)"
+    Then the fetch says "Secret scanning: 1 new, 0 fixed, 1 open (1 critical)"
+    And the Security events tab suggests "Alert in Acme Portal: Leaked secret: GitHub Personal Access Token"
 
   @US-160 @iso27001-A.8.16 @integration
   Scenario: A monitoring alert is suggested while it fires and closed when it is resolved
