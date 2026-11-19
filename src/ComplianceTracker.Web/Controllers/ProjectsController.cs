@@ -170,6 +170,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] Application.Projects.GapFinder gapFinder,
             [FromServices] Application.Security.SecurityEventQueries securityEventQueries,
             [FromServices] EvidenceQueries evidenceQueries,
+            [FromServices] IEvidenceRepository evidenceRepository,
             [FromServices] Application.Scanning.ScanService scans,
             [FromServices] Application.Scanning.SbomService sbomService,
             [FromServices] Application.Projects.PhaseGates phaseGates,
@@ -356,6 +357,10 @@ namespace ComplianceTracker.Web.Controllers
                 Sboms = sbomOverview,
                 NextGate = overview.Gate, // US-071
                 Checklist = overview.Checklist, // US-047
+                // #52: the evidence a checklist item can be proven with; one light query, only where it is picked
+                ChecklistEvidence = activeTab is ProjectTabs.Overview && overview.Checklist is { Missing.Count: > 0 }
+                    ? (await evidenceRepository.ListActiveAsync(id, cancellationToken)).OrderBy(e => e.Title).Select(e => (e.Id, e.Title)).ToList()
+                    : [],
                 Audits = await audits.ForProjectAsync(id, cancellationToken), // US-134
                 RiskDrafts = activeTab is ProjectTabs.Risks ? await riskDrafts.OpenAsync(id, cancellationToken) : [], // US-112
                 HasIso27001 = activeTab is ProjectTabs.Reports && project.IsOrganisationArea && await soa.ForOrganizationAsync(cancellationToken) is not null, // US-053
@@ -1637,12 +1642,14 @@ namespace ComplianceTracker.Web.Controllers
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId")]
         public async Task<IActionResult> Checklist(Guid projectId, string? key, string? change, string? comment, string? evidenceUrl, string? reason,
-            [FromServices] Application.Projects.PhaseChecklistService checklist, CancellationToken cancellationToken)
+            [FromServices] Application.Projects.PhaseChecklistService checklist, CancellationToken cancellationToken, string? evidencePick = null)
         {
             switch (change)
             {
                 case "tick":
-                    await checklist.TickAsync(projectId, key ?? "", comment, evidenceUrl, cancellationToken);
+                    // #52: a web address typed in wins over the project's evidence picked in the list
+                    await checklist.TickAsync(projectId, key ?? "", comment,
+                        string.IsNullOrWhiteSpace(evidenceUrl) ? evidencePick : evidenceUrl, cancellationToken);
                     break;
                 case "untick":
                     await checklist.UntickAsync(projectId, key ?? "", cancellationToken);

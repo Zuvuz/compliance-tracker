@@ -174,6 +174,25 @@ document.querySelectorAll("[data-percent]").forEach(bar => {
     });
 })();
 
+// #52: the phase card's "Move to …" names the phase chosen under "Other phase…", and only that phase's fields show
+(() => {
+    document.querySelectorAll("form[data-phase-form]").forEach(form => {
+        const select = form.querySelector("[data-phase-select]");
+        const target = form.querySelector("[data-phase-target]");
+        if (!select) {
+            return;
+        }
+
+        select.addEventListener("change", () => {
+            if (target) {
+                target.textContent = select.value;
+            }
+
+            form.querySelectorAll("[data-show-for]").forEach(part => { part.hidden = part.dataset.showFor !== select.value; });
+        });
+    });
+})();
+
 // #52: after a button further down the page (Approve, Reject, Link, Accept …) the page comes back where it was, not at the
 // top. The position is kept for the one reload that follows a form sent from this page, and only when the page is the same
 // one again. A page that comes back with an error stays at the top, where the error is. Without JavaScript the page opens

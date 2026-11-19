@@ -24,11 +24,12 @@ Feature: Each page has a limit on database queries
     # US-194: the traceability download adds the lifecycle checklist and the phase changes (classification, risks, scans,
     # findings, SBOM, ticks, own items, log, per framework): fixed queries, 53 -> 63.
     # US-192: the Overview's checklist reads the organisation's own checklist items (one query): 52 -> 53.
+    # #52: the phase card lists the project's evidence for "+ Evidence" on a checklist item (one query): 53 -> 54.
     Then each page stays within its limit and does not grow with the data:
       | Page                  | Limit |
       | Dashboard             | 12    |
       | Projects              | 12    |
-      | Overview              | 53    |
+      | Overview              | 54    |
       | Compliance            | 54    |
       | Evidence              | 35    |
       | Risks                 | 18    |

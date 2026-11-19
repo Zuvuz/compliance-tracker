@@ -351,6 +351,9 @@ namespace ComplianceTracker.Web.Models
         // US-047: the current phase's checklist
         public Application.Projects.PhaseChecklistView? Checklist { get; init; }
 
+        // #52: the project's evidence, to prove a checklist item with ("+ Evidence")
+        public IReadOnlyList<(Guid Id, string Title)> ChecklistEvidence { get; init; } = [];
+
         // US-053: whether the organisation has ISO/IEC 27001, for the Statement of Applicability on the area's Reports tab
         public bool HasIso27001 { get; init; }
 
