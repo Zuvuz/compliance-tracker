@@ -77,6 +77,6 @@ Feature: Small fixes to the pages (#52)
   Scenario: The organisation area has no "Create story" for a requirement that needs action
     Given the AI says "Art. 21(2)(a)" applies and needs action with "High" because "no risk analysis policy"
     When I do the NIS2 scope check with sector "Manufacturing", 60 employees and a turnover of 12 million euro
-    And I click "Find what needs action" on the "NIS2" sub-tab of "Organisation"
+    And I click "Find requirements that need action" on the "NIS2" sub-tab of "Organisation"
     And I open the requirement "Art. 21(2)(a)" from the "NIS2" sub-tab of "Organisation"
     Then the needs-action box has "Not needed" and no "Create story"

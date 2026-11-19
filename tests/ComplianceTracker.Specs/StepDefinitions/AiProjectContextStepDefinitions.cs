@@ -52,7 +52,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             await _compliance.WhenIOpenTheSubTab(subTab, project);
             var form = _web.Page!.QuerySelector("form#suggest-not-applicable")
-                ?? throw new Xunit.Sdk.XunitException("The sub-tab has no \"Suggest not applicable\" button.");
+                ?? throw new Xunit.Sdk.XunitException("The sub-tab has no \"Suggest requirements that do not apply\" button.");
             await _web.PostFormAsync(form.GetAttribute("action")!, HiddenFields(form));
         }
 

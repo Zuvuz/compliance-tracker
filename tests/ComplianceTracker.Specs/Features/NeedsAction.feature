@@ -14,7 +14,7 @@ Feature: Requirements that need action
   @US-155 @cra-Art13 @integration
   Scenario: A relevant requirement without a story is marked
     Given the AI says "I.2(d)" applies and needs action with "High" because "the product has remote sign-in"
-    When I click "Find what needs action" on the "CRA" sub-tab of "Acme Portal"
+    When I click "Find requirements that need action" on the "CRA" sub-tab of "Acme Portal"
     Then the overview row "I.2(d)" is "Needs action"
     And the overview says "1 requirement needs action"
     And the page of "I.2(d)" shows "High" and "the product has remote sign-in" as AI-generated
@@ -23,7 +23,7 @@ Feature: Requirements that need action
   @US-155 @integration
   Scenario: Requirements that do not apply become the usual suggestion
     Given the AI says "I.2(k)" does not apply because "The product has no remote management"
-    When I click "Find what needs action" on the "CRA" sub-tab of "Acme Portal"
+    When I click "Find requirements that need action" on the "CRA" sub-tab of "Acme Portal"
     Then the overview row "I.2(k)" is "Not covered"
     And the row "I.2(k)" suggests "not applicable" because "The product has no remote management"
 
@@ -33,7 +33,7 @@ Feature: Requirements that need action
     # likelihood 3 × impact 4 = High
     And the risk "Account takeover" has the requirement "I.2(d)" as a measure
     And the AI says "I.2(d)" applies and needs action with "Low" because "sign-in exists"
-    When I click "Find what needs action" on the "CRA" sub-tab of "Acme Portal"
+    When I click "Find requirements that need action" on the "CRA" sub-tab of "Acme Portal"
     Then the page of "I.2(d)" shows "High" and "sign-in exists" as AI-generated
     And the page of "I.2(d)" says it was raised by a risk
 
@@ -71,6 +71,6 @@ Feature: Requirements that need action
   @US-155 @integration
   Scenario: Without an AI nothing is marked
     Given the local AI is not available
-    When I click "Find what needs action" on the "CRA" sub-tab of "Acme Portal"
+    When I click "Find requirements that need action" on the "CRA" sub-tab of "Acme Portal"
     Then the page shows an error
     And the overview row "I.2(d)" is "Not covered"
