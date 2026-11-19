@@ -47,7 +47,9 @@ namespace ComplianceTracker.Application.Risks
             var header = sheet.Count == 0 ? [] : sheet[0].Select(Key).ToList();
             if (!header.Contains("title") || !header.Contains("likelihood") || !header.Contains("impact"))
             {
-                return ["The file needs the columns Title, Likelihood and Impact in its first row"];
+                // #52: say what the file has, so the user sees which name to change
+                var has = sheet.Count == 0 ? "" : string.Join(", ", sheet[0].Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => c.Trim().TrimStart('﻿')));
+                return ["The file needs the columns Title, Likelihood and Impact in its first row" + (has.Length > 0 ? $". It has: {has}" : "")];
             }
 
             var rows = sheet.Skip(1).Count(r => !IsBlank(r));
@@ -180,7 +182,25 @@ namespace ComplianceTracker.Application.Risks
 
         // "Last reviewed" → "lastreviewed"
         private static string Key(string column)
-            => new string(column.Trim().TrimStart('﻿').ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
+            => Canonical(new string(column.Trim().TrimStart('﻿').ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray()));
+
+        // #52: the names a risk register often uses, in English and Danish, e.g. "Risk", "Likelihood (1-5)", "Konsekvens"
+        private static readonly Dictionary<string, string> Aliases = new(StringComparer.Ordinal)
+        {
+            ["risk"] = "title", ["risktitle"] = "title", ["riskname"] = "title", ["name"] = "title", ["titel"] = "title",
+            ["risiko"] = "title", ["navn"] = "title",
+            ["threat"] = "description", ["beskrivelse"] = "description", ["trussel"] = "description",
+            ["riskowner"] = "owner", ["ejer"] = "owner", ["ansvarlig"] = "owner",
+            ["behandling"] = "treatment", ["begrundelse"] = "reason",
+            ["reviewed"] = "lastreviewed", ["sidstgennemgået"] = "lastreviewed"
+        };
+
+        private static string Canonical(string key)
+            => key.StartsWith("likelihood", StringComparison.Ordinal) || key.StartsWith("probability", StringComparison.Ordinal)
+               || key.StartsWith("sandsynlighed", StringComparison.Ordinal) ? "likelihood"
+             : key.StartsWith("impact", StringComparison.Ordinal) || key.StartsWith("consequence", StringComparison.Ordinal)
+               || key.StartsWith("konsekvens", StringComparison.Ordinal) ? "impact"
+             : Aliases.GetValueOrDefault(key, key);
 
         private static bool IsBlank(IReadOnlyList<string> cells) => cells.All(string.IsNullOrWhiteSpace);
 
