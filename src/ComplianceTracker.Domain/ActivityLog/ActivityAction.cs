@@ -392,6 +392,14 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // #52: test results were uploaded, whatever they led to. SubjectId points at the project; Details holds the file and
         // what it led to (passed, suggested, already suggested, unknown tags).
-        TestResultsUploaded
+        TestResultsUploaded,
+
+        // US-204 R2: a person changed whether a piece of evidence is documentation or proof. SubjectId points at the
+        // project; Details holds the evidence and the change, e.g. "Incident report: Documentation → Proof".
+        EvidenceKindChanged,
+
+        // US-204 R5, R8: a person marked a requirement "documentation is enough", or removed the mark, with a reason.
+        // SubjectId points at the project; Details holds the requirement, the decision and the reason.
+        DocumentationEnoughDecided
     }
 }

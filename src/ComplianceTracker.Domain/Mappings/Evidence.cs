@@ -51,6 +51,38 @@ namespace ComplianceTracker.Domain.Mappings
 
         public bool IsFile => FileName is not null;
 
+        // US-204 R2: documentation or proof. A person's choice wins over the default (organisation documents and diagrams
+        // are documentation, everything else proof), so a diagram read later still gets the default.
+        public EvidenceKind? ChosenKind { get; private set; }
+        public Guid? KindChangedById { get; private set; }
+        public DateTime? KindChangedAt { get; private set; }
+
+        public EvidenceKind Kind => ChosenKind ?? EvidenceKinds.DefaultOf(this);
+
+        // R2: a person changes it, e.g. an uploaded incident report is proof. Returns false when it already is that kind.
+        public bool ChangeKind(EvidenceKind kind, Guid userId, DateTime at)
+        {
+            if (!Enum.IsDefined(kind))
+            {
+                throw new DomainException("Choose documentation or proof");
+            }
+
+            if (!IsActive)
+            {
+                throw new DomainException("The evidence is removed");
+            }
+
+            if (Kind == kind)
+            {
+                return false;
+            }
+
+            ChosenKind = kind;
+            KindChangedById = userId;
+            KindChangedAt = at;
+            return true;
+        }
+
         // US-149: what a diagram file says, read when it was added (R3), or why it could not be read (R4)
         public const int MaxDiagramTextLength = 4000;
         public int? DiagramElementCount { get; private set; }

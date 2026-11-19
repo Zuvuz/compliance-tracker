@@ -71,6 +71,18 @@
                                 {
                                     <span class="small text-muted">valid until @until.ToString("dd-MM-yyyy")</span>
                                 }
+                                @* US-204 R2: documentation or proof, and a person can change it *@
+                                <span class="badge text-bg-light border evidence-kind" data-kind="@evidence.Kind" title="@(evidence.Kind == ComplianceTracker.Domain.Mappings.EvidenceKind.Documentation ? "Describes how we work; it does not show that it is done" : "Shows that it is done")">@ComplianceTracker.Domain.Mappings.EvidenceKinds.NameOf(evidence.Kind)</span>
+                                @if (canChange)
+                                {
+                                    var other = evidence.Kind == ComplianceTracker.Domain.Mappings.EvidenceKind.Documentation ? ComplianceTracker.Domain.Mappings.EvidenceKind.Proof : ComplianceTracker.Domain.Mappings.EvidenceKind.Documentation;
+                                    <form asp-action="ChangeEvidenceKind" method="post" class="change-evidence-kind">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="evidenceId" value="@evidence.Id" />
+                                        <input type="hidden" name="kind" value="@other" />
+                                        <button type="submit" class="btn btn-sm btn-link p-0">Mark as @ComplianceTracker.Domain.Mappings.EvidenceKinds.NameOf(other).ToLowerInvariant()</button>
+                                    </form>
+                                }
                                 <span class="small text-muted fold-summary" data-fold-summary="@foldKey" hidden>
                                     Proves @row.Links.Count @(row.Links.Count == 1 ? "requirement" : "requirements")
                                     @if (row.Suggestions.Count > 0)

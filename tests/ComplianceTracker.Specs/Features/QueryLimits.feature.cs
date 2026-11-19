@@ -212,22 +212,22 @@ namespace ComplianceTracker.Specs.Features
                             "12"});
                 table1.AddRow(new string[] {
                             "Overview",
-                            "54"});
+                            "55"});
                 table1.AddRow(new string[] {
                             "Compliance",
                             "54"});
                 table1.AddRow(new string[] {
                             "Evidence",
-                            "35"});
+                            "36"});
                 table1.AddRow(new string[] {
                             "Risks",
                             "18"});
                 table1.AddRow(new string[] {
                             "Work items",
-                            "30"});
+                            "31"});
                 table1.AddRow(new string[] {
                             "Reports",
-                            "30"});
+                            "31"});
                 table1.AddRow(new string[] {
                             "Project activity",
                             "14"});
@@ -239,8 +239,8 @@ namespace ComplianceTracker.Specs.Features
                             "8"});
                 table1.AddRow(new string[] {
                             "Traceability download",
-                            "63"});
-#line 28
+                            "65"});
+#line 30
     await testRunner.ThenAsync("each page stays within its limit and does not grow with the data:", ((string)(null)), table1, "Then ");
 #line hidden
             }

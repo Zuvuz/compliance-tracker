@@ -380,8 +380,9 @@ namespace ComplianceTracker.Specs.Features
 #line 54
     await testRunner.AndAsync("I approve the AI suggestion \"Art. 21(2)(b)\" for \"Incident response plan\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 55
-    await testRunner.ThenAsync("the organisation\'s Compliance tab for \"NIS2\" shows \"Art. 21(2)(b)\" as \"Covered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line 56
+    await testRunner.ThenAsync("the organisation\'s Compliance tab for \"NIS2\" shows \"Art. 21(2)(b)\" as \"Documented" +
+                        " – proof missing\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -402,7 +403,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Without the AI the document is still saved", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 58
+#line 59
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -415,17 +416,17 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 59
+#line 60
     await testRunner.GivenAsync("the local AI is not available", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 60
+#line 61
     await testRunner.WhenAsync("I upload the policy \"Access control policy\" version \"v1\" for the organisation", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 61
+#line 62
     await testRunner.ThenAsync("the AI says on the Documents page \"The document is saved, but there are no AI sug" +
                         "gestions\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 62
+#line 63
     await testRunner.AndAsync("the document \"Access control policy\" is used by \"no project yet\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -447,7 +448,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A new version replaces the pending suggestions instead of adding to them", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 65
+#line 66
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -460,16 +461,16 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 66
+#line 67
     await testRunner.GivenAsync("the AI rates \"Access control policy\" against \"I.2(d)\" with 0.82", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 67
+#line 68
     await testRunner.AndAsync("I upload the policy \"Access control policy\" version \"v1\" for the organisation", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 68
+#line 69
     await testRunner.WhenAsync("I upload version \"v2\" of \"Access control policy\" with the content \"Updated text\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 69
+#line 70
     await testRunner.ThenAsync("\"Access control policy\" has the AI suggestions \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -491,7 +492,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Waiting suggestions show under \"Needs attention\"", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 72
+#line 73
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -504,13 +505,13 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 73
+#line 74
     await testRunner.GivenAsync("the AI rates \"Access control policy\" against \"I.2(d)\" with 0.82", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 74
+#line 75
     await testRunner.AndAsync("I upload the policy \"Access control policy\" version \"v1\" for the organisation", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 75
+#line 76
     await testRunner.ThenAsync("\"Needs attention\" of \"Acme Portal\" shows \"1 AI suggestion for the organisation\'s " +
                         "documents wait for a decision\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
@@ -533,7 +534,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Only members who manage frameworks decide on the suggestions", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 78
+#line 79
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -546,23 +547,23 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 79
+#line 80
     await testRunner.GivenAsync("the AI rates \"Access control policy\" against \"I.2(d)\" with 0.82", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 80
+#line 81
     await testRunner.AndAsync("I upload the policy \"Access control policy\" version \"v1\" for the organisation", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 81
+#line 82
     await testRunner.AndAsync("\"Bo\" is in \"Acme ApS\" with the role \"Developer\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 82
+#line 83
     await testRunner.AndAsync("I am signed in as \"Bo\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 83
+#line 84
     await testRunner.WhenAsync("I send an approval of the AI suggestion \"I.2(d)\" for \"Access control policy\" anyw" +
                         "ay", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 84
+#line 85
     await testRunner.ThenAsync("\"Acme Portal\" has no evidence \"Access control policy\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }

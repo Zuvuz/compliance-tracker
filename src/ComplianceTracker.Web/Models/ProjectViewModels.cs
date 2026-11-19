@@ -192,7 +192,7 @@ namespace ComplianceTracker.Web.Models
             NeedsReview => row.NeedsReview,
             NeedsAction => row.NeedsAction is not null,
             // #52: applies and has no evidence that counts, whether or not a story covers it
-            WithoutEvidence => row.IsApplicable && !row.Requirement.IsRecommendation && !row.HasEvidence,
+            WithoutEvidence => row.IsApplicable && !row.Requirement.IsRecommendation && !row.IsProven, // US-204 R3
             _ => true
         };
     }

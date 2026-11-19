@@ -32,6 +32,7 @@ namespace ComplianceTracker.Application.Compliance
         private readonly IClassificationRepository _classifications;
         private readonly IEvidenceCheckRepository _checks; // US-038
         private readonly Ai.IRequirementMappingRepository _crossMappings; // US-037
+        private readonly IDocumentationDecisionRepository _documentation; // US-204
 
         public ComplianceQueries(
             IProjectRepository projects,
@@ -52,8 +53,10 @@ namespace ComplianceTracker.Application.Compliance
             IClassificationRepository classifications,
             IEvidenceCheckRepository checks,
             Ai.IRequirementMappingRepository crossMappings,
-            Ai.INeedsActionSuggestionRepository needsAction)
+            Ai.INeedsActionSuggestionRepository needsAction,
+            IDocumentationDecisionRepository documentation)
         {
+            _documentation = documentation;
             _needsAction = needsAction;
             _applicabilitySuggestions = applicabilitySuggestions;
             _risks = risks;
@@ -147,6 +150,9 @@ namespace ComplianceTracker.Application.Compliance
                 .ToLookup(s => s.RequirementId);
             var openDrafts = (await _drafts.ListAsync(project.Id, cancellationToken)).Where(d => d.IsOpen).ToLookup(d => d.RequirementId);
 
+            // US-204 R5, R8: the organisation's "documentation is enough" decisions, over the built-in marks
+            var documentationDecisions = (await _documentation.ListNewestAsync(organization.Id, cancellationToken)).ToDictionary(d => d.RequirementId);
+
             // US-060 R4: requirements named by the measures of an open High or Critical risk
             var projectRisks = await _risks.ListAsync(project.Id, cancellationToken);
             var highRisk = projectRisks
@@ -231,6 +237,8 @@ namespace ComplianceTracker.Application.Compliance
                         HighRisk = highRisk.Contains(requirement.Id),
                         // US-142: the organisation area has no user stories; its policies and other evidence cover
                         EvidenceCovers = project.IsOrganisationArea,
+                        // US-204 R5, R8
+                        Documentation = Domain.Mappings.DocumentationRules.Resolve(framework, requirement, documentationDecisions.GetValueOrDefault(requirement.Id)),
                         Risks = risksByRequirement.GetValueOrDefault(requirement.Id) ?? [],
                         ApplicabilitySuggestion = pendingApplicability[requirement.Id].OrderByDescending(s => s.CreatedAt).FirstOrDefault(),
                         NeedsActionMark = needsAction[requirement.Id].FirstOrDefault(),
@@ -380,7 +388,8 @@ namespace ComplianceTracker.Application.Compliance
         // US-142: in the organisation area, evidence that counts covers too; and coverage can come through another layer.
         public bool IsCovered => IsOwnCovered || CoveredThrough is not null;
 
-        public bool IsOwnCovered => Links.Any(l => !l.Link.NeedsReview) || (EvidenceCovers && HasEvidence);
+        // US-204 R3, R9: in the organisation area only evidence that proves it covers, not documentation alone
+        public bool IsOwnCovered => Links.Any(l => !l.Link.NeedsReview) || (EvidenceCovers && IsProven);
 
         // US-142: evidence covers the requirement (the organisation area)
         public bool EvidenceCovers { get; init; }
@@ -442,7 +451,31 @@ namespace ComplianceTracker.Application.Compliance
         public IReadOnlyList<EvidenceItem> Evidence { get; init; } = [];
 
         // US-038 R3: evidence a person agreed does not cover the requirement no longer counts
-        public bool HasEvidence => IsApplicable && Evidence.Any(e => !e.IsExpired && !e.NeedsReview && e.Check?.RefutesEvidence != true);
+        public bool HasEvidence => IsApplicable && Evidence.Any(e => e.Counts);
+
+        // US-204 R5, R8: whether documentation alone is enough, why, and whether that is the built-in mark
+        public (bool Enough, string? Reason, bool BuiltIn) Documentation { get; init; }
+
+        public bool DocumentationIsEnough => Documentation.Enough;
+
+        // US-204 R2: the evidence that counts, by kind
+        public bool HasProof => IsApplicable && Evidence.Any(e => e.Counts && e.Evidence.Kind == Domain.Mappings.EvidenceKind.Proof);
+        public bool HasDocumentation => IsApplicable && Evidence.Any(e => e.Counts && e.Evidence.Kind == Domain.Mappings.EvidenceKind.Documentation);
+
+        // US-204 R3, R4, R5, R6: proof that has not expired, or documentation where documentation is enough
+        public bool IsProven => HasProof || (DocumentationIsEnough && HasDocumentation);
+
+        // R3, R6, R9: only documentation counts, and it is not enough
+        public bool IsDocumentedOnly => HasDocumentation && !IsProven;
+
+        // R7: the two lists, newest first as the evidence
+        public IReadOnlyList<EvidenceItem> DocumentedBy => Evidence.Where(e => e.Evidence.Kind == Domain.Mappings.EvidenceKind.Documentation).ToList();
+        public IReadOnlyList<EvidenceItem> ProvenBy => Evidence.Where(e => e.Evidence.Kind == Domain.Mappings.EvidenceKind.Proof).ToList();
+
+        // R9: "Proven", "Documented – proof missing", or null when there is no evidence that counts
+        public string? ProofState => !IsApplicable ? null : IsProven ? "Proven" : IsDocumentedOnly ? DocumentedProofMissing : null;
+
+        public const string DocumentedProofMissing = "Documented – proof missing";
 
         // US-058 R6: pending suggestions from tests and pull requests, and blocked ones (failing tests); none when not applicable
         public IReadOnlyList<Domain.Mappings.EvidenceSuggestion> EvidenceSuggestions { get; init; } = [];
@@ -465,6 +498,9 @@ namespace ComplianceTracker.Application.Compliance
 
         // US-038: the AI's newest check of this evidence on this requirement, and the person's decision; null when never checked
         public Domain.Mappings.EvidenceCheck? Check { get; init; }
+
+        // US-057 R3, US-110, US-038 R3: not expired, not waiting for review, and not refuted by a person
+        public bool Counts => !IsExpired && !NeedsReview && Check?.RefutesEvidence != true;
     }
 
     public record SuggestedWorkItem(Domain.Mappings.MappingSuggestion Suggestion, WorkItem WorkItem);

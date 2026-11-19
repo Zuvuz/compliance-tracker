@@ -59,7 +59,8 @@ namespace ComplianceTracker.Application.Reports
                 }
 
                 // R3, R4: worked out from coverage and evidence (B93)
-                var implementation = applicableIn.All(p => p.Coverage.IsCovered && p.Coverage.HasEvidence) ? Implemented
+                // US-204 R3: implemented means proven, not only documented
+                var implementation = applicableIn.All(p => p.Coverage.IsCovered && p.Coverage.IsProven) ? Implemented
                     : applicableIn.Any(p => p.Coverage.IsCovered) ? Partly
                     : NotImplemented;
                 var howMet = applicableIn

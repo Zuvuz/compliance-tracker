@@ -242,6 +242,6 @@ namespace ComplianceTracker.Application.Reports
         }
 
         private static int WithoutEvidence(FrameworkCompliance framework)
-            => framework.Requirements.Count(r => r.IsApplicable && r.IsCovered && !r.HasEvidence && !r.Requirement.IsRecommendation);
+            => framework.Requirements.Count(r => r.IsApplicable && r.IsCovered && !r.IsProven && !r.Requirement.IsRecommendation); // US-204 R3
     }
 }

@@ -589,6 +589,28 @@ namespace ComplianceTracker.Web.Controllers
             return BackToCompliance(projectId, sub);
         }
 
+        // POST /Projects/DecideDocumentationEnough: US-204 R5, R8, "documentation is enough" or proof is needed, with a reason
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> DecideDocumentationEnough(Guid projectId, Guid requirementId, bool enough, string? reason, string? sub, CancellationToken cancellationToken)
+        {
+            await _compliance.DecideDocumentationEnoughAsync(projectId, requirementId, enough, reason ?? "", cancellationToken);
+            return BackToCompliance(projectId, sub);
+        }
+
+        // POST /Projects/ChangeEvidenceKind: US-204 R2, documentation or proof
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
+        public async Task<IActionResult> ChangeEvidenceKind(Guid projectId, Guid evidenceId, Domain.Mappings.EvidenceKind kind, CancellationToken cancellationToken)
+        {
+            await _compliance.ChangeEvidenceKindAsync(projectId, evidenceId, kind, cancellationToken);
+            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+        }
+
         // POST /Projects/MarkApplicable: US-043 R5
         [HttpPost]
         [ValidateAntiForgeryToken]
