@@ -330,6 +330,13 @@ namespace ComplianceTracker.Domain.ActivityLog
         SupplierEvidenceAdded,
         SupplierRemoved,
 
+        // US-207 R6: a supplier's company details or contact persons changed. SubjectId points at the supplier; Details
+        // names what changed and the person, never the e-mail address or the phone number.
+        SupplierDetailsChanged,
+        SupplierContactAdded,
+        SupplierContactChanged,
+        SupplierContactRemoved,
+
         // US-047: a lifecycle checklist item ticked, unticked, turned off or on. SubjectId points at the project; Details
         // holds the item, its regulation and what happened, e.g. "Threat model made (CRA Art. 13(3)): done".
         ChecklistItemChanged,
