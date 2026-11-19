@@ -7,55 +7,16 @@
 
 <partial name="_OrganizationHeader" model="Model.Organization" />
 
-<partial name="_GetStarted" model="Model.GetStarted" />
-
-<section id="organisation-projects">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <h2 class="h4 mb-0">Projects</h2>
-        @if (await Permissions.CanAsync(Permission.EditProjects))
-        {
-            <a id="new-project" class="btn btn-primary btn-sm" asp-controller="Projects" asp-action="Create">New project</a>
-        }
-    </div>
-
-    @if (Model.Projects.Count == 0)
-    {
-        <p class="text-muted">No projects yet. Create the first one with "New project".</p>
-    }
-    else
-    {
-        @* One row per project, with a link to the project's own page. US-028: an archived one is marked. *@
-        <div class="list-group" id="project-list">
-            @foreach (var project in Model.Projects)
-            {
-                <div class="list-group-item d-flex justify-content-between align-items-center project-row" data-project="@project.Name">
-                    <a class="project-link" asp-controller="Projects" asp-action="Details" asp-route-id="@project.Id">@project.Name</a>
-                    <span>
-                        @if (project.IsArchived)
-                        {
-                            <status-badge status="Archived" class="project-archived" />
-                        }
-                        <span class="badge text-bg-light">@project.Phase</span>
-                    </span>
-                </div>
-            }
-        </div>
-    }
-    @* US-028 R2: archived projects are left out until asked for *@
-    @if (Model.ShowArchived)
-    {
-        <a class="small d-inline-block mt-2" id="hide-archived" asp-action="Index">Hide archived projects</a>
-    }
-    else if (Model.ArchivedCount > 0)
-    {
-        <a class="small d-inline-block mt-2" id="show-archived" asp-action="Index" asp-route-archived="true">Show archived projects (@Model.ArchivedCount)</a>
-    }
-</section>
-
+@{
+    // #52: "Get started" is a narrow card at the side while steps are left; the frameworks and projects come first
+    var withGetStarted = Model.GetStarted is { AllDone: false };
+}
+<div class="row g-4">
+    <div class="@(withGetStarted ? "col-lg-8" : "col-12")">
 @* US-011 R5: per framework, every version in use and the projects using it. Older versions are marked.
    The ids and classes (#organisation-frameworks, framework-usage, framework-name, framework-version,
    usage-project, framework-outdated) are used by the tests. *@
-<section id="organisation-frameworks" class="mt-4">
+<section id="organisation-frameworks" class="mb-4">
     <div class="d-flex justify-content-between align-items-center mb-2">
         <h2 class="h4 mb-0">Frameworks in use</h2>
         <a class="btn btn-outline-primary btn-sm" asp-controller="Frameworks" asp-action="Index">Manage frameworks</a>
@@ -104,3 +65,53 @@
         </table>
     }
 </section>
+<section id="organisation-projects">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h4 mb-0">Projects</h2>
+        @if (await Permissions.CanAsync(Permission.EditProjects))
+        {
+            <a id="new-project" class="btn btn-primary btn-sm" asp-controller="Projects" asp-action="Create">New project</a>
+        }
+    </div>
+
+    @if (Model.Projects.Count == 0)
+    {
+        <p class="text-muted">No projects yet. Create the first one with "New project".</p>
+    }
+    else
+    {
+        @* One row per project, with a link to the project's own page. US-028: an archived one is marked. *@
+        <div class="list-group" id="project-list">
+            @foreach (var project in Model.Projects)
+            {
+                <div class="list-group-item d-flex justify-content-between align-items-center project-row" data-project="@project.Name">
+                    <a class="project-link" asp-controller="Projects" asp-action="Details" asp-route-id="@project.Id">@project.Name</a>
+                    <span>
+                        @if (project.IsArchived)
+                        {
+                            <status-badge status="Archived" class="project-archived" />
+                        }
+                        <span class="badge text-bg-light">@project.Phase</span>
+                    </span>
+                </div>
+            }
+        </div>
+    }
+    @* US-028 R2: archived projects are left out until asked for *@
+    @if (Model.ShowArchived)
+    {
+        <a class="small d-inline-block mt-2" id="hide-archived" asp-action="Index">Hide archived projects</a>
+    }
+    else if (Model.ArchivedCount > 0)
+    {
+        <a class="small d-inline-block mt-2" id="show-archived" asp-action="Index" asp-route-archived="true">Show archived projects (@Model.ArchivedCount)</a>
+    }
+</section>
+    </div>
+    @if (withGetStarted)
+    {
+        <div class="col-lg-4">
+            <partial name="_GetStarted" model="Model.GetStarted" />
+        </div>
+    }
+</div>

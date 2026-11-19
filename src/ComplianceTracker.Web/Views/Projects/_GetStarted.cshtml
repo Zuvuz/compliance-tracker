@@ -19,26 +19,28 @@
     return;
 }
 
+@* #52: a narrow card at the side of the front page: the steps as a short checklist, the next one marked *@
 <section class="card mb-4" id="get-started">
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-start">
-            <h2 class="h5">Get started</h2>
+    <div class="card-body p-3">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+            <h2 class="h6 mb-1">Get started</h2>
             <form asp-controller="Projects" asp-action="HideGetStarted" method="post" id="hide-get-started">
-                <button type="submit" class="btn btn-sm btn-outline-secondary">Hide</button>
+                <button type="submit" class="btn btn-sm btn-link p-0 text-muted">Hide</button>
             </form>
         </div>
-        <p class="small text-muted">From an empty tracker to a requirement that is covered and proven. Each step is ticked by itself.</p>
-        <ol class="list-group list-group-numbered">
+        <p class="small text-muted mb-2">@Model.Items.Count(i => i.Done) of @Model.Items.Count done. Each step is ticked by itself.</p>
+        @{ var next = Model.Items.FirstOrDefault(i => !i.Done); }
+        <ol class="list-unstyled small mb-0">
             @foreach (var item in Model.Items)
             {
                 var canDo = item.Permission is { } permission && await Permissions.CanAsync(permission);
-                <li class="list-group-item d-flex justify-content-between align-items-center get-started-step" data-step="@item.Step">
-                    <span class="ms-2 me-auto">@item.Title</span>
+                <li class="get-started-step d-flex flex-wrap align-items-center gap-1 py-1 @(item == next ? "fw-semibold" : "")" data-step="@item.Step">
+                    <span class="get-started-status badge @(item.Done ? "text-bg-success" : "text-bg-light border")">@(item.Done ? "Done" : "To do")</span>
+                    <span class="me-auto @(item.Done ? "text-muted" : "")">@item.Title</span>
                     @if (!item.Done && canDo && Link(item.Step) is { } href)
                     {
-                        <a class="get-started-link btn btn-sm btn-outline-primary me-2" href="@href">@LinkText(item.Step)</a>
+                        <a class="get-started-link btn btn-sm @(item == next ? "btn-primary" : "btn-link p-0")" href="@href">@LinkText(item.Step)</a>
                     }
-                    <span class="get-started-status badge @(item.Done ? "text-bg-success" : "text-bg-light border")">@(item.Done ? "Done" : "To do")</span>
                 </li>
             }
         </ol>
