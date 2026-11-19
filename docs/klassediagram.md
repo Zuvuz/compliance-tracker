@@ -470,6 +470,13 @@ classDiagram
     -story: string
     -rules: string
     -examples: string
+    -form: DraftForm
+    -alsoCovers: Guid[]
+    -fits: string?
+    -postconditions: string
+    -fromGaps: bool
+    +ForGaps(projectId, form, covers, title, role, story, rules, examples, postconditions, fits, model, promptVersion, at)$ StoryDraft
+    +CopyText(codes) string
     -model: string
     -promptVersion: string
     -status: StoryDraftStatus
@@ -568,6 +575,13 @@ classDiagram
   }
   RequirementScopeDecision --> RequirementScope : scope
   RequirementScopeDecision --> Requirement : where it is met
+  class DraftForm {
+    <<enumeration>>
+    UserStory
+    UseCase
+    Requirement
+  }
+  StoryDraft --> DraftForm : form
   class RequirementApplicability {
     -id: Guid
     -projectId: Guid

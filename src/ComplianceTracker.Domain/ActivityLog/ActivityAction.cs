@@ -402,6 +402,12 @@ namespace ComplianceTracker.Domain.ActivityLog
         // SubjectId points at the project; Details holds the requirement, the decision and the reason.
         DocumentationEnoughDecided,
 
+        // US-108: the AI drafted work for a regulation's gaps, and a person created or discarded such a draft. SubjectId points
+        // at the project; Details holds the form, the counts or the draft's title.
+        GapDraftsMade,
+        GapDraftAccepted,
+        GapDraftDiscarded,
+
         // US-206 R4: an approved cross-mapping was limited to chosen projects, or opened to all again. SubjectId points at
         // the organisation; Details holds the match and the projects, e.g. "CRA I.2(d) ↔ ISO A.8.5: Compliance Tracker".
         MappingProjectsChanged,

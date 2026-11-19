@@ -21,6 +21,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(d => d.Story).IsRequired().HasMaxLength(StoryDraft.MaxTextLength);
             builder.Property(d => d.Rules).IsRequired().HasMaxLength(StoryDraft.MaxTextLength);
             builder.Property(d => d.Examples).IsRequired().HasMaxLength(StoryDraft.MaxTextLength);
+            // US-108: the form, the other requirements it covers, how it fits, and a use case's postconditions
+            builder.Property(d => d.Form).HasConversion<string>().HasMaxLength(20).HasDefaultValue(DraftForm.UserStory).HasSentinel(DraftForm.UserStory);
+            builder.Property(d => d.AlsoCovers).HasDefaultValueSql("'{}'::uuid[]");
+            builder.Property(d => d.Fits).HasMaxLength(300);
+            builder.Property(d => d.Postconditions).IsRequired().HasMaxLength(StoryDraft.MaxTextLength).HasDefaultValue("");
+            builder.Ignore(d => d.RequirementIds);
             builder.Property(d => d.Model).IsRequired().HasMaxLength(200);
             builder.Property(d => d.PromptVersion).IsRequired().HasMaxLength(50);
             builder.Property(d => d.Status).HasConversion<string>().HasMaxLength(50);

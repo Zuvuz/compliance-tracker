@@ -1,0 +1,111 @@
+@* US-108 R6, R7: the AI's drafts of a project, by form. Every field can be changed before "Create"; nothing is work until a
+   person creates it. A created use case or requirement waits here as text for the team's own document. Ids and classes
+   used by the tests: #drafts-message, #new-issue-address, .draft (data-form, data-covers) with .ai-generated,
+   .draft-fits and the forms .create-draft and .discard-draft (reason), and .waiting-draft with .draft-copy-text. *@
+@model ComplianceTracker.Application.Ai.GapDraftService.DraftsPage
+@using ComplianceTracker.Application.Ai
+@using ComplianceTracker.Domain.Mappings
+@{
+    var project = Model.Project;
+    ViewData["Title"] = $"Drafts – {project.Name}";
+    var canChange = !project.IsClosed && await Permissions.CanAsync(Permission.LinkWork);
+}
+
+<p class="mb-1"><a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Compliance">← @project.Name: Compliance</a></p>
+<h1 class="h3">Drafts from the AI</h1>
+<p class="text-muted small">What the team could build to cover the requirements that have no story yet, fitted to @project.Name's purpose. Read each one and change what you want; it becomes work only when you press "Create".</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+@if (TempData["DraftsMessage"] is string message)
+{
+    <div class="alert alert-info py-2" id="drafts-message" role="status">@message</div>
+}
+@if (TempData["NewIssueAddress"] is string newIssue)
+{
+    <p><a class="btn btn-sm btn-outline-primary" id="new-issue-address" href="@newIssue" target="_blank" rel="noopener noreferrer">Create the issue in GitHub</a></p>
+}
+
+@if (Model.Open.Count == 0)
+{
+    <p class="text-muted" id="no-drafts">No drafts wait. Use "Draft for the gaps" under "Ask the AI…" on a regulation's Compliance tab.</p>
+}
+
+@foreach (var group in Model.Open.GroupBy(d => d.Draft.Form))
+{
+    var form = group.Key;
+    <h2 class="h5 mt-3">@(DraftForms.NameOf(form))s (@group.Count())</h2>
+    @foreach (var view in group)
+    {
+        var draft = view.Draft;
+        <section class="card mb-3 draft" data-form="@form" data-covers="@string.Join(", ", view.Codes)">
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
+                    <span class="badge text-bg-info ai-generated">AI-generated</span>
+                    <span class="small text-muted">Covers @string.Join(", ", view.Codes) · @draft.Model</span>
+                </div>
+                @if (draft.Fits is { } fits)
+                {
+                    <p class="small draft-fits mb-2">Fits the product: @fits</p>
+                }
+                <form asp-action="CreateDraft" method="post" class="d-flex flex-column gap-1 create-draft">
+                    <input type="hidden" name="projectId" value="@project.Id" />
+                    <input type="hidden" name="draftId" value="@draft.Id" />
+                    <label class="small">@(form == DraftForm.UseCase ? "Name" : "Title")
+                        <input name="title" value="@draft.Title" maxlength="200" class="form-control form-control-sm" readonly="@(!canChange)" /></label>
+                    @if (form != DraftForm.Requirement)
+                    {
+                        <label class="small">@(form == DraftForm.UseCase ? "Primary actor" : "Role")
+                            <input name="role" value="@draft.Role" maxlength="200" class="form-control form-control-sm" readonly="@(!canChange)" /></label>
+                    }
+                    @if (form == DraftForm.UseCase)
+                    {
+                        <label class="small">Preconditions<textarea name="rules" rows="2" class="form-control form-control-sm" readonly="@(!canChange)">@draft.Rules</textarea></label>
+                        <label class="small">Main success scenario<textarea name="story" rows="5" class="form-control form-control-sm" readonly="@(!canChange)">@draft.Story</textarea></label>
+                        <label class="small">Extensions<textarea name="examples" rows="3" class="form-control form-control-sm draft-extensions" readonly="@(!canChange)">@draft.Examples</textarea></label>
+                        <label class="small">Postconditions<textarea name="postconditions" rows="2" class="form-control form-control-sm" readonly="@(!canChange)">@draft.Postconditions</textarea></label>
+                    }
+                    else if (form == DraftForm.Requirement)
+                    {
+                        <label class="small">Description<textarea name="story" rows="3" class="form-control form-control-sm" readonly="@(!canChange)">@draft.Story</textarea></label>
+                        <label class="small">Acceptance criteria<textarea name="rules" rows="3" class="form-control form-control-sm" readonly="@(!canChange)">@draft.Rules</textarea></label>
+                    }
+                    else
+                    {
+                        <label class="small">User story<textarea name="story" rows="2" class="form-control form-control-sm" readonly="@(!canChange)">@draft.Story</textarea></label>
+                        <label class="small">Rules<textarea name="rules" rows="3" class="form-control form-control-sm" readonly="@(!canChange)">@draft.Rules</textarea></label>
+                        <label class="small">Examples<textarea name="examples" rows="3" class="form-control form-control-sm" readonly="@(!canChange)">@draft.Examples</textarea></label>
+                    }
+                    @if (canChange)
+                    {
+                        <button type="submit" class="btn btn-sm btn-primary align-self-start">Create</button>
+                    }
+                </form>
+                @if (canChange)
+                {
+                    <form asp-action="DiscardDraft" method="post" class="d-flex flex-wrap gap-1 mt-2 discard-draft">
+                        <input type="hidden" name="projectId" value="@project.Id" />
+                        <input type="hidden" name="draftId" value="@draft.Id" />
+                        <input name="reason" maxlength="1000" required class="form-control form-control-sm w-auto" placeholder="Why" aria-label="Why the draft is discarded" />
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Discard</button>
+                    </form>
+                }
+            </div>
+        </section>
+    }
+}
+
+@if (Model.Waiting.Count > 0)
+{
+    @* R7: created, waiting for the team's document or the GitHub issue; linked when it comes in *@
+    <h2 class="h5 mt-4">Created, waiting to come in (@Model.Waiting.Count)</h2>
+    @foreach (var view in Model.Waiting)
+    {
+        <section class="card mb-2 waiting-draft" data-form="@view.Draft.Form" data-covers="@string.Join(", ", view.Codes)">
+            <div class="card-body small">
+                <div class="fw-semibold">@view.Draft.Title</div>
+                <div class="text-muted mb-1">@(view.Draft.Form == DraftForm.UserStory ? "Linked when the issue comes in with the next sync" : "Add it to your document; it is linked when you upload the next version")</div>
+                <pre class="draft-copy-text border rounded p-2 mb-0" style="white-space: pre-wrap">@view.CopyText</pre>
+            </div>
+        </section>
+    }
+}
