@@ -35,7 +35,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task GivenIsMarked(string code)
         {
             GivenTheAiSaysItNeedsAction(code, "High", "the product has remote sign-in");
-            await WhenIClickFind("Find what needs action", "CRA", Project);
+            await WhenIClickFind("Find requirements that need action", "CRA", Project);
         }
 
         [When("I click {string} on the {string} sub-tab of {string}")]
@@ -43,7 +43,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             await _compliance.WhenIOpenTheSubTab(subTab, project);
             var form = _web.Page!.QuerySelector("#find-needs-action")
-                ?? throw new Xunit.Sdk.XunitException("The tab has no \"Find what needs action\".");
+                ?? throw new Xunit.Sdk.XunitException("The tab has no \"Find requirements that need action\".");
             Assert.Equal(button, form.QuerySelector("button")!.TextContent.Trim());
             await _web.PostFormAsync(form.GetAttribute("action")!, Hidden(form));
         }

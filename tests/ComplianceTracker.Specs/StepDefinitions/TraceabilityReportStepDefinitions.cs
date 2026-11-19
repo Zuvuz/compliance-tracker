@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ComplianceTracker.Specs.StepDefinitions
 {
     // US-120: the Excel traceability report, downloaded through the Compliance tab's form and opened with the OpenXml SDK.
-    // UI contract: Views/Projects/_ComplianceTab.cshtml (the form #traceability-download with audience, format and sub).
+    // UI contract: Views/Projects/_ReportsTab.cshtml (the form #reports-traceability-download with audience, format and sub).
     [Binding]
     public class TraceabilityReportStepDefinitions
     {
@@ -128,16 +128,16 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         // ---------------------------------------------------------- Helpers
 
-        // Chooses the reader, Excel and "All regulations" in the Compliance tab's form, like a user
+        // Chooses the reader, Excel and "All regulations" in the Reports tab's form, like a user (#52: moved from Compliance)
         private async Task DownloadAsync(string project, string audience)
         {
             await using (var db = _web.CreateDbContext())
             {
                 var id = await db.Projects.Where(p => p.Name == project).Select(p => p.Id).SingleAsync();
-                await _web.OpenAsync($"/Projects/Details/{id}/compliance");
+                await _web.OpenAsync($"/Projects/Details/{id}/reports");
             }
 
-            var action = _web.Page!.QuerySelector("#traceability-download")!.GetAttribute("action")!;
+            var action = _web.Page!.QuerySelector("#reports-traceability-download")!.GetAttribute("action")!;
             var response = await _web.Client.GetAsync($"{action}?audience={audience}&format=xlsx&sub=");
             Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", response.Content.Headers.ContentType?.MediaType);
             _file = await response.Content.ReadAsByteArrayAsync();

@@ -192,7 +192,8 @@ namespace ComplianceTracker.Specs.Features
                         "s remote sign-in\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 17
-    await testRunner.WhenAsync("I click \"Find what needs action\" on the \"CRA\" sub-tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.WhenAsync("I click \"Find requirements that need action\" on the \"CRA\" sub-tab of \"Acme Portal" +
+                        "\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 18
     await testRunner.ThenAsync("the overview row \"I.2(d)\" is \"Needs action\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -245,7 +246,8 @@ namespace ComplianceTracker.Specs.Features
                         "\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 26
-    await testRunner.WhenAsync("I click \"Find what needs action\" on the \"CRA\" sub-tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.WhenAsync("I click \"Find requirements that need action\" on the \"CRA\" sub-tab of \"Acme Portal" +
+                        "\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 27
     await testRunner.ThenAsync("the overview row \"I.2(k)\" is \"Not covered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -297,7 +299,8 @@ namespace ComplianceTracker.Specs.Features
                         "", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 36
-    await testRunner.WhenAsync("I click \"Find what needs action\" on the \"CRA\" sub-tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.WhenAsync("I click \"Find requirements that need action\" on the \"CRA\" sub-tab of \"Acme Portal" +
+                        "\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 37
     await testRunner.ThenAsync("the page of \"I.2(d)\" shows \"High\" and \"sign-in exists\" as AI-generated", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -528,7 +531,8 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.GivenAsync("the local AI is not available", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 74
-    await testRunner.WhenAsync("I click \"Find what needs action\" on the \"CRA\" sub-tab of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.WhenAsync("I click \"Find requirements that need action\" on the \"CRA\" sub-tab of \"Acme Portal" +
+                        "\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 75
     await testRunner.ThenAsync("the page shows an error", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
