@@ -404,6 +404,10 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-206 R4: an approved cross-mapping was limited to chosen projects, or opened to all again. SubjectId points at
         // the organisation; Details holds the match and the projects, e.g. "CRA I.2(d) ↔ ISO A.8.5: Compliance Tracker".
-        MappingProjectsChanged
+        MappingProjectsChanged,
+
+        // US-115 R2: a person changed where a requirement the organisation follows is met (organisation-wide, or carried out
+        // in the projects), with a reason. SubjectId points at the organisation area; Details holds the requirement and why.
+        RequirementScopeChanged
     }
 }

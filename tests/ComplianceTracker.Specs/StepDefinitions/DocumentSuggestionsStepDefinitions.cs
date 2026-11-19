@@ -19,6 +19,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         // ---------------------------------------------------------- When
 
+        [Given("I have approved the AI suggestion {string} for {string}")]
         [When("I approve the AI suggestion {string} for {string}")]
         public async Task WhenIApprove(string code, string title)
         {

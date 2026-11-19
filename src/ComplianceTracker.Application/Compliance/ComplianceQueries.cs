@@ -33,6 +33,7 @@ namespace ComplianceTracker.Application.Compliance
         private readonly IEvidenceCheckRepository _checks; // US-038
         private readonly Ai.IRequirementMappingRepository _crossMappings; // US-037
         private readonly IDocumentationDecisionRepository _documentation; // US-204
+        private readonly OrganisationScopes _scopes; // US-115
 
         public ComplianceQueries(
             IProjectRepository projects,
@@ -54,8 +55,10 @@ namespace ComplianceTracker.Application.Compliance
             IEvidenceCheckRepository checks,
             Ai.IRequirementMappingRepository crossMappings,
             Ai.INeedsActionSuggestionRepository needsAction,
-            IDocumentationDecisionRepository documentation)
+            IDocumentationDecisionRepository documentation,
+            OrganisationScopes scopes)
         {
+            _scopes = scopes;
             _documentation = documentation;
             _needsAction = needsAction;
             _applicabilitySuggestions = applicabilitySuggestions;
@@ -251,6 +254,12 @@ namespace ComplianceTracker.Application.Compliance
             }
 
             // US-142 R6: a national law (or an implementing act) and the directive cover each other where they match
+            // US-115: in the organisation area, where each requirement is met, and the products' proof of those carried out there
+            if (project.IsOrganisationArea)
+            {
+                result = await _scopes.ApplyAsync(organization.Id, result, cancellationToken);
+            }
+
             result = NationalLayers.Apply(result);
 
             // US-037 R5: an approved "Same" match between two frameworks passes coverage on too
@@ -388,8 +397,16 @@ namespace ComplianceTracker.Application.Compliance
         // US-142: in the organisation area, evidence that counts covers too; and coverage can come through another layer.
         public bool IsCovered => IsOwnCovered || CoveredThrough is not null;
 
-        // US-204 R3, R9: in the organisation area only evidence that proves it covers, not documentation alone
-        public bool IsOwnCovered => Links.Any(l => !l.Link.NeedsReview) || (EvidenceCovers && IsProven);
+        // US-204 R3, R9: in the organisation area only evidence that proves it covers, not documentation alone.
+        // US-115: or every product that carries it out has proven it.
+        public bool IsOwnCovered => Links.Any(l => !l.Link.NeedsReview) || (EvidenceCovers && IsProven) || CarriedOut is { IsComplete: true };
+
+        // US-115 R2: where the requirement is met, in the organisation area only; null elsewhere
+        public Domain.Mappings.RequirementScope? Scope { get; init; }
+        public string? ScopeReason { get; init; }
+
+        // US-115 "up": for a requirement carried out in the projects, which products have proven it
+        public Domain.Mappings.CarriedOutStatus? CarriedOut { get; init; }
 
         // US-142: evidence covers the requirement (the organisation area)
         public bool EvidenceCovers { get; init; }

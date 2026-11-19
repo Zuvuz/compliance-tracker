@@ -87,7 +87,7 @@ public class CrossMappingTests
     // ---------------------------------------------------------- The best matches (R2, R4)
 
     [Fact]
-    public void Each_requirement_gets_at_most_4_matches_over_the_limit_best_first()
+    public void Each_requirement_gets_at_most_2_matches_over_the_limit_best_first()
     {
         // Arrange: one requirement on the left, six on the right, scored 0.9, 0.8 … 0.4
         var left = Catalogue("A", "A-1").LatestVersion.Requirements;
@@ -100,8 +100,8 @@ public class CrossMappingTests
         var best = CrossMappingService.Best(left, right, vectors, 0.55, (_, _) => false);
 
         // Assert
-        Assert.Equal(["B-2", "B-4", "B-5", "B-1"], best.Select(b => b.To.Code));
-        Assert.Equal([1, 2, 3, 4], best.Select(b => b.Rank));
+        Assert.Equal(["B-2", "B-4"], best.Select(b => b.To.Code)); // US-205 R14: the best two
+        Assert.Equal([1, 2], best.Select(b => b.Rank));
     }
 
     [Fact]
@@ -154,6 +154,7 @@ public class CrossMappingTests
     public void A_match_is_decided_once_and_asking_again_only_replaces_pending_ones()
     {
         var mapping = Mapping(Catalogue("A", "A-1"), Catalogue("B", "B-1"), 0.9);
+        mapping.Checked(MappingStrength.Same, null, "fake-chat"); // US-205 R13: only a checked Same carries coverage
         mapping.Approve(Anna, null, Monday);
 
         mapping.Replace();
@@ -172,6 +173,7 @@ public class CrossMappingTests
         var cra = Catalogue("CRA – Regulation", "I.2(d)");
         var policy = Catalogue("Security policy", "SP-1");
         var mapping = Mapping(policy, cra, 0.9);
+        mapping.Checked(MappingStrength.Same, null, "fake-chat"); // US-205 R13: only a checked Same carries coverage
         mapping.Approve(Anna, null, Monday);
 
         // Act
@@ -212,7 +214,9 @@ public class CrossMappingTests
         var c = Catalogue("C", "C-1");
         var ab = Mapping(a, b, 0.9);
         var bc = Mapping(b, c, 0.9);
+        ab.Checked(MappingStrength.Same, null, "fake-chat"); // US-205 R13: only a checked Same carries coverage
         ab.Approve(Anna, null, Monday);
+        bc.Checked(MappingStrength.Same, null, "fake-chat"); // US-205 R13: only a checked Same carries coverage
         bc.Approve(Anna, null, Monday);
 
         // Act
@@ -231,7 +235,9 @@ public class CrossMappingTests
         var other = Catalogue("Other", "O-1");
         var notApplicable = Mapping(policy, cra, 0.9);
         var notFollowed = Mapping(policy, other, 0.9);
+        notApplicable.Checked(MappingStrength.Same, null, "fake-chat"); // US-205 R13: only a checked Same carries coverage
         notApplicable.Approve(Anna, null, Monday);
+        notFollowed.Checked(MappingStrength.Same, null, "fake-chat"); // US-205 R13: only a checked Same carries coverage
         notFollowed.Approve(Anna, null, Monday);
 
         var result = CrossMappings.Apply([Compliance(cra, true, notApplicable: "Not our product"), Compliance(policy, false)], [notApplicable, notFollowed], Guid.NewGuid());

@@ -589,6 +589,63 @@ namespace ComplianceTracker.Web.Controllers
             return BackToCompliance(projectId, sub);
         }
 
+        // GET /Projects/Inherited/{id}: US-115 R4, the requirements a product inherits from the organisation
+        [HttpGet]
+        public async Task<IActionResult> Inherited(Guid id, [FromServices] InheritedRequirements inherited, CancellationToken cancellationToken)
+        {
+            if (await inherited.ForProjectAsync(id, cancellationToken) is not { } view)
+            {
+                return NotFound();
+            }
+
+            return View(view);
+        }
+
+        // POST /Projects/InheritedOptOut: US-115 R4, the product opts out of an inherited requirement, with a reason
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Inherited), IdFrom = "projectId")]
+        public async Task<IActionResult> InheritedOptOut(Guid projectId, Guid requirementId, string? reason, [FromServices] InheritedRequirements inherited, CancellationToken cancellationToken)
+        {
+            await inherited.OptOutAsync(projectId, requirementId, reason ?? "", cancellationToken);
+            return RedirectToAction(nameof(Inherited), null, new { id = projectId }, $"inherited-{requirementId}");
+        }
+
+        // POST /Projects/InheritedOptIn: US-115 R4, the inherited requirement applies again
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Inherited), IdFrom = "projectId")]
+        public async Task<IActionResult> InheritedOptIn(Guid projectId, Guid requirementId, [FromServices] InheritedRequirements inherited, CancellationToken cancellationToken)
+        {
+            await inherited.OptInAsync(projectId, requirementId, cancellationToken);
+            return RedirectToAction(nameof(Inherited), null, new { id = projectId }, $"inherited-{requirementId}");
+        }
+
+        // POST /Projects/InheritedLinkProof: US-115 "up", the product's evidence proves a requirement carried out in the projects
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Inherited), IdFrom = "projectId")]
+        public async Task<IActionResult> InheritedLinkProof(Guid projectId, Guid requirementId, Guid evidenceId, [FromServices] InheritedRequirements inherited, CancellationToken cancellationToken)
+        {
+            await inherited.LinkProofAsync(projectId, requirementId, evidenceId, cancellationToken);
+            return RedirectToAction(nameof(Inherited), null, new { id = projectId }, $"inherited-{requirementId}");
+        }
+
+        // POST /Projects/ChangeRequirementScope: US-115 R2, where a requirement of the organisation area is met, with a reason
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
+        public async Task<IActionResult> ChangeRequirementScope(Guid projectId, Guid requirementId, Domain.Mappings.RequirementScope scope, string? reason, string? sub,
+            [FromServices] InheritedRequirements inherited, CancellationToken cancellationToken)
+        {
+            await inherited.ChangeScopeAsync(requirementId, scope, reason ?? "", cancellationToken);
+            return BackToCompliance(projectId, sub);
+        }
+
         // POST /Projects/DecideDocumentationEnough: US-204 R5, R8, "documentation is enough" or proof is needed, with a reason
         [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
         [HttpPost]

@@ -50,6 +50,26 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task ThenSuggests(string from, string to, string strength)
             => Assert.Equal(strength, (await PendingAsync(from, to)).QuerySelector(".match-strength")!.TextContent.Trim());
 
+        // US-205 R14
+        [When("I reject every cross-mapping that is not checked because {string}")]
+        public async Task WhenIRejectUnchecked(string reason)
+        {
+            await _web.OpenAsync(_pairUrl);
+            var form = _web.Page!.QuerySelector("form.reject-unchecked") ?? throw new Xunit.Sdk.XunitException("No \"Reject all not checked\".");
+            var fields = form.QuerySelectorAll("input[type=hidden]").Where(i => i.GetAttribute("name") != "__RequestVerificationToken")
+                .Select(i => new KeyValuePair<string, string>(i.GetAttribute("name")!, i.GetAttribute("value") ?? ""))
+                .Append(new KeyValuePair<string, string>("reason", reason))
+                .ToList();
+            await _web.PostFormAsync(form.GetAttribute("action")!, fields);
+        }
+
+        [Then("the cross-mapping does not suggest {string} and {string}")]
+        public async Task ThenDoesNotSuggest(string from, string to)
+        {
+            await _web.OpenAsync(_pairUrl);
+            Assert.Null(_web.Page!.QuerySelector($"#pending-matches li.match[data-from='{from}'][data-to='{to}']"));
+        }
+
         [Then("every cross-mapping suggestion is marked {string}")]
         public async Task ThenEverySuggestionIsMarked(string label)
         {

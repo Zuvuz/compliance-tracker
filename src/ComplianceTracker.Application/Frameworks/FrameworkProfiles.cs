@@ -76,6 +76,16 @@ namespace ComplianceTracker.Application.Frameworks
         public static bool IsManagementClause(string frameworkName, string code)
             => Iso27001().IsMatch(frameworkName ?? "") && ManagementClause().IsMatch((code ?? "").Trim());
 
+        [GeneratedRegex(@"^A\.8\.(2[5-9]|3[0-2])$", RegexOptions.IgnoreCase)]
+        private static partial Regex DevelopmentControl();
+
+        public const string CarriedOutReason = "Development and change controls are done in each product's work";
+
+        // US-115 R2: ISO/IEC 27001's secure development and change controls (A.8.25–A.8.32) are carried out in the projects;
+        // their proof (tests, scans, SBOMs, pull requests) is made there
+        public static bool CarriedOutInProjectsByDefault(string frameworkName, string code)
+            => Iso27001().IsMatch(frameworkName ?? "") && DevelopmentControl().IsMatch((code ?? "").Trim());
+
         // The profile a framework's name points at, e.g. "ISO/IEC 27001" or "ISO 27001:2022"; null for any other
         public static FrameworkProfile? For(string frameworkName) => All.FirstOrDefault(p => p.Matches.IsMatch(frameworkName ?? ""));
     }

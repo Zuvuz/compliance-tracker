@@ -2355,6 +2355,50 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - En fælles liste over organisationens egne kontroller (vej 2). Den er uden for denne historie.
   - Flere end fem rammeværker på én gang. Det giver for mange par for den lokale AI.
 
+### B158 – Organisationens egen compliance, arvet af projekterne (US-115)
+
+- **Beslutning:**
+  - **Hvor et krav opfyldes** (`RequirementScope`): et krav, som organisationen selv følger, er enten organisationsdækkende eller udføres i projekterne. ISO 27001's udviklings- og ændringskontroller (A.8.25–A.8.32) udføres i projekterne som standard, og alt andet er organisationsdækkende. En person med `DecideCompliance` ændrer det med en begrundelse på kravets side i organisationsområdet. Rækkerne ændres aldrig, og den nyeste gælder.
+  - **"Ned":** et produkt har siden "From the organisation" (linket fra Compliance-fanen). Den viser organisationens krav og deres status, mærket "Inherited from the organisation". Produktet skal ikke selv følge rammeværket.
+  - **Fravalg (R4, besluttet af brugeren 19-11-2026):** et produkt kan markere et arvet krav "Not applicable here" med en begrundelse, fx uden for ISMS'ets scope. Det er en almindelig `RequirementApplicability` på produktet, så historikken og loggen er de samme som for andre krav.
+  - **"Op" (begge retninger nu, besluttet af brugeren 19-11-2026):** for et krav, der udføres i projekterne, lægger hvert produkt sit eget bevis til på siden "From the organisation". Organisationens krav viser "Proven in …" og "No proof yet: …" og er dækket, når alle produkter, der ikke har fravalgt det, har bevis. Udløbet bevis og dokumentation alene tæller ikke (B155).
+  - **Egen side i stedet for en fane på Compliance-fanen,** så produktets sider ikke laver flere databaseforespørgsler.
+- **Begrundelse:** ISO 27001 er et ledelsessystem for organisationen, men nogle kontroller udføres i produkternes arbejde. Uden arv skulle hvert produkt uploade de samme politikker igen, og organisationen kunne ikke se, hvilke produkter der mangler bevis.
+- **Fravalgt:**
+  - At produktet automatisk følger organisationens rammeværker. Så blandes organisationens krav sammen med produktets egne.
+  - Flere juridiske enheder med hver sit ISMS. Det er uden for historien.
+
+### B159 – AI-forslag, der har læst dokumentet (US-205)
+
+- **Beslutning:**
+  - **Tre trin for dokumenter og projektets evidens:**
+    1. **Shortlist:** dokumentet deles i afsnit på højst 1.200 tegn, og et krav får sit bedste afsnits score.
+    2. **Rerank:** rerankeren (US-118) ordner kandidaterne, når den er sat op.
+    3. **Tjek:** chatmodellen for opgaven `EvidenceCheck` læser kravet og de tre bedste afsnit. Den svarer "Meets", "Partly meets" eller "Does not meet", med et citat og hvad der mangler.
+
+    Kun "Meets" og "Partly" bliver forslag, og citatet skal stå ordret i dokumentet. Mellemrum og store/små bogstaver må afvige.
+  - **Uden tjek (R7):** når modellen ikke kan nås, svarer i et forkert format, eller dokumentet ikke har tekst, laves forslaget som før og mærkes "Not checked".
+  - **Hvert forslag viser** dommen, citatet, hvad der mangler, og hvilken model der tjekkede det (R2, R10).
+  - **Cross-mapping (R13, R14):**
+    - Kun de to bedste matches pr. krav, og intet under "Partly" ud fra teksternes lighed.
+    - Modellen læser begge krav og svarer "Same", "Partly" eller "Related" med det, der adskiller dem. "Related" foreslås ikke.
+    - Kun et tjekket "Same" giver dækning.
+    - "Reject all not checked" afviser resten på én gang med én begrundelse.
+  - **Evidens gennem stories (R11):** evidenskortet viser de krav, evidensen når gennem sine stories, fx "Through [US-004] Sign in: CRA I.2(d)", uden at spørge AI'en, og tilbyder "Link directly".
+  - **Evalueringen (R9)** måles på folks beslutninger, ligesom US-116, på AI-kvalitetssiden. Den viser:
+    - andelen af tjekkede forslag, der blev godkendt
+    - den samme andel for forslag uden tjek (før/efter)
+    - andelen af de rigtige links, AI'en fandt, regnet som godkendte mod dem, der blev lavet i hånden
+  - **Modellen vælges af systemejeren** med `Ai:Tasks:EvidenceCheck:Model`, fx en 14B-model i Ollama. Kun lokale modeller (R6).
+- **Begrundelse:** Indlejring alene svarer på "samme emne?", ikke på "står der det, kravet beder om?". I demoen gav en hændelsesprocedure høje scorer på alle hændelseskrav, og CRA × ISO-demoen gav 288 forslag omkring 0,65.
+- **Åbne spørgsmål fra historien, besvaret:**
+  - Story-forslagene (US-020, US-118) tjekkes ikke endnu. De har allerede reranker og begrundelse, og et ekstra kald pr. forslag gør dem langsomme.
+  - Evidenstjekket (US-038) bruger allerede `EvidenceCheck`-modellen. Citatreglen gælder endnu ikke der.
+  - Hvilken modelstørrelse der er bedst, afgør evalueringen.
+- **Fravalgt:**
+  - Et fast testsæt af dokumenter i repoet til evalueringen. Folks egne beslutninger er et bedre og ærligere testsæt, og standarderne må ikke ligge i repoet.
+  - At ændre forslagene til en eksisterende `MappingSuggestion`. Kun dokumenter, projektets evidens og cross-mapping er med.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

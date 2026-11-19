@@ -83,6 +83,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<double?>("AverageGrade")
                         .HasColumnType("double precision");
 
+                    b.Property<double?>("CheckedRight")
+                        .HasColumnType("double precision");
+
                     b.Property<int>("Decisions")
                         .HasColumnType("integer");
 
@@ -92,6 +95,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("DecisionsTo")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<double?>("Found")
+                        .HasColumnType("double precision");
+
                     b.Property<int>("Graded")
                         .HasColumnType("integer");
 
@@ -99,6 +105,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<double?>("NotCheckedRight")
+                        .HasColumnType("double precision");
 
                     b.Property<string>("PromptVersion")
                         .IsRequired()
@@ -4492,6 +4501,48 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("RequirementMappings", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Mappings.RequirementScopeDecision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("DecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("DecidedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DecidedRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("RequirementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DecidedById");
+
+                    b.HasIndex("RequirementId");
+
+                    b.HasIndex("OrganizationId", "RequirementId", "DecidedAt");
+
+                    b.ToTable("RequirementScopeDecisions", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Mappings.StoryDraft", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7935,6 +7986,27 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasOne("ComplianceTracker.Domain.Frameworks.Requirement", null)
                         .WithMany()
                         .HasForeignKey("ToRequirementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Mappings.RequirementScopeDecision", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("DecidedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Frameworks.Requirement", null)
+                        .WithMany()
+                        .HasForeignKey("RequirementId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

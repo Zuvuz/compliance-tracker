@@ -208,10 +208,10 @@ namespace ComplianceTracker.Specs.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 22
-    await testRunner.GivenAsync("the AI rates \"SP-1 Users must sign in securely\" against \"AR-1\" with 0.75", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+    await testRunner.GivenAsync("the AI rates \"SP-1 Users must sign in securely\" against \"AR-1\" with 0.705", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 23
-    await testRunner.AndAsync("the AI rates \"SP-1 Users must sign in securely\" against \"I.2(d)\" with 0.65", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the AI rates \"SP-1 Users must sign in securely\" against \"I.2(d)\" with 0.705", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 24
     await testRunner.WhenAsync("I ask the AI to match \"Security policy\", \"Access rules\" and \"CRA\" at once", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -258,10 +258,10 @@ namespace ComplianceTracker.Specs.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 30
-    await testRunner.GivenAsync("the AI rates \"SP-1 Users must sign in securely\" against \"AR-1\" with 0.75", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+    await testRunner.GivenAsync("the AI rates \"SP-1 Users must sign in securely\" against \"AR-1\" with 0.705", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 31
-    await testRunner.AndAsync("the AI rates \"SP-1 Users must sign in securely\" against \"I.2(d)\" with 0.65", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the AI rates \"SP-1 Users must sign in securely\" against \"I.2(d)\" with 0.705", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 32
     await testRunner.AndAsync("I ask the AI to match \"Security policy\", \"Access rules\" and \"CRA\" at once", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -326,24 +326,27 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.AndAsync("the AI rates \"SP-1 Users must sign in securely\" against \"I.2(d)\" with 0.9", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 44
-    await testRunner.AndAsync("I ask the AI to match \"Security policy\" with \"CRA\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the AI check finds \"SP-1\" and \"I.2(d)\" the same", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 45
-    await testRunner.AndAsync("I approve the cross-mapping of \"SP-1\" and \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("I ask the AI to match \"Security policy\" with \"CRA\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 46
-    await testRunner.AndAsync("the requirement \"SP-1\" of \"Acme Portal\" is covered through \"CRA I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("I approve the cross-mapping of \"SP-1\" and \"I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 47
-    await testRunner.WhenAsync("I limit the match of \"SP-1\" and \"I.2(d)\" to \"Acme App\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.AndAsync("the requirement \"SP-1\" of \"Acme Portal\" is covered through \"CRA I.2(d)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 48
-    await testRunner.ThenAsync("the match of \"SP-1\" and \"I.2(d)\" applies to \"Acme App\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.WhenAsync("I limit the match of \"SP-1\" and \"I.2(d)\" to \"Acme App\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 49
-    await testRunner.AndAsync("the requirement \"SP-1\" of \"Acme Portal\" is not covered", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.ThenAsync("the match of \"SP-1\" and \"I.2(d)\" applies to \"Acme App\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 50
+    await testRunner.AndAsync("the requirement \"SP-1\" of \"Acme Portal\" is not covered", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 51
     await testRunner.AndAsync("the activity log has \"MappingProjectsChanged\" with \"Security policy SP-1 ↔ CRA I." +
                         "2(d): Acme App\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden

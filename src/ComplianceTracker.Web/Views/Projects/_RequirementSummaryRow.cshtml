@@ -83,6 +83,11 @@
                 <div><span class="evidence-status badge text-bg-warning mt-1">No evidence</span></div>
             }
         }
+        @if (row.CarriedOut is { } carried)
+        {
+            @* US-115 "up" *@
+            <div class="small carried-out" data-complete="@(carried.IsComplete ? "true" : "false")">@carried.Text</div>
+        }
         @if (row.NeedsReview)
         {
             <div class="small text-warning-emphasis needs-review-mark">Text changed</div>

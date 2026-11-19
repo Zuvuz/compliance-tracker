@@ -79,6 +79,24 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                 type: "character varying(20)",
                 maxLength: 20,
                 nullable: true);
+
+            migrationBuilder.AddColumn<double>(
+                name: "CheckedRight",
+                table: "AiEvaluations",
+                type: "double precision",
+                nullable: true);
+
+            migrationBuilder.AddColumn<double>(
+                name: "Found",
+                table: "AiEvaluations",
+                type: "double precision",
+                nullable: true);
+
+            migrationBuilder.AddColumn<double>(
+                name: "NotCheckedRight",
+                table: "AiEvaluations",
+                type: "double precision",
+                nullable: true);
         }
 
         /// <inheritdoc />
@@ -123,6 +141,18 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
             migrationBuilder.DropColumn(
                 name: "CheckVerdict",
                 table: "DocumentLinkSuggestions");
+
+            migrationBuilder.DropColumn(
+                name: "CheckedRight",
+                table: "AiEvaluations");
+
+            migrationBuilder.DropColumn(
+                name: "Found",
+                table: "AiEvaluations");
+
+            migrationBuilder.DropColumn(
+                name: "NotCheckedRight",
+                table: "AiEvaluations");
         }
     }
 }

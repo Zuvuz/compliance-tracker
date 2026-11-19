@@ -29,11 +29,38 @@ Feature: Cross-mapping between frameworks
   @US-037 @aiact-art14 @integration
   Scenario: An approved Same match passes the coverage on
     Given the AI rates "SP-1 Users must sign in securely" against "I.2(d)" with 0.9
+    And the AI check finds "SP-1" and "I.2(d)" the same
     And I ask the AI to match "Security policy" with "CRA"
     When I approve the cross-mapping of "SP-1" and "I.2(d)"
     Then the approved matches list "SP-1" and "I.2(d)"
     And the requirement "SP-1" of "Acme Portal" is covered through "CRA I.2(d)"
     And the activity log has "MappingApproved" with "Cross-mapping Same: Security policy SP-1 ↔ CRA I.2(d)"
+
+  @US-205 @aiact-art14 @integration
+  Scenario: A Same match the AI did not check does not pass the coverage on
+    Given the AI rates "SP-1 Users must sign in securely" against "I.2(d)" with 0.9
+    And I ask the AI to match "Security policy" with "CRA"
+    When I approve the cross-mapping of "SP-1" and "I.2(d)"
+    Then the requirement "SP-1" of "Acme Portal" is not covered
+
+  @US-205 @iso27001-6.1.3 @integration
+  Scenario: A match the AI finds only related is not suggested, however alike the texts are
+    Given the AI rates "SP-1 Users must sign in securely" against "I.2(d)" with 0.9
+    And the AI rates "SP-2 Backups" against "I.2(d)" with 0.75
+    And the AI check finds "SP-1" and "I.2(d)" only related
+    And the AI check finds "SP-2" and "I.2(d)" the same
+    When I ask the AI to match "Security policy" with "CRA"
+    Then the cross-mapping does not suggest "SP-1" and "I.2(d)"
+    And the cross-mapping suggests "SP-2" and "I.2(d)" as "Same"
+
+  @US-205 @iso27001-6.1.3 @integration
+  Scenario: The matches the AI did not check are rejected at once
+    Given the AI rates "SP-1 Users must sign in securely" against "I.2(d)" with 0.9
+    And the AI rates "SP-2 Backups" against "I.2(d)" with 0.75
+    And I ask the AI to match "Security policy" with "CRA"
+    When I reject every cross-mapping that is not checked because "WrongRequirement"
+    Then the cross-mapping has no suggestions
+    And the activity log has "MappingRejected" with "2 cross-mappings that were not checked (WrongRequirement)"
 
   @US-037 @aiact-art14 @integration
   Scenario: An approved Partly match does not count as coverage
