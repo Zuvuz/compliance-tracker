@@ -51,8 +51,21 @@ namespace ComplianceTracker.Web.Controllers
 
         // GET /Frameworks/CrossMapping?from=…&to=…: R1, R6, for every member
         [HttpGet]
-        public async Task<IActionResult> CrossMapping(Guid? from, Guid? to, [FromServices] Application.Ai.CrossMappingService crossMapping, CancellationToken cancellationToken)
+        public async Task<IActionResult> CrossMapping(Guid? from, Guid? to, [FromQuery(Name = "v")] List<Guid>? v,
+            [FromServices] Application.Ai.CrossMappingService crossMapping, CancellationToken cancellationToken)
         {
+            // US-206: several frameworks at once (?v=…&v=…)
+            if (v is { Count: > 0 })
+            {
+                var set = await crossMapping.ForSetAsync(v, cancellationToken);
+                if (set is null)
+                {
+                    return RedirectToAction("Create", "Organizations");
+                }
+
+                return set.Chosen.Count != v.Distinct().Count() ? NotFound() : View("CrossMappingSet", set);
+            }
+
             var view = await crossMapping.ForPairAsync(from, to, cancellationToken);
             if (view is null)
             {
@@ -105,6 +118,90 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             return RedirectToAction(nameof(CrossMapping), new { from, to });
+        }
+
+        // POST /Frameworks/SuggestCrossMappingSet: US-206 R1, every pair of the chosen frameworks in one run
+        [AiRateLimit] // US-097 R1
+        [Authorize] // also in the global policy; said here so CodeQL sees the check
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SuggestCrossMappingSet(List<Guid> v, [FromServices] Application.Ai.CrossMappingService crossMapping, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var count = await crossMapping.SuggestManyAsync(v, cancellationToken);
+                TempData["CrossMapping"] = count == 0 ? "The AI found no requirements that ask for the same thing" : $"The AI suggests {count} matches";
+            }
+            catch (Domain.Common.DomainException error)
+            {
+                TempData[Filters.DomainExceptionFilter.TempDataKey] = error.Message;
+            }
+
+            return RedirectToAction(nameof(CrossMapping), new { v });
+        }
+
+        // POST /Frameworks/DecideCrossMappingGroup: US-206 R2, all of a requirement's pending matches at once
+        [Authorize] // also in the global policy; said here so CodeQL sees the check
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DecideCrossMappingGroup(List<Guid> v, Guid requirementId, bool approve, Domain.Mappings.RejectionReason? reason, string? comment,
+            [FromServices] Application.Ai.CrossMappingService crossMapping, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await crossMapping.DecideAllAsync(requirementId, v, approve, reason, comment, cancellationToken);
+            }
+            catch (Domain.Common.DomainException error)
+            {
+                TempData[Filters.DomainExceptionFilter.TempDataKey] = error.Message;
+            }
+
+            return RedirectToAction(nameof(CrossMapping), new { v });
+        }
+
+        // POST /Frameworks/DecideCrossMappingOne: US-206, one match on the page for several frameworks
+        [Authorize] // also in the global policy; said here so CodeQL sees the check
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DecideCrossMappingOne(List<Guid> v, Guid mappingId, bool approve, Domain.Mappings.RejectionReason? reason, string? comment,
+            [FromServices] Application.Ai.CrossMappingService crossMapping, CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (approve)
+                {
+                    await crossMapping.ApproveAsync(mappingId, cancellationToken);
+                }
+                else
+                {
+                    await crossMapping.RejectAsync(mappingId, reason, comment, cancellationToken);
+                }
+            }
+            catch (Domain.Common.DomainException error)
+            {
+                TempData[Filters.DomainExceptionFilter.TempDataKey] = error.Message;
+            }
+
+            return RedirectToAction(nameof(CrossMapping), new { v });
+        }
+
+        // POST /Frameworks/ChangeCrossMappingProjects: US-206 R3, R4, the projects an approved match applies to; none means all
+        [Authorize] // also in the global policy; said here so CodeQL sees the check
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangeCrossMappingProjects(List<Guid> v, Guid mappingId, List<Guid>? projectIds,
+            [FromServices] Application.Ai.CrossMappingService crossMapping, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await crossMapping.ChangeProjectsAsync(mappingId, projectIds ?? [], cancellationToken);
+            }
+            catch (Domain.Common.DomainException error)
+            {
+                TempData[Filters.DomainExceptionFilter.TempDataKey] = error.Message;
+            }
+
+            return RedirectToAction(nameof(CrossMapping), new { v });
         }
 
         private async Task<IActionResult> IndexPageAsync(CancellationToken cancellationToken)

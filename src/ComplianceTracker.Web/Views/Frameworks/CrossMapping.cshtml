@@ -25,6 +25,12 @@
     <div class="alert alert-info py-2" id="cross-mapping-message" role="status">@message</div>
 }
 
+@if (Model.Versions.Count > 2)
+{
+    @* US-206 R1: more than two at once *@
+    <p class="small"><a id="several-frameworks" href="@Url.Action("CrossMapping", new { v = Model.Versions.Select(x => x.Version.Id).Take(ComplianceTracker.Application.Ai.CrossMappingService.MostAtOnce).ToArray() })">Match several frameworks at once</a></p>
+}
+
 <form method="get" asp-action="CrossMapping" class="d-flex flex-wrap gap-2 align-items-center mb-3" id="choose-pair">
     <select name="from" class="form-select form-select-sm w-auto" aria-label="First framework">
         @foreach (var version in Model.Versions)
@@ -98,12 +104,22 @@ else if (Model.From is { } from && Model.To is { } to)
     </ul>
 
     <h2 class="h6 mt-3">Approved matches (@Model.Approved.Count)</h2>
+    @if (Model.Approved.Count > 0)
+    {
+        @* US-206 R4: where the projects of a match are chosen *@
+        <p class="small"><a id="change-match-projects" href="@Url.Action("CrossMapping", new { v = new[] { from.Version.Id, to.Version.Id } })#approved-matches">Choose the projects each match applies to</a></p>
+    }
     <ul class="list-unstyled small" id="approved-matches">
         @foreach (var row in Model.Approved)
         {
             <li class="match" data-from="@row.From.Code" data-to="@row.To.Code">
                 <span class="badge @Badge(row.Mapping.Strength) match-strength">@row.Mapping.Strength</span>
                 @from.Framework.ShortName @row.From.Code ↔ @to.Framework.ShortName @row.To.Code
+                @if (row.Mapping.ProjectIds.Length > 0)
+                {
+                    @* US-206 R3 *@
+                    <span class="text-muted match-projects">· only in @row.Mapping.ProjectIds.Length @(row.Mapping.ProjectIds.Length == 1 ? "project" : "projects")</span>
+                }
             </li>
         }
     </ul>

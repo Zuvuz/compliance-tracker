@@ -33,6 +33,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await SubmitAsync(_web.Page!.QuerySelector("form#suggest-cross-mapping")!);
         }
 
+        [Given("I approve the cross-mapping of {string} and {string}")]
         [When("I approve the cross-mapping of {string} and {string}")]
         public async Task WhenIApprove(string from, string to)
             => await SubmitAsync((await PendingAsync(from, to)).QuerySelector("form.approve-match")!);
@@ -77,6 +78,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Assert.Empty(_web.Page!.QuerySelectorAll("#pending-matches li.match"));
         }
 
+        [Given("the requirement {string} of {string} is covered through {string}")]
         [Then("the requirement {string} of {string} is covered through {string}")]
         public async Task ThenCoveredThrough(string code, string project, string through)
         {

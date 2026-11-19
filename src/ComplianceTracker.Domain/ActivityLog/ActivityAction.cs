@@ -385,6 +385,10 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // #52: test results were uploaded, whatever they led to. SubjectId points at the project; Details holds the file and
         // what it led to (passed, suggested, already suggested, unknown tags).
-        TestResultsUploaded
+        TestResultsUploaded,
+
+        // US-206 R4: an approved cross-mapping was limited to chosen projects, or opened to all again. SubjectId points at
+        // the organisation; Details holds the match and the projects, e.g. "CRA I.2(d) ↔ ISO A.8.5: Compliance Tracker".
+        MappingProjectsChanged
     }
 }

@@ -7,11 +7,12 @@ namespace ComplianceTracker.Application.Compliance
     // coverage is passed on, so it never goes round in a circle. "Partly" and "Related" do not count.
     public static class CrossMappings
     {
-        public static List<FrameworkCompliance> Apply(IReadOnlyList<FrameworkCompliance> frameworks, IReadOnlyList<RequirementMapping> mappings)
+        // US-206 R3: only the matches that apply to this project
+        public static List<FrameworkCompliance> Apply(IReadOnlyList<FrameworkCompliance> frameworks, IReadOnlyList<RequirementMapping> mappings, Guid projectId)
         {
             var rows = frameworks.SelectMany(f => f.Requirements.Select(r => (Framework: f, Row: r))).ToDictionary(x => x.Row.Requirement.Id);
             var through = new Dictionary<Guid, string>();
-            foreach (var mapping in mappings.Where(m => m.IsApprovedSame))
+            foreach (var mapping in mappings.Where(m => m.IsApprovedSame && m.AppliesTo(projectId)))
             {
                 if (!rows.TryGetValue(mapping.FromRequirementId, out var a) || !rows.TryGetValue(mapping.ToRequirementId, out var b)
                     || !a.Row.IsApplicable || !b.Row.IsApplicable)

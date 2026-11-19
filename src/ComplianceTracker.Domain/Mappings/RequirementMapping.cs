@@ -44,6 +44,29 @@ namespace ComplianceTracker.Domain.Mappings
         public bool IsPending => Status == SuggestionStatus.Pending;
         public bool IsApprovedSame => Status == SuggestionStatus.Approved && Strength == MappingStrength.Same;
 
+        // US-206 R3, R4: the projects an approved match carries coverage in; empty means every project that follows both sides
+        public Guid[] ProjectIds { get; private set; } = [];
+
+        public bool AppliesTo(Guid projectId) => ProjectIds.Length == 0 || ProjectIds.Contains(projectId);
+
+        // R4: limit an approved match to chosen projects, or none for all again. Returns false when nothing changed.
+        public bool LimitTo(IEnumerable<Guid> projectIds)
+        {
+            if (Status != SuggestionStatus.Approved)
+            {
+                throw new DomainException("Only an approved match applies to projects");
+            }
+
+            var chosen = projectIds.Where(id => id != Guid.Empty).Distinct().OrderBy(id => id).ToArray();
+            if (chosen.SequenceEqual(ProjectIds.OrderBy(id => id)))
+            {
+                return false;
+            }
+
+            ProjectIds = chosen;
+            return true;
+        }
+
         // For EF Core only
         private RequirementMapping() { }
 

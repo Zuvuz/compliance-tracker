@@ -1848,6 +1848,9 @@ classDiagram
     -strength: MappingStrength
     -score: double
     -status: SuggestionStatus
+    -projectIds: Guid[]
+    +AppliesTo(projectId: Guid) bool
+    +LimitTo(projectIds: Guid[]) bool
     +Approve(userId, role, at)
     +Reject(reason, comment, userId, role, at)
     +StrengthOf(score)$ MappingStrength

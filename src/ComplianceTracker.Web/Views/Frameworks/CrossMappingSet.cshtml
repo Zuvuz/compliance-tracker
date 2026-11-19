@@ -1,0 +1,156 @@
+@* US-206: cross-mapping across two or more frameworks at once. R1: one run compares every pair; R2: the pending matches are
+   grouped by requirement, and one decision covers all of a requirement's matches; R3, R4: each approved match applies to
+   all projects that follow both sides, or to chosen ones; R6: the matches are not checked yet.
+   Ids and classes used by the tests: form#choose-frameworks (v), form#suggest-several, #cross-mapping-message,
+   #not-checked, #match-groups li.match-group (data-code, data-framework) with li.group-match (data-code, data-framework),
+   forms .approve-group and .reject-group (reason, comment), forms .approve-one and .reject-one, and #approved-matches
+   li.approved-match (data-from, data-to) with .match-applies-to and form.change-match-projects (projectIds). *@
+@using ComplianceTracker.Domain.Mappings
+@model ComplianceTracker.Application.Ai.CrossMappingSetView
+@{
+    ViewData["Title"] = "Cross-mapping";
+    var canDecide = await Permissions.CanAsync(Permission.ManageFrameworks);
+    var chosenIds = Model.Chosen.Select(v => v.Version.Id).ToList();
+    string Badge(MappingStrength strength) => strength switch
+    {
+        MappingStrength.Same => "text-bg-success",
+        MappingStrength.Partly => "text-bg-warning",
+        _ => "text-bg-light border"
+    };
+}
+
+<p class="mb-1"><a asp-action="CrossMapping">← Two frameworks</a> · <a asp-action="Index">Frameworks</a></p>
+<h1 class="h3">Cross-mapping across frameworks</h1>
+<p class="text-muted small">Choose two or more frameworks. The AI compares every pair in one run, and the matches are shown per requirement, so one decision links a requirement to its matches in all the others. An approved "Same" counts in every project that follows both frameworks, unless you choose the projects.</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+@if (TempData["CrossMapping"] is string message)
+{
+    <div class="alert alert-info py-2" id="cross-mapping-message" role="status">@message</div>
+}
+
+<form method="get" asp-action="CrossMapping" class="mb-3" id="choose-frameworks">
+    <fieldset class="d-flex flex-wrap gap-3 align-items-center">
+        <legend class="form-label small mb-1">Frameworks (at most @ComplianceTracker.Application.Ai.CrossMappingService.MostAtOnce)</legend>
+        @foreach (var version in Model.Versions)
+        {
+            <label class="form-check-label small"><input type="checkbox" name="v" value="@version.Version.Id" class="form-check-input me-1" checked="@chosenIds.Contains(version.Version.Id)" />@version.Label</label>
+        }
+        <button type="submit" class="btn btn-sm btn-outline-secondary">Show</button>
+    </fieldset>
+</form>
+
+@if (Model.Chosen.Count < 2)
+{
+    <p class="text-muted" id="choose-two">Choose at least two frameworks.</p>
+}
+else
+{
+    @if (canDecide)
+    {
+        <form asp-action="SuggestCrossMappingSet" method="post" class="mb-3" id="suggest-several" data-busy="Working… this can take a few minutes">
+            @foreach (var id in chosenIds)
+            {
+                <input type="hidden" name="v" value="@id" />
+            }
+            <button type="submit" class="btn btn-sm btn-primary">Suggest matches between @ComplianceTracker.Application.Ai.CrossMappingService.Names(Model.Chosen.Select(v => v.Label).ToList())</button>
+        </form>
+    }
+
+    <h2 class="h6">Waiting for a decision (@Model.Groups.Sum(g => g.Matches.Count) in @Model.Groups.Count @(Model.Groups.Count == 1 ? "requirement" : "requirements"))</h2>
+    @if (Model.Groups.Count > 0)
+    {
+        @* R6: until the AI has read the texts (US-205), a match only says the wording is alike *@
+        <p class="small text-warning-emphasis" id="not-checked">These matches are not checked: the AI found that the requirements are worded alike, not that they ask for the same thing. Read both before you approve.</p>
+    }
+    <ul class="list-unstyled small" id="match-groups">
+        @foreach (var group in Model.Groups)
+        {
+            <li class="match-group border rounded p-2 my-2" data-code="@group.From.Code" data-framework="@group.FromVersion.Framework.ShortName">
+                <div><span class="badge text-bg-info">AI-generated</span> <strong>@group.FromVersion.Framework.ShortName @group.From.Code</strong> @group.From.Title</div>
+                <ul class="list-unstyled ms-3 mb-1">
+                    @foreach (var match in group.Matches)
+                    {
+                        <li class="group-match my-1" data-code="@match.Row.To.Code" data-framework="@match.ToVersion.Framework.ShortName">
+                            <span class="badge @Badge(match.Row.Mapping.Strength) match-strength">@match.Row.Mapping.Strength</span>
+                            <strong>@match.ToVersion.Framework.ShortName @match.Row.To.Code</strong> @match.Row.To.Title
+                            <span class="text-muted">· @match.Row.Mapping.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span>
+                            @if (canDecide && group.Matches.Count > 1)
+                            {
+                                <span class="d-inline-flex gap-1 ms-1">
+                                    <form asp-action="DecideCrossMappingOne" method="post" class="approve-one">
+                                        @foreach (var id in chosenIds) { <input type="hidden" name="v" value="@id" /> }
+                                        <input type="hidden" name="mappingId" value="@match.Row.Mapping.Id" />
+                                        <input type="hidden" name="approve" value="true" />
+                                        <button type="submit" class="btn btn-sm btn-link p-0">Approve only this</button>
+                                    </form>
+                                    <form asp-action="DecideCrossMappingOne" method="post" class="reject-one">
+                                        @foreach (var id in chosenIds) { <input type="hidden" name="v" value="@id" /> }
+                                        <input type="hidden" name="mappingId" value="@match.Row.Mapping.Id" />
+                                        <input type="hidden" name="approve" value="false" />
+                                        <input type="hidden" name="reason" value="@RejectionReason.WrongRequirement" />
+                                        <button type="submit" class="btn btn-sm btn-link p-0 text-muted">Reject only this</button>
+                                    </form>
+                                </span>
+                            }
+                        </li>
+                    }
+                </ul>
+                @if (canDecide)
+                {
+                    <div class="d-flex flex-wrap gap-1">
+                        <form asp-action="DecideCrossMappingGroup" method="post" class="approve-group">
+                            @foreach (var id in chosenIds) { <input type="hidden" name="v" value="@id" /> }
+                            <input type="hidden" name="requirementId" value="@group.From.Id" />
+                            <input type="hidden" name="approve" value="true" />
+                            <button type="submit" class="btn btn-sm btn-outline-success">Approve @(group.Matches.Count == 1 ? "" : $"all {group.Matches.Count}")</button>
+                        </form>
+                        <form asp-action="DecideCrossMappingGroup" method="post" class="d-flex flex-wrap gap-1 reject-group">
+                            @foreach (var id in chosenIds) { <input type="hidden" name="v" value="@id" /> }
+                            <input type="hidden" name="requirementId" value="@group.From.Id" />
+                            <input type="hidden" name="approve" value="false" />
+                            <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason">
+                                <option value="">Reason…</option>
+                                @foreach (var reason in Enum.GetValues<RejectionReason>())
+                                {
+                                    <option value="@reason">@reason</option>
+                                }
+                            </select>
+                            <input name="comment" maxlength="1000" class="form-control form-control-sm w-auto" placeholder="Comment" aria-label="Comment" />
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Reject @(group.Matches.Count == 1 ? "" : "all")</button>
+                        </form>
+                    </div>
+                }
+            </li>
+        }
+    </ul>
+
+    <h2 class="h6 mt-3">Approved matches (@Model.Approved.Count)</h2>
+    <ul class="list-unstyled small" id="approved-matches">
+        @foreach (var approved in Model.Approved)
+        {
+            var row = approved.Row;
+            <li class="approved-match my-2" data-from="@row.From.Code" data-to="@row.To.Code">
+                <span class="badge @Badge(row.Mapping.Strength) match-strength">@row.Mapping.Strength</span>
+                @approved.FromVersion.Framework.ShortName @row.From.Code ↔ @approved.ToVersion.Framework.ShortName @row.To.Code
+                <span class="text-muted">· applies to <span class="match-applies-to">@approved.AppliesTo</span></span>
+                @if (canDecide && approved.Projects.Count > 0)
+                {
+                    <details class="d-inline-block ms-1">
+                        <summary class="btn btn-sm btn-link p-0">Change projects</summary>
+                        <form asp-action="ChangeCrossMappingProjects" method="post" class="d-flex flex-wrap gap-2 align-items-center mt-1 change-match-projects">
+                            @foreach (var id in chosenIds) { <input type="hidden" name="v" value="@id" /> }
+                            <input type="hidden" name="mappingId" value="@row.Mapping.Id" />
+                            @foreach (var project in approved.Projects)
+                            {
+                                <label class="form-check-label"><input type="checkbox" name="projectIds" value="@project.Id" class="form-check-input me-1" checked="@project.Chosen" />@project.Name</label>
+                            }
+                            <span class="text-muted">None ticked: all projects that follow both</span>
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                        </form>
+                    </details>
+                }
+            </li>
+        }
+    </ul>
+}
