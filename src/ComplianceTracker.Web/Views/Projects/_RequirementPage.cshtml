@@ -127,6 +127,11 @@
                     @* US-142 R6 *@
                     <div class="small text-muted covered-through">through @through</div>
                 }
+                @if (row.CarriedOut is { } carried)
+                {
+                    @* US-115 "up": proven in every product that carries it out *@
+                    <div class="small carried-out" data-complete="@(carried.IsComplete ? "true" : "false")">@carried.Text</div>
+                }
                 @if (row.ProofState is { } proofState)
                 {
                     @* US-204 R9: proven, or only documented, next to "Covered" *@
@@ -141,6 +146,11 @@
             else
             {
                 @* US-155: "Not covered" or "Needs action". US-204 R9: "Documented – proof missing" in the organisation area. *@
+                @if (row.CarriedOut is { } notYet)
+                {
+                    @* US-115 "up" *@
+                    <div class="small carried-out" data-complete="false">@notYet.Text</div>
+                }
                 <span class="requirement-status badge @RequirementPages.StatusClass(row)">@RequirementPages.Status(row)</span>
                 @if (!row.EvidenceCovers && row.ProofState is { } notCoveredProof)
                 {
@@ -208,6 +218,39 @@
             }
         </div>
     </header>
+
+    @if (row.Scope is { } scope && row.IsApplicable)
+    {
+        @* US-115 R2: where an organisation requirement is met; those who decide compliance can change it, with a reason *@
+        var otherScope = scope == ComplianceTracker.Domain.Mappings.RequirementScope.OrganisationWide
+            ? ComplianceTracker.Domain.Mappings.RequirementScope.CarriedOutInProjects
+            : ComplianceTracker.Domain.Mappings.RequirementScope.OrganisationWide;
+        <section class="small mb-3 requirement-scope" data-scope="@scope" aria-label="Where the requirement is met">
+            <span class="fw-semibold requirement-scope-name">@ComplianceTracker.Domain.Mappings.RequirementScopeDecision.NameOf(scope)</span>
+            <span class="text-muted">@(scope == ComplianceTracker.Domain.Mappings.RequirementScope.OrganisationWide
+                ? "· met once here; the products inherit it"
+                : "· each product proves it with its own evidence")</span>
+            @if (row.ScopeReason is { } why)
+            {
+                <span class="text-muted requirement-scope-reason">(@why)</span>
+            }
+            @if (canMarkHere)
+            {
+                <details class="d-inline-block ms-1 change-requirement-scope-menu">
+                    <summary class="btn btn-sm btn-link p-0">@(otherScope == ComplianceTracker.Domain.Mappings.RequirementScope.CarriedOutInProjects ? "Carry it out in the projects" : "Make it organisation-wide")</summary>
+                    <form asp-action="ChangeRequirementScope" method="post" class="d-flex flex-wrap gap-1 mt-1 change-requirement-scope">
+                        <input type="hidden" name="projectId" value="@project.Id" />
+                        <input type="hidden" name="requirementId" value="@requirement.Id" />
+                        <input type="hidden" name="scope" value="@otherScope" />
+                        <input type="hidden" name="sub" value="@sub" />
+                        <input type="hidden" name="req" value="@requirement.Code" />
+                        <input name="reason" maxlength="500" required class="form-control form-control-sm w-auto" placeholder="Why" aria-label="Why @requirement.Code is met there" />
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Save</button>
+                    </form>
+                </details>
+            }
+        </section>
+    }
 
     @{
         // US-200: every step this requirement needs, and the next one as the main action

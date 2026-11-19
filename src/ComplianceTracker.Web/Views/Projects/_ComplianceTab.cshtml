@@ -45,6 +45,11 @@
         <p class="text-muted" id="no-frameworks-compliance">
             No frameworks yet. <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Frameworks">Add one on the Frameworks tab</a>.
         </p>
+        @if (!project.IsOrganisationArea)
+        {
+            @* US-115 R4: a product inherits the organisation's requirements, also without frameworks of its own *@
+            <p><a id="from-organisation-link" asp-action="Inherited" asp-route-id="@project.Id">From the organisation</a>: what @project.Name inherits</p>
+        }
         return;
     }
 
@@ -63,6 +68,13 @@
             <li class="nav-item">
                 <a class="nav-link @(all ? "active" : "")" data-sub="@ComplianceFilters.AllSub"
                    asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Compliance" asp-route-sub="@ComplianceFilters.AllSub" asp-route-req="">All</a>
+            </li>
+        }
+        @if (!project.IsOrganisationArea)
+        {
+            @* US-115 R4: what the product inherits from the organisation, on a page of its own *@
+            <li class="nav-item ms-auto">
+                <a class="nav-link" id="from-organisation-link" asp-action="Inherited" asp-route-id="@project.Id">From the organisation</a>
             </li>
         }
     </ul>
