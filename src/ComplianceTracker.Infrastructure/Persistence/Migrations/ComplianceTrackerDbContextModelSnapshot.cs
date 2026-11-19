@@ -7114,6 +7114,97 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.WorkItems.DefinitionOfDone", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ChangedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ChangedRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RequirementCriteria")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("UseCaseCriteria")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("UserStoryCriteria")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChangedById");
+
+                    b.HasIndex("ProjectId")
+                        .IsUnique();
+
+                    b.ToTable("DefinitionsOfDone", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.WorkItems.DoneTick", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Criterion")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("TickedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TickedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TickedRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("UntickedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UntickedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("WorkItemId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("TickedById");
+
+                    b.HasIndex("UntickedById");
+
+                    b.HasIndex("WorkItemId");
+
+                    b.ToTable("DoneTicks", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.WorkItems.RequirementDocument", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7224,6 +7315,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasDefaultValue("");
 
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -7235,6 +7329,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.Property<int?>("DocumentVersion")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DoneAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DoneById")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Examples")
                         .IsRequired()
@@ -7265,6 +7365,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
 
                     b.Property<int?>("RemovedInVersion")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ReopenedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Rules")
                         .IsRequired()
@@ -8925,6 +9028,46 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .WithMany("Users")
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.WorkItems.DefinitionOfDone", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ChangedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.WorkItems.DoneTick", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("TickedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ComplianceTracker.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UntickedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ComplianceTracker.Domain.WorkItems.WorkItem", null)
+                        .WithMany()
+                        .HasForeignKey("WorkItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

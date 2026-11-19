@@ -575,6 +575,28 @@ classDiagram
   }
   RequirementScopeDecision --> RequirementScope : scope
   RequirementScopeDecision --> Requirement : where it is met
+  class DefinitionOfDone {
+    -id: Guid
+    -projectId: Guid
+    -version: int
+    -userStoryCriteria: string
+    -useCaseCriteria: string
+    -requirementCriteria: string
+    +Default(projectId)$ DefinitionOfDone
+    +For(kind: WorkItemType) List~DoneCriterion~
+    +Change(kind, checks, manual, userId, role, at)
+  }
+  class DoneTick {
+    -id: Guid
+    -workItemId: Guid
+    -criterion: string
+    -tickedById: Guid
+    -tickedAt: DateTime
+    -untickedAt: DateTime?
+    +CountsFor(item: WorkItem) bool
+  }
+  DefinitionOfDone --> Project : for
+  DoneTick --> WorkItem : on
   class DraftForm {
     <<enumeration>>
     UserStory

@@ -408,6 +408,12 @@ namespace ComplianceTracker.Domain.ActivityLog
         GapDraftAccepted,
         GapDraftDiscarded,
 
+        // US-109: the Definition of Done changed (Details holds the old and new criteria and the version), a manual criterion
+        // was ticked or unticked, and a use case or a requirement was marked Done. SubjectId points at the project.
+        DefinitionOfDoneChanged,
+        DoneCriterionTicked,
+        WorkItemMarkedDone,
+
         // US-206 R4: an approved cross-mapping was limited to chosen projects, or opened to all again. SubjectId points at
         // the organisation; Details holds the match and the projects, e.g. "CRA I.2(d) ↔ ISO A.8.5: Compliance Tracker".
         MappingProjectsChanged,

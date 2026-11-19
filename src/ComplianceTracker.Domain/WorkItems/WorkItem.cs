@@ -50,6 +50,50 @@ namespace ComplianceTracker.Domain.WorkItems
         public DateTime FirstSyncedAt { get; private set; }
         public DateTime LastSyncedAt { get; private set; }
 
+        // US-109 R5: when a user story was seen closed (finished), and when it was last reopened in GitHub (manual ticks
+        // given before that no longer count); a use case or a requirement is finished when a person marks it Done
+        public DateTime? ClosedAt { get; private set; }
+        public DateTime? ReopenedAt { get; private set; }
+        public DateTime? DoneAt { get; private set; }
+        public Guid? DoneById { get; private set; }
+
+        public bool IsFinished => State != WorkItemState.Removed && (Type == WorkItemType.UserStory ? State == WorkItemState.Closed : DoneAt is not null);
+
+        public DateTime? FinishedAt => Type == WorkItemType.UserStory ? (State == WorkItemState.Closed ? ClosedAt ?? LastSyncedAt : null) : DoneAt;
+
+        // R5: a use case or a requirement has no state of its own
+        public void MarkDone(Guid userId, DateTime at)
+        {
+            if (Type == WorkItemType.UserStory)
+            {
+                throw new DomainException("A user story is done when it is closed in GitHub");
+            }
+
+            if (State == WorkItemState.Removed)
+            {
+                throw new DomainException("The work item has been removed");
+            }
+
+            if (DoneAt is not null)
+            {
+                throw new DomainException($"{Title} is already done");
+            }
+
+            DoneAt = at;
+            DoneById = userId;
+        }
+
+        public void MarkNotDone()
+        {
+            if (DoneAt is null)
+            {
+                throw new DomainException($"{Title} is not done");
+            }
+
+            DoneAt = null;
+            DoneById = null;
+        }
+
         // For EF Core only
         private WorkItem() { }
 
@@ -107,11 +151,26 @@ namespace ComplianceTracker.Domain.WorkItems
             Gherkin = item.Gherkin;
             Labels = item.Labels;
             Url = item.Url;
+            SetState(state, at);
             State = state;
             Description = item.Description; // US-030
             AcceptanceCriteria = item.AcceptanceCriteria;
             LastSyncedAt = at;
             return changed;
+        }
+
+        // US-109 R5: the state the source has now, with when it was closed or reopened
+        private void SetState(WorkItemState state, DateTime at)
+        {
+            if (State != WorkItemState.Closed && state == WorkItemState.Closed)
+            {
+                ClosedAt = at;
+            }
+            else if (State == WorkItemState.Closed && state == WorkItemState.Open)
+            {
+                ReopenedAt = at;
+                ClosedAt = null;
+            }
         }
 
         // US-032 R5: the requirement as a new version of the document has it. Returns true if its text changed,
