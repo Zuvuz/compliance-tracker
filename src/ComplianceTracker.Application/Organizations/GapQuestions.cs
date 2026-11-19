@@ -69,7 +69,8 @@ namespace ComplianceTracker.Application.Organizations
             return GapQuestionRules.Views(await CoveredAsync(cancellationToken), await _answers.ListAsync(organization.Id, cancellationToken));
         }
 
-        // The NIS2 requirement codes that approved evidence or links cover in the organisation area
+        // The NIS2 requirement codes that approved evidence or links cover in the organisation area. US-204: the gap analysis
+        // asks whether a measure is in place, so documentation counts here, though the Compliance tab still asks for proof.
         public async Task<IReadOnlySet<string>> CoveredAsync(CancellationToken cancellationToken = default)
         {
             var area = await _area.EnsureAsync(cancellationToken);
@@ -77,7 +78,7 @@ namespace ComplianceTracker.Application.Organizations
             return (compliance?.Frameworks ?? [])
                 .Where(f => f.Framework.ShortName == "NIS2")
                 .SelectMany(f => f.Requirements)
-                .Where(r => r.IsCovered)
+                .Where(r => r.IsCovered || r.HasEvidence)
                 .Select(r => r.Requirement.Code)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
         }

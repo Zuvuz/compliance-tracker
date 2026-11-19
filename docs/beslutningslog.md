@@ -2323,6 +2323,7 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - **Indbyggede mærker** ligger i koden (`DocumentationRules`), ikke i seed-data: NIS2 Art. 21(2)(a) og (f) og de krav i den danske lov og 2024/2690, der gennemfører dem; CRA II.5 og Art.31; AI Act Art. 11 og Art. 17. Begrundelsen er "The requirement asks for the document itself". En organisation kan fjerne mærket med sin egen begrundelse.
   - **Udløbet bevis tæller ikke,** så et krav med gyldig dokumentation og kun udløbet bevis er "Documented – proof missing".
   - **Rapporter, auditpakken og trinlisten** bruger bevis i stedet for "har evidens". SoA'ens "Implemented", hullerne og fasegaten spørger, om kravet er bevist.
+  - **NIS2-gapanalysen tæller stadig dokumentation** som evidens for, at en foranstaltning er på plads. Compliance-fanen viser samtidig "Documented – proof missing".
 - **Begrundelse:** En godkendt procedure gjorde et krav dækket og "bevist", selvom intet viste, at proceduren blev fulgt. ISO 27001 9.1 og NIS2 Art. 21(2)(f) skelner mellem at have en foranstaltning og at vise, at den virker.
 - **Fravalgt:**
   - Mærket pr. projekt. En politik gælder hele organisationen, så beslutningen gør det også.

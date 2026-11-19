@@ -250,10 +250,11 @@ namespace ComplianceTracker.Specs.Features
 #line 27
     await testRunner.WhenAsync("I approve the gap suggestion \"Art. 21(2)(b)\" for \"Incident response plan\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 28
-    await testRunner.ThenAsync("the organisation\'s Compliance tab for \"NIS2\" shows \"Art. 21(2)(b)\" as \"Covered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-#line hidden
 #line 29
+    await testRunner.ThenAsync("the organisation\'s Compliance tab for \"NIS2\" shows \"Art. 21(2)(b)\" as \"Documented" +
+                        " – proof missing\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 30
     await testRunner.AndAsync("the gap analysis has no suggestions", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -277,7 +278,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A Word document is read", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 32
+#line 33
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -290,14 +291,14 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 33
+#line 34
     await testRunner.GivenAsync("the AI rates \"Backup procedure\" against \"Art. 21(2)(c)\" with 0.9", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 34
+#line 35
     await testRunner.WhenAsync("I upload to the NIS2 gap analysis the Word document \"Backup procedure.docx\" sayin" +
                         "g \"A daily backup is copied to a second site and restored once a year.\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 35
+#line 36
     await testRunner.ThenAsync("the gap analysis suggests \"Art. 21(2)(c)\" for \"Backup procedure\" quoting \"A daily" +
                         " backup is copied to a second site\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
@@ -322,7 +323,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The same file is recognised and stored once", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 38
+#line 39
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -335,19 +336,19 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 39
+#line 40
     await testRunner.GivenAsync("I have uploaded to the NIS2 gap analysis \"Incident response plan.txt\" saying \"Inc" +
                         "idents are handled within 24 hours.\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 40
+#line 41
     await testRunner.WhenAsync("I upload to the NIS2 gap analysis \"Copy of the plan.txt\" saying \"Incidents are ha" +
                         "ndled within 24 hours.\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 41
+#line 42
     await testRunner.ThenAsync("the gap upload lists \"Copy of the plan.txt\" as \"AlreadyUploaded\" saying \"The same" +
                         " file as \\\"Incident response plan\\\"\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 42
+#line 43
     await testRunner.AndAsync("the organisation has 1 document", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -369,7 +370,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Without the AI the documents are still added", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 45
+#line 46
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -382,14 +383,14 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 46
+#line 47
     await testRunner.GivenAsync("the local AI is not available", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 47
+#line 48
     await testRunner.WhenAsync("I upload to the NIS2 gap analysis \"Incident response plan.txt\" saying \"Incidents " +
                         "are handled within 24 hours.\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 48
+#line 49
     await testRunner.ThenAsync("the gap upload lists \"Incident response plan.txt\" as \"Added\" saying \"the AI could" +
                         " not be reached\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
@@ -414,7 +415,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A developer cannot upload", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 51
+#line 52
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -427,16 +428,16 @@ namespace ComplianceTracker.Specs.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 52
+#line 53
     await testRunner.GivenAsync("\"Carl\" has joined \"Acme ApS\" as \"Developer\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 53
+#line 54
     await testRunner.AndAsync("I am signed in as \"Carl\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 54
+#line 55
     await testRunner.WhenAsync("I open the NIS2 gap analysis", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 55
+#line 56
     await testRunner.ThenAsync("the gap analysis has no upload form", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
