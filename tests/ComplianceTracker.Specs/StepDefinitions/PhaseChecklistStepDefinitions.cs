@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore;
 namespace ComplianceTracker.Specs.StepDefinitions
 {
     // US-047: the checklist on the Overview tab: #checklist with .checklist-item (data-key, data-state), .checklist-text,
-    // .checklist-source and form.checklist-change (data-change); the warning #checklist-warning in the phase form
+    // .checklist-source and form.checklist-change (data-change). #52: the checklist is in the phase card, and the phase
+    // form's button #move-phase says how much is left
     [Binding]
     public class PhaseChecklistStepDefinitions
     {
@@ -55,7 +56,11 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         [Then("the phase form warns that {string} is missing")]
         public void ThenThePhaseFormWarns(string item)
-            => Assert.Contains(item, _web.Page!.QuerySelector("form#change-phase #checklist-warning")?.TextContent ?? "(no warning)");
+        {
+            Assert.Equal("Missing", Item(item).GetAttribute("data-state"));
+            Assert.NotNull(_web.Page!.QuerySelector("#phase-card #checklist"));
+            Assert.Contains("left)", _web.Page!.QuerySelector("form#change-phase #move-phase")?.TextContent ?? "(no button)");
+        }
 
         private AngleSharp.Dom.IElement Item(string text)
             => _web.Page!.QuerySelectorAll("#checklist .checklist-item").FirstOrDefault(i => i.QuerySelector(".checklist-text")?.TextContent.Trim() == text)

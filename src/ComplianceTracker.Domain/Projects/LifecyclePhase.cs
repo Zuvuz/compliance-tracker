@@ -24,4 +24,11 @@ namespace ComplianceTracker.Domain.Projects
         // No longer maintained
         EndOfSupport
     }
+
+    public static class LifecyclePhases
+    {
+        // #52: the phase after this one, in the order above; none after EndOfSupport (or for a value that is not a phase)
+        public static LifecyclePhase? Next(LifecyclePhase phase)
+            => Enum.IsDefined(phase) && phase != LifecyclePhase.EndOfSupport ? phase + 1 : null;
+    }
 }
