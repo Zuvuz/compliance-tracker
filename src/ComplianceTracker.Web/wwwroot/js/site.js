@@ -174,6 +174,18 @@ document.querySelectorAll("[data-percent]").forEach(bar => {
     });
 })();
 
+// #52: a search field with data-filter-rows hides the rows that do not contain what is typed, as you type. Enter still sends
+// the form, which also searches text that is not shown in the row. Without JavaScript the form works as before.
+(() => {
+    document.querySelectorAll("input[data-filter-rows]").forEach(input => {
+        const rows = () => document.querySelectorAll(input.dataset.filterRows);
+        input.addEventListener("input", () => {
+            const text = input.value.trim().toLowerCase();
+            rows().forEach(row => { row.hidden = text.length > 0 && !row.textContent.toLowerCase().includes(text); });
+        });
+    });
+})();
+
 // #52: the phase card's "Move to …" names the phase chosen under "Other phase…", and only that phase's fields show
 (() => {
     document.querySelectorAll("form[data-phase-form]").forEach(form => {

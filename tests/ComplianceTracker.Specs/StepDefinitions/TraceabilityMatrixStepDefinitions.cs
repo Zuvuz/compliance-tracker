@@ -5,7 +5,8 @@ using System.Text;
 namespace ComplianceTracker.Specs.StepDefinitions
 {
     // US-052: the traceability matrix CSV, through the web app with test sign-in.
-    // UI contract: Views/Projects/_ComplianceTab.cshtml (the form #traceability-download with audience, format and sub).
+    // UI contract: Views/Projects/_ReportsTab.cshtml (the form #reports-traceability-download with audience, format and sub;
+    // #52: the download moved there from the Compliance tab).
     [Binding]
     public class TraceabilityMatrixStepDefinitions
     {
@@ -34,15 +35,17 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I download the traceability matrix of {string} as CSV")]
         public async Task WhenIDownloadTheMatrix(string projectName)
         {
-            await _web.OpenAsync($"/Projects/Details/{await ProjectIdAsync(projectName)}/compliance");
+            await _web.OpenAsync($"/Projects/Details/{await ProjectIdAsync(projectName)}/reports");
             await DownloadAsync(_web.Client, FormUrl(format: "csv", audience: "team", sub: ""));
         }
 
         [When("I download the traceability matrix of the {string} sub-tab of {string}")]
         public async Task WhenIDownloadTheMatrixOfTheSubTab(string subTab, string projectName)
         {
-            await _compliance.WhenIOpenTheSubTab(subTab, projectName);
-            var sub = _web.Page!.QuerySelector("#traceability-download select[name=sub] option")!.GetAttribute("value")!;
+            await _web.OpenAsync($"/Projects/Details/{await ProjectIdAsync(projectName)}/reports");
+            var sub = _web.Page!.QuerySelectorAll("#reports-traceability-download select[name=sub] option")
+                .FirstOrDefault(o => o.TextContent.Trim() == subTab)?.GetAttribute("value")
+                ?? throw new Xunit.Sdk.XunitException($"The Reports tab cannot download \"{subTab}\" alone.");
             await DownloadAsync(_web.Client, FormUrl(format: "csv", audience: "team", sub: sub));
         }
 
@@ -111,8 +114,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // The form's address with the choices, as the browser sends a GET form
         private string FormUrl(string format, string audience, string sub)
         {
-            var form = _web.Page!.QuerySelector("#traceability-download")
-                ?? throw new Xunit.Sdk.XunitException("The Compliance tab has no download form.");
+            var form = _web.Page!.QuerySelector("#reports-traceability-download")
+                ?? throw new Xunit.Sdk.XunitException("The Reports tab has no traceability download.");
             return $"{form.GetAttribute("action")}?audience={audience}&format={format}&sub={Uri.EscapeDataString(sub)}";
         }
 

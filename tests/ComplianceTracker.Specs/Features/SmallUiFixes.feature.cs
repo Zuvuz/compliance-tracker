@@ -570,7 +570,8 @@ namespace ComplianceTracker.Specs.Features
                         "r of 12 million euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 80
-    await testRunner.AndAsync("I click \"Find what needs action\" on the \"NIS2\" sub-tab of \"Organisation\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("I click \"Find requirements that need action\" on the \"NIS2\" sub-tab of \"Organisati" +
+                        "on\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 81
     await testRunner.AndAsync("I open the requirement \"Art. 21(2)(a)\" from the \"NIS2\" sub-tab of \"Organisation\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

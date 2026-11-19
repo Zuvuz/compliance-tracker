@@ -1,5 +1,6 @@
 using AngleSharp.Dom;
 using ComplianceTracker.Specs.Support;
+using Microsoft.EntityFrameworkCore;
 
 namespace ComplianceTracker.Specs.StepDefinitions
 {
@@ -34,7 +35,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task GivenIsMarked(string code)
         {
             GivenTheAiSaysItNeedsAction(code, "High", "the product has remote sign-in");
-            await WhenIClickFind("Find what needs action", "CRA", Project);
+            await WhenIClickFind("Find requirements that need action", "CRA", Project);
         }
 
         [When("I click {string} on the {string} sub-tab of {string}")]
@@ -42,7 +43,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             await _compliance.WhenIOpenTheSubTab(subTab, project);
             var form = _web.Page!.QuerySelector("#find-needs-action")
-                ?? throw new Xunit.Sdk.XunitException("The tab has no \"Find what needs action\".");
+                ?? throw new Xunit.Sdk.XunitException("The tab has no \"Find requirements that need action\".");
             Assert.Equal(button, form.QuerySelector("button")!.TextContent.Trim());
             await _web.PostFormAsync(form.GetAttribute("action")!, Hidden(form));
         }
@@ -118,6 +119,47 @@ namespace ComplianceTracker.Specs.StepDefinitions
             var labels = box.QuerySelectorAll("button, summary").Select(b => b.TextContent.Trim()).ToList();
             Assert.DoesNotContain(first, labels);
             Assert.DoesNotContain(second, labels);
+        }
+
+        // ---------------------------------------------------------- #52: the project's own stories first
+
+        [When("I ask for stories from the project on the page of {string}")]
+        public async Task WhenIAskForStoriesFromTheProject(string code)
+        {
+            var form = Box(code).QuerySelector("form.suggest-stories-for-requirement")
+                ?? throw new Xunit.Sdk.XunitException($"The needs-action box of '{code}' has no \"Suggest stories from the project\".");
+            await _web.PostFormAsync(form.GetAttribute("action")!, Hidden(form));
+        }
+
+        // The form is gone from the page once the requirement is covered; a request sent anyway (an old tab) is refused
+        [When("I post {string} for {string} anyway")]
+        public async Task WhenIPostAnyway(string button, string code)
+        {
+            Assert.Equal("Suggest stories from the project", button);
+            await using var db = _web.CreateDbContext();
+            var project = await db.Projects.SingleAsync(p => p.Name == Project);
+            await _compliance.WhenIOpenTheSubTab("CRA", Project);
+            var requirementId = Page(code).GetAttribute("data-id")!;
+            var token = _web.Page!.QuerySelector("input[name=__RequestVerificationToken]")!.GetAttribute("value")!;
+            await _web.PostFormAsync("/Projects/SuggestStoriesForRequirement", new Dictionary<string, string>
+            {
+                ["__RequestVerificationToken"] = token,
+                ["projectId"] = project.Id.ToString(),
+                ["requirementId"] = requirementId,
+                ["req"] = code
+            });
+        }
+
+        [Then("the needs-action box of {string} starts with {string} and has {string} under {string}")]
+        public void ThenTheBoxStartsWith(string code, string first, string hidden, string more)
+        {
+            var box = Box(code);
+            var buttons = box.QuerySelectorAll("button, summary").Select(b => Normalize(b.TextContent)).ToList();
+            Assert.Equal(first, buttons.FirstOrDefault());
+            var menu = box.QuerySelector("details.needs-action-more")
+                ?? throw new Xunit.Sdk.XunitException($"The needs-action box of '{code}' has no \"{more}\".");
+            Assert.Equal(more, Normalize(menu.QuerySelector("summary")!.TextContent));
+            Assert.Equal(hidden, Normalize(menu.QuerySelector("form.create-story-for-needs-action button")!.TextContent));
         }
 
         // ---------------------------------------------------------- Helpers

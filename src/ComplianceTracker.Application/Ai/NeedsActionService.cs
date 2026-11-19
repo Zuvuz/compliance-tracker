@@ -248,7 +248,11 @@ namespace ComplianceTracker.Application.Ai
             var withHighRisk = openRisks.Where(r => r.Level >= RiskLevel.High)
                 .SelectMany(r => r.Measures).Select(m => m.RequirementId).OfType<Guid>().ToHashSet();
 
-            var targets = NeedsActionTargets.Pick(version.Requirements, linked, decided, pendingApplicability, marked, PerRun);
+            // #52: a product is not asked about the organisation's management system (ISO/IEC 27001 clauses 4–10)
+            var requirements = project.IsOrganisationArea
+                ? version.Requirements
+                : version.Requirements.Where(r => !FrameworkProfiles.IsManagementClause(framework.Name, r.Code));
+            var targets = NeedsActionTargets.Pick(requirements, linked, decided, pendingApplicability, marked, PerRun);
 
             var marks = new List<NeedsActionSuggestion>();
             var notApplying = new List<ApplicabilitySuggestion>();

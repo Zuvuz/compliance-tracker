@@ -57,7 +57,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             await _compliance.WhenIOpenTheSubTab(subTab, projectName);
             var form = _web.Page!.QuerySelector("form#suggest-not-covered")
-                ?? throw new Xunit.Sdk.XunitException("The sub-tab has no \"Suggest for not covered\" button.");
+                ?? throw new Xunit.Sdk.XunitException("The sub-tab has no \"Suggest stories for requirements without one\" button.");
             await _web.PostFormAsync(form.GetAttribute("action")!, HiddenFields(form));
         }
 

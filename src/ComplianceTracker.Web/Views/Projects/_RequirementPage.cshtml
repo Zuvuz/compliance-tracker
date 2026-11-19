@@ -267,7 +267,8 @@
 
     @if (row.NeedsAction is { } mark)
     {
-        @* US-155 R3, R5, R6: the AI's mark, with "Create story" and "Not needed" for those who decide (R7) *@
+        @* US-155 R3, R5, R6: the AI's mark, with "Create story" and "Not needed" for those who decide (R7). #52: the project's
+           own stories are suggested first; "Create story" is under More. *@
         <section class="alert alert-warning needs-action-box" data-priority="@mark.Priority" data-status="@mark.Status" aria-label="Needs action" role="alert">
             <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
                 <strong>Needs action</strong>
@@ -287,15 +288,14 @@
             @if (!project.IsClosed && Model.CanDecide)
             {
                 <div class="d-flex flex-wrap align-items-start gap-2 mt-2">
-                    @if (!project.IsOrganisationArea)
+                    @if (!project.IsOrganisationArea && Model.CanLink && Model.OpenStories.Count > 0)
                     {
-                        @* #52: the organisation area has no user stories, so no "Create story" there *@
-                        <form asp-action="CreateStoryForNeedsAction" method="post" class="create-story-for-needs-action" data-busy="Working… this can take a minute">
+                        <form asp-action="SuggestStoriesForRequirement" method="post" class="suggest-stories-for-requirement" data-busy="Finding stories… this can take a minute">
                             <input type="hidden" name="projectId" value="@project.Id" />
-                            <input type="hidden" name="markId" value="@mark.Id" />
+                            <input type="hidden" name="requirementId" value="@requirement.Id" />
                             <input type="hidden" name="sub" value="@sub" />
                             <input type="hidden" name="req" value="@requirement.Code" />
-                            <button type="submit" class="btn btn-sm btn-outline-primary">Create story</button>
+                            <button type="submit" class="btn btn-sm btn-primary">Suggest stories from the project</button>
                         </form>
                     }
                     <details class="dismiss-needs-action-menu" data-dialog-title="Not needed: @requirement.Code">
@@ -319,6 +319,21 @@
                             <button type="submit" class="btn btn-sm btn-outline-secondary align-self-start">Not applicable</button>
                         </form>
                     </details>
+                    @if (!project.IsOrganisationArea)
+                    {
+                        @* #52: the organisation area has no user stories, so no "Create story" there. Under More, as the AI's
+                           draft is not always usable yet. *@
+                        <details class="needs-action-more">
+                            <summary class="btn btn-sm btn-link">More</summary>
+                            <form asp-action="CreateStoryForNeedsAction" method="post" class="create-story-for-needs-action mt-1" data-busy="Working… this can take a minute">
+                                <input type="hidden" name="projectId" value="@project.Id" />
+                                <input type="hidden" name="markId" value="@mark.Id" />
+                                <input type="hidden" name="sub" value="@sub" />
+                                <input type="hidden" name="req" value="@requirement.Code" />
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Create a new story with the AI</button>
+                            </form>
+                        </details>
+                    }
                 </div>
             }
         </section>

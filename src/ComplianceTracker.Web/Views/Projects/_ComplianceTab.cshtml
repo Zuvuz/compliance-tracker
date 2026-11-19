@@ -133,7 +133,7 @@
             var framework = active!;
             var current = framework.Framework.CurrentVersion(Model.Today);
             <span class="fw-semibold">@framework.Framework.Name</span><text>, version @framework.Version.Number: </text>
-            <span id="coverage">@framework.CoverageText</span><term name="Coverage"></term>
+            <span id="coverage">@framework.CoverageText</span> <term name="Coverage"></term>
             @if (current is not null && current.Id != framework.Version.Id && current.Number > framework.Version.Number)
             {
                 <span class="badge text-bg-warning ms-2" id="compliance-newer">Newer version available</span>
@@ -148,7 +148,12 @@
         return;
     }
 
-    @* US-044 R1: the numbers and the covered share of the applicable requirements (same numbers as US-043 R6) *@
+    @* US-044 R1: the numbers and the covered share of the applicable requirements (same numbers as US-043 R6).
+       #52: a number that has a filter is the filter: click it to show those requirements, click again for all. *@
+    @{
+        string FilterUrl(string slug) => Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Compliance, sub = activeSlug,
+            show = slug == ComplianceFilters.All || slug == filter ? null : slug, q = string.IsNullOrWhiteSpace(Model.Search) ? null : Model.Search })!;
+    }
     <div class="card mb-3" id="compliance-summary">
         <div class="card-body py-3">
             <div class="row text-center g-2 mb-2">
@@ -161,23 +166,22 @@
                     <div class="fs-4 fw-semibold text-primary" id="summary-evidence">@shownFrameworks.Sum(f => f.WithEvidence)</div>
                     <div class="small text-muted">With evidence</div>
                 </div>
-                <div class="col-6 col-md">
-                    <div class="fs-4 fw-semibold text-danger" id="summary-not-covered">@shownFrameworks.Sum(f => f.NotCovered)</div>
-                    <div class="small text-muted">Not covered</div>
-                </div>
-                <div class="col-6 col-md">
-                    @* US-155 *@
-                    <div class="fs-4 fw-semibold text-warning-emphasis" id="summary-needs-action">@shownFrameworks.Sum(f => f.NeedsActionCount)</div>
-                    <div class="small text-muted">Needs action</div>
-                </div>
-                <div class="col-6 col-md">
-                    <div class="fs-4 fw-semibold text-info" id="summary-suggestions">@shownFrameworks.Sum(f => f.SuggestionCount)</div>
-                    <div class="small text-muted">AI suggestions</div>
-                </div>
-                <div class="col-6 col-md">
-                    <div class="fs-4 fw-semibold text-secondary" id="summary-not-applicable">@shownFrameworks.Sum(f => f.NotApplicable)</div>
-                    <div class="small text-muted">Not applicable</div>
-                </div>
+                @foreach (var (slug, label, id, css, count) in new (string, string, string, string, int)[]
+                {
+                    (ComplianceFilters.NotCovered, "Not covered", "summary-not-covered", "text-danger", shownFrameworks.Sum(f => f.NotCovered)),
+                    (ComplianceFilters.NeedsAction, "Needs action", "summary-needs-action", "text-warning-emphasis", shownFrameworks.Sum(f => f.NeedsActionCount)), // US-155
+                    (ComplianceFilters.HasSuggestions, "AI suggestions", "summary-suggestions", "text-info", shownFrameworks.Sum(f => f.SuggestionCount)),
+                    (ComplianceFilters.NotApplicable, "Not applicable", "summary-not-applicable", "text-secondary", shownFrameworks.Sum(f => f.NotApplicable))
+                })
+                {
+                    <div class="col-6 col-md">
+                        <a class="d-block text-decoration-none rounded tile-filter @(slug == filter ? "bg-body-secondary" : "")" data-tile-filter="@slug"
+                           aria-current="@(slug == filter ? "true" : null)" href="@FilterUrl(slug)" title="@(slug == filter ? "Show all requirements" : $"Show only: {label}")">
+                            <div class="fs-4 fw-semibold @css" id="@id">@count</div>
+                            <div class="small text-muted">@label</div>
+                        </a>
+                    </div>
+                }
             </div>
             <div class="progress ct-progress-sm" role="progressbar" id="coverage-bar" aria-label="Covered share"
                  aria-valuenow="@percent" aria-valuemin="0" aria-valuemax="100">
@@ -189,15 +193,18 @@
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
         @* US-044 R2: links (GET), so a filtered view can be shared; the search is kept *@
         @* US-175 R2, R3: the filter and search of this sub-tab are remembered in this browser; an address with its own wins *@
-        <div class="btn-group btn-group-sm" role="group" aria-label="Filter requirements" id="compliance-filters"
-             data-remember="compliance:@project.Id:@activeSlug" data-remember-params="show,q">
-            @foreach (var (slug, title) in ComplianceFilters.Each)
-            {
-                <a class="btn @(slug == filter ? "btn-secondary" : "btn-outline-secondary")" data-filter="@slug"
-                   aria-current="@(slug == filter ? "true" : null)"
-                   href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Compliance, sub = activeSlug, show = slug == ComplianceFilters.All ? null : slug, q = string.IsNullOrWhiteSpace(Model.Search) ? null : Model.Search })">@title</a>
-            }
-        </div>
+        @* #52: the filters in one menu; the numbers above are the quick way *@
+        <details class="filter-menu" id="compliance-filters" data-remember="compliance:@project.Id:@activeSlug" data-remember-params="show,q">
+            <summary class="btn btn-sm btn-outline-secondary">Show: @ComplianceFilters.Each.First(f => f.Slug == filter).Title</summary>
+            <div class="list-group list-group-flush border rounded mt-1 small" role="group" aria-label="Filter requirements">
+                @foreach (var (slug, title) in ComplianceFilters.Each)
+                {
+                    <a class="list-group-item list-group-item-action py-1 @(slug == filter ? "active" : "")" data-filter="@slug"
+                       aria-current="@(slug == filter ? "true" : null)"
+                       href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Compliance, sub = activeSlug, show = slug == ComplianceFilters.All ? null : slug, q = string.IsNullOrWhiteSpace(Model.Search) ? null : Model.Search })">@title</a>
+                }
+            </div>
+        </details>
 
         <button type="button" class="btn btn-sm btn-link reset-view" data-reset-view="compliance:@project.Id:@activeSlug" hidden>Reset view</button>
         @* US-019 R3: a GET form, so a search can be linked to *@
@@ -207,62 +214,55 @@
             {
                 <input type="hidden" name="show" value="@showFilter" />
             }
-            <input name="q" value="@Model.Search" class="form-control form-control-sm" placeholder="Search code or text" aria-label="Search requirements" />
-            <button type="submit" class="btn btn-sm btn-outline-secondary">Search</button>
+            @* #52: the list is filtered as you type (site.js); Enter also searches the requirements' full text *@
+            <input name="q" value="@Model.Search" class="form-control form-control-sm" placeholder="Search code or text" aria-label="Search requirements"
+                   data-filter-rows="#requirements-table tr.requirement-row" />
+            <button type="submit" class="btn btn-sm btn-outline-secondary visually-hidden-focusable">Search</button>
         </form>
 
-        @* US-052: the traceability matrix, for this regulation or all of them; for every role.
-           US-120: as Excel or CSV, made for the team, an auditor or the management. A GET form, so it is a plain download. *@
-        <form method="get" class="d-flex flex-wrap gap-1 ms-md-auto" id="traceability-download"
-              action="@Url.Action("Traceability", new { id = project.Id })" aria-label="Download traceability matrix">
-            <select name="audience" class="form-select form-select-sm w-auto" aria-label="For whom">
-                <option value="team">For the team</option>
-                <option value="auditor">For an auditor</option>
-                <option value="management">For the management</option>
-            </select>
-            <select name="format" class="form-select form-select-sm w-auto" aria-label="Format">
-                <option value="xlsx">Excel</option>
-                <option value="csv">CSV</option>
-            </select>
-            <select name="sub" class="form-select form-select-sm w-auto" aria-label="Regulations">
-                @if (!all)
-                {
-                    <option value="@activeSlug">@FrameworkNames.Short(active!.Framework.Name)</option>
-                }
-                <option value="">All regulations</option>
-            </select>
-            <button type="submit" class="btn btn-sm btn-outline-secondary" id="download-traceability">Download</button>
-        </form>
+        @* US-052, US-120: the traceability matrix is downloaded on the Reports tab (#52) *@
 
-        @if (!all && !project.IsClosed && canLink && openStories.Count > 0 && active!.NotCovered > 0)
-        {
-            @* US-044 R3: only this framework's not-covered, applicable requirements *@
-            <form asp-action="SuggestForNotCovered" method="post" id="suggest-not-covered" data-busy="Working… this can take a minute">
-                <input type="hidden" name="projectId" value="@project.Id" />
-                <input type="hidden" name="frameworkId" value="@active.Framework.Id" />
-                <input type="hidden" name="sub" value="@activeSlug" />
-                <button type="submit" class="btn btn-sm btn-outline-primary" title="The local AI suggests user stories for each requirement that is not covered. You approve or reject each suggestion.">Suggest for not covered</button>
-            </form>
+        @{
+            var aiActions = !all && !project.IsClosed && active!.NotCovered > 0 && ((canLink && openStories.Count > 0) || canDecide);
         }
-        @if (!all && !project.IsClosed && canDecide && active!.NotCovered > 0)
+        @if (aiActions)
         {
-            @* US-155 R1, R2: the AI marks what applies and has no work yet; a person decides on each mark *@
-            <form asp-action="FindNeedsAction" method="post" id="find-needs-action" data-busy="Working… this can take a minute">
-                <input type="hidden" name="projectId" value="@project.Id" />
-                <input type="hidden" name="frameworkId" value="@active.Framework.Id" />
-                <input type="hidden" name="sub" value="@activeSlug" />
-                <button type="submit" class="btn btn-sm btn-outline-primary" title="The local AI checks the requirements that are not covered against the product's description, purpose, scope, classification and risks, and marks the ones that apply and still need work.">Find what needs action</button>
-            </form>
-        }
-        @if (!all && !project.IsClosed && canDecide && active!.NotCovered > 0)
-        {
-            @* US-060 R6: the AI only suggests; a person accepts or rejects each one *@
-            <form asp-action="SuggestNotApplicable" method="post" id="suggest-not-applicable" data-busy="Working… this can take a minute">
-                <input type="hidden" name="projectId" value="@project.Id" />
-                <input type="hidden" name="frameworkId" value="@active.Framework.Id" />
-                <input type="hidden" name="sub" value="@activeSlug" />
-                <button type="submit" class="btn btn-sm btn-outline-secondary" title="The local AI checks the requirements that are not covered against the product's purpose, scope and classification, and suggests the ones that clearly do not apply.">Suggest not applicable</button>
-            </form>
+            @* #52: the AI's three actions in one menu, named by what they do *@
+            <details class="ai-menu" id="ask-ai-menu">
+                <summary class="btn btn-sm btn-outline-info">Ask the AI…</summary>
+                <div class="d-flex flex-column gap-2 border rounded p-2 mt-1">
+            @if (!all && !project.IsClosed && canLink && openStories.Count > 0 && active!.NotCovered > 0)
+            {
+                @* US-044 R3: only this framework's not-covered, applicable requirements *@
+                <form asp-action="SuggestForNotCovered" method="post" id="suggest-not-covered" data-busy="Working… this can take a minute">
+                    <input type="hidden" name="projectId" value="@project.Id" />
+                    <input type="hidden" name="frameworkId" value="@active.Framework.Id" />
+                    <input type="hidden" name="sub" value="@activeSlug" />
+                    <button type="submit" class="btn btn-sm btn-link text-start p-0" title="The local AI suggests user stories for each requirement that is not covered. You approve or reject each suggestion.">Suggest stories for requirements without one</button>
+                </form>
+            }
+            @if (!all && !project.IsClosed && canDecide && active!.NotCovered > 0)
+            {
+                @* US-155 R1, R2: the AI marks what applies and has no work yet; a person decides on each mark *@
+                <form asp-action="FindNeedsAction" method="post" id="find-needs-action" data-busy="Working… this can take a minute">
+                    <input type="hidden" name="projectId" value="@project.Id" />
+                    <input type="hidden" name="frameworkId" value="@active.Framework.Id" />
+                    <input type="hidden" name="sub" value="@activeSlug" />
+                    <button type="submit" class="btn btn-sm btn-link text-start p-0" title="The local AI checks the requirements that are not covered against the product's description, purpose, scope, classification and risks, and marks the ones that apply and still need work.">Find requirements that need action</button>
+                </form>
+            }
+            @if (!all && !project.IsClosed && canDecide && active!.NotCovered > 0)
+            {
+                @* US-060 R6: the AI only suggests; a person accepts or rejects each one *@
+                <form asp-action="SuggestNotApplicable" method="post" id="suggest-not-applicable" data-busy="Working… this can take a minute">
+                    <input type="hidden" name="projectId" value="@project.Id" />
+                    <input type="hidden" name="frameworkId" value="@active.Framework.Id" />
+                    <input type="hidden" name="sub" value="@activeSlug" />
+                    <button type="submit" class="btn btn-sm btn-link text-start p-0" title="The local AI checks the requirements that are not covered against the product's purpose, scope and classification, and suggests the ones that clearly do not apply.">Suggest requirements that do not apply</button>
+                </form>
+            }
+                </div>
+            </details>
         }
         @if (Model.Reassessment is { } reassessment)
         {
