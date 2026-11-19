@@ -58,6 +58,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<IRequirementLinkRepository, RequirementLinkRepository>(); // US-021
                 services.AddScoped<IRequirementApplicabilityRepository, RequirementApplicabilityRepository>(); // US-043
                 services.AddScoped<IDocumentationDecisionRepository, DocumentationDecisionRepository>(); // US-204
+                services.AddScoped<ComplianceTracker.Application.WorkItems.IDefinitionOfDoneRepository, DefinitionOfDoneRepository>(); // US-109
                 services.AddScoped<IRequirementScopeDecisionRepository, RequirementScopeDecisionRepository>(); // US-115
                 services.AddScoped<IEvidenceRepository, EvidenceRepository>(); // US-057
                 services.AddScoped<IEvidenceLinkSuggestionRepository, EvidenceLinkSuggestionRepository>(); // US-059

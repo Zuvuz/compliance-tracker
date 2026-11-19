@@ -408,6 +408,12 @@ namespace ComplianceTracker.Domain.ActivityLog
         GapDraftAccepted,
         GapDraftDiscarded,
 
+        // US-109: the Definition of Done changed (Details holds the old and new criteria and the version), a manual criterion
+        // was ticked or unticked, and a use case or a requirement was marked Done. SubjectId points at the project.
+        DefinitionOfDoneChanged,
+        DoneCriterionTicked,
+        WorkItemMarkedDone,
+
         // US-160 R6: a monitoring alert was refused (too large or not a known shape); Details never holds its content
         SecurityAlertRefused,
 

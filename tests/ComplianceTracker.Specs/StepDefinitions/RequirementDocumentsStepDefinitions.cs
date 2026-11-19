@@ -78,6 +78,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         // US-034: a use case document from the doc string, "# " for a heading
+        [Given("I have uploaded the use case document {string} to {string} containing:")]
         [When("I upload the use case document {string} to {string} containing:")]
         public Task WhenIUploadTheUseCaseDocument(string fileName, string projectName, string text)
             => UploadAsync(projectName, fileName, TestDocuments.Docx(text));

@@ -34,6 +34,8 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<RequirementLink> RequirementLinks => Set<RequirementLink>();
         public DbSet<RequirementApplicability> RequirementApplicability => Set<RequirementApplicability>();
         public DbSet<DocumentationDecision> DocumentationDecisions => Set<DocumentationDecision>(); // US-204
+        public DbSet<DefinitionOfDone> DefinitionsOfDone => Set<DefinitionOfDone>(); // US-109
+        public DbSet<DoneTick> DoneTicks => Set<DoneTick>(); // US-109
         public DbSet<RequirementScopeDecision> RequirementScopeDecisions => Set<RequirementScopeDecision>(); // US-115
         public DbSet<Evidence> Evidence => Set<Evidence>();
         public DbSet<EvidenceDocument> EvidenceDocuments => Set<EvidenceDocument>();

@@ -170,6 +170,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] Application.Projects.GapFinder gapFinder,
             [FromServices] Application.Security.SecurityEventQueries securityEventQueries,
             [FromServices] EvidenceQueries evidenceQueries,
+            [FromServices] Application.WorkItems.DefinitionOfDoneService doneAudit,
             [FromServices] IEvidenceRepository evidenceRepository,
             [FromServices] Application.Scanning.ScanService scans,
             [FromServices] Application.Scanning.SbomService sbomService,
@@ -357,6 +358,10 @@ namespace ComplianceTracker.Web.Controllers
                 Sboms = sbomOverview,
                 NextGate = overview.Gate, // US-071
                 Checklist = overview.Checklist, // US-047
+                // US-109 R9: only when something is finished, so a project without finished work makes no more queries
+                DoneNotMeeting = activeTab is ProjectTabs.Overview && compliance is { } withWork && withWork.WorkItems.Any(w => w.IsFinished)
+                    ? (await doneAudit.AuditAsync(id, cancellationToken, compliance))?.FinishedNotMeeting ?? 0
+                    : 0,
                 // #52: the evidence a checklist item can be proven with; one light query, only where it is picked
                 ChecklistEvidence = activeTab is ProjectTabs.Overview && overview.Checklist is { Missing.Count: > 0 }
                     ? (await evidenceRepository.ListActiveAsync(id, cancellationToken)).OrderBy(e => e.Title).Select(e => (e.Id, e.Title)).ToList()
@@ -644,6 +649,71 @@ namespace ComplianceTracker.Web.Controllers
         {
             await inherited.ChangeScopeAsync(requirementId, scope, reason ?? "", cancellationToken);
             return BackToCompliance(projectId, sub);
+        }
+
+        // GET /Projects/DoneAudit/{id}?show=failing: US-109 R6, every work item with its Definition of Done; for everyone, the
+        // Auditor too (R7)
+        [HttpGet]
+        public async Task<IActionResult> DoneAudit(Guid id, string? show, [FromServices] Application.WorkItems.DefinitionOfDoneService done, CancellationToken cancellationToken)
+        {
+            if (await done.AuditAsync(id, cancellationToken) is not { } view)
+            {
+                return NotFound();
+            }
+
+            ViewData["Show"] = show == "failing" ? "failing" : null;
+            return View(view);
+        }
+
+        // GET /Projects/DoneAuditCsv/{id}: US-109 R7, the audit as CSV for the auditor and the audit package
+        [HttpGet]
+        public async Task<IActionResult> DoneAuditCsv(Guid id, [FromServices] Application.WorkItems.DefinitionOfDoneService done, CancellationToken cancellationToken)
+            => await done.CsvAsync(id, cancellationToken) is { } csv
+                ? File(System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(csv)).ToArray(), "text/csv", "definition-of-done-audit.csv")
+                : NotFound();
+
+        // POST /Projects/ChangeDefinitionOfDone: US-109 R8, one kind's checks and manual criteria (one per line)
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(DoneAudit), IdFrom = "projectId")]
+        public async Task<IActionResult> ChangeDefinitionOfDone(Guid projectId, Domain.WorkItems.WorkItemType kind, List<Domain.WorkItems.DoneCheck>? checks, string? manual,
+            [FromServices] Application.WorkItems.DefinitionOfDoneService done, CancellationToken cancellationToken)
+        {
+            await done.ChangeAsync(projectId, kind, checks ?? [], manual, cancellationToken);
+            return RedirectToAction(nameof(DoneAudit), new { id = projectId });
+        }
+
+        // POST /Projects/TickDoneCriterion: US-109 R4, tick (or untick) a manual criterion on a work item
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(DoneAudit), IdFrom = "projectId")]
+        public async Task<IActionResult> TickDoneCriterion(Guid projectId, Guid workItemId, string? criterion, bool tick,
+            [FromServices] Application.WorkItems.DefinitionOfDoneService done, CancellationToken cancellationToken)
+        {
+            if (tick)
+            {
+                await done.TickAsync(projectId, workItemId, criterion ?? "", cancellationToken);
+            }
+            else
+            {
+                await done.UntickAsync(projectId, workItemId, criterion ?? "", cancellationToken);
+            }
+
+            return RedirectToAction(nameof(DoneAudit), null, new { id = projectId }, $"done-{workItemId}");
+        }
+
+        // POST /Projects/MarkWorkItemDone: US-109 R5, a use case or a requirement is finished when a person marks it Done
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(DoneAudit), IdFrom = "projectId")]
+        public async Task<IActionResult> MarkWorkItemDone(Guid projectId, Guid workItemId, bool done,
+            [FromServices] Application.WorkItems.DefinitionOfDoneService definition, CancellationToken cancellationToken)
+        {
+            await definition.MarkDoneAsync(projectId, workItemId, done, cancellationToken);
+            return RedirectToAction(nameof(DoneAudit), null, new { id = projectId }, $"done-{workItemId}");
         }
 
         // POST /Projects/DecideDocumentationEnough: US-204 R5, R8, "documentation is enough" or proof is needed, with a reason

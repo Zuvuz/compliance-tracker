@@ -27,11 +27,13 @@ Feature: Each page has a limit on database queries
     # #52: the phase card lists the project's evidence for "+ Evidence" on a checklist item (one query): 53 -> 54.
     # US-204: the compliance view reads the organisation's "documentation is enough" decisions (one query each time it is
     # built): Overview 54 -> 55, Evidence 35 -> 36, Work items 30 -> 31, Reports 30 -> 31, Traceability download 63 -> 65.
+    # US-109: the Overview counts the finished work items that do not meet the Definition of Done (the project, the
+    # Definition of Done and the ticks: three fixed queries, only when something is finished): Overview 55 -> 58.
     Then each page stays within its limit and does not grow with the data:
       | Page                  | Limit |
       | Dashboard             | 12    |
       | Projects              | 12    |
-      | Overview              | 55    |
+      | Overview              | 58    |
       | Compliance            | 54    |
       | Evidence              | 36    |
       | Risks                 | 18    |

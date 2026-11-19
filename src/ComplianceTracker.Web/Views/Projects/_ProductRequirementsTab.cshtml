@@ -12,6 +12,9 @@
     var canChooseMethods = !project.IsClosed && await Permissions.CanAsync(Permission.EditProjects);
 }
 
+@* US-109: the Definition of Done and the audit of finished work items *@
+<p class="small mb-2"><a id="done-audit-link" asp-action="DoneAudit" asp-route-id="@Model.Project.Id">Definition of Done and audit of finished work</a></p>
+
 @* R2, R4: the methods the project uses; only roles that edit projects can change them *@
 <section class="mb-3" id="requirement-methods-section">
     <h2 class="h6">How does the project describe its requirements?</h2>

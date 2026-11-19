@@ -52,6 +52,12 @@
         attention.Add((Plural(suggestions, "AI suggestion", "AI suggestions"),
             ComplianceUrl(SubWhere(f => f.SuggestionCount > 0), ComplianceFilters.HasSuggestions)));
     }
+    // US-109 R9
+    if (Model.DoneNotMeeting > 0)
+    {
+        attention.Add((Plural(Model.DoneNotMeeting, "finished work item does not meet the Definition of Done", "finished work items do not meet the Definition of Done"),
+            Url.Action("DoneAudit", new { id = project.Id, show = "failing" })!));
+    }
     // US-110 R7
     var needsReview = frameworks.Sum(f => f.NeedsReview);
     if (needsReview > 0)
