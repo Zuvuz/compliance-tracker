@@ -38,4 +38,4 @@ Feature: Contact details for suppliers
   Scenario: An e-mail address that is not valid is refused
     Given I have added the supplier "CloudHost ApS" delivering "Hosting" with criticality "High" and the rule "NIS2 Art. 21(2)(d)"
     When I add the contact person "Jens Hansen" to "CloudHost ApS" as "Account manager" with the e-mail "jens at cloudhost"
-    Then I see the error "\"jens at cloudhost\" is not a valid e-mail address"
+    Then I see the error "Not a valid e-mail address: jens at cloudhost"

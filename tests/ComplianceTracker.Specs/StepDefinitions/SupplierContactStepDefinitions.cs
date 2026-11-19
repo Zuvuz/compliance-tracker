@@ -37,12 +37,14 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public Task WhenIAddASecurityContact(string name, string supplier, string email)
             => AddContactAsync(supplier, name, "Security contact", email, primary: false, security: true);
 
+        [When("I add the contact person {string} to {string} as primary with the e-mail {string}")]
+        public Task WhenIAddAPrimaryContact(string name, string supplier, string email)
+            => AddContactAsync(supplier, name, "Account manager", email, primary: true, security: false);
+
         [Given("I add the contact person {string} to {string} as {string} with the e-mail {string}")]
         [When("I add the contact person {string} to {string} as {string} with the e-mail {string}")]
         public Task WhenIAddAContact(string name, string supplier, string role, string email)
-            => role == "primary"
-                ? AddContactAsync(supplier, name, "Account manager", email, primary: true, security: false)
-                : AddContactAsync(supplier, name, role, email, primary: false, security: false);
+            => AddContactAsync(supplier, name, role, email, primary: false, security: false);
 
         [Then("the supplier {string} shows the CVR {string} and the country {string}")]
         public async Task ThenTheSupplierShowsTheCompany(string supplier, string cvr, string country)

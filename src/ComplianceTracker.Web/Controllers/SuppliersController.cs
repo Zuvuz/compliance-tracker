@@ -138,14 +138,16 @@ namespace ComplianceTracker.Web.Controllers
     {
         public string OrganizationName { get; init; } = "";
 
-        // US-207 R4: the subject of "Write": updated evidence when it is missing or ends soon, security for a security
-        // contact, else the organisation's name, e.g. "Updated evidence – Demo ApS"
+        // US-207 R4: the subject of "Write": security for a security contact or the security mailbox (null), updated
+        // evidence when it is missing or ends soon, else the organisation's name, e.g. "Security – Demo ApS"
         public static string Subject(SupplierView view, SupplierContact? contact, string organization)
-        {
-            var suffix = string.IsNullOrWhiteSpace(organization) ? "" : $" – {organization}";
-            return view.Status.State != SupplierState.Ok ? $"Updated evidence{suffix}"
-                : contact is { IsSecurityContact: true } || contact is null ? $"Security{suffix}"
+            => contact is null || contact.IsSecurityContact ? $"Security{Suffix(organization)}"
+                : view.Status.State != SupplierState.Ok ? EvidenceSubject(organization)
                 : string.IsNullOrWhiteSpace(organization) ? view.Supplier.Name : organization;
-        }
+
+        // US-207: asking the primary contact for evidence that is missing or ends soon
+        public static string EvidenceSubject(string organization) => $"Updated evidence{Suffix(organization)}";
+
+        private static string Suffix(string organization) => string.IsNullOrWhiteSpace(organization) ? "" : $" – {organization}";
     }
 }

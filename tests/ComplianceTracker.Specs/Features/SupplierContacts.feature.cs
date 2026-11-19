@@ -350,7 +350,7 @@ namespace ComplianceTracker.Specs.Features
                         "th the e-mail \"jens at cloudhost\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 41
-    await testRunner.ThenAsync("I see the error \"\\\"jens at cloudhost\\\" is not a valid e-mail address\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("I see the error \"Not a valid e-mail address: jens at cloudhost\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

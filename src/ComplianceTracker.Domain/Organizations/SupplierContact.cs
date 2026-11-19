@@ -87,7 +87,7 @@ namespace ComplianceTracker.Domain.Organizations
 
             if (clean.Length > SupplierContact.MaxEmailLength || !EmailPattern().IsMatch(clean))
             {
-                throw new DomainException($"\"{clean}\" is not a valid e-mail address");
+                throw new DomainException($"Not a valid e-mail address: {clean}");
             }
 
             return clean;
@@ -104,7 +104,7 @@ namespace ComplianceTracker.Domain.Organizations
             if (clean.Length > SupplierContact.MaxPhoneLength || !PhonePattern().IsMatch(clean) || clean.Count(char.IsDigit) < 6
                 || clean.IndexOf('+', 1) > 0)
             {
-                throw new DomainException($"\"{clean}\" is not a valid phone number, e.g. +45 12 34 56 78");
+                throw new DomainException($"Not a valid phone number: {clean}. Write it like +45 12 34 56 78");
             }
 
             return clean;
@@ -127,7 +127,7 @@ namespace ComplianceTracker.Domain.Organizations
             if (clean.Length > 500 || !Uri.TryCreate(clean, UriKind.Absolute, out var uri)
                 || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) || !uri.Host.Contains('.'))
             {
-                throw new DomainException($"\"{(website ?? "").Trim()}\" is not a valid website");
+                throw new DomainException($"Not a valid website: {(website ?? "").Trim()}");
             }
 
             return uri.ToString();

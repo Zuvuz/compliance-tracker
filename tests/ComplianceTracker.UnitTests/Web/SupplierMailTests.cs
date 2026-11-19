@@ -19,13 +19,22 @@ public class SupplierMailTests
     }
 
     [Fact]
-    public void Missing_or_ending_evidence_asks_for_updated_evidence()
+    public void Missing_or_ending_evidence_asks_another_person_for_updated_evidence()
     {
         var (missing, account, _) = Supplier(SupplierState.Missing);
-        var (soon, _, security) = Supplier(SupplierState.ExpiresSoon);
+        var (soon, accountSoon, _) = Supplier(SupplierState.ExpiresSoon);
 
         Assert.Equal("Updated evidence – Demo ApS", SuppliersViewModel.Subject(missing, account, "Demo ApS"));
-        Assert.Equal("Updated evidence – Demo ApS", SuppliersViewModel.Subject(soon, security, "Demo ApS"));
+        Assert.Equal("Updated evidence – Demo ApS", SuppliersViewModel.Subject(soon, accountSoon, "Demo ApS"));
+        Assert.Equal("Updated evidence – Demo ApS", SuppliersViewModel.EvidenceSubject("Demo ApS"));
+    }
+
+    [Fact]
+    public void A_security_contact_is_written_to_about_security_even_when_evidence_is_missing()
+    {
+        var (missing, _, security) = Supplier(SupplierState.Missing);
+
+        Assert.Equal("Security – Demo ApS", SuppliersViewModel.Subject(missing, security, "Demo ApS"));
     }
 
     [Fact]

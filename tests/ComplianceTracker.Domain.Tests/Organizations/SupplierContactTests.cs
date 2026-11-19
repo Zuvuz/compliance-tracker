@@ -116,7 +116,7 @@ public class SupplierContactTests
     [InlineData("jens@@cloudhost.example")]
     [InlineData("jens hansen@cloudhost.example")]
     public void An_e_mail_address_that_is_not_valid_is_refused(string email)
-        => Assert.EndsWith("is not a valid e-mail address", Assert.Throws<DomainException>(() => SupplierContacts.CleanEmail(email)).Message);
+        => Assert.StartsWith("Not a valid e-mail address: ", Assert.Throws<DomainException>(() => SupplierContacts.CleanEmail(email)).Message);
 
     [Fact]
     public void An_e_mail_address_is_trimmed_and_an_empty_one_is_none()

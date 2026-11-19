@@ -213,7 +213,7 @@ else
                             @if (view.Status.State != SupplierState.Ok && primary?.Email is { } primaryEmail)
                             {
                                 @* US-207: ask the primary contact for updated evidence; the reminder links to this row *@
-                                <div class="small"><a class="ask-for-evidence" href="@SupplierContacts.MailTo(primaryEmail, SuppliersViewModel.Subject(view, primary, Model.OrganizationName))">Ask @primary.Name for it</a></div>
+                                <div class="small"><a class="ask-for-evidence" href="@SupplierContacts.MailTo(primaryEmail, SuppliersViewModel.EvidenceSubject(Model.OrganizationName))">Ask @primary.Name for it</a></div>
                             }
                         </td>
                         <td class="small">

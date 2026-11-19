@@ -378,6 +378,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "auditid" or "correctsauditid" => ids.Audit, // US-134
                 "supplierid" => ids.Supplier, // US-191
                 "supplierevidenceid" => ids.SupplierEvidence,
+                "contactid" => ids.SupplierContact, // US-207
                 "itemid" => ids.ChecklistItem, // US-192
                 "findingid" => ids.Finding,
                 "tokenid" => ids.UploadToken, // US-122
@@ -403,10 +404,10 @@ namespace ComplianceTracker.Specs.StepDefinitions
             Guid Document, Guid DocumentVersion, Guid Framework, Guid FrameworkVersion, Guid FrameworkRequirement,
             Guid CraRequirement, Guid Member, Guid Invitation, Guid SecurityEvent, Guid RiskAction, Guid Scan, Guid Finding, Guid UploadToken,
             Guid ApprovalRequest, Guid OrganisationDocument, Guid OrganisationDocumentLink, Guid ReportSnapshot, Guid Sbom, Guid RiskImport, Guid Audit,
-            Guid Supplier, Guid SupplierEvidence, Guid ChecklistItem)
+            Guid Supplier, Guid SupplierEvidence, Guid ChecklistItem, Guid SupplierContact)
         {
             public IEnumerable<Guid> All => [Organization, Project, Risk, Measure, Evidence, WorkItem, Link, Document,
-                DocumentVersion, Framework, FrameworkVersion, FrameworkRequirement, Member, Invitation, SecurityEvent, RiskAction, Scan, Finding, UploadToken, ApprovalRequest, OrganisationDocument, OrganisationDocumentLink, ReportSnapshot, Sbom, RiskImport, Audit, Supplier, SupplierEvidence, ChecklistItem];
+                DocumentVersion, Framework, FrameworkVersion, FrameworkRequirement, Member, Invitation, SecurityEvent, RiskAction, Scan, Finding, UploadToken, ApprovalRequest, OrganisationDocument, OrganisationDocumentLink, ReportSnapshot, Sbom, RiskImport, Audit, Supplier, SupplierEvidence, ChecklistItem, SupplierContact];
         }
 
         private async Task<Ids> IdsAsync(string organisation)
@@ -450,7 +451,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 await db.Audits.Where(a => a.ProjectId == project.Id).Select(a => a.Id).SingleAsync(), // US-134
                 await db.Suppliers.Where(s => s.OrganizationId == org.Id).Select(s => s.Id).SingleAsync(), // US-191
                 await db.Suppliers.Where(s => s.OrganizationId == org.Id).SelectMany(s => s.Evidence).Select(e => e.Id).SingleAsync(),
-                await db.OrganisationChecklistItems.Where(i => i.OrganizationId == org.Id).Select(i => i.Id).SingleAsync()); // US-192
+                await db.OrganisationChecklistItems.Where(i => i.OrganizationId == org.Id).Select(i => i.Id).SingleAsync(), // US-192
+                await db.Suppliers.Where(s => s.OrganizationId == org.Id).SelectMany(s => s.Contacts).Select(c => c.Id).SingleAsync()); // US-207
         }
 
         // A form token for the caller, from a page they may open (their own Users page)
