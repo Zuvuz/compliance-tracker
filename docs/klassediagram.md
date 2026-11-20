@@ -1346,6 +1346,24 @@ classDiagram
     +Matches(content: byte[]) bool
   }
   ReportSnapshot --> Project : locked for
+  class StatusText {
+    -id: Guid
+    -projectId: Guid
+    -part: string
+    -text: string
+    -isAiGenerated: bool
+    -basis: string
+    -model: string?
+    -writtenAt: DateTime
+    -changedById: Guid?
+    -changedAt: DateTime?
+    +Draft(projectId, part, text, basis, model, now)$ StatusText
+    +Redraft(text, basis, model, now)
+    +Accept(userId, basis, now)
+    +Edit(text, userId, basis, now)
+    +IsOutdated(currentBasis) bool
+  }
+  StatusText --> Project : management report text of
   class ReportSigning {
     -id: Guid
     -snapshotId: Guid

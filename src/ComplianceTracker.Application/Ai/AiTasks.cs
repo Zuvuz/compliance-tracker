@@ -24,7 +24,10 @@ namespace ComplianceTracker.Application.Ai
         RiskDrafts,
 
         // Filling in the import templates (US-114)
-        ImportFill
+        ImportFill,
+
+        // The texts of the management report (US-040)
+        StatusReport
     }
 
     // US-117: the model of each task (implemented in Infrastructure from the settings)
@@ -61,6 +64,7 @@ namespace ComplianceTracker.Application.Ai
             AiTask.GapDrafts => "Gap drafts",
             AiTask.RiskDrafts => "Risk drafts",
             AiTask.ImportFill => "Import fill",
+            AiTask.StatusReport => "Status report",
             _ => task.ToString()
         };
 

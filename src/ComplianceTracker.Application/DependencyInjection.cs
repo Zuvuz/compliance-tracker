@@ -128,6 +128,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<Reminders.ReminderSettingsService>();
             services.AddScoped<Reports.ReportFiles>(); // US-131
             services.AddScoped<Reports.ReportService>(); // US-050
+            services.AddScoped<Reports.StatusReportService>(); // US-040
             services.AddScoped<Reports.ReportSigningService>(); // US-132
             services.AddScoped<Security.SecurityEventSuggestionService>(); // US-128
             services.AddScoped<Security.SecurityEventQueries>();

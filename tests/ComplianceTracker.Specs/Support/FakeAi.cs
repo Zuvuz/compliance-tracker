@@ -44,6 +44,11 @@ namespace ComplianceTracker.Specs.Support
             "RISK: Stolen session cookie\nTHREAT: An attacker steals a session cookie via XSS\nASSET: User accounts\nLIKELIHOOD: 3\nIMPACT: 4\nBASED ON: I.2(d) not covered\nWHY: Sign-in is not protected yet\n---\n"
             + "RISK: Unpatched open-source component\nTHREAT: A known vulnerability in a library is exploited\nASSET: The product\nLIKELIHOOD: 2\nIMPACT: 4\nBASED ON: Intended purpose\nWHY: The product uses many libraries";
 
+        // US-040: the management report's summary, and the text per regulation (its short name); a regulation without one
+        // gets "Fake status of <name>."
+        public string StatusSummary { get; set; } = "Fake summary of the status.";
+        public Dictionary<string, string> StatusTexts { get; } = new(StringComparer.Ordinal);
+
         // US-060, US-061: every prompt, so a scenario can check what the AI was told
         public List<string> Prompts { get; } = new();
         // US-117: tasks with their own model name, and tasks whose own model cannot be reached (FakeAiModels)
@@ -141,6 +146,20 @@ namespace ComplianceTracker.Specs.Support
         public Task<string> WriteAsync(string prompt, CancellationToken cancellationToken = default)
         {
             ThrowIfUnavailable();
+            if (prompt.Contains(ComplianceTracker.Application.Reports.StatusReportPrompt.Marker, StringComparison.Ordinal))
+            {
+                lock (this)
+                {
+                    Prompts.Add(prompt);
+                }
+
+                // US-040: the regulations are named in the line "Write one TEXT line for each of: CRA, ISO 27001"
+                const string each = "for each of: ";
+                var at = prompt.IndexOf(each, StringComparison.Ordinal) + each.Length;
+                var names = prompt[at..prompt.IndexOf('\n', at)].Trim().Split(", ", StringSplitOptions.RemoveEmptyEntries);
+                return Task.FromResult($"SUMMARY: {StatusSummary}\n"
+                    + string.Join("\n", names.Select(n => $"TEXT {n}: {(StatusTexts.TryGetValue(n, out var text) ? text : $"Fake status of {n}.")}")));
+            }
             if (prompt.Contains(ComplianceTracker.Application.Risks.RiskDraftPrompt.Marker, StringComparison.Ordinal))
             {
                 lock (this)

@@ -420,6 +420,11 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-115 R2: a person changed where a requirement the organisation follows is met (organisation-wide, or carried out
         // in the projects), with a reason. SubjectId points at the organisation area; Details holds the requirement and why.
-        RequirementScopeChanged
+        RequirementScopeChanged,
+
+        // US-040 R9: the AI drafted the management report's texts (Details names the model and the parts), and a person
+        // accepted or edited one. Locking the report is ReportLocked (US-050). SubjectId points at the project.
+        ReportDrafted,
+        ReportTextChanged
     }
 }

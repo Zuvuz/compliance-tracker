@@ -230,7 +230,7 @@ namespace ComplianceTracker.Application.Reports
                 f.Total == 0 ? "No requirements yet" : $"{f.Percent} %"
             ], Light(f.Covered, f.Total).Style)).ToList();
 
-            return
+            List<ReportSheet> sheets =
             [
                 new ReportSheet(Sections[0], ["Regulation", "Status", "Coverage", "Since last"], 1, status),
                 new ReportSheet(Sections[1], ["Point"], -1, points) { Kind = ReportSheetKind.Points },
@@ -239,7 +239,25 @@ namespace ComplianceTracker.Application.Reports
                 new ReportSheet(Sections[4], ["Risk", "Level", "Owner", "Due"], 1, risks),
                 new ReportSheet(Sections[5], ["Regulation", "Covered", "Not covered", "Covered without evidence", "Not applicable", "Coverage"], 5, details)
             ];
+
+            // US-040 R2, R4: the texts right after the status; an AI text says so until a person has accepted or edited it
+            if (facts.Texts.Count > 0)
+            {
+                sheets.Insert(1, new ReportSheet(Assessment, ["Text"], -1,
+                    facts.Texts.Select(t => new ReportRow([TextRow(t)], t.IsAiGenerated || t.IsOutdated ? ReportStatus.Warning : ReportStatus.Normal)).ToList())
+                {
+                    Kind = ReportSheetKind.Points
+                });
+            }
+
+            return sheets;
         }
+
+        public const string Assessment = "Assessment";
+
+        // e.g. "Summary (AI-generated): Half of the requirements are covered."
+        public static string TextRow(StatusTextLine text)
+            => $"{text.Label}{(text.IsAiGenerated ? " (AI-generated)" : "")}{(text.IsOutdated ? " (outdated: the figures changed)" : "")}: {text.Text}";
 
         private static int WithoutEvidence(FrameworkCompliance framework)
             => framework.Requirements.Count(r => r.IsApplicable && r.IsCovered && !r.IsProven && !r.Requirement.IsRecommendation); // US-204 R3
