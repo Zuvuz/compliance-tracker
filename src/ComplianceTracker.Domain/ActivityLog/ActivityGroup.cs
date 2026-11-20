@@ -65,7 +65,7 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.ProjectFrameworkVersionChanged or ActivityAction.ProjectMethodsChanged
                 or ActivityAction.ApprovalRequested or ActivityAction.ApprovalGiven or ActivityAction.ApprovalRejected
                 or ActivityAction.ApprovalWithdrawn or ActivityAction.ApprovalCancelled or ActivityAction.ApprovalExpired
-                or ActivityAction.ReportLocked or ActivityAction.ReportSignatureRequested or ActivityAction.ReportSigned
+                or ActivityAction.ReportLocked or ActivityAction.ReportDrafted or ActivityAction.ReportTextChanged or ActivityAction.ReportSignatureRequested or ActivityAction.ReportSigned
                 or ActivityAction.ReportSealed => ActivityGroup.Projects,
             ActivityAction.RepositoryConnected or ActivityAction.WorkItemsSynced or ActivityAction.AccessTokenChanged
                 or ActivityAction.AzureProjectConnected // US-030

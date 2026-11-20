@@ -127,6 +127,7 @@ namespace ComplianceTracker.Infrastructure
                 Persistence.BuiltInFrameworks.Nis2.FrameworkId, Persistence.BuiltInFrameworks.Nis2Denmark.FrameworkId,
                 Persistence.BuiltInFrameworks.Nis2Technical.FrameworkId));
             services.AddScoped<Application.Reports.IReportSnapshotRepository, ReportSnapshotRepository>(); // US-050
+            services.AddScoped<Application.Reports.IStatusTextRepository, StatusTextRepository>(); // US-040
             services.AddScoped<Application.Reports.IReportSigningRepository, ReportSigningRepository>(); // US-132
             services.AddSingleton<Application.Reports.IReportSealer, Reports.ReportSealer>();
             services.AddSingleton<Application.Reports.IPackageSigner, Reports.PackageSigner>(); // US-180

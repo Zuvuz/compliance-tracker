@@ -29,6 +29,8 @@ Feature: Each page has a limit on database queries
     # built): Overview 54 -> 55, Evidence 35 -> 36, Work items 30 -> 31, Reports 30 -> 31, Traceability download 63 -> 65.
     # US-109: the Overview counts the finished work items that do not meet the Definition of Done (the project, the
     # Definition of Done and the ticks: three fixed queries, only when something is finished): Overview 55 -> 58.
+    # US-040: the Reports tab reads the management report texts and whether the member may change them (fixed queries;
+    # the figures only when there are texts): Reports 31 -> 33.
     Then each page stays within its limit and does not grow with the data:
       | Page                  | Limit |
       | Dashboard             | 12    |
@@ -38,7 +40,7 @@ Feature: Each page has a limit on database queries
       | Evidence              | 36    |
       | Risks                 | 18    |
       | Work items            | 31    |
-      | Reports               | 31    |
+      | Reports               | 33    |
       | Project activity      | 14    |
       | Frameworks            | 5     |
       | Organisation activity | 8     |
