@@ -183,7 +183,7 @@ namespace ComplianceTracker.Application.Scanning
                     .ToList();
                 if (tools.Count == 0)
                 {
-                    lines.Add(new FetchLine($"{(read.Source == ScanSource.GitHubDependabot ? "Dependabot" : "Code scanning")}: no alerts", IsWarning: false));
+                    lines.Add(new FetchLine($"{GitHubAlertsSarif.SourceOf(GitHubAlertsSarif.Fingerprint(read.Source, 0))}: no alerts", IsWarning: false));
                     continue;
                 }
 
@@ -200,7 +200,7 @@ namespace ComplianceTracker.Application.Scanning
                     }
 
                     var content = GitHubAlertsSarif.Build(read.Source, tool, alerts.Where(a => !a.Dismissed));
-                    var fileName = $"github-{(read.Source == ScanSource.GitHubDependabot ? "dependabot" : "code-scanning")}-{tool.ToLowerInvariant()}.sarif";
+                    var fileName = $"github-{GitHubAlertsSarif.KeyOf(read.Source)}-{tool.ToLowerInvariant()}.sarif";
                     var scan = await ImportAsync(project, userId, fileName, content, read.Source, cancellationToken);
                     lines.Add(new FetchLine(scan.Summary, IsWarning: false));
                 }

@@ -15,6 +15,8 @@ namespace ComplianceTracker.Infrastructure.WorkItems
         {
             var codeScanning = await ReadSourceAsync<CodeScanningAlert>(repository, "code-scanning", token, cancellationToken);
             var dependabot = await ReadSourceAsync<DependabotAlert>(repository, "dependabot", token, cancellationToken);
+            // US-160 R2: leaked secrets; only the open ones (a resolved secret is fixed)
+            var secrets = await ReadSourceAsync<SecretScanningAlert>(repository, "secret-scanning", token, cancellationToken, ["open"]);
 
             return
             [
@@ -23,17 +25,20 @@ namespace ComplianceTracker.Infrastructure.WorkItems
                     : new GitHubAlertRead(ScanSource.GitHubCodeScanning, codeScanning.Alerts.Select(ToAlert).ToList()),
                 dependabot.Unavailable is { } d
                     ? new GitHubAlertRead(ScanSource.GitHubDependabot, [], d)
-                    : new GitHubAlertRead(ScanSource.GitHubDependabot, dependabot.Alerts.Select(ToAlert).ToList())
+                    : new GitHubAlertRead(ScanSource.GitHubDependabot, dependabot.Alerts.Select(ToAlert).ToList()),
+                secrets.Unavailable is { } s
+                    ? new GitHubAlertRead(ScanSource.GitHubSecretScanning, [], s)
+                    : new GitHubAlertRead(ScanSource.GitHubSecretScanning, secrets.Alerts.Select(ToAlert).ToList())
             ];
         }
 
         // R5: a source that is switched off, not set up or not allowed is said in words; the other is still read
         private async Task<(List<T> Alerts, string? Unavailable)> ReadSourceAsync<T>(
-            string repository, string kind, string? token, CancellationToken cancellationToken)
+            string repository, string kind, string? token, CancellationToken cancellationToken, string[]? states = null)
         {
-            var name = kind == "dependabot" ? "Dependabot alerts" : "Code scanning alerts";
+            var name = kind switch { "dependabot" => "Dependabot alerts", "secret-scanning" => "Secret scanning alerts", _ => "Code scanning alerts" };
             var alerts = new List<T>();
-            foreach (var state in new[] { "open", "dismissed" })
+            foreach (var state in states ?? ["open", "dismissed"])
             {
                 for (var page = 1; page <= 50; page++)
                 {
@@ -128,6 +133,18 @@ namespace ComplianceTracker.Infrastructure.WorkItems
                 alert.State is "dismissed" or "auto_dismissed",
                 alert.DismissedReason ?? (alert.State == "auto_dismissed" ? "auto-dismissed" : null),
                 alert.DismissedComment);
+        }
+
+        // US-160 R2: a leaked secret is always critical; the type is named, the secret itself never
+        private static GitHubAlert ToAlert(SecretScanningAlert alert)
+            => new(alert.Number, "Secret scanning", alert.SecretType ?? "secret", FindingSeverity.Critical,
+                alert.SecretTypeDisplayName ?? alert.SecretType ?? "A secret", null);
+
+        private sealed class SecretScanningAlert
+        {
+            [JsonPropertyName("number")] public int Number { get; set; }
+            [JsonPropertyName("secret_type")] public string? SecretType { get; set; }
+            [JsonPropertyName("secret_type_display_name")] public string? SecretTypeDisplayName { get; set; }
         }
 
         // GitHub's words: critical, high, medium, low; or a rule's level: error, warning, note

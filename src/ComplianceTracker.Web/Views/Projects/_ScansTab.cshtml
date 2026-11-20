@@ -82,6 +82,11 @@
                     with <code>Authorization: Bearer &lt;token&gt;</code>, and optionally <code>commit</code> and <code>version</code>.
                     A token can only upload to this project, at most @ComplianceTracker.Domain.Scanning.ScanUploadToken.MaxUploadsPerHour times an hour.
                 </p>
+                @* US-160 R3: the same token lets the organisation's monitoring send alerts; see docs/alarmer-fra-overvaagning.md *@
+                <p class="small text-muted mb-2" id="alerts-address">
+                    Monitoring (e.g. Prometheus Alertmanager's webhook) sends alerts to <code>@Url.Action("Receive", "AlertsApi", new { id = project.Id }, Context.Request.Scheme)</code>
+                    with the same header. A firing critical or high alert is suggested as a security event; nothing is recorded by itself.
+                </p>
                 @if (TempData["NewUploadToken"] is string secret)
                 {
                     @* R2: shown once *@
@@ -159,6 +164,7 @@
                         {
                             ScanSource.GitHubCodeScanning => "GitHub code scanning",
                             ScanSource.GitHubDependabot => "GitHub Dependabot",
+                            ScanSource.GitHubSecretScanning => "GitHub secret scanning",
                             ScanSource.CiUpload => "CI upload",
                             _ => "Upload"
                         })</td>

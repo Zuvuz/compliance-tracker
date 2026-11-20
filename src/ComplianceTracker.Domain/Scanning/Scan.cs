@@ -138,7 +138,10 @@ namespace ComplianceTracker.Domain.Scanning
         GitHubDependabot,
 
         // US-122
-        CiUpload
+        CiUpload,
+
+        // US-160 R2: leaked secrets GitHub found
+        GitHubSecretScanning
     }
 
     // The uploaded file, by the scan's id

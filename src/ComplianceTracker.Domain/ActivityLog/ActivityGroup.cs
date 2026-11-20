@@ -95,7 +95,7 @@ namespace ComplianceTracker.Domain.ActivityLog
             ActivityAction.VulnerabilityRecorded or ActivityAction.IncidentRecorded or ActivityAction.SecurityReportSent
                 or ActivityAction.SecurityFixAvailable or ActivityAction.SecurityEventClosed or ActivityAction.SecurityEventRecordedInError
                 or ActivityAction.SecurityEventUpgraded or ActivityAction.SecurityEventDisclosed
-                or ActivityAction.SecurityEventSuggested or ActivityAction.SecurityEventSuggestionAccepted
+                or ActivityAction.SecurityEventSuggested or ActivityAction.SecurityAlertRefused or ActivityAction.SecurityEventSuggestionAccepted
                 or ActivityAction.SecurityEventSuggestionDismissed
                 or ActivityAction.ScanImported or ActivityAction.FindingAccepted or ActivityAction.FindingAcceptanceUndone or ActivityAction.SbomImported
                 or ActivityAction.ScanUploadTokenCreated or ActivityAction.ScanUploadTokenRevoked => ActivityGroup.SecurityEvents,

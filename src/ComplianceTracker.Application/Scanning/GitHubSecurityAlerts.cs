@@ -17,7 +17,8 @@ namespace ComplianceTracker.Application.Scanning
     // Implemented by the GitHub adapter
     public interface IGitHubSecurityAlerts
     {
-        // Open and dismissed alerts of both sources; fixed alerts are left out, so the import marks them fixed
+        // Open and dismissed alerts of every source; fixed alerts are left out, so the import marks them fixed. US-160: also the
+        // open secret scanning alerts
         Task<IReadOnlyList<GitHubAlertRead>> ReadAsync(string repository, string? token, CancellationToken cancellationToken = default);
     }
 
@@ -27,8 +28,22 @@ namespace ComplianceTracker.Application.Scanning
     public static class GitHubAlertsSarif
     {
         // The fingerprint of a GitHub alert, the same in every fetch: e.g. "github:code-scanning-12"
-        public static string Fingerprint(ScanSource source, int number)
-            => $"github:{(source == ScanSource.GitHubDependabot ? "dependabot" : "code-scanning")}-{number}";
+        public static string Fingerprint(ScanSource source, int number) => $"github:{KeyOf(source)}-{number}";
+
+        // The source's name in fingerprints and file names
+        public static string KeyOf(ScanSource source) => source switch
+        {
+            ScanSource.GitHubDependabot => "dependabot",
+            ScanSource.GitHubSecretScanning => "secret-scanning", // US-160 R2
+            _ => "code-scanning"
+        };
+
+        // US-160 R1, R2: what GitHub said, from a finding's fingerprint; null for other scanners
+        public static string? SourceOf(string fingerprint)
+            => fingerprint.StartsWith("github:dependabot-", StringComparison.Ordinal) ? "Dependabot"
+                : fingerprint.StartsWith("github:secret-scanning-", StringComparison.Ordinal) ? "Secret scanning"
+                : fingerprint.StartsWith("github:code-scanning-", StringComparison.Ordinal) ? "Code scanning"
+                : null;
 
         // A CVSS-like score for the importer's severity limits (US-078 R2)
         private static string Score(FindingSeverity severity) => severity switch
@@ -43,7 +58,7 @@ namespace ComplianceTracker.Application.Scanning
         public static byte[] Build(ScanSource source, string tool, IEnumerable<GitHubAlert> openAlerts)
         {
             var alerts = openAlerts.ToList();
-            var key = source == ScanSource.GitHubDependabot ? "dependabot" : "code-scanning";
+            var key = KeyOf(source);
             var sarif = new Dictionary<string, object>
             {
                 ["version"] = "2.1.0",

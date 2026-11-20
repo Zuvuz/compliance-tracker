@@ -2445,6 +2445,19 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Mærket "no compliance impact" på en story. Det findes ikke endnu, så en story uden krav mangler "Linked".
   - At vise kriterierne på hver story på fanen Work items. Det ville gøre den fane dyrere, og auditsiden viser dem allerede.
 
+### B163 – Sikkerhedshændelser foreslået fra GitHub-alarmer og overvågning (US-160)
+
+- **Beslutning:**
+  - **GitHub-alarmer bliver forslag, ikke hændelser.** Når projektets alarmer hentes (US-121), foreslås en kritisk eller høj Dependabot- eller code scanning-alarm som en sårbarhed. En Dependabot-alarm nævner pakken. Fra andre scannere foreslås stadig kun kritiske fund (US-128).
+  - **Secret scanning hentes også.** Kun åbne alarmer hentes, og de er altid kritiske. En lækket hemmelighed foreslås som en hændelse (`IncidentNotSevere`), og selve hemmeligheden gemmes aldrig, kun dens type.
+  - **Overvågningen sender til `POST /api/projects/{id}/alerts`** med projektets upload-token (US-122). Både en enkel form og Prometheus Alertmanagers webhook forstås. En kritisk eller høj alarm, der fyrer, foreslås én gang, så længe den er åben, og "resolved" lukker et forslag, ingen har taget stilling til, med "Resolved at the source".
+  - **En alarm over 256 KB eller i en ukendt form afvises** med 400 og logges som `SecurityAlertRefused` uden indholdet. Et forkert eller spærret token giver 401, og intet gemmes.
+  - **En person registrerer eller afviser hvert forslag** som før (US-128). En hændelse, der ikke skal indberettes, venter på en anden person (US-135), og godkendelsen bliver forældet, hvis alarmen lukkes imens.
+- **Begrundelse:** Alarmerne findes allerede i GitHub og overvågningen. At få dem foreslået sparer at skrive dem af, og CRA art. 14's frist regnes fra, da alarmen kom ind.
+- **Fravalgt:**
+  - At oprette hændelser automatisk. En alarm kan være falsk, og en hændelse har frister.
+  - Et eget token til overvågningen. Upload-tokenet kan allerede kun sende til sit projekt og ikke læse noget.
+
 ### B164 – AI'en skriver teksterne i ledelsesrapporten (US-040)
 
 - **Beslutning:**

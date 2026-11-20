@@ -414,6 +414,9 @@ namespace ComplianceTracker.Domain.ActivityLog
         DoneCriterionTicked,
         WorkItemMarkedDone,
 
+        // US-160 R6: a monitoring alert was refused (too large or not a known shape); Details never holds its content
+        SecurityAlertRefused,
+
         // US-206 R4: an approved cross-mapping was limited to chosen projects, or opened to all again. SubjectId points at
         // the organisation; Details holds the match and the projects, e.g. "CRA I.2(d) ↔ ISO A.8.5: Compliance Tracker".
         MappingProjectsChanged,

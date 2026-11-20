@@ -152,6 +152,17 @@ namespace ComplianceTracker.Specs.StepDefinitions
             _answer = await pipeline.SendAsync(request);
         }
 
+        // US-160: an alert sent like a monitoring webhook does, with the project's token
+        public async Task SendAlertsAsync(string project, byte[] json)
+        {
+            using var monitoring = _web.CreateClient(followRedirects: false);
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/projects/{await ProjectIdAsync(project)}/alerts");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _tokens[project]);
+            request.Content = new ByteArrayContent(json);
+            request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            _answer = await monitoring.SendAsync(request);
+        }
+
         public string? AnswerText => _answer?.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 
         // Like curl -H "Authorization: Bearer …" -F file=@… -F commit=… -F version=…; no cookie, no antiforgery
