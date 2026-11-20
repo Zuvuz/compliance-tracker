@@ -347,7 +347,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             {
                 "id" => action.ControllerName switch
                 {
-                    "Projects" or "ScanUploadApi" or "SbomUploadApi" => ids.Project, // US-122, US-148: the API's project
+                    "Projects" or "ScanUploadApi" or "SbomUploadApi" or "AlertsApi" => ids.Project, // US-122, US-148, US-160: the API's project
                     "Risks" => ids.Risk,
                     "Frameworks" => action.ActionName == "Versions" ? ids.Framework : ids.FrameworkVersion,
                     "Organizations" or "System" => ids.Organization,
