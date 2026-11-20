@@ -1767,6 +1767,7 @@ namespace ComplianceTracker.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Reports)]
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
         public async Task<IActionResult> DraftStatusTexts(Guid projectId, [FromServices] Application.Reports.StatusReportService texts, CancellationToken cancellationToken)
         {
             try
@@ -1786,6 +1787,7 @@ namespace ComplianceTracker.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Reports)]
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
         public async Task<IActionResult> AcceptStatusText(Guid projectId, Guid statusTextId, [FromServices] Application.Reports.StatusReportService texts,
             CancellationToken cancellationToken)
         {
@@ -1797,6 +1799,7 @@ namespace ComplianceTracker.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Reports)]
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
         public async Task<IActionResult> EditStatusText(Guid projectId, Guid statusTextId, string? text, [FromServices] Application.Reports.StatusReportService texts,
             CancellationToken cancellationToken)
         {

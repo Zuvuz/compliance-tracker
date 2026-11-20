@@ -148,15 +148,24 @@ namespace ComplianceTracker.Application.Reports
         private DateTime Now => _clock.GetUtcNow().UtcDateTime;
 
         // Null for another organisation's project
+        // The figures are only read when there are texts to compare with them, so the Reports tab stays as quick as before
         public async Task<StatusTextsView?> ForProjectAsync(Guid projectId, CancellationToken cancellationToken = default)
         {
-            if (await _files.ManagementInputAsync(projectId, cancellationToken) is not { } input)
+            if (await _member.FindOrganizationAsync(cancellationToken) is null)
             {
                 return null;
             }
 
             var texts = await _texts.ListAsync(projectId, cancellationToken);
-            return new StatusTextsView(Lines(texts, input.Frameworks, input.Facts), await _member.CanAsync(Permission.DecideCompliance, cancellationToken));
+            var canChange = await _member.CanAsync(Permission.DecideCompliance, cancellationToken);
+            if (texts.Count == 0)
+            {
+                return new StatusTextsView([], canChange);
+            }
+
+            return await _files.ManagementInputAsync(projectId, cancellationToken) is { } input
+                ? new StatusTextsView(Lines(texts, input.Frameworks, input.Facts), canChange)
+                : null;
         }
 
         // The texts in report order: the summary, then the regulations in the project's order; texts of regulations the
