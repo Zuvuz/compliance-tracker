@@ -2445,6 +2445,22 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Mærket "no compliance impact" på en story. Det findes ikke endnu, så en story uden krav mangler "Linked".
   - At vise kriterierne på hver story på fanen Work items. Det ville gøre den fane dyrere, og auditsiden viser dem allerede.
 
+### B164 – AI'en skriver teksterne i ledelsesrapporten (US-040)
+
+- **Beslutning:**
+  - **Ingen ny rapport.** Ledelsesrapporten (US-141) har allerede tallene, PDF'en og låsningen med SHA-256 (US-050). AI'en skriver kun et resumé og en kort tekst pr. regulering (`StatusText`), som står i afsnittet "Assessment" lige efter status.
+  - **Tallene kommer aldrig fra AI'en.** Den får kun trackerens egne tal: dækning, bekræftet evidens, de første 10 mangler og antallet af åbne høje risici, alvorlige fund og hændelser. Tabellerne i rapporten laves som før.
+  - **"AI-generated" står ved teksten** på Reports-fanen og i rapporten, indtil en person accepterer den eller skriver den om (AI Act art. 50). At udarbejde igen erstatter teksterne og markerer dem igen.
+  - **En tekst bliver forældet,** når tallene ændrer sig. Hver tekst gemmer et fingeraftryk af de tal, den blev skrevet eller accepteret til. Er det et andet i dag, står der "Outdated: the figures changed".
+  - **Låsning kræver færdige tekster.** En ledelsesrapport med tekster kan kun låses, når hver vist tekst er accepteret eller redigeret og ikke er forældet. En rapport uden tekster låses som før. Rapporten for én regulering viser kun den regulerings tekst.
+  - **Rettigheder:** alle i organisationen kan læse teksterne. Kun roller med `DecideCompliance`, de samme som må låse, kan udarbejde, acceptere og redigere.
+  - **Modellen er opgaven `StatusReport`'s** (US-117). Udarbejdning logges som `ReportDrafted` med modellen, accept og redigering som `ReportTextChanged`, og låsning som før som `ReportLocked`.
+- **Begrundelse:** Ledelsen skal have et kort resumé, og det er hurtigere at rette et udkast end at skrive det selv. En ny rapporttype ville gentage tal og låsning, som allerede findes.
+- **Fravalgt:**
+  - En egen `Report` med status Draft/Final, som issuet foreslog. Låsningen (US-050) er allerede den endelige version.
+  - At AI'en skriver tal eller tabeller.
+  - At gemme teksternes historik. Den låste PDF har de tekster, der blev godkendt.
+
 ## Åbne spørgsmål til klassediagrammet
 
 - Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?

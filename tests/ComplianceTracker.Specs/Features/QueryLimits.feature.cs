@@ -227,7 +227,7 @@ namespace ComplianceTracker.Specs.Features
                             "31"});
                 table1.AddRow(new string[] {
                             "Reports",
-                            "31"});
+                            "33"});
                 table1.AddRow(new string[] {
                             "Project activity",
                             "14"});
@@ -240,7 +240,7 @@ namespace ComplianceTracker.Specs.Features
                 table1.AddRow(new string[] {
                             "Traceability download",
                             "65"});
-#line 32
+#line 34
     await testRunner.ThenAsync("each page stays within its limit and does not grow with the data:", ((string)(null)), table1, "Then ");
 #line hidden
             }

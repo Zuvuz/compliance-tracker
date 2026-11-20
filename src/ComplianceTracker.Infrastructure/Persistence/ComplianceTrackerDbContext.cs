@@ -73,6 +73,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<Domain.Organizations.OrganisationDocument> OrganisationDocuments => Set<Domain.Organizations.OrganisationDocument>(); // US-136
         public DbSet<OrganisationDocumentFile> OrganisationDocumentFiles => Set<OrganisationDocumentFile>();
         public DbSet<Domain.Reports.ReportSnapshot> ReportSnapshots => Set<Domain.Reports.ReportSnapshot>(); // US-050
+        public DbSet<Domain.Reports.StatusText> StatusTexts => Set<Domain.Reports.StatusText>(); // US-040
         public DbSet<ReportSnapshotFile> ReportSnapshotFiles => Set<ReportSnapshotFile>();
         public DbSet<Domain.Reports.ReportSigning> ReportSignings => Set<Domain.Reports.ReportSigning>(); // US-132
         public DbSet<Domain.Reports.OrganisationSeal> OrganisationSeals => Set<Domain.Reports.OrganisationSeal>();

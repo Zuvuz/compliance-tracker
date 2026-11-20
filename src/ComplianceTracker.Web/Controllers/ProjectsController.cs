@@ -352,6 +352,9 @@ namespace ComplianceTracker.Web.Controllers
                     ? await documentSuggestions.PendingCountAsync(cancellationToken)
                     : 0,
                 LockedReports = lockedReports,
+                StatusTexts = activeTab is ProjectTabs.Reports
+                    ? await HttpContext.RequestServices.GetRequiredService<Application.Reports.StatusReportService>().ForProjectAsync(id, cancellationToken)
+                    : null, // US-040
                 Signings = signings,
                 WaitingForSignature = waitingForSignature,
                 Scans = scanOverview,
@@ -1756,6 +1759,52 @@ namespace ComplianceTracker.Web.Controllers
                     string.IsNullOrEmpty(sub) ? null : sub, cancellationToken);
             TempData["ReportLocked"] = $"Locked \"{snapshot.Title}\" with the fingerprint {snapshot.Sha256}";
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Reports });
+        }
+
+        // ---------------------------------------------------------- The management report's texts (US-040)
+
+        // POST /Projects/DraftStatusTexts: R1, R5; without the AI the page says so and nothing changes
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Reports)]
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
+        public async Task<IActionResult> DraftStatusTexts(Guid projectId, [FromServices] Application.Reports.StatusReportService texts, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var count = await texts.DraftAsync(projectId, cancellationToken);
+                TempData["StatusTexts"] = $"The AI drafted {count} {(count == 1 ? "text" : "texts")}. Read them, then accept or edit each one.";
+            }
+            catch (Application.Ai.AiUnavailableException e)
+            {
+                TempData["StatusTextsError"] = $"No texts: {e.Message}";
+            }
+
+            return RedirectToAction(nameof(Details), null, new { id = projectId, tab = ProjectTabs.Reports }, "status-texts");
+        }
+
+        // POST /Projects/AcceptStatusText: R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Reports)]
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
+        public async Task<IActionResult> AcceptStatusText(Guid projectId, Guid statusTextId, [FromServices] Application.Reports.StatusReportService texts,
+            CancellationToken cancellationToken)
+        {
+            await texts.AcceptAsync(projectId, statusTextId, cancellationToken);
+            return RedirectToAction(nameof(Details), null, new { id = projectId, tab = ProjectTabs.Reports }, "status-texts");
+        }
+
+        // POST /Projects/EditStatusText: R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Reports)]
+        [Microsoft.AspNetCore.Authorization.Authorize] // also in the global policy; said here so CodeQL sees the check
+        public async Task<IActionResult> EditStatusText(Guid projectId, Guid statusTextId, string? text, [FromServices] Application.Reports.StatusReportService texts,
+            CancellationToken cancellationToken)
+        {
+            await texts.EditAsync(projectId, statusTextId, text, cancellationToken);
+            return RedirectToAction(nameof(Details), null, new { id = projectId, tab = ProjectTabs.Reports }, "status-texts");
         }
 
         // ---------------------------------------------------------- Signatures (US-132)

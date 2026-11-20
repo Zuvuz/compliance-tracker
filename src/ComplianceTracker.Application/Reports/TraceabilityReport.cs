@@ -48,6 +48,9 @@ namespace ComplianceTracker.Application.Reports
     {
         // US-141 R3: the coverage per regulation the management report was made from, kept when it is locked
         public IReadOnlyDictionary<string, int>? Figures { get; init; }
+
+        // US-040 R5: why the report cannot be locked yet (an AI text not accepted, or outdated); null when it can
+        public string? Unfinished { get; init; }
     }
 
     // US-120: writes a report as a formatted Excel workbook (implemented in Infrastructure with OpenXml)
@@ -67,6 +70,9 @@ namespace ComplianceTracker.Application.Reports
 
         // US-198: the report is made for an audit package, which compares with the last package
         public bool InPackage { get; init; }
+
+        // US-040: the texts the report shows (the summary only for all regulations); empty before any are drafted
+        public IReadOnlyList<StatusTextLine> Texts { get; init; } = [];
     }
 
     // US-120: the traceability matrix (US-052) for one reader, built from the same data as the Compliance tab, so the
@@ -99,7 +105,8 @@ namespace ComplianceTracker.Application.Reports
             {
                 return new ReportDocument($"Traceability – {project.Name}", summary, ManagementPriorities.Sheets(frameworks, facts))
                 {
-                    Figures = ManagementPriorities.Figures(frameworks)
+                    Figures = ManagementPriorities.Figures(frameworks),
+                    Unfinished = StatusReportService.Blocker(facts.Texts) // US-040 R5
                 };
             }
 

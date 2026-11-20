@@ -52,12 +52,14 @@ namespace ComplianceTracker.Application.Reports
         private readonly TimeProvider _clock;
         private readonly StatementOfApplicabilityQueries _soa;
         private readonly PhaseGates _gates; // US-194
+        private readonly IStatusTextRepository _texts; // US-040
 
         public ReportFiles(
             ProjectQueries projects, OrganizationQueries organizations, ComplianceQueries compliance, RiskQueries risks, ScanService scans,
             SecurityEventQueries events, TechnicalDocumentationQueries drafts, IPdfWriter pdf, IReportSnapshotRepository snapshots,
-            ICurrentUser currentUser, TimeProvider clock, StatementOfApplicabilityQueries soa, PhaseGates gates)
+            ICurrentUser currentUser, TimeProvider clock, StatementOfApplicabilityQueries soa, PhaseGates gates, IStatusTextRepository texts)
         {
+            _texts = texts;
             _gates = gates;
             _soa = soa;
             _snapshots = snapshots;
@@ -121,6 +123,43 @@ namespace ComplianceTracker.Application.Reports
 
             string NameOf(Guid userId) => organization.Users.FirstOrDefault(u => u.Id == userId)?.Name ?? "Unknown";
             var now = _clock.GetUtcNow().UtcDateTime;
+            var facts = await FactsAsync(project, organization, cancellationToken) with
+            {
+                Last = audience == ReportAudience.Management
+                    ? await LastManagementReportAsync(organization.Id, projectId, frameworks.Select(f => f.Framework.Name).Distinct().ToList(), inPackage, cancellationToken)
+                    : null,
+                InPackage = inPackage
+            };
+            if (audience == ReportAudience.Management)
+            {
+                // US-040: the summary in the report of all regulations; a regulation's text in its own report too
+                var shown = StatusReportService.Lines(await _texts.ListAsync(projectId, cancellationToken), compliance.Frameworks, facts)
+                    .Where(t => t.Part == Domain.Reports.StatusText.Summary ? sub is null : frameworks.Any(f => f.Framework.Name == t.Part))
+                    .ToList();
+                facts = facts with { Texts = shown };
+            }
+
+            var lifecycle = await _gates.LifecycleAsync(projectId, compliance.Frameworks, cancellationToken); // US-194
+            var document = TraceabilityReport.Build(audience, project, frameworks, NameOf, _currentUser.Identity.Name, now, facts, lifecycle);
+            return (document, project, organization, frameworks, now);
+        }
+
+        // US-040: what the management report's texts are written from: the project, all its regulations and the facts.
+        // Null for another organisation's project.
+        public async Task<(Domain.Projects.Project Project, IReadOnlyList<FrameworkCompliance> Frameworks, ManagementFacts Facts)?> ManagementInputAsync(
+            Guid projectId, CancellationToken cancellationToken = default)
+        {
+            var project = await _projects.GetAsync(projectId, cancellationToken);
+            var organization = await _organizations.MineAsync(cancellationToken);
+            var compliance = await _compliance.ForProjectAsync(projectId, cancellationToken);
+            return project is null || organization is null || compliance is null
+                ? null
+                : (project, compliance.Frameworks, await FactsAsync(project, organization, cancellationToken));
+        }
+
+        private async Task<ManagementFacts> FactsAsync(Domain.Projects.Project project, Domain.Organizations.Organization organization, CancellationToken cancellationToken)
+        {
+            var projectId = project.Id;
             var highRisks = (await _risks.ForProjectAsync(projectId, cancellationToken) ?? [])
                 .Where(r => r.Status != RiskStatus.Closed && r.Level >= RiskLevel.High)
                 .Select(r =>
@@ -130,21 +169,14 @@ namespace ComplianceTracker.Application.Reports
                     return new ManagementRisk(r.Title, r.Level, r.Score, owner?.Name ?? "", owner is not null, due);
                 })
                 .ToList();
-            var facts = new ManagementFacts(
+            return new ManagementFacts(
                 highRisks.Count,
                 (await _scans.ForProjectAsync(projectId, cancellationToken))?.OpenAtLeastHigh ?? 0,
                 (await _events.ForProjectAsync(projectId, cancellationToken) ?? []).Count(e => e.IsOpen),
                 project.SupportEndsOn)
             {
-                HighRisks = highRisks,
-                Last = audience == ReportAudience.Management
-                    ? await LastManagementReportAsync(organization.Id, projectId, frameworks.Select(f => f.Framework.Name).Distinct().ToList(), inPackage, cancellationToken)
-                    : null,
-                InPackage = inPackage
+                HighRisks = highRisks
             };
-            var lifecycle = await _gates.LifecycleAsync(projectId, compliance.Frameworks, cancellationToken); // US-194
-            var document = TraceabilityReport.Build(audience, project, frameworks, NameOf, _currentUser.Identity.Name, now, facts, lifecycle);
-            return (document, project, organization, frameworks, now);
         }
 
         // US-141 R3: the newest locked management report of the project with exactly these regulations.
@@ -261,6 +293,11 @@ namespace ComplianceTracker.Application.Reports
             var (organization, user) = await _member.RequireAsync(Permission.DecideCompliance, cancellationToken);
             var made = await _files.TraceabilityAsync(projectId, audience, sub, cancellationToken)
                 ?? throw new DomainException("The report cannot be made for this project");
+            if (made.Document.Unfinished is { } why)
+            {
+                throw new DomainException(why); // US-040 R5
+            }
+
             return await LockAsync(organization.Id, projectId, user, made.Pdf, cancellationToken);
         }
 

@@ -68,6 +68,81 @@
                                 <li><strong>Auditor:</strong> every requirement with its evidence and who decided</li>
                                 <li><strong>Management:</strong> what needs attention first, with the key figures</li>
                             </ul>
+                            @* US-040: the management report's texts. The figures always come from the tracker; the AI only writes the
+                               words, marked AI-generated until a person accepts or edits them (R4). Contract: #status-texts with
+                               form.draft-status-texts, .status-text[data-part] holding .status-text-body, .ai-generated, .outdated,
+                               form.accept-status-text and form.edit-status-text (textarea name="text"). *@
+                            @if (Model.StatusTexts is { } statusTexts)
+                            {
+                                <div class="border rounded p-2 mt-2" id="status-texts">
+                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                        <strong class="small">Texts for the management report</strong>
+                                        @if (statusTexts.CanChange && !project.IsClosed)
+                                        {
+                                            <form asp-action="DraftStatusTexts" method="post" class="d-inline draft-status-texts">
+                                                <input type="hidden" name="projectId" value="@project.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">@(statusTexts.Texts.Count == 0 ? "Draft texts with AI" : "Draft again with AI")</button>
+                                            </form>
+                                        }
+                                    </div>
+                                    @if (TempData["StatusTexts"] is string drafted)
+                                    {
+                                        <p class="small text-success mb-1" role="status" id="status-texts-drafted">@drafted</p>
+                                    }
+                                    @if (TempData["StatusTextsError"] is string notDrafted)
+                                    {
+                                        <p class="small text-danger mb-1" role="alert" id="status-texts-error">@notDrafted</p>
+                                    }
+                                    @if (statusTexts.Texts.Count == 0)
+                                    {
+                                        <p class="small text-muted mb-0">No texts yet. The AI can write a summary and a short text per regulation from the figures; the report works without them.</p>
+                                    }
+                                    else
+                                    {
+                                        <p class="small text-muted mb-1">The numbers in the report come from the tracker. A report with texts can be locked when every text is accepted or edited.</p>
+                                        @foreach (var text in statusTexts.Texts)
+                                        {
+                                            <div class="status-text border-top pt-1 mt-1" data-part="@text.Label">
+                                                <p class="small mb-1">
+                                                    <strong>@text.Label</strong>
+                                                    @if (text.IsAiGenerated)
+                                                    {
+                                                        <span class="badge text-bg-warning ai-generated" title="Written by @text.Model">AI-generated</span>
+                                                    }
+                                                    @if (text.IsOutdated)
+                                                    {
+                                                        <span class="badge text-bg-secondary outdated">Outdated: the figures changed</span>
+                                                    }
+                                                </p>
+                                                <p class="small mb-1 status-text-body">@text.Text</p>
+                                                @if (statusTexts.CanChange && !project.IsClosed)
+                                                {
+                                                    <div class="d-flex flex-wrap gap-2 align-items-start">
+                                                        @if (text.IsAiGenerated || text.IsOutdated)
+                                                        {
+                                                            <form asp-action="AcceptStatusText" method="post" class="d-inline accept-status-text">
+                                                                <input type="hidden" name="projectId" value="@project.Id" />
+                                                                <input type="hidden" name="statusTextId" value="@text.Id" />
+                                                                <button type="submit" class="btn btn-sm btn-outline-success">Accept text</button>
+                                                            </form>
+                                                        }
+                                                        <details>
+                                                            <summary class="small">Edit</summary>
+                                                            <form asp-action="EditStatusText" method="post" class="mt-1 edit-status-text">
+                                                                <input type="hidden" name="projectId" value="@project.Id" />
+                                                                <input type="hidden" name="statusTextId" value="@text.Id" />
+                                                                <textarea name="text" class="form-control form-control-sm mb-1" rows="3" maxlength="@ComplianceTracker.Domain.Reports.StatusText.MaxLength"
+                                                                          aria-label="Text for @text.Label" required>@text.Text</textarea>
+                                                                <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                                                            </form>
+                                                        </details>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            }
                             @if (canLock)
                             {
                                 @* US-050: locks the report as PDF for the chosen reader and regulations *@
