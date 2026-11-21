@@ -19,13 +19,14 @@ Koden er på engelsk; se ordlisten nederst.
 
 ## Diagrammer
 
-Diagrammet er delt i afsnit, fordi GitHub ikke kan tegne et Mermaid-diagram over 50.000 tegn. En klasse, der vises uden felter i et afsnit, er tegnet fuldt i sit eget afsnit.
+Diagrammet er delt i seks, fordi GitHub ikke kan tegne et Mermaid-diagram over 50.000 tegn. En klasse, der vises uden felter i et diagram, er tegnet fuldt i et af de andre.
 
-### Organisation og brugere
+### Organisation, brugere og leverandører
 
 ```mermaid
 classDiagram
   direction TB
+  %% ================= Organisation og brugere =================
   class Organization {
     -shareAiFeedback: bool
     -shareAiFeedbackSince: DateTime?
@@ -69,13 +70,244 @@ classDiagram
   Organization "1" --> "*" OrganizationFramework : frameworks
   Organization "1" --> "*" Invitation : invitations
   Organization "1" -- "*" Supplier
+  %% ================= Roller og invitationer (US-009, US-010) =================
+  class Permission {
+    <<enumeration>>
+    ManageMembers
+    ManageAiSharing
+    ManageFrameworks
+    DecideCompliance
+    EditProjects
+    LinkWork
+    ManageRisks
+  }
+  class RolePermissions {
+    <<static>>
+    +Can(role: UserRole, permission: Permission)$ bool
+  }
+  class Invitation {
+    -id: Guid
+    -organizationId: Guid
+    -role: UserRole
+    -tokenHash: string
+    -createdById: Guid
+    -expiresAt: DateTime
+    -acceptedById: Guid?
+    -acceptedAt: DateTime?
+    -revokedAt: DateTime?
+    +EnsureUsable(now: DateTime)
+    +MarkAccepted(userId: Guid, at: DateTime)
+    +Revoke(at: DateTime)
+  }
+  class MemberService {
+    +ChangeRoleAsync(memberId: Guid, role: UserRole) Task
+    +CreateInvitationAsync(role: UserRole) Task~string~
+    +RevokeInvitationAsync(invitationId: Guid) Task
+    +AcceptInvitationAsync(token: string) Task
+  }
+  class SystemAdminService {
+    +ListOrganizationsAsync() Task
+    +ChangeRoleAsync(organizationId: Guid, memberId: Guid, role: UserRole) Task
+  }
+  %% ================= Revisoradgang og påmindelser =================
+  class AuditorGrant {
+    -id: Guid
+    -organizationId: Guid
+    -projectId: Guid
+    -email: string
+    -from: DateOnly
+    -until: DateOnly
+    -invitationId: Guid
+    -grantedById: Guid
+    -grantedAt: DateTime
+    -memberId: Guid?
+    -revokedAt: DateTime?
+    +IsRevoked: bool
+    +Create(organizationId, projectId, email, from, until, today, invitationId, grantedById, at)$ AuditorGrant
+    +IsActiveOn(day: DateOnly) bool
+    +Accepted(memberId: Guid)
+    +Revoke(at: DateTime)
+  }
+  AuditorGrant "*" --> "1" Project : read-only access to
+  AuditorGrant "1" --> "1" Invitation : sent as
+  class Reminder {
+    -id: Guid
+    -organizationId: Guid
+    -userId: Guid
+    -kind: ReminderKind
+    -subjectId: Guid
+    -due: DateTime
+    -createdAt: DateTime
+    -sentAt: DateTime?
+    -attempts: int
+    -lastError: string?
+    +IsSent: bool
+    +ShouldTry: bool
+    +Create(organizationId, userId, kind, subjectId, due, at)$ Reminder
+    +IsFor(userId, kind, subjectId, due) bool
+    +Sent(at: DateTime)
+    +Failed(error: string)
+  }
+  class ReminderKind {
+    <<enumeration>>
+    EvidenceExpires
+    FindingDue
+    ApprovalWaiting
+    ReportingDeadline
+    SupplierEvidenceExpires
+  }
+  Reminder --> ReminderKind
+  Reminder "*" --> "1" User : to
+  %% ================= Log =================
+  class ActivityGroup {
+    <<enumeration>>
+    SignIn
+    Members
+    Organisation
+    Frameworks
+    Projects
+    WorkItems
+    Requirements
+    Evidence
+    Risks
+    Ai
+  }
+  class ActivityLogQuery {
+    -search: string?
+    -from: DateOnly?
+    -to: DateOnly?
+    -group: ActivityGroup?
+    -userId: Guid?
+    -systemOnly: bool
+    -sort: ActivitySort
+    -page: int
+  }
+  class ActivityLogEntry {
+    -id: Guid
+    -organizationId: Guid
+    -userId: Guid?
+    -action: ActivityAction
+    -subjectId: Guid?
+    -details: string?
+    -occurredAt: DateTime
+    -previousHash: string?
+    -hash: string?
+    +Seal(previousHash: string?) void
+  }
+  class ActivityLogChain {
+    <<static>>
+    +HashOf(entry: ActivityLogEntry, previousHash: string?) string
+    +Verify(entriesInOrder: IEnumerable~ActivityLogEntry~) ChainCheck
+  }
+  class ChainCheck {
+    +Checked: int
+    +WithoutFingerprint: int
+    +FirstBroken: ActivityLogEntry?
+    +IsIntact: bool
+  }
+  ActivityLogChain ..> ActivityLogEntry
+  ActivityLogChain ..> ChainCheck
+  ActivityLogEntry "*" --> "1" Organization
+  ActivityLogEntry "*" --> "1" User
+  %% ================= NIS2-gap-analyse =================
+  class GapAnswer {
+    -id: Guid
+    -organizationId: Guid
+    -requirementCode: string
+    -maturity: Maturity
+    -comment: string?
+    -answeredById: Guid
+    -answeredRole: UserRole
+    -answeredAt: DateTime
+    -replacedAt: DateTime?
+    +IsCurrent: bool
+    +Create(organizationId, requirementCode, maturity, comment, answeredById, role, at)$ GapAnswer
+    +ReplaceBy(newer: GapAnswer)
+  }
+  class Maturity {
+    <<enumeration>>
+    None
+    AdHoc
+    Defined
+    Implemented
+    Measured
+  }
+  class Question {
+    <<record>>
+    +Code: string
+    +Text: string
+  }
+  GapAnswer "*" --> "1" Organization
+  GapAnswer --> Maturity
+  GapAnswer ..> Question : answers
+  %% ================= Leverandører (US-191, US-207) =================
+  class Supplier {
+    -id: Guid
+    -organizationId: Guid
+    -name: string
+    -criticality: SupplierCriticality
+    -contact: string?
+    -registrationNumber: string?
+    -address: string?
+    -country: string?
+    -website: string?
+    -securityEmail: string?
+    +PrimaryContact: SupplierContact?
+    +LacksSecurityContact: bool
+    +ChangeCompany(registrationNumber, address, country, website, securityEmail) List~string~
+    +AddContact(name, role, email, phone, primary, securityContact) SupplierContact
+    +ChangeContact(contactId, name, role, email, phone, primary, securityContact) SupplierContact
+    +RemoveContact(contactId: Guid) SupplierContact
+  }
+  class SupplierContact {
+    -id: Guid
+    -supplierId: Guid
+    -name: string
+    -role: string?
+    -email: string?
+    -phone: string?
+    -isPrimary: bool
+    -isSecurityContact: bool
+  }
+  Supplier "1" *-- "*" SupplierContact : contact persons
+  class AuditReportFile {
+    -auditId: Guid
+    -contentType: string
+    -content: byte[]
+  }
+  class SupplierEvidence {
+    -id: Guid
+    -supplierId: Guid
+    -kind: SupplierEvidenceKind
+    -title: string
+    -validUntil: DateOnly?
+    -fileName: string
+    -contentType: string
+    -sizeInBytes: long
+    -sha256: string
+    -addedById: Guid
+    -addedAt: DateTime
+    +IsValidOn(day: DateOnly) bool
+  }
+  class SupplierEvidenceKind {
+    <<enumeration>>
+    Certificate
+    DataProcessingAgreement
+    SecurityQuestionnaire
+    AuditReport
+    Contract
+    Other
+  }
+  Supplier "1" *-- "*" SupplierEvidence : evidence
+  SupplierEvidence --> SupplierEvidenceKind
 ```
 
-### Services og repositories
+### Services, repositories og AI-adaptere
 
 ```mermaid
 classDiagram
   direction TB
+  %% ================= Services og repositories =================
   class ICurrentUser {
     <<interface>>
     +Identity: UserIdentity
@@ -258,13 +490,19 @@ classDiagram
   OrganizationService ..> Organization : opretter
   IOrganizationRepository ..> Organization
   IActivityLogRepository ..> ActivityLogEntry
+  %% ================= AI-adaptere (B29, B36) =================
+  OllamaEmbeddingModel ..|> IEmbeddingModel
+  OpenAiCompatibleEmbeddingModel ..|> IEmbeddingModel
+  OllamaRationaleWriter ..|> IRationaleWriter
+  OpenAiCompatibleRationaleWriter ..|> IRationaleWriter
 ```
 
-### Projekt
+### Projekt, frameworks, krav og evidens
 
 ```mermaid
 classDiagram
   direction TB
+  %% ================= Projekt =================
   class Project {
     -excludedFromAiSharing: bool
     -id: Guid
@@ -330,13 +568,66 @@ classDiagram
   Project "1" *-- "0..1" GitHubLink : gitHub
   Project "1" --> "*" RequirementDocument : requirement specifications
   Project "1" --> "*" Risk : risks
-```
-
-### Frameworks og krav
-
-```mermaid
-classDiagram
-  direction TB
+  %% ================= Livsfasernes tjeklister =================
+  class ChecklistItem {
+    <<record>>
+    +Key: string
+    +Phase: LifecyclePhase
+    +Regulation: string
+    +Reference: string
+    +Text: string
+    +Check: ChecklistCheck
+  }
+  class ProjectChecklistEntry {
+    -id: Guid
+    -projectId: Guid
+    -itemKey: string
+    -done: bool
+    -doneById: Guid?
+    -doneRole: UserRole?
+    -doneAt: DateTime?
+    -comment: string?
+    -evidenceUrl: string?
+    -turnedOff: bool
+    -offReason: string?
+    -turnedOn: bool
+    -changedAt: DateTime
+    +For(projectId, itemKey, at)$ ProjectChecklistEntry
+    +Tick(userId, role, comment, evidenceUrl, at)
+    +Untick(at: DateTime)
+    +TurnOff(reason: string, at: DateTime)
+    +TurnOn(at: DateTime)
+  }
+  class OrganisationChecklistItem {
+    -id: Guid
+    -organizationId: Guid
+    -phase: LifecyclePhase
+    -text: string
+    -frameworkId: Guid?
+    -source: string
+    -reference: string
+    -createdAt: DateTime
+    -removedAt: DateTime?
+    +IsActive: bool
+    +Key: string
+    +Create(organizationId, phase, text, frameworkId, source, reference, at)$ OrganisationChecklistItem
+    +Change(text: string, reference: string)
+    +Remove(at: DateTime)
+    +AsItem() ChecklistItem
+    +AppliesTo(project: Project) bool
+  }
+  class ChecklistState {
+    <<enumeration>>
+    Done
+    Missing
+    TurnedOff
+    NotChosen
+  }
+  ProjectChecklistEntry "*" --> "1" Project
+  ProjectChecklistEntry ..> ChecklistItem : itemKey
+  OrganisationChecklistItem "*" --> "1" Organization
+  OrganisationChecklistItem ..> ChecklistItem : as item
+  %% ================= Frameworks og krav =================
   class Framework {
     -id: Guid
     -ownerOrganizationId: Guid?
@@ -724,13 +1015,7 @@ classDiagram
   RequirementApplicability "*" --> "1" Project
   Framework ..> CatalogFile
   note for FrameworkVersion "BuiltIn: ownerOrganizationId = null / Imported: ownerOrganizationId påkrævet"
-```
-
-### Evidens
-
-```mermaid
-classDiagram
-  direction TB
+  %% ================= Evidens =================
   Evidence --> EvidenceKind : kind
   class Evidence {
     -id: Guid
@@ -775,13 +1060,36 @@ classDiagram
   Evidence "*" --> "1" Project
   Evidence "*" --> "1" Requirement
   Evidence ..> EvidenceFile : made from
+  %% ================= Testresultater =================
+  class TestRunUpload {
+    -id: Guid
+    -projectId: Guid
+    -fileName: string
+    -sha256: string
+    -uploadedById: Guid
+    -uploadedAt: DateTime
+    -passed: int
+    -failed: int
+    -suggested: int
+    -blocked: int
+    -alreadySuggested: int
+    -unknownTags: string
+    -otherFrameworks: string
+    -whyNothing: string?
+  }
+  TestRunUpload "*" --> "1" Project
+  class Withdrawal {
+    <<static>>
+    +Reason(reason: string)$ string
+  }
 ```
 
-### Arbejdselementer og AI
+### Arbejdselementer, AI og feedback
 
 ```mermaid
 classDiagram
   direction TB
+  %% ================= Arbejdselementer og AI =================
   EvidenceLinkSuggestion ..> PassageCheck : checked
   class WorkItem {
     -id: Guid
@@ -1316,13 +1624,73 @@ classDiagram
   RationaleService --> IRationaleWriter : step 2
   MappingSuggestion "*" --> "1" Requirement
   MappingSuggestion "*" --> "0..1" WorkItem
+  %% ================= Feedback (US-063) =================
+  class Feedback {
+    -id: Guid
+    -organizationId: Guid
+    -userId: Guid
+    -role: UserRole?
+    -sentAt: DateTime
+    -page: string
+    -asA: string
+    -iWant: string
+    -soThat: string
+    -rules: string?
+    -examples: string?
+    -screenshotFileName: string?
+    -screenshotSha256: string?
+    -status: FeedbackStatus
+    -issueNumber: int?
+    -issueUrl: string?
+    -dismissReason: string?
+    -decidedBy: string?
+    -decidedAt: DateTime?
+    +Send(...)$ Feedback
+    +SuggestedIssueTitle() string
+    +SuggestedIssueBody() string
+    +IssueCreated(number: int, url: string, decidedBy: string, at: DateTime)
+    +Dismiss(reason: string, decidedBy: string, at: DateTime)
+  }
+  class Screenshot {
+    +FileName: string
+    +ContentType: string
+    +Content: byte[]
+    +Sha256: string
+    +Create(fileName: string, content: byte[])$ Screenshot
+  }
+  class FeedbackStatus {
+    <<enumeration>>
+    New
+    IssueCreated
+    Dismissed
+  }
+  class FeedbackService {
+    +SendAsync(page, asA, iWant, soThat, rules, examples, screenshotName, screenshotContent) Task~Feedback~
+    +CreateIssueAsync(feedbackId: Guid, title: string, body: string) Task~CreatedIssue~
+    +DismissAsync(feedbackId: Guid, reason: string) Task
+    +ListAsync() Task
+  }
+  class IFeedbackRepository {
+    <<interface>>
+  }
+  class IFeedbackIssueWriter {
+    <<interface>>
+    +CreateAsync(title: string, body: string, labels: string[]) Task~CreatedIssue~
+  }
+  class GitHubFeedbackIssueWriter
+  Feedback --> FeedbackStatus
+  Feedback ..> Screenshot
+  FeedbackService --> IFeedbackRepository
+  FeedbackService --> IFeedbackIssueWriter
+  IFeedbackIssueWriter <|.. GitHubFeedbackIssueWriter
 ```
 
-### Risici (US-042)
+### Risici, sikkerhed, audits og rapporter
 
 ```mermaid
 classDiagram
   direction TB
+  %% ================= Risici (US-042) =================
   OrganisationDocument "1" --> "0..*" DocumentLinkSuggestion : AI suggestions
   class Scan {
     -id: Guid
@@ -1589,152 +1957,7 @@ classDiagram
   Risk "1" *-- "*" RiskMeasure : measures
   RiskMeasure "*" --> "0..1" Requirement
   RiskMeasure "*" --> "0..1" WorkItem
-```
-
-### Roller og invitationer (US-009, US-010)
-
-```mermaid
-classDiagram
-  direction TB
-  class Permission {
-    <<enumeration>>
-    ManageMembers
-    ManageAiSharing
-    ManageFrameworks
-    DecideCompliance
-    EditProjects
-    LinkWork
-    ManageRisks
-  }
-  class RolePermissions {
-    <<static>>
-    +Can(role: UserRole, permission: Permission)$ bool
-  }
-  class Invitation {
-    -id: Guid
-    -organizationId: Guid
-    -role: UserRole
-    -tokenHash: string
-    -createdById: Guid
-    -expiresAt: DateTime
-    -acceptedById: Guid?
-    -acceptedAt: DateTime?
-    -revokedAt: DateTime?
-    +EnsureUsable(now: DateTime)
-    +MarkAccepted(userId: Guid, at: DateTime)
-    +Revoke(at: DateTime)
-  }
-  class MemberService {
-    +ChangeRoleAsync(memberId: Guid, role: UserRole) Task
-    +CreateInvitationAsync(role: UserRole) Task~string~
-    +RevokeInvitationAsync(invitationId: Guid) Task
-    +AcceptInvitationAsync(token: string) Task
-  }
-  class SystemAdminService {
-    +ListOrganizationsAsync() Task
-    +ChangeRoleAsync(organizationId: Guid, memberId: Guid, role: UserRole) Task
-  }
-```
-
-### Reports (US-056)
-
-```mermaid
-classDiagram
-  direction TB
-  class TechnicalDocumentationQueries {
-    +DraftAsync(projectId: Guid) Task~GeneratedDocument?~
-    +CraOf(compliance: ProjectCompliance)$ FrameworkCompliance?
-  }
-  class GeneratedDocument {
-    +FileName: string
-    +Blocks: DocumentBlock[]
-  }
-  class DocumentBlock {
-    +Kind: DocumentBlockKind
-    +Text: string
-  }
-  class IDocumentWriter {
-    <<interface>>
-    +ToDocx(document: GeneratedDocument) byte[]
-  }
-  class OpenXmlDocumentWriter
-  TechnicalDocumentationQueries --> ComplianceQueries
-  TechnicalDocumentationQueries --> RiskQueries
-  TechnicalDocumentationQueries ..> GeneratedDocument
-  GeneratedDocument *-- DocumentBlock
-  IDocumentWriter <|.. OpenXmlDocumentWriter
-```
-
-### Feedback (US-063)
-
-```mermaid
-classDiagram
-  direction TB
-  class Feedback {
-    -id: Guid
-    -organizationId: Guid
-    -userId: Guid
-    -role: UserRole?
-    -sentAt: DateTime
-    -page: string
-    -asA: string
-    -iWant: string
-    -soThat: string
-    -rules: string?
-    -examples: string?
-    -screenshotFileName: string?
-    -screenshotSha256: string?
-    -status: FeedbackStatus
-    -issueNumber: int?
-    -issueUrl: string?
-    -dismissReason: string?
-    -decidedBy: string?
-    -decidedAt: DateTime?
-    +Send(...)$ Feedback
-    +SuggestedIssueTitle() string
-    +SuggestedIssueBody() string
-    +IssueCreated(number: int, url: string, decidedBy: string, at: DateTime)
-    +Dismiss(reason: string, decidedBy: string, at: DateTime)
-  }
-  class Screenshot {
-    +FileName: string
-    +ContentType: string
-    +Content: byte[]
-    +Sha256: string
-    +Create(fileName: string, content: byte[])$ Screenshot
-  }
-  class FeedbackStatus {
-    <<enumeration>>
-    New
-    IssueCreated
-    Dismissed
-  }
-  class FeedbackService {
-    +SendAsync(page, asA, iWant, soThat, rules, examples, screenshotName, screenshotContent) Task~Feedback~
-    +CreateIssueAsync(feedbackId: Guid, title: string, body: string) Task~CreatedIssue~
-    +DismissAsync(feedbackId: Guid, reason: string) Task
-    +ListAsync() Task
-  }
-  class IFeedbackRepository {
-    <<interface>>
-  }
-  class IFeedbackIssueWriter {
-    <<interface>>
-    +CreateAsync(title: string, body: string, labels: string[]) Task~CreatedIssue~
-  }
-  class GitHubFeedbackIssueWriter
-  Feedback --> FeedbackStatus
-  Feedback ..> Screenshot
-  FeedbackService --> IFeedbackRepository
-  FeedbackService --> IFeedbackIssueWriter
-  IFeedbackIssueWriter <|.. GitHubFeedbackIssueWriter
-```
-
-### Security events (US-073)
-
-```mermaid
-classDiagram
-  direction TB
+  %% ================= Security events (US-073) =================
   class SecurityEvent {
     -id: Guid
     -projectId: Guid
@@ -2122,63 +2345,29 @@ classDiagram
   SecurityEvent ..> SecurityReportKind
   SecurityEventService --> ISecurityEventRepository
   Audit "1" *-- "0..1" AuditReportFile : report
-```
-
-### Log
-
-```mermaid
-classDiagram
-  direction TB
-  class ActivityGroup {
-    <<enumeration>>
-    SignIn
-    Members
-    Organisation
-    Frameworks
-    Projects
-    WorkItems
-    Requirements
-    Evidence
-    Risks
-    Ai
+  %% ================= Reports (US-056) =================
+  class TechnicalDocumentationQueries {
+    +DraftAsync(projectId: Guid) Task~GeneratedDocument?~
+    +CraOf(compliance: ProjectCompliance)$ FrameworkCompliance?
   }
-  class ActivityLogQuery {
-    -search: string?
-    -from: DateOnly?
-    -to: DateOnly?
-    -group: ActivityGroup?
-    -userId: Guid?
-    -systemOnly: bool
-    -sort: ActivitySort
-    -page: int
+  class GeneratedDocument {
+    +FileName: string
+    +Blocks: DocumentBlock[]
   }
-  class ActivityLogEntry {
-    -id: Guid
-    -organizationId: Guid
-    -userId: Guid?
-    -action: ActivityAction
-    -subjectId: Guid?
-    -details: string?
-    -occurredAt: DateTime
-    -previousHash: string?
-    -hash: string?
-    +Seal(previousHash: string?) void
+  class DocumentBlock {
+    +Kind: DocumentBlockKind
+    +Text: string
   }
-  class ActivityLogChain {
-    <<static>>
-    +HashOf(entry: ActivityLogEntry, previousHash: string?) string
-    +Verify(entriesInOrder: IEnumerable~ActivityLogEntry~) ChainCheck
+  class IDocumentWriter {
+    <<interface>>
+    +ToDocx(document: GeneratedDocument) byte[]
   }
-  class ChainCheck {
-    +Checked: int
-    +WithoutFingerprint: int
-    +FirstBroken: ActivityLogEntry?
-    +IsIntact: bool
-  }
-  ActivityLogChain ..> ActivityLogEntry
-  ActivityLogChain ..> ChainCheck
-  ActivityLogEntry "*" --> "1" Organization
-  ActivityLogEntry "*" --> "1" User
+  class OpenXmlDocumentWriter
+  TechnicalDocumentationQueries --> ComplianceQueries
+  TechnicalDocumentationQueries --> RiskQueries
+  TechnicalDocumentationQueries ..> GeneratedDocument
+  GeneratedDocument *-- DocumentBlock
+  IDocumentWriter <|.. OpenXmlDocumentWriter
 ```
 
 ### Enums
@@ -2186,6 +2375,7 @@ classDiagram
 ```mermaid
 classDiagram
   direction TB
+  %% ================= Enums =================
   class Sector {
     <<enumeration>>
     Energy
@@ -2320,268 +2510,6 @@ classDiagram
     AlreadyMapped
     InsufficientInformation
     Other
-  }
-```
-
-### AI-adaptere (B29, B36)
-
-```mermaid
-classDiagram
-  direction TB
-  OllamaEmbeddingModel ..|> IEmbeddingModel
-  OpenAiCompatibleEmbeddingModel ..|> IEmbeddingModel
-  OllamaRationaleWriter ..|> IRationaleWriter
-  OpenAiCompatibleRationaleWriter ..|> IRationaleWriter
-```
-
-### Leverandører (US-191, US-207)
-
-```mermaid
-classDiagram
-  direction TB
-  class Supplier {
-    -id: Guid
-    -organizationId: Guid
-    -name: string
-    -criticality: SupplierCriticality
-    -contact: string?
-    -registrationNumber: string?
-    -address: string?
-    -country: string?
-    -website: string?
-    -securityEmail: string?
-    +PrimaryContact: SupplierContact?
-    +LacksSecurityContact: bool
-    +ChangeCompany(registrationNumber, address, country, website, securityEmail) List~string~
-    +AddContact(name, role, email, phone, primary, securityContact) SupplierContact
-    +ChangeContact(contactId, name, role, email, phone, primary, securityContact) SupplierContact
-    +RemoveContact(contactId: Guid) SupplierContact
-  }
-  class SupplierContact {
-    -id: Guid
-    -supplierId: Guid
-    -name: string
-    -role: string?
-    -email: string?
-    -phone: string?
-    -isPrimary: bool
-    -isSecurityContact: bool
-  }
-  Supplier "1" *-- "*" SupplierContact : contact persons
-  class AuditReportFile {
-    -auditId: Guid
-    -contentType: string
-    -content: byte[]
-  }
-  class SupplierEvidence {
-    -id: Guid
-    -supplierId: Guid
-    -kind: SupplierEvidenceKind
-    -title: string
-    -validUntil: DateOnly?
-    -fileName: string
-    -contentType: string
-    -sizeInBytes: long
-    -sha256: string
-    -addedById: Guid
-    -addedAt: DateTime
-    +IsValidOn(day: DateOnly) bool
-  }
-  class SupplierEvidenceKind {
-    <<enumeration>>
-    Certificate
-    DataProcessingAgreement
-    SecurityQuestionnaire
-    AuditReport
-    Contract
-    Other
-  }
-  Supplier "1" *-- "*" SupplierEvidence : evidence
-  SupplierEvidence --> SupplierEvidenceKind
-```
-
-### Revisoradgang og påmindelser
-
-```mermaid
-classDiagram
-  direction TB
-  class AuditorGrant {
-    -id: Guid
-    -organizationId: Guid
-    -projectId: Guid
-    -email: string
-    -from: DateOnly
-    -until: DateOnly
-    -invitationId: Guid
-    -grantedById: Guid
-    -grantedAt: DateTime
-    -memberId: Guid?
-    -revokedAt: DateTime?
-    +IsRevoked: bool
-    +Create(organizationId, projectId, email, from, until, today, invitationId, grantedById, at)$ AuditorGrant
-    +IsActiveOn(day: DateOnly) bool
-    +Accepted(memberId: Guid)
-    +Revoke(at: DateTime)
-  }
-  AuditorGrant "*" --> "1" Project : read-only access to
-  AuditorGrant "1" --> "1" Invitation : sent as
-  class Reminder {
-    -id: Guid
-    -organizationId: Guid
-    -userId: Guid
-    -kind: ReminderKind
-    -subjectId: Guid
-    -due: DateTime
-    -createdAt: DateTime
-    -sentAt: DateTime?
-    -attempts: int
-    -lastError: string?
-    +IsSent: bool
-    +ShouldTry: bool
-    +Create(organizationId, userId, kind, subjectId, due, at)$ Reminder
-    +IsFor(userId, kind, subjectId, due) bool
-    +Sent(at: DateTime)
-    +Failed(error: string)
-  }
-  class ReminderKind {
-    <<enumeration>>
-    EvidenceExpires
-    FindingDue
-    ApprovalWaiting
-    ReportingDeadline
-    SupplierEvidenceExpires
-  }
-  Reminder --> ReminderKind
-  Reminder "*" --> "1" User : to
-```
-
-### NIS2-gap-analyse
-
-```mermaid
-classDiagram
-  direction TB
-  class GapAnswer {
-    -id: Guid
-    -organizationId: Guid
-    -requirementCode: string
-    -maturity: Maturity
-    -comment: string?
-    -answeredById: Guid
-    -answeredRole: UserRole
-    -answeredAt: DateTime
-    -replacedAt: DateTime?
-    +IsCurrent: bool
-    +Create(organizationId, requirementCode, maturity, comment, answeredById, role, at)$ GapAnswer
-    +ReplaceBy(newer: GapAnswer)
-  }
-  class Maturity {
-    <<enumeration>>
-    None
-    AdHoc
-    Defined
-    Implemented
-    Measured
-  }
-  class Question {
-    <<record>>
-    +Code: string
-    +Text: string
-  }
-  GapAnswer "*" --> "1" Organization
-  GapAnswer --> Maturity
-  GapAnswer ..> Question : answers
-```
-
-### Livsfasernes tjeklister
-
-```mermaid
-classDiagram
-  direction TB
-  class ChecklistItem {
-    <<record>>
-    +Key: string
-    +Phase: LifecyclePhase
-    +Regulation: string
-    +Reference: string
-    +Text: string
-    +Check: ChecklistCheck
-  }
-  class ProjectChecklistEntry {
-    -id: Guid
-    -projectId: Guid
-    -itemKey: string
-    -done: bool
-    -doneById: Guid?
-    -doneRole: UserRole?
-    -doneAt: DateTime?
-    -comment: string?
-    -evidenceUrl: string?
-    -turnedOff: bool
-    -offReason: string?
-    -turnedOn: bool
-    -changedAt: DateTime
-    +For(projectId, itemKey, at)$ ProjectChecklistEntry
-    +Tick(userId, role, comment, evidenceUrl, at)
-    +Untick(at: DateTime)
-    +TurnOff(reason: string, at: DateTime)
-    +TurnOn(at: DateTime)
-  }
-  class OrganisationChecklistItem {
-    -id: Guid
-    -organizationId: Guid
-    -phase: LifecyclePhase
-    -text: string
-    -frameworkId: Guid?
-    -source: string
-    -reference: string
-    -createdAt: DateTime
-    -removedAt: DateTime?
-    +IsActive: bool
-    +Key: string
-    +Create(organizationId, phase, text, frameworkId, source, reference, at)$ OrganisationChecklistItem
-    +Change(text: string, reference: string)
-    +Remove(at: DateTime)
-    +AsItem() ChecklistItem
-    +AppliesTo(project: Project) bool
-  }
-  class ChecklistState {
-    <<enumeration>>
-    Done
-    Missing
-    TurnedOff
-    NotChosen
-  }
-  ProjectChecklistEntry "*" --> "1" Project
-  ProjectChecklistEntry ..> ChecklistItem : itemKey
-  OrganisationChecklistItem "*" --> "1" Organization
-  OrganisationChecklistItem ..> ChecklistItem : as item
-```
-
-### Testresultater
-
-```mermaid
-classDiagram
-  direction TB
-  class TestRunUpload {
-    -id: Guid
-    -projectId: Guid
-    -fileName: string
-    -sha256: string
-    -uploadedById: Guid
-    -uploadedAt: DateTime
-    -passed: int
-    -failed: int
-    -suggested: int
-    -blocked: int
-    -alreadySuggested: int
-    -unknownTags: string
-    -otherFrameworks: string
-    -whyNothing: string?
-  }
-  TestRunUpload "*" --> "1" Project
-  class Withdrawal {
-    <<static>>
-    +Reason(reason: string)$ string
   }
 ```
 
