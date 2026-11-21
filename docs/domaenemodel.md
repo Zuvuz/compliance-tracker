@@ -1,18 +1,20 @@
 # Compliance-tracker – Domænemodel
 
-Senest opdateret: 2026-10-28
+Senest opdateret: 2026-11-21
 
 ## Formål
 
-Domænemodellen beskriver de begreber, compliance-trackeren skal holde styr på, og hvordan de hænger sammen. Den er teknologineutral: ingen datatyper, metoder eller navigationsretning. Det kommer i klassediagrammet.
+Domænemodellen beskriver de begreber, compliance-trackeren holder styr på, og hvordan de hænger sammen. Den er teknologineutral: ingen datatyper, metoder eller navigationsretning. Det står i [klassediagrammet](klassediagram.md), som også viser de tekniske hjælpeklasser (filer, AI-forslag pr. type, services).
 
 Trackeren svarer på spørgsmålet *"overholder vi reglerne, og kan vi bevise det?"*. Den svarer ikke på *"hvad skal vi bygge?"*; det er udviklernes ansvar og bor i deres eget værktøj.
 
-Se også [beslutningsloggen](beslutningslog.md) og [udvidelser i fase 2–4](roadmap.md).
+Se også [beslutningsloggen](beslutningslog.md) og [roadmappen](roadmap.md).
 
-## Diagram
+## Diagrammer
 
-Begreber markeret med «fase 2» er med i modellen, så strukturen er klar til dem, men bygges ikke i første fase.
+Modellen er delt i fem områder, så hvert diagram kan læses for sig. Et begreb, der findes i flere diagrammer, er det samme begreb.
+
+### 1. Organisation, projekter og regler
 
 ```mermaid
 classDiagram
@@ -22,6 +24,8 @@ classDiagram
     cvr
     sektor
     størrelse
+    branche
+    delerAiFeedback
   }
   class Bruger {
     eksterntId
@@ -29,178 +33,512 @@ classDiagram
     email
     rolle
   }
+  class Invitation {
+    email
+    rolle
+    udløber
+  }
+  class Revisoradgang {
+    email
+    fra
+    til
+    trukketTilbage
+  }
   class Projekt {
     navn
-    beskrivelse
     tilsigtetFormål
     scope
-    livscyklusfase
-    risikoklasse
+    livsfase
+    supportperiode
   }
-  class Release {
-    versionsnummer
-    udgivelsesdato
-    status
+  class Klassifikation {
+    regulering
+    klasse
+    begrundelse
   }
   class Framework {
     navn
     niveau
   }
   class Frameworkversion {
-    versionsnummer
     betegnelse
     kilde
-    kildereference
     status
-    filnavn
+    gælderFra
     fingeraftryk
-    uploadetDato
   }
   class Krav {
     kravId
-    kategori
+    gruppe
     titel
-    beskrivelse
+    tekst
   }
-  class Kontrol {
-    navn
-    beskrivelse
-  }
-  class Kravvurdering {
-    status
-    begrundelse
-    dato
-  }
-  class Evidens {
+  class Kravmatch {
     type
-    beskrivelse
-    reference
-    gyldigFra
-    gyldigTil
+    status
   }
+  class Kravplacering {
+    organisationEllerProjekt
+    begrundelse
+  }
+  Organisation "1" -- "*" Bruger : har
+  Organisation "1" -- "*" Invitation : sender
+  Organisation "1" -- "*" Projekt : har
+  Invitation "1" -- "0..1" Revisoradgang : giver
+  Revisoradgang "*" -- "1" Projekt : læser
+  Projekt "1" -- "*" Klassifikation : klassificeres
+  Framework "1" -- "*" Frameworkversion : findes i
+  Frameworkversion "1" -- "*" Krav : indeholder
+  Organisation "*" -- "*" Frameworkversion : vælger
+  Organisation "0..1" -- "*" Frameworkversion : importerer
+  Projekt "*" -- "*" Frameworkversion : følger
+  Krav "2" -- "*" Kravmatch : samme krav i to versioner
+  Krav "1" -- "*" Kravplacering : opfyldes hvor
+  note for Frameworkversion "indbygget: ingen ejer / importeret: præcis én organisation"
+```
+
+### 2. Opfyldelse og bevis
+
+```mermaid
+classDiagram
+  direction TB
+  class Krav
+  class Projekt
   class Arbejdselement {
     type
     titel
     acceptkriterier
     kildesystem
     eksternReference
-  }
-  class Mappingforslag {
-    score
     status
-    aiBegrundelse
-    afvisningsårsag
-    brugerkommentar
-    beslutningsdato
+  }
+  class Kravdokument {
+    titel
+    version
+  }
+  class DefinitionOfDone {
+    kriterier
+  }
+  class Kobling {
+    kilde
+    fjernet
+  }
+  class IkkeRelevant {
+    begrundelse
+  }
+  class Evidens {
+    titel
+    linkEllerFil
+    fingeraftryk
+    gyldigTil
+    art
+  }
+  class Evidenstjek {
+    resultat
+    begrundelse
+  }
+  class Organisationsdokument {
+    titel
+    art
+    ejer
+    næsteGennemgang
+  }
+  class AiForslag {
+    art
+    score
+    begrundelse
+    model
+    status
+  }
+  class Godkendelse {
+    handling
+    status
+  }
+  class Tjeklistepunkt {
+    livsfase
+    regulering
+    tekst
+    indbyggetEllerEget
+  }
+  class Afkrydsning {
+    udført
+    slåetFra
+    begrundelse
+  }
+  Projekt "1" -- "*" Arbejdselement : har
+  Projekt "1" -- "*" Kravdokument : har
+  Kravdokument "1" -- "*" Arbejdselement : indeholder
+  Projekt "1" -- "0..1" DefinitionOfDone : har
+  Arbejdselement "*" -- "*" DefinitionOfDone : tjekkes mod
+  Kobling "*" -- "1" Krav
+  Kobling "*" -- "1" Arbejdselement
+  IkkeRelevant "*" -- "1" Krav
+  IkkeRelevant "*" -- "1" Projekt
+  Projekt "1" -- "*" Evidens : har
+  Evidens "*" -- "*" Krav : beviser
+  Evidens "*" -- "*" Arbejdselement : viser
+  Evidens "1" -- "*" Evidenstjek : tjekkes af AI
+  Organisationsdokument "*" -- "*" Krav : opfylder for alle projekter
+  AiForslag "*" -- "1" Krav : foreslår til
+  Godkendelse "0..1" -- "1" AiForslag : kan kræve
+  Tjeklistepunkt "1" -- "*" Afkrydsning
+  Afkrydsning "*" -- "1" Projekt
+```
+
+### 3. Risiko og sikkerhed
+
+```mermaid
+classDiagram
+  direction TB
+  class Projekt
+  class Krav
+  class Arbejdselement
+  class Evidens
+  class Risiko {
+    titel
+    sandsynlighed
+    konsekvens
+    niveau
+    behandling
+    restrisiko
+    ejer
+    status
+  }
+  class Risikotiltag {
+    beskrivelse
+  }
+  class Risikohandling {
+    beskrivelse
+    ejer
+    frist
+    udført
+  }
+  class Scanning {
+    værktøj
+    tidspunkt
+  }
+  class Scanningsfund {
+    regel
+    alvorlighed
+    status
+  }
+  class SBOM {
+    version
+    format
+  }
+  class Komponent {
+    navn
+    version
+    licens
+  }
+  class Sikkerhedshændelse {
+    titel
+    alvorlighed
+    indberetningspligtig
+    frister
+    status
+  }
+  class UdnyttetSårbarhed {
+    cve
+    kilde
+  }
+  class Leverandør {
+    navn
+    kritikalitet
+    regler
+  }
+  class Leverandørkontakt {
+    navn
+    rolle
+    sikkerhedskontakt
+  }
+  class Leverandørevidens {
+    art
+    gyldigTil
+  }
+  Projekt "1" -- "*" Risiko : har
+  Risiko "1" -- "*" Risikotiltag : mindskes af
+  Risikotiltag "*" -- "0..1" Krav
+  Risikotiltag "*" -- "0..1" Arbejdselement
+  Risiko "1" -- "*" Risikohandling : behandles af
+  Risikohandling "*" -- "*" Evidens : bevises af
+  Projekt "1" -- "*" Scanning : har
+  Scanning "1" -- "*" Scanningsfund : finder
+  Projekt "1" -- "*" SBOM : har
+  SBOM "1" -- "*" Komponent : indeholder
+  Scanningsfund "*" -- "0..1" Komponent : rammer
+  Projekt "1" -- "*" Sikkerhedshændelse : har
+  Sikkerhedshændelse "*" -- "0..1" Scanningsfund : foreslået fra
+  Sikkerhedshændelse "*" -- "0..1" UdnyttetSårbarhed : foreslået fra
+  Leverandør "1" -- "*" Leverandørkontakt : har
+  Leverandør "1" -- "*" Leverandørevidens : dokumenteres af
+```
+
+### 4. Revision, rapporter og opfølgning
+
+```mermaid
+classDiagram
+  direction TB
+  class Organisation
+  class Projekt
+  class Bruger
+  class Krav
+  class Evidens
+  class Audit {
+    art
+    dato
+    auditor
+    resultat
+    certifikat
+  }
+  class Auditfund {
+    titel
+    ansvarlig
+    frist
+    lukket
+  }
+  class Rapportsnapshot {
+    rapporttype
+    tidspunkt
+    fingeraftryk
+  }
+  class Signatur {
+    underskriver
+    rolle
+    tidspunkt
+  }
+  class Segl {
+    certifikat
+    aktiv
+  }
+  class Statustekst {
+    del
+    tekst
+    aiGenereret
+    grundlag
+  }
+  class Gapsvar {
+    kravkode
+    modenhed
+    kommentar
+  }
+  class Påmindelse {
+    art
+    frist
+    sendt
   }
   class Logpost {
     handling
     objekttype
     objektId
     detaljer
+    rolle
     tidspunkt
   }
-  class Audit {
-    <<fase 2>>
-    dato
-    auditor
-    type
-    konklusion
-  }
-  class Fund {
-    <<fase 2>>
-    alvorlighed
-    beskrivelse
-    frist
-    status
-  }
-  class Rapportsnapshot {
-    <<fase 2>>
-    type
-    genereretDato
-    hashværdi
-  }
-  Organisation "1" -- "*" Projekt : har
-  Organisation "1" -- "*" Bruger : har
-  Organisation "*" -- "*" Frameworkversion : vælger
-  Organisation "0..1" -- "*" Frameworkversion : importerer
-  Projekt "*" -- "*" Frameworkversion : vælger
-  Projekt "1" -- "*" Release : udgiver
-  Projekt "1" -- "*" Arbejdselement : har
-  Framework "1" -- "*" Frameworkversion : findes i
-  Frameworkversion "1" -- "*" Krav : indeholder
-  Organisation "1" -- "*" Kontrol : ejer
-  Krav "*" -- "*" Kontrol : opfyldes af
-  Krav "*" -- "*" Arbejdselement : implementeres i
-  Arbejdselement "*" -- "0..1" Release : leveres i
-  Release "0..1" -- "*" Kravvurdering : vurderes i
-  Organisation "0..1" -- "*" Kravvurdering : vurderes i
-  Krav "1" -- "*" Kravvurdering
-  Kontrol "1" -- "*" Evidens : dokumenteres af
-  Release "0..1" -- "*" Evidens : gælder for
-  Bruger "1" -- "*" Evidens : indsender
-  Bruger "1" -- "*" Kontrol : ansvarlig for
-  Krav "1" -- "*" Mappingforslag
-  Arbejdselement "0..1" -- "*" Mappingforslag
-  Kontrol "0..1" -- "*" Mappingforslag
-  Bruger "0..1" -- "*" Mappingforslag : besluttet af
+  Projekt "1" -- "*" Audit : gennemgås i
+  Audit "1" -- "*" Auditfund : resulterer i
+  Auditfund "*" -- "0..1" Evidens : lukkes med
+  Projekt "1" -- "*" Rapportsnapshot : låser
+  Rapportsnapshot "1" -- "*" Signatur : underskrives
+  Organisation "1" -- "0..1" Segl : forsegler med
+  Projekt "1" -- "*" Statustekst : ledelsesrapportens tekster
+  Organisation "1" -- "*" Gapsvar : NIS2-gap-analyse
+  Bruger "1" -- "*" Påmindelse : modtager
   Organisation "1" -- "*" Logpost : har
-  Bruger "1" -- "*" Logpost : udført af
-  Organisation "1" -- "*" Audit : gennemgår
-  Audit "*" -- "*" Frameworkversion : dækker
-  Audit "1" -- "*" Fund : resulterer i
-  Fund "*" -- "0..1" Krav : vedrører
-  Fund "*" -- "0..1" Kontrol : vedrører
-  Bruger "1" -- "*" Fund : ansvarlig for
-  Organisation "1" -- "*" Rapportsnapshot : har
-  Release "0..1" -- "*" Rapportsnapshot : dokumenterer
-  Audit "0..1" -- "*" Rapportsnapshot : bruger
-  Bruger "1" -- "*" Rapportsnapshot : genereret af
-  note for Mappingforslag "{xor} arbejdselement eller kontrol"
-  note for Kravvurdering "{xor} release eller organisation"
-  note for Fund "{mindst én} krav eller kontrol"
-  note for Frameworkversion "indbygget: ingen ejer / importeret: præcis én organisation"
+  Bruger "0..1" -- "*" Logpost : udført af
+```
+
+### 5. Planlagt: resten af ISMS'et (US-208 til US-216)
+
+Disse begreber er besluttet som stories, men ikke bygget. De hører til organisationen, og projekterne er det, ISMS'et dækker.
+
+```mermaid
+classDiagram
+  direction TB
+  class Organisation
+  class Projekt
+  class Risiko
+  class Leverandør
+  class Auditfund
+  class Organisationsdokument
+  class ISMSScope {
+    <<planlagt>>
+    scopetekst
+    version
+    næsteGennemgang
+  }
+  class Interessent {
+    <<planlagt>>
+    navn
+    art
+    krav
+  }
+  class Sikkerhedsmål {
+    <<planlagt>>
+    mål
+    retning
+    frekvens
+    ejer
+  }
+  class Måling {
+    <<planlagt>>
+    dato
+    værdi
+  }
+  class Ledelsensgennemgang {
+    <<planlagt>>
+    dato
+    deltagere
+    input
+    beslutninger
+  }
+  class Auditprogram {
+    <<planlagt>>
+    start
+    længde
+  }
+  class PlanlagtAudit {
+    <<planlagt>>
+    dato
+    kapitlerOgKontroller
+    auditor
+  }
+  class Afvigelse {
+    <<planlagt>>
+    kilde
+    alvorlighed
+    årsag
+    korrigerendeHandling
+    effektiv
+  }
+  class Kompetence {
+    <<planlagt>>
+    navn
+    fornyes
+  }
+  class Uddannelse {
+    <<planlagt>>
+    dato
+    gyldigTil
+  }
+  class LæstPolitik {
+    <<planlagt>>
+    version
+    dato
+  }
+  class Aktiv {
+    <<planlagt>>
+    navn
+    art
+    ejer
+    klassifikation
+    persondata
+  }
+  class FastOpgave {
+    <<planlagt>>
+    interval
+    ejer
+    næsteFrist
+  }
+  Organisation "1" -- "0..1" ISMSScope : har
+  ISMSScope "*" -- "*" Projekt : omfatter
+  Organisation "1" -- "*" Interessent : har
+  Organisation "1" -- "*" Sikkerhedsmål : har
+  Sikkerhedsmål "1" -- "*" Måling : måles
+  Organisation "1" -- "*" Ledelsensgennemgang : holder
+  Organisation "1" -- "0..1" Auditprogram : har
+  Auditprogram "1" -- "*" PlanlagtAudit : planlægger
+  Auditfund "0..1" -- "0..1" Afvigelse : bliver til
+  Organisation "1" -- "*" Afvigelse : har
+  Kompetence "1" -- "*" Uddannelse : opnås ved
+  Organisationsdokument "1" -- "*" LæstPolitik : bekræftes
+  Organisation "1" -- "*" Aktiv : ejer
+  Aktiv "*" -- "*" Risiko : rammes af
+  Aktiv "*" -- "*" Leverandør : hostes af
+  Organisation "1" -- "*" FastOpgave : årshjul
 ```
 
 ## Begreber
 
-| Begreb | Betydning | Fase |
+| Begreb | Betydning | Story |
 |---|---|---|
-| Organisation | Virksomheden, der bruger trackeren. Sektor og størrelse afgør bl.a., om NIS2 er relevant. | 1 |
-| Bruger | En person i organisationen med en rolle. Kan være ansvarlig for kontroller og indsende evidens. Logger ind via Keycloak og genkendes på sit eksterne id (`sub`). | 1 |
-| Projekt | Et produkt, der skal overholde regler. Tilsigtet formål og scope afgør, hvilke krav der gælder, og er kontekst for AI'en. | 1 |
-| Release | En konkret version af produktet. CRA tænker i versioner, så evidens og vurderinger kan knyttes hertil. | 1 |
-| Framework | Regelsættets navn, fx CRA, ISO 27001 eller AI Act. Niveau angiver, om det gælder organisationen eller et projekt. Indeholder ingen kravtekst. | 1 |
-| Frameworkversion | En konkret udgave af et framework, fx "ISO/IEC 27001:2022" eller "Forordning (EU) 2024/2847". Det er versionen, der indeholder kravene, og som vælges. Kilden er enten *indbygget* (offentlig EU-lovgivning, der følger med trackeren) eller *importeret* (organisationens eget licenserede katalog). Et importeret katalog uploades som PDF; hver upload bliver en ny version med et fingeraftryk (SHA-256), og den nyeste gælder. | 1 |
-| Krav | Ét krav i en frameworkversion, fx et Annex I-krav i CRA. Kategori afspejler frameworkets egen struktur. | 1 |
-| Kontrol | Organisationens eget tiltag, der opfylder et eller flere krav. Én kontrol kan dække krav fra flere frameworks. | 1 |
-| Kravvurdering | Status for ét krav, fx opfyldt, delvist, ikke opfyldt eller ikke relevant, med begrundelse. | 1 |
-| Evidens | Bevis for, at en kontrol virker: dokument, scanningsresultat, link til PR osv. Har gyldighedsperiode. Hører til projektet og gemmes én gang; den kobles til de krav, den beviser (B44, US-059). Er enten dokumentation (beskriver, hvordan vi arbejder) eller bevis (viser, at det er sket) (B155, US-204). | 1 |
-| Arbejdselement | En henvisning til en user story, use case eller opgave i et eksternt system. Trackeren ejer den ikke. | 1 |
-| Mappingforslag | AI'ens forslag til en kobling mellem et krav og et arbejdselement eller en kontrol. Skal godkendes af et menneske. | 1 |
-| Logpost | En registrering af, hvem der gjorde hvad og hvornår, fx at et katalog blev importeret eller et framework valgt. Ændres og slettes aldrig. | 1 |
-| Audit | En intern eller ekstern gennemgang. | 2 |
-| Fund | En afvigelse fundet ved en audit, med alvorlighed, frist og ansvarlig. | 2 |
-| Rapportsnapshot | En låst, afleveret rapport. Hashværdien beviser, at den ikke er ændret. | 2 |
+| Organisation | Virksomheden, der bruger trackeren. Sektor, størrelse og branche afgør bl.a., om NIS2 er relevant, og hvilke reguleringer der foreslås. | US-001, US-080 |
+| Bruger | En person i organisationen med en rolle. Logger ind via Keycloak og genkendes på sit eksterne id (`sub`). | US-004, US-010 |
+| Invitation | En invitation til at blive medlem med en bestemt rolle. Udløber. | US-009, US-196 |
+| Revisoradgang | Tidsbegrænset læseadgang for en ekstern revisor til ét projekt, højst 30 dage, kan trækkes tilbage. | US-182 |
+| Projekt | Et produkt, der skal overholde regler. Tilsigtet formål og scope afgør, hvilke krav der gælder, og er kontekst for AI'en. Har en livsfase og en supportperiode. | US-008, US-024 |
+| Klassifikation | Hvordan en regulering gælder for projektet, fx "CRA: vigtig klasse I", med begrundelse. Erstattes, ændres ikke. | US-026 |
+| Framework | Regelsættets navn, fx CRA, ISO 27001 eller NIS2. Niveau angiver, om det gælder organisationen eller et projekt. Indeholder ingen kravtekst. | US-005 |
+| Frameworkversion | En konkret udgave af et framework. Kilden er *indbygget* (offentlig EU-lovgivning) eller *importeret* (organisationens licenserede katalog). Låst, når den er aktiv. | US-005, US-035 |
+| Krav | Ét krav i en frameworkversion. ISO 27001's Annex A-kontroller er også krav. | US-007 |
+| Kravmatch | At to krav i forskellige versioner eller frameworks kræver det samme, så dækning kan gå fra det ene til det andet. Foreslås af AI og godkendes af en person. | US-037, US-110 |
+| Kravplacering | Om et krav opfyldes af organisationen (fx en politik) eller i hvert projekt, med begrundelse. | US-115 |
+| Arbejdselement | En user story, use case eller opgave fra teamets eget værktøj (GitHub, Azure DevOps) eller et uploadet kravdokument. Trackeren ejer den ikke. | US-018, US-104 |
+| Kravdokument | Et uploadet dokument med krav eller use cases, fx Word eller Excel, med versioner. | US-032, US-033, US-034 |
+| Definition of Done | Projektets kriterier for, hvornår en story er færdig, og afkrydsningen pr. story. | US-109 |
+| Kobling | At et arbejdselement opfylder et krav. Laves i hånden eller ved et godkendt AI-forslag. Slettes aldrig, men fjernes. | US-019, US-020 |
+| Ikke relevant | At et krav ikke gælder for projektet, med begrundelse. Tæller ikke med i dækningen. | US-043 |
+| Evidens | Bevis for, at et krav er opfyldt: fil eller link med fingeraftryk og evt. udløbsdato. Gemmes én gang i projektet og kobles til de krav og stories, den beviser. Er enten dokumentation eller bevis. | US-057, US-059, US-204 |
+| Evidenstjek | AI'ens vurdering af, om evidensen beviser kravet, med begrundelse. | US-038 |
+| Organisationsdokument | En politik, procedure eller risikotabel for hele organisationen, med versioner, som alle projekter kan bruge som evidens. | US-115, US-136 |
+| AI-forslag | AI'ens forslag, fx en kobling, evidens, et risikoudkast, et story-udkast, "kræver handling" eller en sikkerhedshændelse. Gemmer model og begrundelse og skal altid besluttes af en person. | US-020, US-108, US-112, US-155 |
+| Godkendelse | En handling, der venter på en anden persons godkendelse, før den sker (fire-øjne-princippet). | US-135 |
+| Tjeklistepunkt | Et punkt, der skal være på plads i en livsfase for en regulering. Indbygget eller organisationens eget. | US-047 |
+| Afkrydsning | Projektets svar på et tjeklistepunkt: udført, med evidens, eller slået fra med begrundelse. | US-047, US-194 |
+| Risiko | En risiko for projektet med sandsynlighed og konsekvens (1–5), niveau, behandling, ejer og restrisiko. Lukkes, slettes aldrig. | US-042, US-165 |
+| Risikotiltag | Et krav eller en story, der mindsker risikoen. | US-042 |
+| Risikohandling | Noget teamet gør ved risikoen, med ejer, frist og det bevis, der viser, at det er gjort. | US-111 |
+| Scanning | Et uploadet scanningsresultat (SARIF), fra hånden, pipelinen eller GitHub. | US-078, US-122 |
+| Scanningsfund | Ét fund i en scanning med regel og alvorlighed. | US-078 |
+| SBOM | Softwarestyklisten for én produktversion (versionsnummer, ikke en release). | US-079, US-148 |
+| Komponent | En komponent i en SBOM, markeret når et åbent fund rammer den. | US-079 |
+| Sikkerhedshændelse | En hændelse med alvorlighed og, hvis den er indberetningspligtig efter CRA eller NIS2, frister for indberetning. | US-073, US-127 |
+| Udnyttet sårbarhed | En sårbarhed fra en offentlig liste over aktivt udnyttede sårbarheder, som kan blive til en hændelse. | US-128 |
+| Leverandør | En leverandør med kritikalitet og de regler, den skal overholde. | US-191 |
+| Leverandørkontakt | En kontaktperson hos leverandøren, evt. sikkerhedskontakt. | US-207 |
+| Leverandørevidens | Leverandørens certifikat, databehandleraftale eller lignende, med udløbsdato. | US-191 |
+| Audit | En intern eller ekstern revision med resultat og evt. certifikat. | US-134 |
+| Auditfund | En afvigelse fundet ved en audit, med ansvarlig og frist. Lukkes med evidens. | US-134 |
+| Rapportsnapshot | En låst rapport. Fingeraftrykket beviser, at den ikke er ændret. | US-050 |
+| Signatur og segl | En persons underskrift på en låst rapport og organisationens segl på den. | US-132, US-180 |
+| Statustekst | Ledelsesrapportens resumé og tekst pr. regulering, skrevet af AI og accepteret af en person. Forældes, når tallene ændrer sig. | US-040 |
+| Gapsvar | Organisationens svar på et NIS2-spørgsmål med modenhed. Erstattes, ændres ikke. | US-190 |
+| Påmindelse | En mail til én bruger om én frist. | US-183 |
+| Logpost | Hvem der gjorde hvad og hvornår, med rollen på tidspunktet. Ændres og slettes aldrig. | US-001 |
 
 ## Regler
 
-Disse regler kan ikke udtrykkes med multipliciteter alene. De vises som noter i diagrammet og bliver til validering og unit tests i koden.
+Disse regler kan ikke udtrykkes med multipliciteter alene. De bliver til validering og unit tests i koden.
 
-1. **Mappingforslag:** peger på præcis ét af følgende: et arbejdselement eller en kontrol.
-2. **Kravvurdering:** hører til præcis ét af følgende: en release (projektframeworks som CRA) eller organisationen (organisationsframeworks som ISO 27001).
-3. **Fund:** vedrører mindst ét krav eller én kontrol.
-4. **Framework** er fælles referencedata (kun navn og niveau). **Indbyggede frameworkversioner** er også fælles. **Importerede frameworkversioner** ejes af præcis én organisation og er usynlige for alle andre. Organisationer kan også oprette egne frameworks, fx en sikkerhedspolitik; de ejes ligeledes af præcis én organisation og er usynlige for alle andre (B18).
-5. **Evidens** knyttes altid til en kontrol og kan desuden knyttes til en release, når den kun gælder en bestemt version (fx en SBOM). Indtil kontroller og releases er bygget, knyttes evidens til kravet i et projekt (B33, US-057).
-6. **En frameworkversion er låst, når den er aktiv.** Den starter som *kladde* og kan rettes; når den aktiveres, kan dens krav ikke længere ændres. Rettelser kræver en ny version. Derfor peger en mapping eller vurdering altid på præcis den tekst, den blev lavet imod.
-7. **Kun aktive versioner kan vælges**, og et projekt kan kun vælge versioner med niveau *projekt*, mens organisationen vælger versioner med niveau *organisation*.
-8. **Højst én version pr. framework** pr. projekt og pr. organisation ad gangen.
-9. **AI-mapping i fase 1** laves kun mod krav fra indbyggede frameworkversioner (CRA og AI Act). Importerede kataloger mappes manuelt, indtil licensforholdene for AI-behandling er afklaret.
-10. **Logposter** oprettes for alle ændringer af organisation, scope og kataloger og kan aldrig ændres eller slettes.
+1. **Framework** er fælles referencedata (kun navn og niveau). **Indbyggede frameworkversioner** er også fælles. **Importerede frameworkversioner** og organisationens egne frameworks ejes af præcis én organisation og er usynlige for alle andre (B18).
+2. **En frameworkversion er låst, når den er aktiv.** Den starter som kladde; når den aktiveres, kan dens krav ikke ændres. Rettelser kræver en ny version, så en kobling peger altid på den tekst, den blev lavet imod.
+3. **Kun aktive versioner kan vælges**, og højst én version pr. framework pr. projekt og pr. organisation ad gangen.
+4. **Ingen organisation kan se en andens data** (B33, US-086). Revisoradgang giver kun læseadgang til ét projekt i en periode.
+5. **AI'en foreslår, et menneske beslutter.** Et AI-forslag ændrer intet, før en person med rettigheden godkender det. Tekster skrevet af AI markeres, indtil en person har accepteret dem (AI Act art. 50).
+6. **Evidens** hører til projektet og kobles til krav og stories. En organisations dokumenter kan bruges som evidens i alle projekter, hvor kravet opfyldes af organisationen.
+7. **Historik bevares.** Koblinger, evidens, risici og frameworkvalg slettes aldrig, men fjernes eller lukkes. Klassifikationer, gapsvar og placeringer erstattes af en ny række.
+8. **Logposter** oprettes for alle ændringer og kan aldrig ændres eller slettes.
+9. **En låst rapport ændres aldrig.** En ny version er et nyt snapshot.
+
+## Ikke bygget
+
+Disse begreber fra den første model (oktober 2026) er ikke bygget, og deres opgaver løses på en anden måde (B33, B165):
+
+| Begreb | Løst i stedet af |
+|---|---|
+| Kontrol | ISO 27001's kontroller er krav i Annex A. Statement of Applicability (US-053) og kravplacering i organisationen (US-115) dækker det, en kontrol skulle. |
+| Kravvurdering | Koblede stories, evidens og "Ikke relevant" med begrundelse viser, om et krav er opfyldt (B33). |
+| Release | Livsfasen og supportperioden ligger på projektet (US-024, US-047), og en SBOM hører til et versionsnummer (B87). |
+
+## Ændret 2026-11-21
+
+- **Modellen er opdateret til det, der er bygget** til og med US-160 og US-040. Den er delt i fem diagrammer, så den kan læses.
+- **Kontrol, Kravvurdering og Release er flyttet til "Ikke bygget"** med det, der løser deres opgave (B165).
+- **ISMS-begreberne fra US-208 til US-216 er vist som planlagt.**
 
 ## Ændret 2026-10-19
 
 - **Framework delt i Framework og Frameworkversion.** ISO 27001:2013 og 2022 har forskellig Annex A, så "ISO 27001" alene er ikke præcist nok. Organisationer og projekter vælger nu en version, og krav hører til versionen.
-- **Kravkataloger importeres af organisationen.** ISO-standarder er ophavsretligt beskyttede, så trackeren leverer ikke selv kravteksten. Kun offentlig EU-lovgivning (CRA, AI Act fra EUR-Lex) følger med som indbygget katalog (regel 4).
-- **AI'en mapper mod den gemte kravtekst**, ikke mod sin egen viden om reglerne. Låste versioner (regel 6) sikrer, at teksten ikke ændrer sig under en mapping.
+- **Kravkataloger importeres af organisationen.** ISO-standarder er ophavsretligt beskyttede, så trackeren leverer ikke selv kravteksten. Kun offentlig EU-lovgivning (CRA, AI Act fra EUR-Lex) følger med som indbygget katalog (regel 1).
+- **AI'en mapper mod den gemte kravtekst**, ikke mod sin egen viden om reglerne. Låste versioner (regel 2) sikrer, at teksten ikke ændrer sig under en mapping.
 - **Logpost tilføjet.** Flere stories kræver sporbarhed over, hvem der ændrede scope og kataloger (ISO 27001 A.8.15).

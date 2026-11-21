@@ -2474,9 +2474,26 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At AI'en skriver tal eller tabeller.
   - At gemme teksternes historik. Den låste PDF har de tekster, der blev godkendt.
 
-## Åbne spørgsmål til klassediagrammet
+### B165 – Efter MVP'en prioriteres efter værdi, og Kontrol, Kravvurdering og Release bygges ikke
 
-- Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?
-- Hvilke attributter bliver enums (status, type, niveau)? Livscyklusfasen er afgjort i B19.
-- Skal mange-til-mange-koblingerne (fx Krav–Kontrol) have egne data, som en begrundelse for koblingen?
-- Kører AI-modellen lokalt eller hos en udbyder? En lokal model beskytter fortrolige stories bedre.
+- **Status:** Vedtaget 2026-11-21. Beskriver, hvad der faktisk er sket siden MVP'en, og retter B05, B07, B08 og B33.
+- **Beslutning:**
+  - **Faserne:** fase 1 (MVP'en, B33) blev bygget først og var færdig 2026-11-05. Derefter er stories prioriteret efter, hvad der giver mest værdi i hverdagen og ved en revision, og ikke fase for fase. Dele af fase 2, 3 og 4 er derfor bygget side om side. [Roadmappen](roadmap.md) viser status pr. fase, og ISMS-stories US-208 til US-216 er samlet som fase 5.
+  - **`Kontrol` bygges ikke (retter B05).** ISO 27001's kontroller er krav i Annex A. Statement of Applicability (US-053) viser, hvilke der gælder og hvordan, og kravplacering i organisationen (US-115) lader én politik opfylde et krav for alle projekter. Det var det, `Kontrol` skulle.
+  - **`Kravvurdering` bygges ikke (retter B08).** Koblede stories, evidens og "Not applicable" med begrundelse viser, om et krav er opfyldt, som allerede besluttet for MVP'en (B33). Låste rapporter (US-050) giver historikken.
+  - **`Release` bygges ikke (retter B07).** Livsfasen og supportperioden ligger på projektet (US-024, US-047), og en SBOM hører til et versionsnummer (B87).
+  - **Modellerne følger koden.** [Domænemodellen](domaenemodel.md) og [klassediagrammet](klassediagram.md) viser kun det, der er bygget. Det planlagte står som «planlagt» eller under "Ikke bygget".
+- **Begrundelse:** Faserne var en plan for rækkefølgen, før det var klart, hvad en lille virksomhed og en revisor har mest brug for. Kunderne har brug for at kunne bevise compliance over for en revisor og myndighederne, og det krævede dele fra flere faser på én gang, fx revisionspakken (fase 2) med SBOM og scanninger (fase 3) og NIS2 (fase 4). De tre begreber ville gentage data, som trackeren allerede har på en anden måde.
+- **Fravalgt:**
+  - At holde fast i faserne efter MVP'en. Det ville have udskudt NIS2 og revisionspakken.
+  - At bygge `Kontrol` som en ekstra tabel ved siden af Annex A-kravene. To steder for det samme giver uenighed om, hvad der gælder.
+  - At bygge `Release` kun for SBOM'ens skyld.
+
+## Spørgsmål til klassediagrammet
+
+Der er ingen åbne spørgsmål. De første spørgsmål fra oktober 2026 er besvaret sådan:
+
+- **Skal `Mappingforslag` pege på en fælles overklasse, eller valideres xor-reglen i konstruktøren?** Ingen af delene. `Kontrol` blev ikke bygget (B165), så et forslag peger altid på et arbejdselement.
+- **Hvilke attributter bliver enums?** Status, type, niveau og fase er enums og gemmes som tekst, så nye værdier ikke forskyder gamle data. Livsfasen er afgjort i B19 og B127.
+- **Skal mange-til-mange-koblingerne have egne data?** Ja. `RequirementLink`, `EvidenceLink` og `RiskMeasure` gemmer kilden (manuelt eller godkendt AI-forslag), hvem og hvornår.
+- **Kører AI-modellen lokalt eller hos en udbyder?** Lokalt med Ollama som standard. En OpenAI-kompatibel server kan vælges i indstillingerne (B29, B36).
