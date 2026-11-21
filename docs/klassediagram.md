@@ -1,6 +1,6 @@
 # Compliance-tracker – Klassediagram
 
-Senest opdateret: 2026-10-28
+Senest opdateret: 2026-11-21
 
 Klassediagrammet bygger på [domænemodellen](domaenemodel.md) og viser modellagets klasser med attributter, datatyper og associationer. **Metoder tilføjes løbende**, når en user story kræver dem, og opdateres i samme pull request som koden. Reglerne, som metoderne skal håndhæve, står i domænemodellen.
 
@@ -37,7 +37,6 @@ classDiagram
     -productsUseAi: bool
     -users: List~User~
     -projects: List~Project~
-    -controls: List~Control~
     -frameworks: List~OrganizationFramework~
     +Create(name: string, cvr: string, sector: Sector?, size: OrganizationSize?, creator: UserIdentity)$ Organization
     +Members: List~User~
@@ -224,7 +223,6 @@ classDiagram
     -endOfSupportOn: DateOnly?
     -lastPlacedOnMarketOn: DateOnly?
     -retainUntil: DateOnly?
-    -releases: List~Release~
     -workItems: List~WorkItem~
     -frameworks: List~ProjectFramework~
     +Frameworks: IEnumerable~ProjectFramework~
@@ -260,13 +258,6 @@ classDiagram
     +Field: string
     +OldValue: string
     +NewValue: string
-  }
-  class Release {
-    -id: Guid
-    -projectId: Guid
-    -version: string
-    -releaseDate: DateOnly?
-    -status: ReleaseStatus
   }
 
   %% ================= Frameworks og krav =================
@@ -655,23 +646,7 @@ classDiagram
     +IsActive: bool
   }
 
-  %% ================= Kontroller og evidens =================
-  class Control {
-    -id: Guid
-    -organizationId: Guid
-    -ownerId: Guid
-    -name: string
-    -description: string
-    -requirements: List~RequirementControl~
-    -evidence: List~Evidence~
-  }
-  class RequirementControl {
-    -requirementId: Guid
-    -controlId: Guid
-    -source: MappingSource
-    -rationale: string
-    -createdAt: DateTime
-  }
+  %% ================= Evidens =================
   class Evidence {
     -id: Guid
     -projectId: Guid
@@ -709,23 +684,10 @@ classDiagram
     +Create(fileName: string, content: byte[])$ EvidenceFile
   }
 
-  %% ================= Vurderinger =================
-  class RequirementAssessment {
-    -id: Guid
-    -requirementId: Guid
-    -releaseId: Guid?
-    -organizationId: Guid?
-    -status: AssessmentStatus
-    -rationale: string
-    -assessedAt: DateTime
-    -assessedById: Guid
-  }
-
   %% ================= Arbejdselementer og AI =================
   class WorkItem {
     -id: Guid
     -projectId: Guid
-    -releaseId: Guid?
     -type: WorkItemType
     -source: WorkItemSource
     -externalReference: string
@@ -2168,31 +2130,6 @@ classDiagram
     Manual
     AiApproved
   }
-  class ReleaseStatus {
-    <<enumeration>>
-    Planned
-    InDevelopment
-    Released
-    EndOfSupport
-  }
-  class AssessmentStatus {
-    <<enumeration>>
-    NotAssessed
-    Compliant
-    PartiallyCompliant
-    NonCompliant
-    NotApplicable
-  }
-  class EvidenceType {
-    <<enumeration>>
-    Document
-    ScanResult
-    TestReport
-    Sbom
-    CodeChange
-    ManualConfirmation
-    Other
-  }
   class WorkItemType {
     <<enumeration>>
     UserStory
@@ -2234,14 +2171,12 @@ classDiagram
   %% ================= Associationer =================
   Organization "1" --> "*" User : users
   Organization "1" --> "*" Project : projects
-  Organization "1" --> "*" Control : controls
   Organization "1" --> "*" OrganizationFramework : frameworks
   Framework "*" --> "0..1" Organization : owner
   OrganizationFramework "*" --> "1" FrameworkVersion
   Project "1" --> "*" ProjectFramework : frameworks
   Project ..> ProjectChange : returns
   ProjectFramework "*" --> "1" FrameworkVersion
-  Project "1" --> "*" Release : releases
   Project "1" --> "*" WorkItem : workItems
   Project "1" *-- "0..1" GitHubLink : gitHub
   GitHubWorkItemSource ..|> IWorkItemSource
@@ -2260,12 +2195,8 @@ classDiagram
   WorkItemSyncService --> IWorkItemNotifier : notifier
   WorkItemSyncService --> ISecretProtector : secrets
   DataProtectionSecretProtector ..|> ISecretProtector
-  WorkItem "*" --> "0..1" Release
   Framework "1" --> "*" FrameworkVersion : versions
   FrameworkVersion "1" --> "*" Requirement : requirements
-  Control "1" --> "*" RequirementControl : requirements
-  RequirementControl "*" --> "1" Requirement
-  Control "*" --> "1" User : owner
   Evidence "*" --> "1" Project
   Evidence "*" --> "1" Requirement
   Evidence ..> EvidenceFile : made from
@@ -2287,12 +2218,8 @@ classDiagram
   OllamaRationaleWriter ..|> IRationaleWriter
   OpenAiCompatibleRationaleWriter ..|> IRationaleWriter
   RequirementApplicability "*" --> "1" Project
-  RequirementAssessment "*" --> "1" Requirement
-  RequirementAssessment "*" --> "0..1" Release
-  RequirementAssessment "*" --> "0..1" Organization
   MappingSuggestion "*" --> "1" Requirement
   MappingSuggestion "*" --> "0..1" WorkItem
-  MappingSuggestion "*" --> "0..1" Control
   ActivityLogEntry "*" --> "1" Organization
   ActivityLogEntry "*" --> "1" User
   CurrentMember --> ICurrentUser : currentUser
@@ -2366,9 +2293,204 @@ classDiagram
   }
   Organization "1" -- "*" Supplier
   Supplier "1" *-- "*" SupplierContact : contact persons
+  Audit "1" *-- "0..1" AuditReportFile : report
+  class AuditReportFile {
+    -auditId: Guid
+    -contentType: string
+    -content: byte[]
+  }
+  class SupplierEvidence {
+    -id: Guid
+    -supplierId: Guid
+    -kind: SupplierEvidenceKind
+    -title: string
+    -validUntil: DateOnly?
+    -fileName: string
+    -contentType: string
+    -sizeInBytes: long
+    -sha256: string
+    -addedById: Guid
+    -addedAt: DateTime
+    +IsValidOn(day: DateOnly) bool
+  }
+  class SupplierEvidenceKind {
+    <<enumeration>>
+    Certificate
+    DataProcessingAgreement
+    SecurityQuestionnaire
+    AuditReport
+    Contract
+    Other
+  }
+  Supplier "1" *-- "*" SupplierEvidence : evidence
+  SupplierEvidence --> SupplierEvidenceKind
 
-  note for MappingSuggestion "{xor} workItemId eller controlId"
-  note for RequirementAssessment "{xor} releaseId eller organizationId"
+  %% ================= Revisoradgang og påmindelser =================
+  class AuditorGrant {
+    -id: Guid
+    -organizationId: Guid
+    -projectId: Guid
+    -email: string
+    -from: DateOnly
+    -until: DateOnly
+    -invitationId: Guid
+    -grantedById: Guid
+    -grantedAt: DateTime
+    -memberId: Guid?
+    -revokedAt: DateTime?
+    +IsRevoked: bool
+    +Create(organizationId, projectId, email, from, until, today, invitationId, grantedById, at)$ AuditorGrant
+    +IsActiveOn(day: DateOnly) bool
+    +Accepted(memberId: Guid)
+    +Revoke(at: DateTime)
+  }
+  AuditorGrant "*" --> "1" Project : read-only access to
+  AuditorGrant "1" --> "1" Invitation : sent as
+  class Reminder {
+    -id: Guid
+    -organizationId: Guid
+    -userId: Guid
+    -kind: ReminderKind
+    -subjectId: Guid
+    -due: DateTime
+    -createdAt: DateTime
+    -sentAt: DateTime?
+    -attempts: int
+    -lastError: string?
+    +IsSent: bool
+    +ShouldTry: bool
+    +Create(organizationId, userId, kind, subjectId, due, at)$ Reminder
+    +IsFor(userId, kind, subjectId, due) bool
+    +Sent(at: DateTime)
+    +Failed(error: string)
+  }
+  class ReminderKind {
+    <<enumeration>>
+    EvidenceExpires
+    FindingDue
+    ApprovalWaiting
+    ReportingDeadline
+    SupplierEvidenceExpires
+  }
+  Reminder --> ReminderKind
+  Reminder "*" --> "1" User : to
+
+  %% ================= NIS2-gap-analyse =================
+  class GapAnswer {
+    -id: Guid
+    -organizationId: Guid
+    -requirementCode: string
+    -maturity: Maturity
+    -comment: string?
+    -answeredById: Guid
+    -answeredRole: UserRole
+    -answeredAt: DateTime
+    -replacedAt: DateTime?
+    +IsCurrent: bool
+    +Create(organizationId, requirementCode, maturity, comment, answeredById, role, at)$ GapAnswer
+    +ReplaceBy(newer: GapAnswer)
+  }
+  class Maturity {
+    <<enumeration>>
+    None
+    AdHoc
+    Defined
+    Implemented
+    Measured
+  }
+  class Question {
+    <<record>>
+    +Code: string
+    +Text: string
+  }
+  GapAnswer "*" --> "1" Organization
+  GapAnswer --> Maturity
+  GapAnswer ..> Question : answers
+
+  %% ================= Livsfasernes tjeklister =================
+  class ChecklistItem {
+    <<record>>
+    +Key: string
+    +Phase: LifecyclePhase
+    +Regulation: string
+    +Reference: string
+    +Text: string
+    +Check: ChecklistCheck
+  }
+  class ProjectChecklistEntry {
+    -id: Guid
+    -projectId: Guid
+    -itemKey: string
+    -done: bool
+    -doneById: Guid?
+    -doneRole: UserRole?
+    -doneAt: DateTime?
+    -comment: string?
+    -evidenceUrl: string?
+    -turnedOff: bool
+    -offReason: string?
+    -turnedOn: bool
+    -changedAt: DateTime
+    +For(projectId, itemKey, at)$ ProjectChecklistEntry
+    +Tick(userId, role, comment, evidenceUrl, at)
+    +Untick(at: DateTime)
+    +TurnOff(reason: string, at: DateTime)
+    +TurnOn(at: DateTime)
+  }
+  class OrganisationChecklistItem {
+    -id: Guid
+    -organizationId: Guid
+    -phase: LifecyclePhase
+    -text: string
+    -frameworkId: Guid?
+    -source: string
+    -reference: string
+    -createdAt: DateTime
+    -removedAt: DateTime?
+    +IsActive: bool
+    +Key: string
+    +Create(organizationId, phase, text, frameworkId, source, reference, at)$ OrganisationChecklistItem
+    +Change(text: string, reference: string)
+    +Remove(at: DateTime)
+    +AsItem() ChecklistItem
+    +AppliesTo(project: Project) bool
+  }
+  class ChecklistState {
+    <<enumeration>>
+    Done
+    Missing
+    TurnedOff
+    NotChosen
+  }
+  ProjectChecklistEntry "*" --> "1" Project
+  ProjectChecklistEntry ..> ChecklistItem : itemKey
+  OrganisationChecklistItem "*" --> "1" Organization
+  OrganisationChecklistItem ..> ChecklistItem : as item
+
+  %% ================= Testresultater =================
+  class TestRunUpload {
+    -id: Guid
+    -projectId: Guid
+    -fileName: string
+    -sha256: string
+    -uploadedById: Guid
+    -uploadedAt: DateTime
+    -passed: int
+    -failed: int
+    -suggested: int
+    -blocked: int
+    -alreadySuggested: int
+    -unknownTags: string
+    -otherFrameworks: string
+    -whyNothing: string?
+  }
+  TestRunUpload "*" --> "1" Project
+  class Withdrawal {
+    <<static>>
+    +Reason(reason: string)$ string
+  }
+
+
   note for FrameworkVersion "BuiltIn: ownerOrganizationId = null / Imported: ownerOrganizationId påkrævet"
 ```
 
@@ -2383,9 +2505,16 @@ classDiagram
 - **AI-forslag i to trin, og modellen kan skiftes.** Trin 1: en embedding-model (`IEmbeddingModel`) scorer hvert krav mod hver story, og de 4 bedste bliver `MappingSuggestion`. Trin 2: en lille chat-model (`IRationaleWriter`) skriver begrundelsen i baggrunden (`RationaleWorker`). Hvilken server og hvilke modeller der bruges, står i `Ai:*`, og der er adaptere til Ollama og til OpenAI-kompatible servere. Hvert forslag gemmer model og prompt-version, og en godkendelse bliver til et `RequirementLink` med kilden `AiApproved` (B29). (US-020, US-036)
 - **Hvert projekt har et risikoregister.** `Risk` har sandsynlighed og konsekvens fra 1 til 5. Niveauet beregnes: 1–4 Low, 5–9 Medium, 10–16 High, 20–25 Critical. En risiko har en ejer og en behandling og kan få en valgfri restrisiko. Den kobles til de krav og user stories, der mindsker den (`RiskMeasure`). En risiko slettes aldrig, den lukkes med en begrundelse. Efter 12 måneder uden review vises "Review due" (B30). (US-042)
 - **Roller styrer, hvad et medlem må, og en beslutning husker rollen.** `RolePermissions` er rettighedstabellen, og hvert brugsscenarie spørger `CurrentMember.RequireAsync(Permission)`. Logposter, AI-beslutninger, koblinger, "not applicable", accepterede risici og aktiverede versioner gemmer rollen på beslutningstidspunktet, så en senere op- eller nedgradering ikke ændrer fortiden. System-admin er en Keycloak-rolle (`ICurrentUser.IsSystemAdmin`) og har kun adgang til organisationer og medlemmer (B31). (US-009, US-010)
-- **Evidens hører til kravet i et projekt i MVP'en.** `Evidence` er sit eget aggregat ligesom `RequirementLink`. Det er et link eller en fil (højst 10 MB, PDF/PNG/JPG/TXT/CSV/MD) med SHA-256 og eventuelt en "gyldig til"-dato. Filens indhold ligger i sin egen tabel (`EvidenceDocuments`), så listen aldrig henter filerne. Evidens slettes aldrig, den får `removedAt`. Koblingen til `Control` og `Release` kommer, når de bygges (B33). (US-057)
-- **Koblingsklasser med data.** `RequirementControl` og `RequirementLink` registrerer via `MappingSource`, om koblingen er lavet manuelt eller via et godkendt AI-forslag.
-- **Vurderinger ændres ikke.** En ny `RequirementAssessment` oprettes i stedet, og den seneste er gældende. Det giver historik til en auditor.
+- **Evidens hører til kravet i et projekt i MVP'en.** `Evidence` er sit eget aggregat ligesom `RequirementLink`. Det er et link eller en fil (højst 10 MB, PDF/PNG/JPG/TXT/CSV/MD) med SHA-256 og eventuelt en "gyldig til"-dato. Filens indhold ligger i sin egen tabel (`EvidenceDocuments`), så listen aldrig henter filerne. Evidens slettes aldrig, den får `removedAt`. `Control` og `Release` er ikke bygget (B33, B165). (US-057)
+- **Koblingsklasser med data.** `RequirementLink` registrerer via `MappingSource`, om koblingen er lavet manuelt eller via et godkendt AI-forslag.
+- **Ikke bygget (B165).** `Control`, `RequirementControl`, `RequirementAssessment` og `Release` fra domænemodellen findes ikke i koden og er taget ud af diagrammet:
+  - ISO 27001's kontroller er krav i Annex A. Statement of Applicability (US-053) og arv fra organisationsområdet (US-115) gør det, `Control` skulle.
+  - En vurdering er koblede stories, evidens og "Not applicable" med begrundelse (B33).
+  - En SBOM hører til et versionsnummer (B87), ikke til en `Release`.
+- **Revisoradgang er tidsbegrænset.** `AuditorGrant` giver en ekstern revisor læseadgang til ét projekt i højst 30 dage via en invitation og kan trækkes tilbage. (US-182, US-196)
+- **Påmindelser sendes én gang.** `Reminder` er én mail til én bruger om én ting med en frist. Den prøves højst 5 gange, og fristerne for CRA- og NIS2-indberetning kan ikke slås fra. (US-183)
+- **Svar i NIS2-gap-analysen erstattes, de ændres ikke.** Et nyt `GapAnswer` på samme krav erstatter det gamle (`replacedAt`), så en ny vurdering kan sammenlignes med den forrige. (US-190)
+- **Tjeklisterne er indbyggede eller organisationens egne.** `ChecklistItem` er et punkt for en livsfase; de indbyggede ligger i koden, organisationens egne er `OrganisationChecklistItem`. Projektets afkrydsninger er `ProjectChecklistEntry`. (US-047, US-194)
 - **Frameworkversioner låses ved aktivering.** Når `status` er `Active`, kan `requirements` ikke ændres. Så kan en mapping nøjes med at pege på et `Requirement`, fordi teksten bag aldrig ændrer sig. En rettelse er en ny `FrameworkVersion`.
 - **En ny upload er en kladde.** `IRequirementExtractor` (PdfPig, ingen AI) finder linjer, der starter med en nummereret kode som `A.5.15`, og lægger dem i kladden. Medlemmet retter, sletter og tilføjer krav og aktiverer så versionen (mindst ét krav). `CurrentVersion` er den senest aktiverede version og er `null`, mens frameworket kun har en kladde; `LatestVersion` er den nyeste upload. Projekter kan kun bruge aktive versioner, og en upload flytter ingen projekter (B24). (US-007)
 - **`OrganizationFramework` og `ProjectFramework` peger på en version**, ikke et framework. Klassenavnene er beholdt, fordi de stadig beskriver "hvilket framework er valgt"; versionen er detaljen.
@@ -2440,12 +2569,12 @@ classDiagram
 | Organisation | Organization |
 | Bruger | User |
 | Projekt | Project |
-| Release | Release |
+| Release | Release (ikke bygget, B165) |
 | Framework | Framework |
 | Frameworkversion | FrameworkVersion |
 | Krav | Requirement |
-| Kontrol | Control |
-| Kravvurdering | RequirementAssessment |
+| Kontrol | Control (ikke bygget, B165) |
+| Kravvurdering | RequirementAssessment (ikke bygget, B165) |
 | Evidens | Evidence |
 | Arbejdselement | WorkItem |
 | Mappingforslag | MappingSuggestion |
