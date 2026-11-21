@@ -17,13 +17,15 @@ Koden er på engelsk; se ordlisten nederst.
 | `-->` | har et felt af typen | felt eller property |
 | `..>` | bruger typen | parameter, returtype eller lokal variabel |
 
-## Diagram
+## Diagrammer
+
+Diagrammet er delt i afsnit, fordi GitHub ikke kan tegne et Mermaid-diagram over 50.000 tegn. En klasse, der vises uden felter i et afsnit, er tegnet fuldt i sit eget afsnit.
+
+### Organisation og brugere
 
 ```mermaid
 classDiagram
   direction TB
-
-  %% ================= Organisation og brugere =================
   class Organization {
     -shareAiFeedback: bool
     -shareAiFeedbackSince: DateTime?
@@ -61,8 +63,19 @@ classDiagram
     +Name: string
     +Email: string
   }
+  Organization "1" --> "0..*" Nis2Assessment : NIS2 checks
+  Organization "1" --> "*" User : users
+  Organization "1" --> "*" Project : projects
+  Organization "1" --> "*" OrganizationFramework : frameworks
+  Organization "1" --> "*" Invitation : invitations
+  Organization "1" -- "*" Supplier
+```
 
-  %% ================= Services og repositories =================
+### Services og repositories
+
+```mermaid
+classDiagram
+  direction TB
   class ICurrentUser {
     <<interface>>
     +Identity: UserIdentity
@@ -203,8 +216,55 @@ classDiagram
     <<interface>>
     +SaveChangesAsync() Task
   }
+  ProjectService --> VersionCarryOver
+  ProjectService --> PhaseGates : before a phase change
+  ProjectService --> ISecurityEventRepository : end of support
+  CurrentMember --> ICurrentUser : currentUser
+  CurrentMember --> IOrganizationRepository : organizations
+  ActivityLogger ..|> IActivityLogger
+  ActivityLogger --> IActivityLogRepository : log
+  ActivityLogger --> CurrentMember : member
+  OrganizationService --> IOrganizationRepository : organizations
+  OrganizationService --> ICurrentUser : currentUser
+  OrganizationService --> CurrentMember : member
+  OrganizationService --> IActivityLogger : log
+  OrganizationService --> IUnitOfWork : unitOfWork
+  UserActivityService --> IOrganizationRepository : organizations
+  UserActivityService --> CurrentMember : member
+  UserActivityService --> IActivityLogger : log
+  UserActivityService --> IUnitOfWork : unitOfWork
+  FrameworkService --> IFrameworkRepository : frameworks
+  FrameworkService --> IRequirementExtractor : extractor
+  PdfRequirementExtractor ..|> IRequirementExtractor
+  FrameworkService --> CurrentMember : member
+  FrameworkService --> IActivityLogger : log
+  FrameworkService --> IUnitOfWork : unitOfWork
+  OrganizationQueries --> CurrentMember : member
+  FrameworkQueries --> IFrameworkRepository : frameworks
+  FrameworkQueries --> CurrentMember : member
+  ProjectQueries --> IProjectRepository : projects
+  ProjectQueries --> CurrentMember : member
+  FrameworkService ..> CatalogFile : validerer
+  ProjectService --> IProjectRepository : projects
+  ProjectService --> CurrentMember : member
+  ProjectService --> IActivityLogger : log
+  ProjectService --> IUnitOfWork : unitOfWork
+  ProjectService ..> Project : opretter
+  IProjectRepository ..> Project
+  ProjectService --> IFrameworkRepository : frameworks
+  FrameworkService --> IProjectRepository : projects
+  IFrameworkRepository ..> Framework
+  IFrameworkRepository ..> OrganizationFramework
+  OrganizationService ..> Organization : opretter
+  IOrganizationRepository ..> Organization
+  IActivityLogRepository ..> ActivityLogEntry
+```
 
-  %% ================= Projekt og releases =================
+### Projekt
+
+```mermaid
+classDiagram
+  direction TB
   class Project {
     -excludedFromAiSharing: bool
     -id: Guid
@@ -259,8 +319,24 @@ classDiagram
     +OldValue: string
     +NewValue: string
   }
+  Project --> ProjectKind
+  Project --> RequirementMethods
+  Project "1" --> "0..*" Scan
+  Project "1" --> "0..*" Finding
+  Project "1" -- "*" ProjectClassification : history
+  Project "1" --> "*" ProjectFramework : frameworks
+  Project ..> ProjectChange : returns
+  Project "1" --> "*" WorkItem : workItems
+  Project "1" *-- "0..1" GitHubLink : gitHub
+  Project "1" --> "*" RequirementDocument : requirement specifications
+  Project "1" --> "*" Risk : risks
+```
 
-  %% ================= Frameworks og krav =================
+### Frameworks og krav
+
+```mermaid
+classDiagram
+  direction TB
   class Framework {
     -id: Guid
     -ownerOrganizationId: Guid?
@@ -419,8 +495,6 @@ classDiagram
   Requirement "1" *-- "0..*" RequirementText : texts
   Framework "0..*" --> "0..1" Framework : implements
   Framework --> FrameworkLevel
-  Project --> ProjectKind
-  Organization "1" --> "0..*" Nis2Assessment : NIS2 checks
   class DocumentLinkSuggestion {
     -id: Guid
     -organizationId: Guid
@@ -436,7 +510,6 @@ classDiagram
     +Reject(reason: RejectionReason?, comment: string?, userId: Guid, at: DateTime, role: UserRole?)
     +Replace()
   }
-  OrganisationDocument "1" --> "0..*" DocumentLinkSuggestion : AI suggestions
   DocumentSuggestionService ..> DocumentLinkSuggestion : opretter
   OrganisationAreaService ..> Project : organisation area
   OrganisationAreaService ..> Nis2Assessment : opretter
@@ -520,7 +593,6 @@ classDiagram
     Proof
     Documentation
   }
-  Evidence --> EvidenceKind : kind
   class DocumentationDecision {
     -id: Guid
     -organizationId: Guid
@@ -547,7 +619,6 @@ classDiagram
   }
   PassageCheck --> PassageVerdict
   DocumentLinkSuggestion ..> PassageCheck : checked
-  EvidenceLinkSuggestion ..> PassageCheck : checked
   class RequirementScopeDecision {
     -id: Guid
     -organizationId: Guid
@@ -633,7 +704,6 @@ classDiagram
     RequirementSpecification
     UseCases
   }
-  Project --> RequirementMethods
   class ProjectFramework {
     -id: Guid
     -projectId: Guid
@@ -645,8 +715,23 @@ classDiagram
     -removedById: Guid?
     +IsActive: bool
   }
+  Framework "*" --> "0..1" Organization : owner
+  OrganizationFramework "*" --> "1" FrameworkVersion
+  ProjectFramework "*" --> "1" FrameworkVersion
+  Framework "1" --> "*" FrameworkVersion : versions
+  FrameworkVersion "1" --> "*" Requirement : requirements
+  RequirementApplicability "*" --> "1" Requirement
+  RequirementApplicability "*" --> "1" Project
+  Framework ..> CatalogFile
+  note for FrameworkVersion "BuiltIn: ownerOrganizationId = null / Imported: ownerOrganizationId påkrævet"
+```
 
-  %% ================= Evidens =================
+### Evidens
+
+```mermaid
+classDiagram
+  direction TB
+  Evidence --> EvidenceKind : kind
   class Evidence {
     -id: Guid
     -projectId: Guid
@@ -683,8 +768,21 @@ classDiagram
     +Sha256: string
     +Create(fileName: string, content: byte[])$ EvidenceFile
   }
+  Evidence "1" -- "*" EvidenceLink
+  Evidence "1" -- "*" EvidenceLinkSuggestion
+  Evidence --> OrganisationDocument : from
+  Evidence ..> DiagramContent : read when added
+  Evidence "*" --> "1" Project
+  Evidence "*" --> "1" Requirement
+  Evidence ..> EvidenceFile : made from
+```
 
-  %% ================= Arbejdselementer og AI =================
+### Arbejdselementer og AI
+
+```mermaid
+classDiagram
+  direction TB
+  EvidenceLinkSuggestion ..> PassageCheck : checked
   class WorkItem {
     -id: Guid
     -projectId: Guid
@@ -804,7 +902,6 @@ classDiagram
     +ListAsync(organization: string, token: string) Task
   }
   IGitHubProjects <|.. GitHubWorkItemSource
-
   class IWorkItemSource {
     <<interface>>
     +Source: WorkItemSource
@@ -920,8 +1017,6 @@ classDiagram
     <<interface>>
     +Read(contentType: string, content: byte[]) string?
   }
-  Evidence "1" -- "*" EvidenceLink
-  Evidence "1" -- "*" EvidenceLinkSuggestion
   EvidenceService --> IEvidenceTextReader
   EvidenceService --> IEmbeddingModel
   class RequirementLink {
@@ -947,7 +1042,6 @@ classDiagram
   class VersionCarryOver {
     +CarryAsync(project: Project, frameworkId: Guid, fromVersionId: Guid, toVersionId: Guid) Task~CarriedOver~
   }
-  ProjectService --> VersionCarryOver
   VersionCarryOver ..> RequirementLink
   VersionCarryOver ..> RequirementApplicability
   VersionCarryOver ..> Evidence
@@ -1198,8 +1292,38 @@ classDiagram
     +SetSharingAsync(share: bool) Task
     +ExportAsync() Task~string~
   }
+  GitHubWorkItemSource ..|> IWorkItemSource
+  WorkItemSyncService --> IWorkItemSource : github
+  RequirementDocument "1" *-- "1..*" RequirementDocumentVersion : versions
+  WorkItem "*" --> "0..1" RequirementDocument : document
+  RequirementDocumentService --> IRequirementDocumentReaderFactory : readers
+  IRequirementDocumentReaderFactory ..> IRequirementDocumentReader : For(extension, kind)
+  IRequirementDocumentReaderFactory <|.. RequirementDocumentReaderFactory
+  IRequirementDocumentReader <|.. ExcelRequirementReader
+  IRequirementDocumentReader <|.. CsvRequirementReader
+  IRequirementDocumentReader <|.. WordRequirementReader
+  IRequirementDocumentReader <|.. UseCaseReader
+  WorkItem "1" *-- "0..1" UseCaseSections : useCase
+  WorkItemSyncService --> IWorkItemNotifier : notifier
+  WorkItemSyncService --> ISecretProtector : secrets
+  DataProtectionSecretProtector ..|> ISecretProtector
+  RequirementLink "*" --> "1" WorkItem
+  RequirementLink "*" --> "1" Requirement
+  RequirementLink "*" --> "1" Project
+  MappingSuggestion "*" --> "1" WorkItem
+  MappingSuggestion "*" --> "1" Requirement
+  MappingSuggestionService --> IEmbeddingModel : step 1
+  RationaleService --> IRationaleWriter : step 2
+  MappingSuggestion "*" --> "1" Requirement
+  MappingSuggestion "*" --> "0..1" WorkItem
+```
 
-  %% ================= Risici (US-042) =================
+### Risici (US-042)
+
+```mermaid
+classDiagram
+  direction TB
+  OrganisationDocument "1" --> "0..*" DocumentLinkSuggestion : AI suggestions
   class Scan {
     -id: Guid
     -projectId: Guid
@@ -1290,7 +1414,6 @@ classDiagram
   }
   OrganisationDocument "1" *-- "0..*" OrganisationDocumentLink : covers
   OrganisationDocument "1" *-- "0..*" OrganisationDocumentVersion : earlier files
-  Evidence --> OrganisationDocument : from
   class ReportSnapshot {
     -id: Guid
     -organizationId: Guid
@@ -1391,8 +1514,6 @@ classDiagram
   }
   class SarifScanImporter
   SarifScanImporter ..|> IScanImporter
-  Project "1" --> "0..*" Scan
-  Project "1" --> "0..*" Finding
   class Risk {
     -id: Guid
     -version: uint
@@ -1465,8 +1586,16 @@ classDiagram
   }
   Risk "1" *-- "0..*" RiskAction
   RiskAction "1" *-- "0..*" RiskActionLink
+  Risk "1" *-- "*" RiskMeasure : measures
+  RiskMeasure "*" --> "0..1" Requirement
+  RiskMeasure "*" --> "0..1" WorkItem
+```
 
-  %% ================= Roller og invitationer (US-009, US-010) =================
+### Roller og invitationer (US-009, US-010)
+
+```mermaid
+classDiagram
+  direction TB
   class Permission {
     <<enumeration>>
     ManageMembers
@@ -1505,8 +1634,13 @@ classDiagram
     +ListOrganizationsAsync() Task
     +ChangeRoleAsync(organizationId: Guid, memberId: Guid, role: UserRole) Task
   }
+```
 
-  %% ================= Reports (US-056) =================
+### Reports (US-056)
+
+```mermaid
+classDiagram
+  direction TB
   class TechnicalDocumentationQueries {
     +DraftAsync(projectId: Guid) Task~GeneratedDocument?~
     +CraOf(compliance: ProjectCompliance)$ FrameworkCompliance?
@@ -1529,7 +1663,13 @@ classDiagram
   TechnicalDocumentationQueries ..> GeneratedDocument
   GeneratedDocument *-- DocumentBlock
   IDocumentWriter <|.. OpenXmlDocumentWriter
-  %% ================= Feedback (US-063) =================
+```
+
+### Feedback (US-063)
+
+```mermaid
+classDiagram
+  direction TB
   class Feedback {
     -id: Guid
     -organizationId: Guid
@@ -1588,8 +1728,13 @@ classDiagram
   FeedbackService --> IFeedbackRepository
   FeedbackService --> IFeedbackIssueWriter
   IFeedbackIssueWriter <|.. GitHubFeedbackIssueWriter
+```
 
-  %% ================= Security events (US-073) =================
+### Security events (US-073)
+
+```mermaid
+classDiagram
+  direction TB
   class SecurityEvent {
     -id: Guid
     -projectId: Guid
@@ -1968,19 +2113,22 @@ classDiagram
   }
   DiagramReaders o-- IDiagramReader : US-149
   IDiagramReader ..> DiagramContent
-  Evidence ..> DiagramContent : read when added
   IndustryProfileService ..> IndustryProfiles
   IndustryProfileService ..> Organization : industry
   RequirementMapping --> Requirement : from and to
   PhaseGate "1" *-- "1..*" GateCheck
   PhaseGates ..> PhaseGate : works out (US-071)
-  ProjectService --> PhaseGates : before a phase change
   SecurityEvent --> SecurityEventKind
   SecurityEvent ..> SecurityReportKind
   SecurityEventService --> ISecurityEventRepository
-  ProjectService --> ISecurityEventRepository : end of support
+  Audit "1" *-- "0..1" AuditReportFile : report
+```
 
-  %% ================= Log =================
+### Log
+
+```mermaid
+classDiagram
+  direction TB
   class ActivityGroup {
     <<enumeration>>
     SignIn
@@ -2029,8 +2177,15 @@ classDiagram
   }
   ActivityLogChain ..> ActivityLogEntry
   ActivityLogChain ..> ChainCheck
+  ActivityLogEntry "*" --> "1" Organization
+  ActivityLogEntry "*" --> "1" User
+```
 
-  %% ================= Enums =================
+### Enums
+
+```mermaid
+classDiagram
+  direction TB
   class Sector {
     <<enumeration>>
     Energy
@@ -2093,7 +2248,6 @@ classDiagram
     <<static>>
     +For(framework: Framework)$ ClassifiableRegulation?
   }
-  Project "1" -- "*" ProjectClassification : history
   ClassificationService --> RegulationClasses
   class FrameworkScope {
     <<enumeration>>
@@ -2167,102 +2321,24 @@ classDiagram
     InsufficientInformation
     Other
   }
+```
 
-  %% ================= Associationer =================
-  Organization "1" --> "*" User : users
-  Organization "1" --> "*" Project : projects
-  Organization "1" --> "*" OrganizationFramework : frameworks
-  Framework "*" --> "0..1" Organization : owner
-  OrganizationFramework "*" --> "1" FrameworkVersion
-  Project "1" --> "*" ProjectFramework : frameworks
-  Project ..> ProjectChange : returns
-  ProjectFramework "*" --> "1" FrameworkVersion
-  Project "1" --> "*" WorkItem : workItems
-  Project "1" *-- "0..1" GitHubLink : gitHub
-  GitHubWorkItemSource ..|> IWorkItemSource
-  WorkItemSyncService --> IWorkItemSource : github
-  Project "1" --> "*" RequirementDocument : requirement specifications
-  RequirementDocument "1" *-- "1..*" RequirementDocumentVersion : versions
-  WorkItem "*" --> "0..1" RequirementDocument : document
-  RequirementDocumentService --> IRequirementDocumentReaderFactory : readers
-  IRequirementDocumentReaderFactory ..> IRequirementDocumentReader : For(extension, kind)
-  IRequirementDocumentReaderFactory <|.. RequirementDocumentReaderFactory
-  IRequirementDocumentReader <|.. ExcelRequirementReader
-  IRequirementDocumentReader <|.. CsvRequirementReader
-  IRequirementDocumentReader <|.. WordRequirementReader
-  IRequirementDocumentReader <|.. UseCaseReader
-  WorkItem "1" *-- "0..1" UseCaseSections : useCase
-  WorkItemSyncService --> IWorkItemNotifier : notifier
-  WorkItemSyncService --> ISecretProtector : secrets
-  DataProtectionSecretProtector ..|> ISecretProtector
-  Framework "1" --> "*" FrameworkVersion : versions
-  FrameworkVersion "1" --> "*" Requirement : requirements
-  Evidence "*" --> "1" Project
-  Evidence "*" --> "1" Requirement
-  Evidence ..> EvidenceFile : made from
-  RequirementLink "*" --> "1" WorkItem
-  RequirementLink "*" --> "1" Requirement
-  RequirementLink "*" --> "1" Project
-  RequirementApplicability "*" --> "1" Requirement
-  Organization "1" --> "*" Invitation : invitations
-  Project "1" --> "*" Risk : risks
-  Risk "1" *-- "*" RiskMeasure : measures
-  RiskMeasure "*" --> "0..1" Requirement
-  RiskMeasure "*" --> "0..1" WorkItem
-  MappingSuggestion "*" --> "1" WorkItem
-  MappingSuggestion "*" --> "1" Requirement
-  MappingSuggestionService --> IEmbeddingModel : step 1
-  RationaleService --> IRationaleWriter : step 2
+### AI-adaptere (B29, B36)
+
+```mermaid
+classDiagram
+  direction TB
   OllamaEmbeddingModel ..|> IEmbeddingModel
   OpenAiCompatibleEmbeddingModel ..|> IEmbeddingModel
   OllamaRationaleWriter ..|> IRationaleWriter
   OpenAiCompatibleRationaleWriter ..|> IRationaleWriter
-  RequirementApplicability "*" --> "1" Project
-  MappingSuggestion "*" --> "1" Requirement
-  MappingSuggestion "*" --> "0..1" WorkItem
-  ActivityLogEntry "*" --> "1" Organization
-  ActivityLogEntry "*" --> "1" User
-  CurrentMember --> ICurrentUser : currentUser
-  CurrentMember --> IOrganizationRepository : organizations
-  ActivityLogger ..|> IActivityLogger
-  ActivityLogger --> IActivityLogRepository : log
-  ActivityLogger --> CurrentMember : member
-  OrganizationService --> IOrganizationRepository : organizations
-  OrganizationService --> ICurrentUser : currentUser
-  OrganizationService --> CurrentMember : member
-  OrganizationService --> IActivityLogger : log
-  OrganizationService --> IUnitOfWork : unitOfWork
-  UserActivityService --> IOrganizationRepository : organizations
-  UserActivityService --> CurrentMember : member
-  UserActivityService --> IActivityLogger : log
-  UserActivityService --> IUnitOfWork : unitOfWork
-  FrameworkService --> IFrameworkRepository : frameworks
-  FrameworkService --> IRequirementExtractor : extractor
-  PdfRequirementExtractor ..|> IRequirementExtractor
-  FrameworkService --> CurrentMember : member
-  FrameworkService --> IActivityLogger : log
-  FrameworkService --> IUnitOfWork : unitOfWork
-  OrganizationQueries --> CurrentMember : member
-  FrameworkQueries --> IFrameworkRepository : frameworks
-  FrameworkQueries --> CurrentMember : member
-  ProjectQueries --> IProjectRepository : projects
-  ProjectQueries --> CurrentMember : member
-  FrameworkService ..> CatalogFile : validerer
-  ProjectService --> IProjectRepository : projects
-  ProjectService --> CurrentMember : member
-  ProjectService --> IActivityLogger : log
-  ProjectService --> IUnitOfWork : unitOfWork
-  ProjectService ..> Project : opretter
-  IProjectRepository ..> Project
-  ProjectService --> IFrameworkRepository : frameworks
-  FrameworkService --> IProjectRepository : projects
-  IFrameworkRepository ..> Framework
-  IFrameworkRepository ..> OrganizationFramework
-  Framework ..> CatalogFile
-  OrganizationService ..> Organization : opretter
-  IOrganizationRepository ..> Organization
-  IActivityLogRepository ..> ActivityLogEntry
+```
 
+### Leverandører (US-191, US-207)
+
+```mermaid
+classDiagram
+  direction TB
   class Supplier {
     -id: Guid
     -organizationId: Guid
@@ -2291,9 +2367,7 @@ classDiagram
     -isPrimary: bool
     -isSecurityContact: bool
   }
-  Organization "1" -- "*" Supplier
   Supplier "1" *-- "*" SupplierContact : contact persons
-  Audit "1" *-- "0..1" AuditReportFile : report
   class AuditReportFile {
     -auditId: Guid
     -contentType: string
@@ -2324,8 +2398,13 @@ classDiagram
   }
   Supplier "1" *-- "*" SupplierEvidence : evidence
   SupplierEvidence --> SupplierEvidenceKind
+```
 
-  %% ================= Revisoradgang og påmindelser =================
+### Revisoradgang og påmindelser
+
+```mermaid
+classDiagram
+  direction TB
   class AuditorGrant {
     -id: Guid
     -organizationId: Guid
@@ -2374,8 +2453,13 @@ classDiagram
   }
   Reminder --> ReminderKind
   Reminder "*" --> "1" User : to
+```
 
-  %% ================= NIS2-gap-analyse =================
+### NIS2-gap-analyse
+
+```mermaid
+classDiagram
+  direction TB
   class GapAnswer {
     -id: Guid
     -organizationId: Guid
@@ -2406,8 +2490,13 @@ classDiagram
   GapAnswer "*" --> "1" Organization
   GapAnswer --> Maturity
   GapAnswer ..> Question : answers
+```
 
-  %% ================= Livsfasernes tjeklister =================
+### Livsfasernes tjeklister
+
+```mermaid
+classDiagram
+  direction TB
   class ChecklistItem {
     <<record>>
     +Key: string
@@ -2466,8 +2555,13 @@ classDiagram
   ProjectChecklistEntry ..> ChecklistItem : itemKey
   OrganisationChecklistItem "*" --> "1" Organization
   OrganisationChecklistItem ..> ChecklistItem : as item
+```
 
-  %% ================= Testresultater =================
+### Testresultater
+
+```mermaid
+classDiagram
+  direction TB
   class TestRunUpload {
     -id: Guid
     -projectId: Guid
@@ -2489,9 +2583,6 @@ classDiagram
     <<static>>
     +Reason(reason: string)$ string
   }
-
-
-  note for FrameworkVersion "BuiltIn: ownerOrganizationId = null / Imported: ownerOrganizationId påkrævet"
 ```
 
 ## Designvalg
