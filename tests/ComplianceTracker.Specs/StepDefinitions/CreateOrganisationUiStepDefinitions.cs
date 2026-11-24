@@ -136,11 +136,13 @@ namespace ComplianceTracker.Specs.StepDefinitions
         }
 
         // The rows of the users table: name, e-mail, role.
-        // The users are on their own page, so the test clicks "Users" in the top bar first, like a user would (US-045).
+        // The users are on their own page, so the test opens Organisation and clicks "Users" first, like a user would
+        // (US-045; #52: the organisation's pages are a row of links on the organisation's pages).
         private async Task<IEnumerable<string[]>> UserRowsAsync()
         {
-            var usersLink = _web.Page!.QuerySelector("#top-bar a#nav-users")?.GetAttribute("href")
-                ?? throw new Xunit.Sdk.XunitException($"The page {_web.CurrentPath} has no Users link in the top bar.");
+            await _web.OpenAsync("/Organisation");
+            var usersLink = _web.Page!.QuerySelector("#organisation-nav a#nav-users")?.GetAttribute("href")
+                ?? throw new Xunit.Sdk.XunitException($"The page {_web.CurrentPath} has no Users link among the organisation's pages.");
 
             await _web.OpenAsync(usersLink);
 
