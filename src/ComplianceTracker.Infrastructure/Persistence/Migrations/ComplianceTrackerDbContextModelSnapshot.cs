@@ -3532,6 +3532,92 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("IsmsScopes", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Isms.Nonconformity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime?>("ActionDoneAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly?>("ActionDueOn")
+                        .HasColumnType("date");
+
+                    b.Property<Guid?>("ActionOwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Cause")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("CheckResult")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid?>("CheckedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly?>("CheckedOn")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Correction")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("FailedActions")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("RaisedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RaisedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<Guid?>("SourceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.ToTable("Nonconformities", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Isms.ScopedProject", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8006,6 +8092,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Isms.IsmsScope", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Isms.Nonconformity", b =>
                 {
                     b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
                         .WithMany()

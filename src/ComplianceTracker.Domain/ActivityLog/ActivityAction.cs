@@ -440,6 +440,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         // US-214: an asset was added, changed, removed or imported (Details names the asset and what changed, not the values),
         // or the classification scheme got other levels (Details lists them, lowest first). SubjectId points at the organisation.
         AssetChanged,
-        ClassificationSchemeChanged
+        ClassificationSchemeChanged,
+
+        // US-212: a nonconformity was raised, analysed, got a corrective action, had its action done or checked (effective
+        // closes it, not effective opens it again), or was opened again. SubjectId points at the organisation.
+        NonconformityChanged
     }
 }

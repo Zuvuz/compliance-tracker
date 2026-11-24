@@ -359,6 +359,80 @@ classDiagram
   AssetService --> IAssetRepository
   AssetService ..> ISpreadsheetWriter : Excel
 
+  %% ================= Afvigelser (US-212) =================
+  class Nonconformity {
+    -id: Guid
+    -organizationId: Guid
+    -title: string
+    -description: string?
+    -source: NonconformitySource
+    -sourceId: Guid?
+    -severity: NonconformitySeverity
+    -correction: string?
+    -cause: string?
+    -action: string?
+    -actionOwnerId: Guid?
+    -actionDueOn: DateOnly?
+    -actionDoneAt: DateTime?
+    -checkedOn: DateOnly?
+    -checkedById: Guid?
+    -checkResult: string?
+    -status: NonconformityStatus
+    -failedActions: List~FailedAction~
+    -raisedById: Guid
+    -raisedAt: DateTime
+    -closedAt: DateTime?
+    +IsClosed: bool
+    +Raise(organizationId, title, description, source, sourceId, severity, raisedById, at)$ Nonconformity
+    +Analyse(correction, cause) List~string~
+    +PlanAction(action, ownerId, dueOn, today)
+    +MarkActionDone(at)
+    +Check(result, effective, checkedOn, checkedById, at) bool
+    +Close()
+    +Reopen(reason, on)
+    +IsOverdue(today) bool
+  }
+  class NonconformityStatus {
+    <<enumeration>>
+    Open
+    ActionPlanned
+    ActionDone
+    Effective
+  }
+  class NonconformitySource {
+    <<enumeration>>
+    InternalAudit
+    ExternalAudit
+    SecurityEvent
+    MissedDeadline
+    Complaint
+    ManagementReview
+    Other
+  }
+  class FailedAction {
+    <<record>>
+    +Action: string
+    +CheckedOn: DateOnly
+    +Result: string
+  }
+  class NonconformityService {
+    +ViewAsync(filter) NonconformitiesView
+    +RaiseAsync(title, description, source, severity, origin) Nonconformity
+    +AnalyseAsync(id, correction, cause)
+    +PlanActionAsync(id, action, ownerId, dueOn)
+    +MarkActionDoneAsync(id)
+    +CheckAsync(id, result, effective) bool
+    +CloseAsync(id)
+    +ReopenAsync(id, reason)
+  }
+  Nonconformity "*" --> "1" Organization
+  Nonconformity ..> NonconformityStatus
+  Nonconformity ..> NonconformitySource
+  Nonconformity "1" *-- "*" FailedAction : failedActions (JSON)
+  Nonconformity "*" --> "0..1" AuditFinding : sourceId
+  Nonconformity "*" --> "0..1" SecurityEvent : sourceId
+  NonconformityService --> INonconformityRepository
+
   %% ================= NIS2-gap-analyse =================
   class GapAnswer {
     -id: Guid

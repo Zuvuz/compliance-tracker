@@ -126,6 +126,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<Organizations.SupplierService>(); // US-191
             services.AddScoped<Isms.IsmsScopeService>(); // US-208
             services.AddScoped<Isms.AssetService>(); // US-214
+            services.AddScoped<Isms.NonconformityService>(); // US-212
             services.AddScoped<Reminders.ReminderService>(); // US-183
             services.AddScoped<Reminders.ReminderSettingsService>();
             services.AddScoped<Reports.ReportFiles>(); // US-131

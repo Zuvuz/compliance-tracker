@@ -70,7 +70,15 @@ namespace ComplianceTracker.Web.Models
             ["Not decided"] = Tone.Warning,
 
             // US-214 R3: an asset whose owner left the organisation
-            ["No owner"] = Tone.Bad
+            ["No owner"] = Tone.Bad,
+
+            // US-212: a nonconformity's status and severity ("Open" is the blue one above)
+            ["Action planned"] = Tone.Attention,
+            ["Action done"] = Tone.Warning,
+            ["Effective"] = Tone.Good,
+            ["Major"] = Tone.Bad,
+            ["Minor"] = Tone.Attention,
+            ["Observation"] = Tone.Neutral
         };
 
         public static Tone ToneOf(string? status) => status is not null && Known.TryGetValue(status.Trim(), out var tone) ? tone : Tone.Info;

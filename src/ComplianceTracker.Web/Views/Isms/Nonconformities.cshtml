@@ -1,0 +1,260 @@
+@* US-212: the register of nonconformities and corrective actions (ISO/IEC 27001 10.2). R1: title, source and severity;
+   R2: closed only after the cause, the action and an effectiveness check; R3: the check comes after the action is done;
+   R4: "not effective" opens it again; R5: an action past its deadline is overdue; R6: one open nonconformity per source.
+   Ids and classes used by the tests: #nonconformities items with data-nonconformity and data-status (.nonconformity-overdue,
+   .failed-action), form#raise-nonconformity, form.analyse-nonconformity, form.plan-action, form.action-done,
+   form.check-nonconformity, form.close-nonconformity, form.reopen-nonconformity, form#nonconformity-filter,
+   #nonconformities-read-only. *@
+@model ComplianceTracker.Application.Isms.NonconformitiesView
+@using ComplianceTracker.Application.Isms
+@using ComplianceTracker.Domain.Isms
+@{
+    ViewData["Title"] = "Nonconformities";
+    var filter = Model.Filter;
+    var open = Model.Counts.Where(c => c.Key != NonconformityStatus.Effective).Sum(c => c.Value);
+}
+
+<partial name="_IsmsNav" />
+
+<page-header heading="Nonconformities" heading-id="nonconformities-title" />
+
+<p class="text-muted">What went wrong, from audits, security events, missed deadlines and complaints: the correction, the cause,
+    the corrective action and the check that it worked (ISO/IEC 27001 10.2).</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+<div class="d-flex flex-wrap gap-3 small mb-3" id="nonconformity-counts">
+    <span>Open: <strong>@open</strong></span>
+    @foreach (var status in Enum.GetValues<NonconformityStatus>())
+    {
+        <span>@NonconformityService.Label(status): <strong>@Model.Counts[status]</strong></span>
+    }
+    <span>Overdue actions: <strong id="nonconformity-overdue-count">@Model.Overdue</strong></span>
+</div>
+
+@if (!Model.CanChange)
+{
+    <p class="text-muted small" id="nonconformities-read-only">You can read the register. Members who decide compliance raise and handle nonconformities.</p>
+}
+
+<form method="get" asp-action="Nonconformities" id="nonconformity-filter" class="d-flex flex-wrap align-items-end gap-2 mb-3">
+    <div>
+        <label class="form-label small mb-0" for="filter-status">Status</label>
+        <select class="form-select form-select-sm" id="filter-status" name="status">
+            <option value="">All open</option>
+            @foreach (var status in Enum.GetValues<NonconformityStatus>())
+            {
+                <option value="@status" selected="@(filter.Status == status)">@NonconformityService.Label(status)</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label class="form-label small mb-0" for="filter-source">Source</label>
+        <select class="form-select form-select-sm" id="filter-source" name="source">
+            <option value="">All</option>
+            @foreach (var source in Enum.GetValues<NonconformitySource>())
+            {
+                <option value="@source" selected="@(filter.Source == source)">@NonconformityService.Label(source)</option>
+            }
+        </select>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="filter-closed" name="showClosed" value="true" checked="@filter.ShowClosed" />
+        <label class="form-check-label small" for="filter-closed">Show closed</label>
+    </div>
+    <button type="submit" class="btn btn-sm btn-outline-primary">Filter</button>
+</form>
+
+@if (Model.Nonconformities.Count == 0)
+{
+    <p class="text-muted" id="nonconformities-empty">No nonconformities here.</p>
+}
+else
+{
+    <div id="nonconformities" class="mb-3">
+        @foreach (var item in Model.Nonconformities)
+        {
+            var status = NonconformityService.Label(item.Status);
+            <section class="card mb-2" id="nonconformity-@item.Id" data-nonconformity="@item.Title" data-status="@item.Status" data-source="@item.Source">
+                <div class="card-header d-flex flex-wrap align-items-center gap-2">
+                    <strong>@item.Title</strong>
+                    <status-badge status="@item.Severity.ToString()" />
+                    <status-badge status="@status" />
+                    @if (item.IsOverdue(Model.Today))
+                    {
+                        <span class="nonconformity-overdue"><status-badge status="Overdue" /></span>
+                    }
+                    <span class="small text-muted ms-auto">@NonconformityService.Label(item.Source), raised @item.RaisedAt.ToLocalTime().ToString("dd-MM-yyyy") by @Model.NameOf(item.RaisedById)</span>
+                </div>
+                <div class="card-body small">
+                    @if (item.Description is not null)
+                    {
+                        <p>@item.Description</p>
+                    }
+                    <dl class="row mb-2">
+                        <dt class="col-sm-3">Correction</dt>
+                        <dd class="col-sm-9 nonconformity-correction">@(item.Correction ?? "Not recorded")</dd>
+                        <dt class="col-sm-3">Cause</dt>
+                        <dd class="col-sm-9 nonconformity-cause">@(item.Cause ?? "Not recorded")</dd>
+                        <dt class="col-sm-3">Corrective action</dt>
+                        <dd class="col-sm-9 nonconformity-action">
+                            @if (item.Action is null)
+                            {
+                                <span>Not planned</span>
+                            }
+                            else
+                            {
+                                <span>@item.Action, @Model.NameOf(item.ActionOwnerId), due @item.ActionDueOn?.ToString("dd-MM-yyyy")@(item.ActionDoneAt is { } done ? $", done {done.ToLocalTime():dd-MM-yyyy}" : "")</span>
+                            }
+                        </dd>
+                        @if (item.CheckResult is not null)
+                        {
+                            <dt class="col-sm-3">Effectiveness check</dt>
+                            <dd class="col-sm-9 nonconformity-check">@item.CheckResult (@item.CheckedOn?.ToString("dd-MM-yyyy"), @Model.NameOf(item.CheckedById))</dd>
+                        }
+                    </dl>
+                    @if (item.FailedActions.Count > 0)
+                    {
+                        <p class="mb-1 fw-semibold">Actions that did not work</p>
+                        <ul class="mb-2">
+                            @foreach (var failed in item.FailedActions)
+                            {
+                                <li class="failed-action">@failed.Action: @failed.Result (@failed.CheckedOn.ToString("dd-MM-yyyy"))</li>
+                            }
+                        </ul>
+                    }
+
+                    @if (Model.CanChange)
+                    {
+                        @if (!item.IsClosed)
+                        {
+                            <details class="mb-2">
+                                <summary>Correction and cause</summary>
+                                <form asp-action="AnalyseNonconformity" method="post" class="analyse-nonconformity mt-2">
+                                    <input type="hidden" name="nonconformityId" value="@item.Id" />
+                                    <label class="form-label small" for="correction-@item.Id">Correction done at once</label>
+                                    <textarea class="form-control form-control-sm" id="correction-@item.Id" name="correction" rows="2" maxlength="@Nonconformity.MaxTextLength">@item.Correction</textarea>
+                                    <label class="form-label small mt-1" for="cause-@item.Id">Cause</label>
+                                    <textarea class="form-control form-control-sm" id="cause-@item.Id" name="cause" rows="2" maxlength="@Nonconformity.MaxTextLength">@item.Cause</textarea>
+                                    <button type="submit" class="btn btn-sm btn-outline-primary mt-2">Save</button>
+                                </form>
+                            </details>
+                            @if (item.Status is NonconformityStatus.Open or NonconformityStatus.ActionPlanned)
+                            {
+                                <details class="mb-2" open="@(item.Status == NonconformityStatus.Open && item.Cause is not null)">
+                                    <summary>@(item.Action is null ? "Plan the corrective action" : "Change the corrective action")</summary>
+                                    <form asp-action="PlanCorrectiveAction" method="post" class="plan-action mt-2 row g-2">
+                                        <input type="hidden" name="nonconformityId" value="@item.Id" />
+                                        <div class="col-md-6">
+                                            <label class="form-label small" for="action-@item.Id">Corrective action</label>
+                                            <input class="form-control form-control-sm" id="action-@item.Id" name="action" value="@item.Action" maxlength="@Nonconformity.MaxTextLength" required />
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small" for="owner-@item.Id">Owner</label>
+                                            <select class="form-select form-select-sm" id="owner-@item.Id" name="ownerId" required>
+                                                <option value="">Choose</option>
+                                                @foreach (var member in Model.Members.OrderBy(m => m.Value, StringComparer.OrdinalIgnoreCase))
+                                                {
+                                                    <option value="@member.Key" selected="@(item.ActionOwnerId == member.Key)">@member.Value</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small" for="due-@item.Id">Deadline</label>
+                                            <input class="form-control form-control-sm" type="date" id="due-@item.Id" name="dueOn" value="@item.ActionDueOn?.ToString("yyyy-MM-dd")" required />
+                                        </div>
+                                        <div class="col-12"><button type="submit" class="btn btn-sm btn-outline-primary">Save the action</button></div>
+                                    </form>
+                                </details>
+                            }
+                            <div class="d-flex flex-wrap gap-2 align-items-start">
+                                @if (item.Status == NonconformityStatus.ActionPlanned)
+                                {
+                                    <form asp-action="CorrectiveActionDone" method="post" class="action-done">
+                                        <input type="hidden" name="nonconformityId" value="@item.Id" />
+                                        <button type="submit" class="btn btn-sm btn-primary">The action is done</button>
+                                    </form>
+                                }
+                                @if (item.Status == NonconformityStatus.ActionDone)
+                                {
+                                    <form asp-action="CheckNonconformity" method="post" class="check-nonconformity d-flex flex-wrap gap-2 align-items-end">
+                                        <input type="hidden" name="nonconformityId" value="@item.Id" />
+                                        <div>
+                                            <label class="form-label small mb-0" for="result-@item.Id">What the check found</label>
+                                            <input class="form-control form-control-sm" id="result-@item.Id" name="result" maxlength="@Nonconformity.MaxTextLength" required />
+                                        </div>
+                                        <button type="submit" name="effective" value="true" class="btn btn-sm btn-success">It worked</button>
+                                        <button type="submit" name="effective" value="false" class="btn btn-sm btn-outline-danger">It did not work</button>
+                                    </form>
+                                }
+                                <form asp-action="CloseNonconformity" method="post" class="close-nonconformity">
+                                    <input type="hidden" name="nonconformityId" value="@item.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Close</button>
+                                </form>
+                            </div>
+                        }
+                        else
+                        {
+                            <form asp-action="ReopenNonconformity" method="post" class="reopen-nonconformity d-flex flex-wrap gap-2 align-items-end">
+                                <input type="hidden" name="nonconformityId" value="@item.Id" />
+                                <div>
+                                    <label class="form-label small mb-0" for="reopen-@item.Id">Why it is back</label>
+                                    <input class="form-control form-control-sm" id="reopen-@item.Id" name="reason" maxlength="@Nonconformity.MaxTextLength" required />
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Open it again</button>
+                            </form>
+                        }
+                    }
+                </div>
+            </section>
+        }
+    </div>
+}
+
+@if (Model.CanChange)
+{
+    <section class="card mb-3">
+        <div class="card-header">Raise a nonconformity</div>
+        <div class="card-body">
+            <form asp-action="RaiseNonconformity" method="post" id="raise-nonconformity" class="row g-2">
+                <div class="col-md-6">
+                    <label class="form-label small" for="raise-origin">From an audit finding or security event <span class="text-muted">(optional)</span></label>
+                    <select class="form-select form-select-sm" id="raise-origin" name="origin">
+                        <option value="">None: describe it below</option>
+                        @foreach (var origin in Model.Origins)
+                        {
+                            <option value="@origin.Key">@origin.Project: @origin.Title (@NonconformityService.Label(origin.Source))</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small" for="raise-title">Title <span class="text-muted">(the finding's title when empty)</span></label>
+                    <input class="form-control form-control-sm" id="raise-title" name="title" maxlength="@Nonconformity.MaxTitleLength" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small" for="raise-source">Source</label>
+                    <select class="form-select form-select-sm" id="raise-source" name="source">
+                        @foreach (var source in Enum.GetValues<NonconformitySource>())
+                        {
+                            <option value="@source">@NonconformityService.Label(source)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small" for="raise-severity">Severity</label>
+                    <select class="form-select form-select-sm" id="raise-severity" name="severity">
+                        @foreach (var severity in Enum.GetValues<NonconformitySeverity>())
+                        {
+                            <option value="@severity" selected="@(severity == NonconformitySeverity.Minor)">@severity</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small" for="raise-description">Description <span class="text-muted">(optional)</span></label>
+                    <input class="form-control form-control-sm" id="raise-description" name="description" maxlength="@Nonconformity.MaxTextLength" />
+                </div>
+                <div class="col-12"><button type="submit" class="btn btn-sm btn-primary">Raise it</button></div>
+            </form>
+        </div>
+    </section>
+}
