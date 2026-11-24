@@ -217,7 +217,7 @@ namespace ComplianceTracker.Web.Controllers
         // GET /Risks/Details/{id}: the risk, its measures, and accept / close / review (R11: only the organisation's)
         [HttpGet]
         public async Task<IActionResult> Details(Guid id, [FromServices] EvidenceQueries evidence, [FromServices] Application.Ai.IRiskMeasureSuggestionRepository measures,
-            [FromServices] MeasureEvidenceSuggestions measureEvidence, CancellationToken cancellationToken)
+            [FromServices] MeasureEvidenceSuggestions measureEvidence, [FromServices] Application.Isms.AssetService assets, CancellationToken cancellationToken)
         {
             var risk = await _risks.GetAsync(id, cancellationToken);
             var project = risk is null ? null : await _projects.GetAsync(risk.ProjectId, cancellationToken);
@@ -241,7 +241,9 @@ namespace ComplianceTracker.Web.Controllers
                 // US-161: the project's evidence the AI suggests for each suggested measure
                 MeasureEvidence = await measureEvidence.ForAsync(pending, evidenceRows, compliance, DateOnly.FromDateTime(_clock.GetUtcNow().UtcDateTime), cancellationToken),
                 // US-203 R4: from the project's activity log
-                History = Application.Risks.RiskHistory.For(risk.Title, await _projects.ActivityAsync(project.Id, cancellationToken))
+                History = Application.Risks.RiskHistory.For(risk.Title, await _projects.ActivityAsync(project.Id, cancellationToken)),
+                // US-214 R4
+                Assets = await assets.ForRiskAsync(risk.Id, cancellationToken)
             });
         }
 

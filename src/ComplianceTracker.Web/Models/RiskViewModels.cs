@@ -78,6 +78,9 @@ namespace ComplianceTracker.Web.Models
         public string NameOf(Guid? userId)
             => Organization.Users.FirstOrDefault(u => u.Id == userId)?.Name ?? "Unknown";
 
+        // US-214 R4: the assets the risk concerns and the highest classification among them
+        public Application.Isms.RiskAssets Assets { get; init; } = new([], null);
+
         // US-203 R4: the risk's history, newest first
         public IReadOnlyList<Application.Risks.RiskHistoryEntry> History { get; init; } = [];
 

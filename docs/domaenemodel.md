@@ -350,7 +350,7 @@ classDiagram
 
 ### 5. ISMS'et (US-208 til US-216)
 
-Begreberne hører til organisationen, og projekterne er det, ISMS'et dækker. ISMS-scope og Interessent er bygget (US-208). De andre er besluttet som stories og markeret «planlagt».
+Begreberne hører til organisationen, og projekterne er det, ISMS'et dækker. ISMS-scope og Interessent er bygget (US-208), og det er Aktiv og Klassifikationsskema også (US-214). De andre er besluttet som stories og markeret «planlagt».
 
 ```mermaid
 classDiagram
@@ -427,12 +427,14 @@ classDiagram
     dato
   }
   class Aktiv {
-    <<planlagt>>
     navn
     art
     ejer
     klassifikation
     persondata
+  }
+  class Klassifikationsskema {
+    niveauerLavestFørst
   }
   class FastOpgave {
     <<planlagt>>
@@ -455,6 +457,8 @@ classDiagram
   Organisation "1" -- "*" Aktiv : ejer
   Aktiv "*" -- "*" Risiko : rammes af
   Aktiv "*" -- "*" Leverandør : hostes af
+  Organisation "1" -- "0..1" Klassifikationsskema : har
+  Aktiv "*" -- "*" Projekt : hører til
   Organisation "1" -- "*" FastOpgave : årshjul
 ```
 
@@ -507,6 +511,8 @@ classDiagram
 | Logpost | Hvem der gjorde hvad og hvornår, med rollen på tidspunktet. Ændres og slettes aldrig. | US-001 |
 | ISMS-scope | Hvad organisationens ISMS dækker: scopetekst, interne og eksterne forhold, hvilke projekter der er inde eller ude (med begrundelse), ejer, review-dato og en version, der stiger ved hver godkendelse. | US-208 |
 | Interessent | Nogen med krav til organisationens informationssikkerhed, fx kunder eller myndigheder, og om ISMS'et håndterer hvert krav. | US-208 |
+| Aktiv | Information eller et system, der rummer den, med ejer, klassifikation og om det rummer persondata. Hører til projekter og kobles til leverandører og risici. | US-214 |
+| Klassifikationsskema | Organisationens egne klassifikationsniveauer, lavest først. Et niveau i brug kan ikke fjernes. | US-214 |
 
 ## Regler
 

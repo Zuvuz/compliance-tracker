@@ -43,6 +43,7 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.SupplierDetailsChanged or ActivityAction.SupplierContactAdded or ActivityAction.SupplierContactChanged
                 or ActivityAction.SupplierContactRemoved // US-207
                 or ActivityAction.IsmsScopeChanged or ActivityAction.IsmsScopeApproved or ActivityAction.InterestedPartyChanged // US-208
+                or ActivityAction.AssetChanged or ActivityAction.ClassificationSchemeChanged // US-214
                 or ActivityAction.IndustryProfileChosen => ActivityGroup.Organisation,
             ActivityAction.CatalogImported or ActivityAction.CatalogActivated or ActivityAction.FrameworkEnabled
                 or ActivityAction.FrameworkDisabled

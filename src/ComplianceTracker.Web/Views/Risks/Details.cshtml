@@ -44,6 +44,15 @@
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
 
 <dl class="row">
+    @if (Model.Assets.Assets.Count > 0)
+    {
+        @* US-214 R4: the assets the risk concerns, and the highest classification among them *@
+        <dt class="col-sm-3">Assets</dt>
+        <dd class="col-sm-9" id="risk-assets">
+            @string.Join(", ", Model.Assets.Assets.Select(a => $"{a.Name} ({a.Classification})"))
+            <div class="small">Highest classification: <strong id="risk-classification">@Model.Assets.Highest</strong></div>
+        </dd>
+    }
     <dt class="col-sm-3"><term name="Risk level">Likelihood × impact</term></dt>
     <dd class="col-sm-9">@risk.Likelihood × @risk.Impact = @risk.Score (@risk.Level)</dd>
     @* US-165 R1, R2: the level before the measures never changes by itself; the residual is set by a person *@

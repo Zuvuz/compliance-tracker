@@ -43,7 +43,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
             ["checkId"] = "The fixture has no evidence check (that needs the pretend AI's answer); EvidenceCheck.feature tests it (US-038)",
             ["requestId"] = "The fixture has no framework activation waiting for approval (that needs an import from EUR-Lex); CompleteRequirements.feature tests it (US-137)",
             ["grantId"] = "The fixture has no auditor grant (a grant starts today or later, and the fixture's date is not set); AuditorAccess.feature tests revoking (US-182)",
-            ["partyId"] = "The fixture has no interested party (US-208); IsmsScope.feature tests it"
+            ["partyId"] = "The fixture has no interested party (US-208); IsmsScope.feature tests it",
+            ["assetId"] = "The fixture has no asset (US-214); the service only finds the organisation's own assets"
         };
 
         // Pages the own member gets "not found" for, because the fixture has nothing there yet, and why. They are still

@@ -1,0 +1,79 @@
+@* US-214: the fields of an asset, for adding and changing. The model is the page and the asset (null when adding). *@
+@model (ComplianceTracker.Application.Isms.AssetsView Page, ComplianceTracker.Domain.Isms.Asset? Asset)
+@using ComplianceTracker.Domain.Isms
+@{
+    var page = Model.Page;
+    var asset = Model.Asset;
+    var key = asset?.Id.ToString("N") ?? "new";
+}
+<div class="row g-2">
+    <div class="col-md-4">
+        <label class="form-label small" for="name-@key">Name</label>
+        <input class="form-control form-control-sm" id="name-@key" name="name" value="@asset?.Name" maxlength="@Asset.MaxNameLength" required />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small" for="kind-@key">Kind</label>
+        <select class="form-select form-select-sm" id="kind-@key" name="kind" required>
+            @foreach (var kind in Enum.GetValues<AssetKind>())
+            {
+                <option value="@kind" selected="@(asset?.Kind == kind)">@kind</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small" for="owner-@key">Owner</label>
+        <select class="form-select form-select-sm" id="owner-@key" name="ownerId" required>
+            <option value="">Choose the owner</option>
+            @foreach (var member in page.Members.OrderBy(m => m.Value, StringComparer.OrdinalIgnoreCase))
+            {
+                <option value="@member.Key" selected="@(asset?.OwnerId == member.Key)">@member.Value</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small" for="classification-@key">Classification</label>
+        <select class="form-select form-select-sm" id="classification-@key" name="classification" required>
+            @foreach (var level in page.Scheme.Levels)
+            {
+                <option value="@level" selected="@(asset?.Classification == level)">@level</option>
+            }
+        </select>
+    </div>
+    <div class="col-12">
+        <label class="form-label small" for="description-@key">Description <span class="text-muted">(optional)</span></label>
+        <input class="form-control form-control-sm" id="description-@key" name="description" value="@asset?.Description" maxlength="@Asset.MaxDescriptionLength" />
+    </div>
+    <div class="col-md-4">
+        <label class="form-label small" for="projects-@key">Projects</label>
+        <select class="form-select form-select-sm" id="projects-@key" name="projectIds" multiple size="3">
+            @foreach (var project in page.Projects)
+            {
+                <option value="@project.Id" selected="@(asset?.ProjectIds.Contains(project.Id) == true)">@project.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label small" for="suppliers-@key">Hosted or delivered by</label>
+        <select class="form-select form-select-sm" id="suppliers-@key" name="supplierIds" multiple size="3">
+            @foreach (var supplier in page.Suppliers)
+            {
+                <option value="@supplier.Id" selected="@(asset?.SupplierIds.Contains(supplier.Id) == true)">@supplier.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label small" for="risks-@key">Risks that concern it</label>
+        <select class="form-select form-select-sm" id="risks-@key" name="riskIds" multiple size="3">
+            @foreach (var risk in page.Risks)
+            {
+                <option value="@risk.Id" selected="@(asset?.RiskIds.Contains(risk.Id) == true)">@risk.Project: @risk.Title</option>
+            }
+        </select>
+    </div>
+    <div class="col-12">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="personal-@key" name="personalData" value="true" checked="@(asset?.HoldsPersonalData == true)" />
+            <label class="form-check-label small" for="personal-@key">Holds personal data (listed for GDPR art. 30)</label>
+        </div>
+    </div>
+</div>

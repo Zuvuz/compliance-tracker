@@ -119,25 +119,25 @@ namespace ComplianceTracker.Specs.Features
 #line 10
     await testRunner.AndAsync("the project \"Acme Portal\" exists", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-            global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
+            global::Reqnroll.Table table3 = new global::Reqnroll.Table(new string[] {
                         "id",
                         "title",
                         "type",
                         "acceptance criteria",
                         "state"});
-            table1.AddRow(new string[] {
+            table3.AddRow(new string[] {
                         "120",
                         "Sign in with MitID",
                         "User Story",
                         "<div>Given a citizen with MitID</div>",
                         "Active"});
-            table1.AddRow(new string[] {
+            table3.AddRow(new string[] {
                         "121",
                         "Crash on save",
                         "Bug",
                         "",
                         "New"});
-            table1.AddRow(new string[] {
+            table3.AddRow(new string[] {
                         "122",
                         "Export data",
                         "User Story",
@@ -145,7 +145,7 @@ namespace ComplianceTracker.Specs.Features
                         "New"});
 #line 11
     await testRunner.AndAsync("the Azure DevOps project \"acme/Portal\" accepts the token \"valid-token\" and has th" +
-                    "ese work items:", ((string)(null)), table1, "And ");
+                    "ese work items:", ((string)(null)), table3, "And ");
 #line hidden
         }
         
@@ -516,20 +516,20 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table2 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table4 = new global::Reqnroll.Table(new string[] {
                             "number",
                             "title",
                             "labels",
                             "follows template",
                             "state"});
-                table2.AddRow(new string[] {
+                table4.AddRow(new string[] {
                             "3",
                             "[US-003] Create organisation via web UI",
                             "user-story",
                             "yes",
                             "open"});
 #line 70
-    await testRunner.GivenAsync("the GitHub repository \"Zuvuz/compliance-tracker\" has these issues:", ((string)(null)), table2, "Given ");
+    await testRunner.GivenAsync("the GitHub repository \"Zuvuz/compliance-tracker\" has these issues:", ((string)(null)), table4, "Given ");
 #line hidden
 #line 73
     await testRunner.AndAsync("\"Acme Portal\" is linked to \"Zuvuz/compliance-tracker\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

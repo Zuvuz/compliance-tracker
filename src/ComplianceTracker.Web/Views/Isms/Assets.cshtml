@@ -1,0 +1,178 @@
+@* US-214: the inventory of information assets (ISO/IEC 27001 A.5.9). R1: name, kind and owner; R2: a level from the
+   organisation's classification scheme; R3: an owner who left shows "No owner"; R4: the risks an asset concerns; R5: the
+   personal data filter is the list for GDPR art. 30; R6: a name is used once.
+   Ids and classes used by the tests: #assets rows with data-asset (.asset-kind, .asset-owner, .asset-classification,
+   .asset-personal, .asset-suppliers, .asset-risks), form#add-asset, form.change-asset, form.remove-asset, form#asset-filter,
+   a#assets-excel, form#classification-scheme-form, form#import-assets, #assets-read-only. *@
+@model ComplianceTracker.Application.Isms.AssetsView
+@using ComplianceTracker.Application.Isms
+@using ComplianceTracker.Domain.Isms
+@{
+    ViewData["Title"] = "Assets";
+    var filter = Model.Filter;
+    var query = new Dictionary<string, string>();
+    if (filter.Kind is { } kindFilter) { query["kind"] = kindFilter.ToString(); }
+    if (!string.IsNullOrWhiteSpace(filter.Classification)) { query["classification"] = filter.Classification; }
+    if (filter.PersonalData) { query["personalData"] = "true"; }
+    if (filter.NoOwner) { query["noOwner"] = "true"; }
+    var noOwner = Model.Assets.Count(a => !a.HasOwner);
+}
+
+<partial name="_IsmsNav" />
+
+<page-header heading="Assets" heading-id="assets-title">
+    <a class="btn btn-outline-secondary" id="assets-excel" asp-action="AssetsExcel" asp-all-route-data="query">Download Excel</a>
+</page-header>
+
+<p class="text-muted">The organisation's information and the systems that hold it, each with an owner and a classification
+    (ISO/IEC 27001 A.5.9–A.5.12). Link them to the projects, the suppliers that host them and the risks that concern them.</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+@if (!Model.CanChange)
+{
+    <p class="text-muted small" id="assets-read-only">You can read the inventory. Members who decide compliance add and change assets.</p>
+}
+
+<form method="get" asp-action="Assets" id="asset-filter" class="d-flex flex-wrap align-items-end gap-2 mb-3">
+    <div>
+        <label class="form-label small mb-0" for="filter-kind">Kind</label>
+        <select class="form-select form-select-sm" id="filter-kind" name="kind">
+            <option value="">All</option>
+            @foreach (var kind in Enum.GetValues<AssetKind>())
+            {
+                <option value="@kind" selected="@(filter.Kind == kind)">@kind</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label class="form-label small mb-0" for="filter-classification">Classification</label>
+        <select class="form-select form-select-sm" id="filter-classification" name="classification">
+            <option value="">All</option>
+            @foreach (var level in Model.Scheme.Levels)
+            {
+                <option value="@level" selected="@(string.Equals(filter.Classification, level, StringComparison.OrdinalIgnoreCase))">@level</option>
+            }
+        </select>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="filter-personal" name="personalData" value="true" checked="@filter.PersonalData" />
+        <label class="form-check-label small" for="filter-personal">Personal data</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="filter-no-owner" name="noOwner" value="true" checked="@filter.NoOwner" />
+        <label class="form-check-label small" for="filter-no-owner">No owner</label>
+    </div>
+    <button type="submit" class="btn btn-sm btn-outline-primary">Filter</button>
+    <span class="small text-muted ms-auto" id="assets-count">@Model.Assets.Count of @Model.Total assets@(noOwner > 0 ? $", {noOwner} without an owner" : "")</span>
+</form>
+
+@if (Model.Assets.Count == 0)
+{
+    <p class="text-muted" id="assets-empty">@(Model.Total == 0 ? "No assets yet." : "No assets match the filter.")</p>
+}
+else
+{
+    <div class="table-responsive mb-3">
+        <table class="table table-sm align-middle" id="assets">
+            <thead>
+                <tr><th>Asset</th><th>Kind</th><th>Owner</th><th>Classification</th><th>Personal data</th><th>Projects</th><th>Suppliers</th><th>Risks</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var line in Model.Assets)
+                {
+                    var asset = line.Asset;
+                    <tr data-asset="@asset.Name" id="asset-@asset.Id">
+                        <td>
+                            <strong>@asset.Name</strong>
+                            @if (asset.Description is not null)
+                            {
+                                <div class="small text-muted">@asset.Description</div>
+                            }
+                            @if (Model.CanChange)
+                            {
+                                <details class="mt-1">
+                                    <summary class="small">Change</summary>
+                                    <form asp-action="ChangeAsset" method="post" class="change-asset mt-2">
+                                        <input type="hidden" name="assetId" value="@asset.Id" />
+                                        <partial name="_AssetFields" model="(Model, (Asset?)asset)" />
+                                        <button type="submit" class="btn btn-sm btn-primary mt-2">Save</button>
+                                    </form>
+                                    <form asp-action="RemoveAsset" method="post" class="remove-asset mt-2" data-confirm="Remove @asset.Name from the inventory?">
+                                        <input type="hidden" name="assetId" value="@asset.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                    </form>
+                                </details>
+                            }
+                        </td>
+                        <td class="asset-kind">@asset.Kind</td>
+                        <td class="asset-owner">
+                            @if (line.HasOwner)
+                            {
+                                @line.OwnerName
+                            }
+                            else
+                            {
+                                <status-badge status="No owner" />
+                            }
+                        </td>
+                        <td class="asset-classification">@asset.Classification</td>
+                        <td class="asset-personal">@(asset.HoldsPersonalData ? "Yes" : "No")</td>
+                        <td class="asset-projects small">@string.Join(", ", line.Projects)</td>
+                        <td class="asset-suppliers small">@string.Join(", ", line.Suppliers)</td>
+                        <td class="asset-risks small">
+                            @foreach (var risk in line.Risks)
+                            {
+                                <div><a asp-controller="Risks" asp-action="Details" asp-route-id="@risk.Id">@risk.Title</a></div>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (Model.CanChange)
+{
+    <section class="card mb-3">
+        <div class="card-header">Add an asset</div>
+        <div class="card-body">
+            <form asp-action="AddAsset" method="post" id="add-asset">
+                <partial name="_AssetFields" model="(Model, (Asset?)null)" />
+                <button type="submit" class="btn btn-primary btn-sm mt-2">Add the asset</button>
+            </form>
+        </div>
+    </section>
+
+    <div class="row g-3 mb-3">
+        <section class="col-md-6" id="classification-scheme">
+            <div class="card h-100">
+                <div class="card-header">Classification scheme</div>
+                <div class="card-body">
+                    <form asp-action="ClassificationScheme" method="post" id="classification-scheme-form">
+                        <label class="form-label small" for="scheme-levels">One level per line, lowest first. A level in use cannot be removed.</label>
+                        <textarea class="form-control form-control-sm" id="scheme-levels" name="levels" rows="5">@string.Join("\n", Model.Scheme.Levels)</textarea>
+                        <button type="submit" class="btn btn-sm btn-outline-primary mt-2">Save the levels</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+        <section class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">Import from a spreadsheet</div>
+                <div class="card-body">
+                    <form asp-action="ImportAssets" method="post" enctype="multipart/form-data" id="import-assets">
+                        <label class="form-label small" for="import-file">A CSV or Excel file with the columns @string.Join(", ", AssetImportRows.Columns). The owner is a member's name or e-mail. One bad row stops the import.</label>
+                        <input class="form-control form-control-sm" type="file" id="import-file" name="file" accept=".csv,.xlsx" required />
+                        <button type="submit" class="btn btn-sm btn-outline-primary mt-2">Import</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </div>
+}
+else
+{
+    <p class="small text-muted" id="classification-scheme">Classification levels, lowest first: @string.Join(" < ", Model.Scheme.Levels)</p>
+}

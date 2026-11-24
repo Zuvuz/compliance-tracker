@@ -195,18 +195,18 @@ namespace ComplianceTracker.Specs.Features
 #line 16
     await testRunner.WhenAsync("I download the traceability matrix of \"Acme Portal\" as Excel for the team", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-                global::Reqnroll.Table table29 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table31 = new global::Reqnroll.Table(new string[] {
                             "Sheet"});
-                table29.AddRow(new string[] {
+                table31.AddRow(new string[] {
                             "Summary"});
-                table29.AddRow(new string[] {
+                table31.AddRow(new string[] {
                             "CRA"});
-                table29.AddRow(new string[] {
+                table31.AddRow(new string[] {
                             "Lifecycle checklist"});
-                table29.AddRow(new string[] {
+                table31.AddRow(new string[] {
                             "Phase changes"});
 #line 17
-    await testRunner.ThenAsync("the workbook has these sheets in order:", ((string)(null)), table29, "Then ");
+    await testRunner.ThenAsync("the workbook has these sheets in order:", ((string)(null)), table31, "Then ");
 #line hidden
 #line 23
     await testRunner.AndAsync("the header of \"CRA\" is bold, frozen and filtered", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

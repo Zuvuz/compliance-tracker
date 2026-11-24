@@ -2508,6 +2508,31 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At AI'en skriver konteksten. Det kan komme senere, som i US-040.
   - At gemme hver version af scopet for sig. Den låste PDF er den gemte version.
 
+### B167 – Aktivfortegnelsen med organisationens egen klassifikation (US-214)
+
+- **Beslutning:**
+  - **Siden "Assets"** ligger i ISMS-området. Et aktiv har:
+    - navn, der kun må bruges én gang i organisationen
+    - art: Information, Software, Hardware, Service, People eller Location
+    - ejer og klassifikation
+    - om det rummer persondata
+    - en valgfri beskrivelse
+  - **Koblinger:** et aktiv kan høre til flere projekter. Det kan hostes eller leveres af leverandører (US-191) og rammes af risici (US-042). Koblingerne gemmes som lister af id'er på aktivet, fordi et aktiv altid læses helt.
+  - **Klassifikationsskema:** ét pr. organisation. Det starter med Public < Internal < Confidential < Strictly confidential, og organisationen kan ændre niveauerne. Rækkefølgen afgør, hvad "højest" er.
+  - **Et niveau i brug kan ikke fjernes.** Så står intet aktiv med et niveau, skemaet ikke kender. Brugeren giver først aktiverne et andet niveau.
+  - **Ejer:** en ejer, der ikke længere er medlem, vises som "No owner" (rød). De aktiver står øverst, og man kan filtrere på dem.
+  - **Risici:** risikosiden viser de aktiver, risikoen rammer, og den højeste klassifikation blandt dem.
+  - **Leverandører:** leverandørsiden viser de aktiver, leverandøren hoster.
+  - **Persondata:** filteret "Personal data" er listen til GDPR art. 30.
+  - **Import:** fra CSV eller Excel med kolonnerne Name, Kind, Owner, Classification, Personal data og Description. Ejeren er et medlems navn eller e-mail. Én forkert række stopper hele importen, og fejlene nævner rækkerne.
+  - **Eksport:** til Excel med sidens filtre.
+  - **Rettigheder:** alle i organisationen kan læse fortegnelsen. Kun roller med `DecideCompliance` kan ændre den. Ændringer logges som `AssetChanged` og `ClassificationSchemeChanged` og nævner felterne, ikke værdierne.
+- **Begrundelse:** ISO 27001 A.5.9–A.5.12 kræver en fortegnelse med ejere og en klassifikation, som organisationen selv bestemmer. Med koblingen til risici kan man se, hvilke risici der rammer de vigtigste aktiver.
+- **Fravalgt:**
+  - At finde aktiver automatisk i skyen eller på netværket.
+  - En CMDB med versioner af hver server.
+  - En forhåndsvisning af importen som ved risici. Aktivlisten er enkel, så alt eller intet er nok.
+
 ## Spørgsmål til klassediagrammet
 
 Der er ingen åbne spørgsmål. De første spørgsmål fra oktober 2026 er besvaret sådan:
