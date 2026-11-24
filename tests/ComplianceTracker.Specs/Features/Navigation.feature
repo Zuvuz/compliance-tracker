@@ -1,6 +1,8 @@
 Feature: The main pages are in the top bar
 
   # US-045: Projects, Frameworks, Users and Settings in the top bar; the organisation page has no tabs.
+  # US-169 moved Users and Settings under Organisation. #52: Organisation is a plain link, and the organisation's pages
+  # are a row of links on each of them instead of a dropdown.
 
   Background:
     Given an empty database
@@ -10,8 +12,11 @@ Feature: The main pages are in the top bar
   @US-045 @integration
   Scenario: The organisation admin sees all the main pages
     When I open the front page
-    Then the top bar has the links "Projects", "Frameworks", "Users" and "Settings"
+    Then the top bar has the links "Projects", "Frameworks", "Organisation" and "My tasks"
+    And the top bar opens no menu
     And the page has no tab "Overview"
+    When I open "Organisation" from the top bar
+    Then the organisation's pages have the links "Users" and "Settings"
 
   @US-045 @iso27001-A.5.15 @integration
   Scenario: A developer does not see Users and Settings
@@ -19,6 +24,8 @@ Feature: The main pages are in the top bar
     When "Bo" opens the front page
     Then the top bar has the links "Projects" and "Frameworks"
     And the top bar has no link "Users"
+    When "Bo" opens the organisation's pages
+    Then the organisation's pages have no link "Users"
 
   @US-045 @iso27001-A.5.15 @integration
   Scenario: A developer cannot open the users page directly
@@ -32,6 +39,12 @@ Feature: The main pages are in the top bar
     Given "Bo" has joined "Acme ApS" as "Developer"
     When "Bo" opens the address "/Settings"
     Then the answer is the page and says "You can see the settings but not change them."
+
+  @US-045 @integration
+  Scenario: The open organisation page is marked
+    When I open the organisation's page "Suppliers"
+    Then the organisation's page "Suppliers" is marked
+    And the top bar marks "Organisation"
 
   @US-045 @integration
   Scenario: The front page after sign-in is the projects page

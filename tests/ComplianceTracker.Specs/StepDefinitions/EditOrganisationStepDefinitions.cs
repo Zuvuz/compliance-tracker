@@ -15,8 +15,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I open the organisation's profile")]
         public async Task WhenIOpenTheProfile()
         {
-            await _web.OpenAsync("/Projects");
-            var link = _web.Page!.QuerySelector("#nav-organisation-profile") ?? throw new Xunit.Sdk.XunitException("The Organisation menu has no Profile.");
+            await _web.OpenAsync("/Organisation");
+            var link = _web.Page!.QuerySelector("#organisation-nav #nav-organisation-profile") ?? throw new Xunit.Sdk.XunitException("The Organisation menu has no Profile.");
             await _web.OpenAsync(link.GetAttribute("href")!);
         }
 
