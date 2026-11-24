@@ -1,6 +1,6 @@
 # Compliance-tracker – Domænemodel
 
-Senest opdateret: 2026-11-21
+Senest opdateret: 2026-11-24
 
 ## Formål
 
@@ -348,9 +348,9 @@ classDiagram
   Bruger "0..1" -- "*" Logpost : udført af
 ```
 
-### 5. Planlagt: resten af ISMS'et (US-208 til US-216)
+### 5. ISMS'et (US-208 til US-216)
 
-Disse begreber er besluttet som stories, men ikke bygget. De hører til organisationen, og projekterne er det, ISMS'et dækker.
+Begreberne hører til organisationen, og projekterne er det, ISMS'et dækker. ISMS-scope og Interessent er bygget (US-208). De andre er besluttet som stories og markeret «planlagt».
 
 ```mermaid
 classDiagram
@@ -362,16 +362,16 @@ classDiagram
   class Auditfund
   class Organisationsdokument
   class ISMSScope {
-    <<planlagt>>
     scopetekst
+    interneOgEksterneForhold
     version
+    ejer
     næsteGennemgang
   }
   class Interessent {
-    <<planlagt>>
     navn
     art
-    krav
+    kravOgOmDeHåndteres
   }
   class Sikkerhedsmål {
     <<planlagt>>
@@ -505,6 +505,8 @@ classDiagram
 | Gapsvar | Organisationens svar på et NIS2-spørgsmål med modenhed. Erstattes, ændres ikke. | US-190 |
 | Påmindelse | En mail til én bruger om én frist. | US-183 |
 | Logpost | Hvem der gjorde hvad og hvornår, med rollen på tidspunktet. Ændres og slettes aldrig. | US-001 |
+| ISMS-scope | Hvad organisationens ISMS dækker: scopetekst, interne og eksterne forhold, hvilke projekter der er inde eller ude (med begrundelse), ejer, review-dato og en version, der stiger ved hver godkendelse. | US-208 |
+| Interessent | Nogen med krav til organisationens informationssikkerhed, fx kunder eller myndigheder, og om ISMS'et håndterer hvert krav. | US-208 |
 
 ## Regler
 

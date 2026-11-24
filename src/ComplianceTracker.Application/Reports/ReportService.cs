@@ -366,6 +366,13 @@ namespace ComplianceTracker.Application.Reports
             return new FingerprintCheck(sha, match);
         }
 
+        // US-208: a report made elsewhere, e.g. the ISMS scope, locked on the organisation area like the others
+        public async Task<ReportSnapshot> LockFileAsync(Guid projectId, ReportFile file, CancellationToken cancellationToken = default)
+        {
+            var (organization, user) = await _member.RequireAsync(Permission.DecideCompliance, cancellationToken);
+            return await LockAsync(organization.Id, projectId, user, file, cancellationToken);
+        }
+
         private async Task<ReportSnapshot> LockAsync(Guid organizationId, Guid projectId, User user, ReportFile file, CancellationToken cancellationToken)
         {
             var snapshot = ReportSnapshot.Lock(organizationId, projectId, file.Kind, file.Title, file.FileName, file.ContentType, file.Content,

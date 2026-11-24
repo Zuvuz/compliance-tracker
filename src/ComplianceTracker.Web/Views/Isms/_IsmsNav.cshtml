@@ -1,0 +1,10 @@
+@* US-208: the ISMS area's pages as one row of links, like the organisation's pages. The next ISMS stories add theirs here. *@
+@{
+    var action = ViewContext.RouteData.Values["action"] as string;
+    string Mark(params string[] actions) => actions.Contains(action) ? "active" : "";
+}
+<nav aria-label="ISMS" class="mb-3">
+    <ul class="nav nav-pills small flex-wrap" id="isms-nav">
+        <li class="nav-item"><a class="nav-link @Mark("Scope")" id="nav-isms-scope" asp-controller="Isms" asp-action="Scope">Scope and context</a></li>
+    </ul>
+</nav>

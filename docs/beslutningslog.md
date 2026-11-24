@@ -2489,6 +2489,25 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At bygge `Kontrol` som en ekstra tabel ved siden af Annex A-kravene. To steder for det samme giver uenighed om, hvad der gælder.
   - At bygge `Release` kun for SBOM'ens skyld.
 
+### B166 – ISMS'et får sit eget område, og det starter med scope og kontekst (US-208)
+
+- **Beslutning:**
+  - **"ISMS" i topmenuen:** ISMS'et hører til hele organisationen og er det, compliance-folk arbejder i hver dag. Derfor har det sit eget punkt i topmenuen (der er stadig højst 5) med sine sider som en række links, ligesom organisationens sider (#52). De næste ISMS-stories (US-209 til US-216) lægger deres sider her.
+  - **Ét scope pr. organisation** (`IsmsScope`) med:
+    - scopeteksten (4.3), lokationer og afdelinger
+    - interne og eksterne forhold (4.1)
+    - ejer og næste review-dato
+  - **Projekterne:** hvert projekt er inde eller ude, og et projekt ude kræver en begrundelse. Et nyt projekt er "Not decided" og regnes som ude, til nogen sætter det ind. Organisationsområdet (US-142) er ikke et projekt i scopet.
+  - **Versioner:** at godkende scopet laver en ny version (4.4). Det kræver en scopetekst og mindst ét projekt inde. En ændring efter godkendelsen viser "Changed since approval", indtil scopet godkendes igen.
+  - **Interessenter** (4.2): navn, art og deres krav, hver med "Handled" eller ej. Kravene gemmes som JSON på interessenten. Samme navn kan ikke bruges to gange, og en fjernet interessent beholdes med et tidspunkt.
+  - **PDF og låsning:** scopet laves som PDF med samme rapportmodel som de andre rapporter. En godkendt version kan låses med fingeraftryk (US-050) og ligger så på organisationsområdets Reports-fane.
+  - **Rettigheder:** alle i organisationen kan læse scopet. Kun roller med `DecideCompliance` kan ændre og godkende det. Alt logges som `IsmsScopeChanged`, `IsmsScopeApproved` og `InterestedPartyChanged`.
+- **Begrundelse:** ISO 27001 4.1–4.4 er grundlaget for resten af ISMS'et: mål, audits og ledelsens gennemgang skal vide, hvad der er omfattet. Projekterne findes allerede, så scopet peger på dem i stedet for at gentage dem.
+- **Fravalgt:**
+  - Flere scopes i én organisation.
+  - At AI'en skriver konteksten. Det kan komme senere, som i US-040.
+  - At gemme hver version af scopet for sig. Den låste PDF er den gemte version.
+
 ## Spørgsmål til klassediagrammet
 
 Der er ingen åbne spørgsmål. De første spørgsmål fra oktober 2026 er besvaret sådan:

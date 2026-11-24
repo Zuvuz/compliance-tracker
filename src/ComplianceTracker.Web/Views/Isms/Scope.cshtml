@@ -1,0 +1,219 @@
+@* US-208: the ISMS scope and context (ISO/IEC 27001 4.1–4.4). R1: the scope with owner, review date and version; R2, R3:
+   the projects inside or outside, with the reason; R4: the interested parties and their requirements; R5: an overdue review;
+   R6: everyone reads it, only those who decide compliance change it.
+   Ids and classes used by the tests: #scope-version (status), #scope-review-overdue, form#describe-scope, #scope-text,
+   #scope-projects rows with data-project and data-state (.scope-reason), form.include-project, form.exclude-project,
+   form#approve-scope, a#scope-pdf, form#lock-scope, #interested-parties rows with data-party (.party-requirement with
+   data-handled), form#add-party, form.change-party, form.remove-party, #scope-read-only. *@
+@model ComplianceTracker.Application.Isms.IsmsScopeView
+@using ComplianceTracker.Application.Isms
+@using ComplianceTracker.Domain.Isms
+@using ComplianceTracker.Web.Controllers
+@{
+    ViewData["Title"] = "Scope and context";
+    var scope = Model.Scope;
+    var status = scope switch
+    {
+        null or { Version: 0 } => "Not approved",
+        { ChangedSinceApproval: true } => "Changed since approval",
+        _ => "Approved"
+    };
+    var inside = Model.Projects.Count(p => p.State == ScopeState.Inside);
+}
+
+<partial name="_IsmsNav" />
+
+<page-header heading="Scope and context" heading-id="scope-title" status="@status" status-id="scope-version">
+    <a class="btn btn-outline-secondary" id="scope-pdf" asp-action="ScopePdf">Download PDF</a>
+    @if (Model.CanChange && scope is { Version: > 0, ChangedSinceApproval: false })
+    {
+        <form asp-action="LockScope" method="post" id="lock-scope" class="d-inline"
+              data-confirm="Lock version @scope.Version of the scope as a PDF with a fingerprint? A locked report cannot be changed.">
+            <button type="submit" class="btn btn-outline-primary">Lock as PDF</button>
+        </form>
+    }
+</page-header>
+
+<p class="text-muted">What the organisation's information security management system covers and why (ISO/IEC 27001 4.1–4.4).
+    The other parts of the ISMS build on it.</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+<div class="d-flex flex-wrap gap-3 small mb-3" id="scope-facts">
+    <span>Version: <strong>@(scope is { Version: > 0 } ? $"{scope.Version}, approved {scope.ApprovedAt!.Value.ToLocalTime():dd-MM-yyyy} by {Model.ApprovedByName}" : "none yet")</strong></span>
+    <span>Owner: <strong>@(Model.OwnerName ?? "No owner")</strong></span>
+    <span>Next review: <strong>@(scope?.NextReviewOn?.ToString("dd-MM-yyyy") ?? "Not set")</strong></span>
+    <span>Projects inside: <strong>@inside of @Model.Projects.Count</strong></span>
+</div>
+
+@if (Model.ReviewOverdue)
+{
+    <div class="alert alert-warning" id="scope-review-overdue" role="alert">Review overdue: the scope was due for review on @scope!.NextReviewOn!.Value.ToString("dd-MM-yyyy").</div>
+}
+
+@if (!Model.CanChange)
+{
+    <p class="text-muted small" id="scope-read-only">You can read the scope. Members who decide compliance change and approve it.</p>
+}
+
+<section class="card mb-3">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <h2 class="h5 mb-0">The scope</h2>
+        @if (Model.CanChange && status != "Approved")
+        {
+            <form asp-action="Approve" method="post" id="approve-scope" class="d-inline"
+                  data-confirm="Approve the scope as version @((scope?.Version ?? 0) + 1)?">
+                <button type="submit" class="btn btn-primary btn-sm">Approve as version @((scope?.Version ?? 0) + 1)</button>
+            </form>
+        }
+    </div>
+    <div class="card-body">
+        @if (Model.CanChange)
+        {
+            <form asp-action="Describe" method="post" id="describe-scope" class="row g-2">
+                <div class="col-12"><label for="scope-text" class="form-label small">What the ISMS covers (4.3)</label>
+                    <textarea id="scope-text" name="text" rows="4" maxlength="@IsmsScope.MaxTextLength" class="form-control form-control-sm"
+                              placeholder="e.g. The development, operation and support of our SaaS products from our office in Aarhus">@scope?.Text</textarea></div>
+                <div class="col-md-6"><label for="scope-locations" class="form-label small">Locations</label>
+                    <input id="scope-locations" name="locations" maxlength="@IsmsScope.MaxShortTextLength" class="form-control form-control-sm" value="@scope?.Locations" /></div>
+                <div class="col-md-6"><label for="scope-departments" class="form-label small">Departments</label>
+                    <input id="scope-departments" name="departments" maxlength="@IsmsScope.MaxShortTextLength" class="form-control form-control-sm" value="@scope?.Departments" /></div>
+                <div class="col-md-6"><label for="scope-internal" class="form-label small">Internal issues (4.1)</label>
+                    <textarea id="scope-internal" name="internalIssues" rows="3" maxlength="@IsmsScope.MaxTextLength" class="form-control form-control-sm"
+                              placeholder="e.g. a small team, remote work, a cloud-only setup">@scope?.InternalIssues</textarea></div>
+                <div class="col-md-6"><label for="scope-external" class="form-label small">External issues (4.1)</label>
+                    <textarea id="scope-external" name="externalIssues" rows="3" maxlength="@IsmsScope.MaxTextLength" class="form-control form-control-sm"
+                              placeholder="e.g. NIS2, customers asking for ISO 27001, ransomware in the sector">@scope?.ExternalIssues</textarea></div>
+                <div class="col-md-6"><label for="scope-owner" class="form-label small">Owner</label>
+                    <select id="scope-owner" name="ownerId" class="form-select form-select-sm">
+                        <option value="">-- No owner --</option>
+                        @foreach (var (id, name) in Model.Members.OrderBy(m => m.Value))
+                        {
+                            <option value="@id" selected="@(scope?.OwnerId == id)">@name</option>
+                        }
+                    </select></div>
+                <div class="col-md-6"><label for="scope-review" class="form-label small">Next review</label>
+                    <input id="scope-review" name="nextReviewOn" type="date" class="form-control form-control-sm" value="@scope?.NextReviewOn?.ToString("yyyy-MM-dd")" /></div>
+                <div class="col-12"><button type="submit" class="btn btn-outline-primary btn-sm">Save the scope</button></div>
+            </form>
+        }
+        else
+        {
+            <p id="scope-text" class="ct-pre-wrap">@(string.IsNullOrWhiteSpace(scope?.Text) ? "The scope is not described yet." : scope.Text)</p>
+            <dl class="row small mb-0">
+                <dt class="col-sm-3">Locations</dt><dd class="col-sm-9">@(scope?.Locations ?? "–")</dd>
+                <dt class="col-sm-3">Departments</dt><dd class="col-sm-9">@(scope?.Departments ?? "–")</dd>
+                <dt class="col-sm-3">Internal issues</dt><dd class="col-sm-9 ct-pre-wrap">@(scope?.InternalIssues ?? "–")</dd>
+                <dt class="col-sm-3">External issues</dt><dd class="col-sm-9 ct-pre-wrap">@(scope?.ExternalIssues ?? "–")</dd>
+            </dl>
+        }
+    </div>
+</section>
+
+<section class="card mb-3">
+    <div class="card-header"><h2 class="h5 mb-0">Projects in the scope</h2></div>
+    <div class="card-body">
+        <p class="small text-muted">A new project is outside the scope until someone puts it inside. A project outside needs a reason.</p>
+        @if (Model.Projects.Count == 0)
+        {
+            <p class="small text-muted mb-0">The organisation has no projects yet.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle" id="scope-projects">
+                    <thead><tr><th>Project</th><th>In the scope</th><th>Reason</th>@if (Model.CanChange){<th></th>}</tr></thead>
+                    <tbody>
+                        @foreach (var project in Model.Projects)
+                        {
+                            var state = project.State switch { ScopeState.Inside => "Inside", ScopeState.Outside => "Outside", _ => "Not decided" };
+                            <tr data-project="@project.Name" data-state="@project.State">
+                                <td>@project.Name @if (project.IsClosed) { <span class="text-muted small">(closed)</span> }</td>
+                                <td><status-badge status="@state" /></td>
+                                <td class="scope-reason small">@project.Reason</td>
+                                @if (Model.CanChange)
+                                {
+                                    <td class="text-end">
+                                        <div class="d-flex flex-wrap gap-2 justify-content-end">
+                                            @if (project.State != ScopeState.Inside)
+                                            {
+                                                <form asp-action="Include" method="post" class="include-project d-inline">
+                                                    <input type="hidden" name="projectId" value="@project.ProjectId" />
+                                                    <button type="submit" class="btn btn-outline-primary btn-sm">Put inside</button>
+                                                </form>
+                                            }
+                                            <form asp-action="Exclude" method="post" class="exclude-project d-flex flex-wrap gap-1">
+                                                <input type="hidden" name="projectId" value="@project.ProjectId" />
+                                                <input name="reason" maxlength="@IsmsScope.MaxShortTextLength" class="form-control form-control-sm ct-max-w-16"
+                                                       aria-label="Why @project.Name is outside" placeholder="Why it is outside" required value="@project.Reason" />
+                                                <button type="submit" class="btn btn-outline-secondary btn-sm">@(project.State == ScopeState.Outside ? "Change reason" : "Put outside")</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>
+
+<section class="card mb-3" id="interested-parties-section">
+    <div class="card-header"><h2 class="h5 mb-0">Interested parties (4.2)</h2></div>
+    <div class="card-body">
+        <p class="small text-muted">Who has requirements to your information security, and which of them the ISMS handles.</p>
+        @if (Model.CanChange)
+        {
+            <details class="mb-3" open="@(Model.Parties.Count == 0)">
+                <summary class="small">Add an interested party</summary>
+                <form asp-action="AddParty" method="post" id="add-party" class="row g-2 mt-1">
+                    <partial name="_PartyFields" model="@((InterestedParty?)null)" />
+                    <div class="col-12"><button type="submit" class="btn btn-outline-primary btn-sm">Add</button></div>
+                </form>
+            </details>
+        }
+        @if (Model.Parties.Count == 0)
+        {
+            <p class="small text-muted mb-0">No interested parties yet.</p>
+        }
+        else
+        {
+            <div id="interested-parties" class="list-group">
+                @foreach (var party in Model.Parties)
+                {
+                    <div class="list-group-item" id="party-@party.Id" data-party="@party.Name">
+                        <div class="d-flex flex-wrap justify-content-between gap-2">
+                            <strong>@party.Name</strong>
+                            <span class="small text-muted">@party.Kind · @IsmsScopeService.Count(party)</span>
+                        </div>
+                        <ul class="small mb-1">
+                            @foreach (var requirement in party.Requirements.OrderBy(r => r.Order))
+                            {
+                                <li class="party-requirement" data-handled="@requirement.Handled">@requirement.Text
+                                    <span class="text-muted">(@(requirement.Handled ? "handled by the ISMS" : "not handled"))</span></li>
+                            }
+                        </ul>
+                        @if (Model.CanChange)
+                        {
+                            <details>
+                                <summary class="small">Change</summary>
+                                <form asp-action="ChangeParty" method="post" class="change-party row g-2 mt-1">
+                                    <input type="hidden" name="partyId" value="@party.Id" />
+                                    <partial name="_PartyFields" model="@party" />
+                                    <div class="col-12"><button type="submit" class="btn btn-outline-primary btn-sm">Save</button></div>
+                                </form>
+                                <form asp-action="RemoveParty" method="post" class="remove-party mt-2"
+                                      data-confirm="Remove @party.Name from the interested parties?">
+                                    <input type="hidden" name="partyId" value="@party.Id" />
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
+                                </form>
+                            </details>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</section>

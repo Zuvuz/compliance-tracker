@@ -1,6 +1,6 @@
 # Compliance-tracker – Klassediagram
 
-Senest opdateret: 2026-11-21
+Senest opdateret: 2026-11-24
 
 Klassediagrammet bygger på [domænemodellen](domaenemodel.md) og viser modellagets klasser med attributter, datatyper og associationer. **Metoder tilføjes løbende**, når en user story kræver dem, og opdateres i samme pull request som koden. Reglerne, som metoderne skal håndhæve, står i domænemodellen.
 
@@ -209,6 +209,94 @@ classDiagram
   ActivityLogChain ..> ChainCheck
   ActivityLogEntry "*" --> "1" Organization
   ActivityLogEntry "*" --> "1" User
+  %% ================= ISMS-scope (US-208) =================
+  class IsmsScope {
+    -id: Guid
+    -organizationId: Guid
+    -text: string
+    -locations: string?
+    -departments: string?
+    -internalIssues: string?
+    -externalIssues: string?
+    -ownerId: Guid?
+    -nextReviewOn: DateOnly?
+    -version: int
+    -approvedAt: DateTime?
+    -approvedById: Guid?
+    -changedAt: DateTime
+    -projects: List~ScopedProject~
+    +ChangedSinceApproval: bool
+    +Create(organizationId, at)$ IsmsScope
+    +Describe(text, locations, departments, internalIssues, externalIssues, ownerId, nextReviewOn, at) List~string~
+    +Include(projectId, at) bool
+    +Exclude(projectId, reason, at) bool
+    +StateOf(projectId) ScopeState
+    +Approve(userId, at) int
+    +IsReviewOverdue(today) bool
+  }
+  class ScopedProject {
+    -id: Guid
+    -scopeId: Guid
+    -projectId: Guid
+    -isInside: bool
+    -reason: string?
+  }
+  class ScopeState {
+    <<enumeration>>
+    Inside
+    Outside
+    NotDecided
+  }
+  class InterestedParty {
+    -id: Guid
+    -organizationId: Guid
+    -name: string
+    -kind: InterestedPartyKind
+    -requirements: List~PartyRequirement~
+    -createdAt: DateTime
+    -removedAt: DateTime?
+    +IsActive: bool
+    +Handled: int
+    +Create(organizationId, name, kind, requirements, at)$ InterestedParty
+    +Change(name, kind, requirements)
+    +Remove(at)
+  }
+  class PartyRequirement {
+    <<record>>
+    +Text: string
+    +Handled: bool
+    +Order: int
+  }
+  class InterestedPartyKind {
+    <<enumeration>>
+    Customer
+    Authority
+    Supplier
+    Employees
+    Owners
+    Other
+  }
+  class IsmsScopeService {
+    +ViewAsync() IsmsScopeView
+    +DescribeAsync(input)
+    +IncludeAsync(projectId)
+    +ExcludeAsync(projectId, reason)
+    +ApproveAsync() int
+    +PdfAsync() ReportFile
+    +LockAsync() ReportSnapshot
+    +AddPartyAsync(name, kind, requirements) InterestedParty
+    +ChangePartyAsync(partyId, name, kind, requirements)
+    +RemovePartyAsync(partyId)
+  }
+  IsmsScope "1" --> "1" Organization
+  IsmsScope "1" *-- "*" ScopedProject : projects
+  ScopedProject "*" --> "1" Project
+  IsmsScope ..> ScopeState
+  InterestedParty "*" --> "1" Organization
+  InterestedParty "1" *-- "*" PartyRequirement : requirements (JSON)
+  IsmsScopeService --> IIsmsScopeRepository
+  IsmsScopeService ..> ReportService : locks the PDF
+
   %% ================= NIS2-gap-analyse =================
   class GapAnswer {
     -id: Guid
