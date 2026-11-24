@@ -435,6 +435,11 @@ namespace ComplianceTracker.Domain.ActivityLog
         // removed. SubjectId points at the organisation.
         IsmsScopeChanged,
         IsmsScopeApproved,
-        InterestedPartyChanged
+        InterestedPartyChanged,
+
+        // US-214: an asset was added, changed, removed or imported (Details names the asset and what changed, not the values),
+        // or the classification scheme got other levels (Details lists them, lowest first). SubjectId points at the organisation.
+        AssetChanged,
+        ClassificationSchemeChanged
     }
 }

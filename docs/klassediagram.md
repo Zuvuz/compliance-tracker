@@ -297,6 +297,68 @@ classDiagram
   IsmsScopeService --> IIsmsScopeRepository
   IsmsScopeService ..> ReportService : locks the PDF
 
+  %% ================= Aktiver (US-214) =================
+  class Asset {
+    -id: Guid
+    -organizationId: Guid
+    -name: string
+    -kind: AssetKind
+    -description: string?
+    -ownerId: Guid
+    -classification: string
+    -holdsPersonalData: bool
+    -projectIds: List~Guid~
+    -supplierIds: List~Guid~
+    -riskIds: List~Guid~
+    -createdAt: DateTime
+    -removedAt: DateTime?
+    +IsActive: bool
+    +Create(organizationId, name, kind, ownerId, classification, holdsPersonalData, description, scheme, at)$ Asset
+    +Change(name, kind, ownerId, classification, holdsPersonalData, description, scheme) List~string~
+    +Link(projectIds, supplierIds, riskIds) bool
+    +HasOwner(activeMemberIds) bool
+    +Remove(at)
+  }
+  class AssetKind {
+    <<enumeration>>
+    Information
+    Software
+    Hardware
+    Service
+    People
+    Location
+  }
+  class ClassificationScheme {
+    -id: Guid
+    -organizationId: Guid
+    -levels: List~string~
+    +Create(organizationId)$ ClassificationScheme
+    +Change(levels, inUse) bool
+    +Find(level) string?
+    +RankOf(level) int
+    +Highest(levels) string?
+  }
+  class AssetService {
+    +ViewAsync(filter) AssetsView
+    +AddAsync(input) Asset
+    +ChangeAsync(assetId, input)
+    +RemoveAsync(assetId)
+    +ChangeSchemeAsync(levels)
+    +ImportAsync(fileName, content) int
+    +ExcelAsync(filter) ReportFile
+    +ForRiskAsync(riskId) RiskAssets
+    +BySupplierAsync() Dictionary
+  }
+  Asset "*" --> "1" Organization
+  Asset ..> AssetKind
+  Asset ..> ClassificationScheme : classification is one of its levels
+  Asset "*" --> "*" Project : projectIds
+  Asset "*" --> "*" Supplier : supplierIds
+  Asset "*" --> "*" Risk : riskIds
+  ClassificationScheme "0..1" --> "1" Organization
+  AssetService --> IAssetRepository
+  AssetService ..> ISpreadsheetWriter : Excel
+
   %% ================= NIS2-gap-analyse =================
   class GapAnswer {
     -id: Guid

@@ -43,7 +43,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
             ["checkId"] = "The fixture has no evidence check (that needs the pretend AI's answer); EvidenceCheck.feature tests it (US-038)",
             ["requestId"] = "The fixture has no framework activation waiting for approval (that needs an import from EUR-Lex); CompleteRequirements.feature tests it (US-137)",
             ["grantId"] = "The fixture has no auditor grant (a grant starts today or later, and the fixture's date is not set); AuditorAccess.feature tests revoking (US-182)",
-            ["partyId"] = "The fixture has no interested party (US-208); IsmsScope.feature tests it"
+            ["partyId"] = "The fixture has no interested party (US-208); IsmsScope.feature tests it",
+            ["assetId"] = "The fixture has no asset (US-214); the service only finds the organisation's own assets"
         };
 
         // Pages the own member gets "not found" for, because the fixture has nothing there yet, and why. They are still
@@ -360,7 +361,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "projectid" or "onlyprojectid" => ids.Project, // US-196: an invitation limited to one project
                 "project" => ids.Project, // US-099: My tasks filtered by project
                 "organizationid" => ids.Organization, // US-187: switching to an organisation the person is not a member of
-                "riskid" or "risk" => ids.Risk, // US-147: the risk opened in the side panel
+                "riskid" or "risk" or "riskids" => ids.Risk, // US-147: the risk opened in the side panel; US-214: the risks of an asset
                 "requirementid" => frameworks ? ids.FrameworkRequirement : ids.CraRequirement,
                 "workitemid" => ids.WorkItem,
                 "linkid" => documents ? ids.OrganisationDocumentLink : ids.Link,
@@ -381,7 +382,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "sbomid" => ids.Sbom, // US-079
                 "importid" => ids.RiskImport, // US-049
                 "auditid" or "correctsauditid" => ids.Audit, // US-134
-                "supplierid" => ids.Supplier, // US-191
+                "supplierid" or "supplierids" => ids.Supplier, // US-191; US-214: the suppliers of an asset
                 "supplierevidenceid" => ids.SupplierEvidence,
                 "contactid" => ids.SupplierContact, // US-207
                 "itemid" => ids.ChecklistItem, // US-192

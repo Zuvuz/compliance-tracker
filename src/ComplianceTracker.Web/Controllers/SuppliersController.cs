@@ -25,7 +25,7 @@ namespace ComplianceTracker.Web.Controllers
         }
 
         // GET /Suppliers
-        public async Task<IActionResult> Index(CancellationToken cancellationToken)
+        public async Task<IActionResult> Index([FromServices] Application.Isms.AssetService assets, CancellationToken cancellationToken)
         {
             if (await _member.FindOrganizationAsync(cancellationToken) is null)
             {
@@ -33,6 +33,7 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             ViewData["OrganisationArea"] = true;
+            ViewData["SupplierAssets"] = await assets.BySupplierAsync(cancellationToken); // US-214
             var organization = await _member.FindOrganizationAsync(cancellationToken);
             return View(new SuppliersViewModel(await _suppliers.ListAsync(cancellationToken), await _member.CanAsync(Permission.DecideCompliance, cancellationToken))
             {

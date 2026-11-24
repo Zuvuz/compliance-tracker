@@ -92,6 +92,11 @@ else
                             {
                                 <div class="small supplier-components">@view.Components SBOM component@(view.Components == 1 ? "" : "s")</div>
                             }
+                            @* US-214: the assets the supplier hosts or delivers *@
+                            @if (ViewData["SupplierAssets"] is IReadOnlyDictionary<Guid, IReadOnlyList<string>> supplierAssets && supplierAssets.TryGetValue(supplier.Id, out var hosted))
+                            {
+                                <div class="small supplier-assets">Assets: <a asp-controller="Isms" asp-action="Assets">@string.Join(", ", hosted)</a></div>
+                            }
                             @* US-207 R1 *@
                             <div class="small supplier-company mt-1">
                                 @if (supplier.RegistrationNumber is { } registration)

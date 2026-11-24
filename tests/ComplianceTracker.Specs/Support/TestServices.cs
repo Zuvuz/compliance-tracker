@@ -96,6 +96,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<ComplianceTracker.Application.Organizations.IGapAnswerRepository, GapAnswerRepository>(); // US-189
                 services.AddScoped<ComplianceTracker.Application.Organizations.ISupplierRepository, SupplierRepository>(); // US-191
                 services.AddScoped<ComplianceTracker.Application.Isms.IIsmsScopeRepository, IsmsScopeRepository>(); // US-208
+                services.AddScoped<ComplianceTracker.Application.Isms.IAssetRepository, AssetRepository>(); // US-214
                 services.AddScoped<ComplianceTracker.Application.Reminders.IReminderRepository, ReminderRepository>(); // US-183
                 services.AddScoped<ComplianceTracker.Application.Projects.IProjectChecklistRepository, ProjectChecklistRepository>(); // US-047
                 services.AddScoped<ComplianceTracker.Application.Projects.IOrganisationChecklistRepository, OrganisationChecklistRepository>(); // US-192

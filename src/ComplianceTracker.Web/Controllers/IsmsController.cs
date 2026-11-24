@@ -1,5 +1,6 @@
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Isms;
+using ComplianceTracker.Domain.Common;
 using ComplianceTracker.Domain.Isms;
 using ComplianceTracker.Web.Filters;
 using Microsoft.AspNetCore.Authorization;
@@ -16,11 +17,13 @@ namespace ComplianceTracker.Web.Controllers
         public const int RequirementRows = 5;
 
         private readonly IsmsScopeService _scope;
+        private readonly AssetService _assets;
         private readonly CurrentMember _member;
 
-        public IsmsController(IsmsScopeService scope, CurrentMember member)
+        public IsmsController(IsmsScopeService scope, AssetService assets, CurrentMember member)
         {
             _scope = scope;
+            _assets = assets;
             _member = member;
         }
 
@@ -136,6 +139,99 @@ namespace ComplianceTracker.Web.Controllers
         {
             await _scope.RemovePartyAsync(partyId, cancellationToken);
             return RedirectToAction(nameof(Scope), null, "interested-parties");
+        }
+
+        // ---------------------------------------------------------- US-214: the inventory of information assets
+
+        // GET /Isms/Assets: every member reads it, with filters
+        [HttpGet]
+        public async Task<IActionResult> Assets(AssetKind? kind, string? classification, bool personalData, bool noOwner, CancellationToken cancellationToken)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is null)
+            {
+                return RedirectToAction("Create", "Organizations");
+            }
+
+            return View(await _assets.ViewAsync(new AssetFilter(kind, classification, personalData, noOwner), cancellationToken));
+        }
+
+        // GET /Isms/AssetsExcel: the inventory as a workbook, with the page's filters
+        [HttpGet]
+        public async Task<IActionResult> AssetsExcel(AssetKind? kind, string? classification, bool personalData, bool noOwner, CancellationToken cancellationToken)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is null)
+            {
+                return NotFound();
+            }
+
+            var file = await _assets.ExcelAsync(new AssetFilter(kind, classification, personalData, noOwner), cancellationToken);
+            return File(file.Content, file.ContentType, file.FileName);
+        }
+
+        // POST /Isms/AddAsset: R1, R2, R6
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Assets))]
+        public async Task<IActionResult> AddAsset(string? name, AssetKind? kind, Guid? ownerId, string? classification, bool personalData, string? description,
+            List<Guid>? projectIds, List<Guid>? supplierIds, List<Guid>? riskIds, CancellationToken cancellationToken)
+        {
+            var asset = await _assets.AddAsync(new AssetInput(name, kind, ownerId, classification, personalData, description, projectIds, supplierIds, riskIds),
+                cancellationToken);
+            TempData["Success"] = $"{asset.Name} is added.";
+            return RedirectToAction(nameof(Assets), null, $"asset-{asset.Id}");
+        }
+
+        // POST /Isms/ChangeAsset
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Assets))]
+        public async Task<IActionResult> ChangeAsset(Guid assetId, string? name, AssetKind? kind, Guid? ownerId, string? classification, bool personalData,
+            string? description, List<Guid>? projectIds, List<Guid>? supplierIds, List<Guid>? riskIds, CancellationToken cancellationToken)
+        {
+            await _assets.ChangeAsync(assetId,
+                new AssetInput(name, kind, ownerId, classification, personalData, description, projectIds, supplierIds, riskIds), cancellationToken);
+            return RedirectToAction(nameof(Assets), null, $"asset-{assetId}");
+        }
+
+        // POST /Isms/RemoveAsset
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Assets))]
+        public async Task<IActionResult> RemoveAsset(Guid assetId, CancellationToken cancellationToken)
+        {
+            await _assets.RemoveAsync(assetId, cancellationToken);
+            return RedirectToAction(nameof(Assets));
+        }
+
+        // POST /Isms/ClassificationScheme: R2, one level per line, lowest first
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Assets))]
+        public async Task<IActionResult> ClassificationScheme(string? levels, CancellationToken cancellationToken)
+        {
+            await _assets.ChangeSchemeAsync((levels ?? "").Split('\n'), cancellationToken);
+            TempData["Success"] = "The classification scheme is saved.";
+            return RedirectToAction(nameof(Assets), null, "classification-scheme");
+        }
+
+        // POST /Isms/ImportAssets: a CSV or Excel file; one bad row stops the import
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(2 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 2 * 1024 * 1024)]
+        [OnDomainError(nameof(Assets))]
+        public async Task<IActionResult> ImportAssets(IFormFile? file, CancellationToken cancellationToken)
+        {
+            if (file is null || file.Length == 0)
+            {
+                throw new DomainException("Choose a CSV file or an Excel workbook");
+            }
+
+            using var memory = new MemoryStream();
+            await file.CopyToAsync(memory, cancellationToken);
+            var count = await _assets.ImportAsync(file.FileName, memory.ToArray(), cancellationToken);
+            TempData["Success"] = $"{count} assets are imported.";
+            return RedirectToAction(nameof(Assets));
         }
 
         // The requirement rows of the form: the texts, and the numbers of the rows ticked as handled

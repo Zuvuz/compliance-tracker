@@ -190,22 +190,22 @@ namespace ComplianceTracker.Specs.Features
 #line 17
     await testRunner.WhenAsync("I download the traceability report for \"management\" as PDF from the Reports tab", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-                global::Reqnroll.Table table15 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table17 = new global::Reqnroll.Table(new string[] {
                             "Section"});
-                table15.AddRow(new string[] {
+                table17.AddRow(new string[] {
                             "Status"});
-                table15.AddRow(new string[] {
+                table17.AddRow(new string[] {
                             "What management must know now"});
-                table15.AddRow(new string[] {
+                table17.AddRow(new string[] {
                             "Key figures"});
-                table15.AddRow(new string[] {
+                table17.AddRow(new string[] {
                             "Biggest gaps"});
-                table15.AddRow(new string[] {
+                table17.AddRow(new string[] {
                             "Open high risks"});
-                table15.AddRow(new string[] {
+                table17.AddRow(new string[] {
                             "Details"});
 #line 18
-    await testRunner.ThenAsync("the PDF has the sections in this order:", ((string)(null)), table15, "Then ");
+    await testRunner.ThenAsync("the PDF has the sections in this order:", ((string)(null)), table17, "Then ");
 #line hidden
 #line 26
     await testRunner.AndAsync("the PDF contains \"Support period not set; CRA requires one (Art. 13(8))\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -355,24 +355,24 @@ namespace ComplianceTracker.Specs.Features
 #line 48
     await testRunner.WhenAsync("I download the traceability matrix of \"Acme Portal\" as Excel for the management", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-                global::Reqnroll.Table table16 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table18 = new global::Reqnroll.Table(new string[] {
                             "Sheet"});
-                table16.AddRow(new string[] {
+                table18.AddRow(new string[] {
                             "Summary"});
-                table16.AddRow(new string[] {
+                table18.AddRow(new string[] {
                             "Status"});
-                table16.AddRow(new string[] {
+                table18.AddRow(new string[] {
                             "What management must know now"});
-                table16.AddRow(new string[] {
+                table18.AddRow(new string[] {
                             "Key figures"});
-                table16.AddRow(new string[] {
+                table18.AddRow(new string[] {
                             "Biggest gaps"});
-                table16.AddRow(new string[] {
+                table18.AddRow(new string[] {
                             "Open high risks"});
-                table16.AddRow(new string[] {
+                table18.AddRow(new string[] {
                             "Details"});
 #line 49
-    await testRunner.ThenAsync("the workbook has these sheets in order:", ((string)(null)), table16, "Then ");
+    await testRunner.ThenAsync("the workbook has these sheets in order:", ((string)(null)), table18, "Then ");
 #line hidden
 #line 58
     await testRunner.AndAsync("on \"Status\" the first row says \"Regulation\" \"CRA\" and \"Coverage\" \"0 % (0 of 72)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
