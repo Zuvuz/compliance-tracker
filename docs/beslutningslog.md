@@ -2533,6 +2533,32 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - En CMDB med versioner af hver server.
   - En forhåndsvisning af importen som ved risici. Aktivlisten er enkel, så alt eller intet er nok.
 
+### B168 – Ét register for afvigelser og korrigerende handlinger (US-212)
+
+- **Beslutning:**
+  - **Siden "Nonconformities"** ligger i ISMS-området. En afvigelse har:
+    - titel, kilde og alvor (Major, Minor eller Observation)
+    - en valgfri beskrivelse
+  - **Kilder:** Internal audit, External audit, Security event, Missed deadline, Complaint, Management review eller Other.
+  - **Fra et fund:** en afvigelse kan oprettes fra et åbent auditfund (US-134) eller en åben sikkerhedshændelse. Så følger kilden og titlen med, og samme fund kan ikke have to åbne afvigelser.
+  - **Forløbet følger ISO 27001 10.2:**
+    1. Korrektionen, der blev gjort med det samme, og årsagen
+    2. Den korrigerende handling med ejer og frist. En frist i fortiden afvises.
+    3. "The action is done"
+    4. Effektivitetstjekket
+  - **Effektivitetstjekket:**
+    - "It worked" lukker afvigelsen, men kun når årsagen er skrevet.
+    - "It did not work" åbner den igen. Handlingen gemmes under "Actions that did not work", og der skal planlægges en ny.
+  - **Close** lukker kun en afvigelse, der har årsag, handling og et tjek, der fandt, at handlingen virkede. Ellers siger siden, hvad der mangler.
+  - **Genåbning:** en lukket afvigelse kan åbnes igen med en begrundelse.
+  - **Forfalden:** en planlagt handling efter sin frist er "Overdue" og står øverst.
+  - **Rettigheder:** alle læser registret. Kun roller med `DecideCompliance` ændrer det. Alt logges som `NonconformityChanged`.
+- **Begrundelse:** ISO 27001 10.2 kræver, at man reagerer, finder årsagen, handler og tjekker, at det virkede. Ét register gør det synligt for auditor, uanset hvor afvigelsen kom fra. Fund og hændelser findes allerede i projekterne, så registret peger på dem i stedet for at gentage dem.
+- **Fravalgt:**
+  - 5 whys og fiskebensdiagrammer som formularer. Årsagen er fritekst indtil videre.
+  - At AI'en foreslår årsager.
+  - Afvigelser fra overskredne mål (US-209) og faste opgaver (US-215). De kommer med de stories.
+
 ## Spørgsmål til klassediagrammet
 
 Der er ingen åbne spørgsmål. De første spørgsmål fra oktober 2026 er besvaret sådan:

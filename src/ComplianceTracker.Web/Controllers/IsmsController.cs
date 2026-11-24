@@ -18,12 +18,14 @@ namespace ComplianceTracker.Web.Controllers
 
         private readonly IsmsScopeService _scope;
         private readonly AssetService _assets;
+        private readonly NonconformityService _nonconformities;
         private readonly CurrentMember _member;
 
-        public IsmsController(IsmsScopeService scope, AssetService assets, CurrentMember member)
+        public IsmsController(IsmsScopeService scope, AssetService assets, NonconformityService nonconformities, CurrentMember member)
         {
             _scope = scope;
             _assets = assets;
+            _nonconformities = nonconformities;
             _member = member;
         }
 
@@ -232,6 +234,94 @@ namespace ComplianceTracker.Web.Controllers
             var count = await _assets.ImportAsync(file.FileName, memory.ToArray(), cancellationToken);
             TempData["Success"] = $"{count} assets are imported.";
             return RedirectToAction(nameof(Assets));
+        }
+
+        // ---------------------------------------------------------- US-212: nonconformities and corrective actions
+
+        // GET /Isms/Nonconformities: every member reads the register, with filters by status and source
+        [HttpGet]
+        public async Task<IActionResult> Nonconformities(NonconformityStatus? status, NonconformitySource? source, bool showClosed, CancellationToken cancellationToken)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is null)
+            {
+                return RedirectToAction("Create", "Organizations");
+            }
+
+            return View(await _nonconformities.ViewAsync(new NonconformityFilter(status, source, showClosed), cancellationToken));
+        }
+
+        // POST /Isms/RaiseNonconformity: R1, R6
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Nonconformities))]
+        public async Task<IActionResult> RaiseNonconformity(string? title, string? description, NonconformitySource? source, NonconformitySeverity? severity,
+            string? origin, CancellationToken cancellationToken)
+        {
+            var raised = await _nonconformities.RaiseAsync(title, description, source, severity, origin, cancellationToken);
+            return RedirectToAction(nameof(Nonconformities), null, $"nonconformity-{raised.Id}");
+        }
+
+        // POST /Isms/AnalyseNonconformity: the correction and the cause
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Nonconformities))]
+        public async Task<IActionResult> AnalyseNonconformity(Guid nonconformityId, string? correction, string? cause, CancellationToken cancellationToken)
+        {
+            await _nonconformities.AnalyseAsync(nonconformityId, correction, cause, cancellationToken);
+            return RedirectToAction(nameof(Nonconformities), null, $"nonconformity-{nonconformityId}");
+        }
+
+        // POST /Isms/PlanCorrectiveAction
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Nonconformities))]
+        public async Task<IActionResult> PlanCorrectiveAction(Guid nonconformityId, string? action, Guid? ownerId, DateOnly? dueOn, CancellationToken cancellationToken)
+        {
+            await _nonconformities.PlanActionAsync(nonconformityId, action, ownerId, dueOn, cancellationToken);
+            return RedirectToAction(nameof(Nonconformities), null, $"nonconformity-{nonconformityId}");
+        }
+
+        // POST /Isms/CorrectiveActionDone
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Nonconformities))]
+        public async Task<IActionResult> CorrectiveActionDone(Guid nonconformityId, CancellationToken cancellationToken)
+        {
+            await _nonconformities.MarkActionDoneAsync(nonconformityId, cancellationToken);
+            return RedirectToAction(nameof(Nonconformities), null, $"nonconformity-{nonconformityId}");
+        }
+
+        // POST /Isms/CheckNonconformity: R3, R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Nonconformities))]
+        public async Task<IActionResult> CheckNonconformity(Guid nonconformityId, string? result, bool effective, CancellationToken cancellationToken)
+        {
+            var closed = await _nonconformities.CheckAsync(nonconformityId, result, effective, cancellationToken);
+            TempData["Success"] = closed ? "The action worked; the nonconformity is closed." : "The action did not work; plan a new corrective action.";
+            return closed
+                ? RedirectToAction(nameof(Nonconformities), null, new { showClosed = true }, $"nonconformity-{nonconformityId}")
+                : RedirectToAction(nameof(Nonconformities), null, $"nonconformity-{nonconformityId}");
+        }
+
+        // POST /Isms/CloseNonconformity: R2
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Nonconformities))]
+        public async Task<IActionResult> CloseNonconformity(Guid nonconformityId, CancellationToken cancellationToken)
+        {
+            await _nonconformities.CloseAsync(nonconformityId, cancellationToken);
+            return RedirectToAction(nameof(Nonconformities), null, new { showClosed = true }, $"nonconformity-{nonconformityId}");
+        }
+
+        // POST /Isms/ReopenNonconformity
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Nonconformities))]
+        public async Task<IActionResult> ReopenNonconformity(Guid nonconformityId, string? reason, CancellationToken cancellationToken)
+        {
+            await _nonconformities.ReopenAsync(nonconformityId, reason, cancellationToken);
+            return RedirectToAction(nameof(Nonconformities), null, $"nonconformity-{nonconformityId}");
         }
 
         // The requirement rows of the form: the texts, and the numbers of the rows ticked as handled
