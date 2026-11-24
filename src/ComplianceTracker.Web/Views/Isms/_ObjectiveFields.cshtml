@@ -1,0 +1,51 @@
+@* US-209: the fields of an objective, for adding and changing. The model is the page and the objective (null when adding). *@
+@model (ComplianceTracker.Application.Isms.ObjectivesView Page, ComplianceTracker.Domain.Isms.SecurityObjective? Objective)
+@using System.Globalization
+@using ComplianceTracker.Domain.Isms
+@{
+    var objective = Model.Objective;
+    var key = objective?.Id.ToString("N") ?? "new";
+}
+<div class="col-md-6">
+    <label class="form-label small" for="text-@key">Objective</label>
+    <input class="form-control form-control-sm" id="text-@key" name="text" value="@objective?.Text" maxlength="@SecurityObjective.MaxTextLength" required />
+</div>
+<div class="col-md-3">
+    <label class="form-label small" for="owner-@key">Owner</label>
+    <select class="form-select form-select-sm" id="owner-@key" name="ownerId" required>
+        <option value="">Choose</option>
+        @foreach (var member in Model.Page.Members.OrderBy(m => m.Value, StringComparer.OrdinalIgnoreCase))
+        {
+            <option value="@member.Key" selected="@(objective?.OwnerId == member.Key)">@member.Value</option>
+        }
+    </select>
+</div>
+<div class="col-md-3">
+    <label class="form-label small" for="due-@key">Deadline <span class="text-muted">(optional)</span></label>
+    <input class="form-control form-control-sm" type="date" id="due-@key" name="dueOn" value="@objective?.DueOn?.ToString("yyyy-MM-dd")" />
+</div>
+<div class="col-md-3">
+    <label class="form-label small" for="direction-@key">Better is</label>
+    <select class="form-select form-select-sm" id="direction-@key" name="direction">
+        <option value="HigherIsBetter" selected="@(objective?.Direction == ObjectiveDirection.HigherIsBetter)">Higher (at least the target)</option>
+        <option value="LowerIsBetter" selected="@(objective?.Direction == ObjectiveDirection.LowerIsBetter)">Lower (at most the target)</option>
+    </select>
+</div>
+<div class="col-md-3">
+    <label class="form-label small" for="target-@key">Target</label>
+    <input class="form-control form-control-sm" type="number" step="0.01" min="0" id="target-@key" name="target"
+           value="@objective?.Target.ToString("0.##", CultureInfo.InvariantCulture)" required />
+</div>
+<div class="col-md-3">
+    <label class="form-label small" for="unit-@key">Unit <span class="text-muted">(by hand only)</span></label>
+    <input class="form-control form-control-sm" id="unit-@key" name="unit" value="@objective?.Unit" maxlength="@SecurityObjective.MaxUnitLength" placeholder="%" />
+</div>
+<div class="col-md-3">
+    <label class="form-label small" for="frequency-@key">Measured</label>
+    <select class="form-select form-select-sm" id="frequency-@key" name="frequency">
+        @foreach (var frequency in Enum.GetValues<ObjectiveFrequency>())
+        {
+            <option value="@frequency" selected="@(objective?.Frequency == frequency || (objective is null && frequency == ObjectiveFrequency.Quarterly))">@frequency</option>
+        }
+    </select>
+</div>

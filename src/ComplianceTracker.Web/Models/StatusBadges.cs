@@ -78,7 +78,14 @@ namespace ComplianceTracker.Web.Models
             ["Effective"] = Tone.Good,
             ["Major"] = Tone.Bad,
             ["Minor"] = Tone.Attention,
-            ["Observation"] = Tone.Neutral
+            ["Observation"] = Tone.Neutral,
+
+            // US-209: an objective against its target
+            ["On target"] = Tone.Good,
+            ["Close to target"] = Tone.Warning,
+            ["Off target"] = Tone.Bad,
+            ["Not measured"] = Tone.Neutral,
+            ["Due"] = Tone.Attention
         };
 
         public static Tone ToneOf(string? status) => status is not null && Known.TryGetValue(status.Trim(), out var tone) ? tone : Tone.Info;

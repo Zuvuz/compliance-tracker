@@ -12,7 +12,7 @@ Tabellen viser, hvad der er bygget i hver fase, og hvad der mangler.
 | 2 | Revision og dokumentation | Næsten færdig (to stories mangler) |
 | 3 | Sårbarheder og risiko | Næsten færdig (Jira mangler) |
 | 4 | Bredere dækning og klogere AI | Delvist |
-| 5 | Hele ISMS'et og hverdagsbrugen | I gang: US-208, US-214 og US-212 bygget |
+| 5 | Hele ISMS'et og hverdagsbrugen | I gang: US-208, US-214, US-212 og US-209 bygget |
 
 ## Fase 1 – MVP
 
@@ -82,7 +82,7 @@ Tabellen viser, hvad der er bygget i hver fase, og hvad der mangler.
 Fasen er besluttet som stories, men ikke bygget:
 
 - scope og kontekst (US-208), **bygget** (B166)
-- mål og målinger (US-209)
+- mål og målinger (US-209), **bygget** (B169)
 - ledelsens gennemgang (US-210)
 - internt auditprogram (US-211)
 - afvigelser (US-212), **bygget** (B168)

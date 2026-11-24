@@ -97,15 +97,21 @@ namespace ComplianceTracker.Application.Compliance
         }
 
         public async Task<ProjectCompliance?> ForProjectAsync(Guid projectId, CancellationToken cancellationToken = default)
+            => await _member.FindOrganizationAsync(cancellationToken) is { } organization
+                ? await ForProjectAsync(organization.Id, projectId, cancellationToken)
+                : null;
+
+        // US-209: the same for a given organisation, for the background job that measures the objectives without a
+        // signed-in member. The caller makes sure the organisation is the right one.
+        public async Task<ProjectCompliance?> ForProjectAsync(Guid organizationId, Guid projectId, CancellationToken cancellationToken = default)
         {
-            if (await _member.FindOrganizationAsync(cancellationToken) is not { } organization
-                || await _projects.GetAsync(organization.Id, projectId, cancellationToken) is not { } project)
+            if (await _projects.GetAsync(organizationId, projectId, cancellationToken) is not { } project)
             {
                 return null;
             }
 
             var frameworks = await _frameworks.ListAvailableWithRequirementsAsync(
-                organization.Id, project.Frameworks.Select(f => f.FrameworkId).ToList(), cancellationToken);
+                organizationId, project.Frameworks.Select(f => f.FrameworkId).ToList(), cancellationToken);
             var workItems = (await _workItems.ListAsync(project.Id, cancellationToken)).ToDictionary(w => w.Id);
             var links = await _links.ListActiveAsync(project.Id, cancellationToken);
             var decisions = (await _applicability.ListActiveAsync(project.Id, cancellationToken))
@@ -154,7 +160,7 @@ namespace ComplianceTracker.Application.Compliance
             var openDrafts = (await _drafts.ListAsync(project.Id, cancellationToken)).Where(d => d.IsOpen).ToLookup(d => d.RequirementId);
 
             // US-204 R5, R8: the organisation's "documentation is enough" decisions, over the built-in marks
-            var documentationDecisions = (await _documentation.ListNewestAsync(organization.Id, cancellationToken)).ToDictionary(d => d.RequirementId);
+            var documentationDecisions = (await _documentation.ListNewestAsync(organizationId, cancellationToken)).ToDictionary(d => d.RequirementId);
 
             // US-060 R4: requirements named by the measures of an open High or Critical risk
             var projectRisks = await _risks.ListAsync(project.Id, cancellationToken);
@@ -257,7 +263,7 @@ namespace ComplianceTracker.Application.Compliance
             // US-115: in the organisation area, where each requirement is met, and the products' proof of those carried out there
             if (project.IsOrganisationArea)
             {
-                result = await _scopes.ApplyAsync(organization.Id, result, cancellationToken);
+                result = await _scopes.ApplyAsync(organizationId, result, cancellationToken);
             }
 
             result = NationalLayers.Apply(result);

@@ -350,7 +350,7 @@ classDiagram
 
 ### 5. ISMS'et (US-208 til US-216)
 
-Begreberne hører til organisationen, og projekterne er det, ISMS'et dækker. ISMS-scope og Interessent er bygget (US-208), og det er Aktiv og Klassifikationsskema (US-214) og Afvigelse (US-212) også. De andre er besluttet som stories og markeret «planlagt».
+Begreberne hører til organisationen, og projekterne er det, ISMS'et dækker. ISMS-scope og Interessent er bygget (US-208), og det er Aktiv og Klassifikationsskema (US-214) Afvigelse (US-212) og Sikkerhedsmål med Måling (US-209) også. De andre er besluttet som stories og markeret «planlagt».
 
 ```mermaid
 classDiagram
@@ -374,14 +374,12 @@ classDiagram
     kravOgOmDeHåndteres
   }
   class Sikkerhedsmål {
-    <<planlagt>>
     mål
     retning
     frekvens
     ejer
   }
   class Måling {
-    <<planlagt>>
     dato
     værdi
   }
@@ -512,6 +510,8 @@ classDiagram
 | Interessent | Nogen med krav til organisationens informationssikkerhed, fx kunder eller myndigheder, og om ISMS'et håndterer hvert krav. | US-208 |
 | Aktiv | Information eller et system, der rummer den, med ejer, klassifikation og om det rummer persondata. Hører til projekter og kobles til leverandører og risici. | US-214 |
 | Klassifikationsskema | Organisationens egne klassifikationsniveauer, lavest først. Et niveau i brug kan ikke fjernes. | US-214 |
+| Sikkerhedsmål | Hvad organisationen vil nå med informationssikkerhed: et mål-tal, en retning og en frekvens. Måles af trackeren selv over projekterne i scopet eller i hånden, og vises grøn, gul eller rød. | US-209 |
+| Måling | En værdi for et sikkerhedsmål på en dato, taget af trackeren eller en person. Ændres aldrig; en fejl rettes med en ny måling med en note. | US-209 |
 | Afvigelse | Noget, der gik galt, fra en audit, en sikkerhedshændelse, en overskredet frist eller en klage: korrektion, årsag, korrigerende handling og et tjek af, om handlingen virkede. | US-212 |
 
 ## Regler

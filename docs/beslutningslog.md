@@ -2559,6 +2559,38 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At AI'en foreslår årsager.
   - Afvigelser fra overskredne mål (US-209) og faste opgaver (US-215). De kommer med de stories.
 
+### B169 – Sikkerhedsmål, som trackeren selv måler i baggrunden (US-209)
+
+- **Beslutning:**
+  - **Siden "Objectives"** ligger i ISMS-området. Et mål har:
+    - tekst og ejer
+    - et mål-tal og en retning ("højere er bedre" eller "lavere er bedre")
+    - en frekvens (månedlig, kvartalsvis eller årlig) og en valgfri deadline
+  - **Trackerens egne mål:** et mål kan måles af trackeren selv. Det er:
+    - kravdækning og krav med evidens, i procent
+    - åbne High- og Critical-risici
+    - forfaldne risikohandlinger
+    - åbne afvigelser (US-212)
+    - åbne sikkerhedshændelser
+
+    Ellers måles målet i hånden.
+  - **Baggrundsjobbet** (brugerens valg): det kører hver time og tager en måling af hvert trackermål, der er forfaldent efter sin frekvens. Det kører uden en bruger, der er logget ind. Derfor kan `ComplianceQueries` nu også regne dækningen ud for en given organisation.
+  - **Kun scopet:** trackeren tæller kun projekter inde i ISMS-scopet (US-208). Er der ingen, tages der ingen måling. Åbne afvigelser hører til hele organisationen og tælles altid.
+  - **Farven** (R4):
+    - grøn, når den seneste værdi når målet
+    - gul inden for 10 % af målet
+    - rød ellers
+    - et mål på 0 med "lavere er bedre" har ingen gul margin
+  - **Målinger ændres aldrig** (R6). En person kan rette trackerens måling med en ny måling, men skal skrive hvorfor.
+  - **Forfalden:** et mål, der måles i hånden, er "Due", når frekvensen er gået siden sidste måling.
+  - **Trenden** er en lille linje over de sidste 8 målinger.
+  - **Log:** mål og målinger fra personer logges som `ObjectiveChanged`. Trackerens egne målinger logges ikke, men gemmes på målet med "the tracker" som afsender.
+- **Begrundelse:** ISO 27001 6.2 og 9.1 kræver mål, der kan måles, og at de bliver målt. Når trackeren selv måler det, den allerede ved, sparer det arbejde og giver ærlige tal.
+- **Fravalgt:**
+  - At måle, når siden åbnes. Så kommer der ingen måling i en periode, hvor ingen åbner siden.
+  - Andelen af læste politikker. Den kommer med US-213.
+  - Sikkerhedshændelser efter deres frist. Indtil videre tælles de åbne.
+
 ## Spørgsmål til klassediagrammet
 
 Der er ingen åbne spørgsmål. De første spørgsmål fra oktober 2026 er besvaret sådan:

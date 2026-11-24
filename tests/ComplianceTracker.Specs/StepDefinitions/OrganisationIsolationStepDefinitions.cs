@@ -45,7 +45,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
             ["grantId"] = "The fixture has no auditor grant (a grant starts today or later, and the fixture's date is not set); AuditorAccess.feature tests revoking (US-182)",
             ["partyId"] = "The fixture has no interested party (US-208); IsmsScope.feature tests it",
             ["assetId"] = "The fixture has no asset (US-214); the service only finds the organisation's own assets",
-            ["nonconformityId"] = "The fixture has no nonconformity (US-212); the service only finds the organisation's own"
+            ["nonconformityId"] = "The fixture has no nonconformity (US-212); the service only finds the organisation's own",
+            ["objectiveId"] = "The fixture has no objective (US-209); the service only finds the organisation's own"
         };
 
         // Pages the own member gets "not found" for, because the fixture has nothing there yet, and why. They are still
