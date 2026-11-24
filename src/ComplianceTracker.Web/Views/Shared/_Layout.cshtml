@@ -75,6 +75,10 @@
                                     }
                                 </ul>
                             </li>
+                            @* US-208: the organisation's ISMS (ISO/IEC 27001 4–10) has its own area with its pages as a row of links *@
+                            <li class="nav-item">
+                                <a class="nav-link @Active("Isms")" id="nav-isms" asp-area="" asp-controller="Isms" asp-action="Index">ISMS</a>
+                            </li>
                             <li class="nav-item">
                                 @* US-169 R3: everything that waits for my decision. US-099: and my deadlines; R4: the number of tasks that
                                    are overdue or due within 7 days is fetched after the page has loaded (site.js) *@

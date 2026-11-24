@@ -428,6 +428,13 @@ namespace ComplianceTracker.Domain.ActivityLog
         // US-040 R9: the AI drafted the management report's texts (Details names the model and the parts), and a person
         // accepted or edited one. Locking the report is ReportLocked (US-050). SubjectId points at the project.
         ReportDrafted,
-        ReportTextChanged
+        ReportTextChanged,
+
+        // US-208: the ISMS scope was described or changed, a project was put inside or outside it (Details names the fields or
+        // the project and the reason), the scope was approved as a new version, or an interested party was added, changed or
+        // removed. SubjectId points at the organisation.
+        IsmsScopeChanged,
+        IsmsScopeApproved,
+        InterestedPartyChanged
     }
 }

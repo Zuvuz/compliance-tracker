@@ -59,7 +59,15 @@ namespace ComplianceTracker.Web.Models
             ["Later"] = Tone.Neutral,
 
             // US-028: an archived project
-            ["Archived"] = Tone.Neutral
+            ["Archived"] = Tone.Neutral,
+
+            // US-208: the ISMS scope's version and a project's place in it
+            ["Approved"] = Tone.Good,
+            ["Not approved"] = Tone.Warning,
+            ["Changed since approval"] = Tone.Warning,
+            ["Inside"] = Tone.Good,
+            ["Outside"] = Tone.Neutral,
+            ["Not decided"] = Tone.Warning
         };
 
         public static Tone ToneOf(string? status) => status is not null && Known.TryGetValue(status.Trim(), out var tone) ? tone : Tone.Info;

@@ -1,6 +1,6 @@
 # Compliance-tracker – Faser og status
 
-Senest opdateret: 2026-11-21
+Senest opdateret: 2026-11-24
 
 Projektet blev planlagt i fire faser. Fase 1 (MVP'en) blev bygget først og gjort færdig, som planlagt i [B33](beslutningslog.md). Efter MVP'en blev stories prioriteret efter, hvad der giver mest værdi i hverdagen for en lille virksomhed og for en revision, ikke længere fase for fase ([B165](beslutningslog.md)). Derfor er dele af fase 2, 3 og 4 bygget side om side.
 
@@ -12,7 +12,7 @@ Tabellen viser, hvad der er bygget i hver fase, og hvad der mangler.
 | 2 | Revision og dokumentation | Næsten færdig (to stories mangler) |
 | 3 | Sårbarheder og risiko | Næsten færdig (Jira mangler) |
 | 4 | Bredere dækning og klogere AI | Delvist |
-| 5 | Hele ISMS'et og hverdagsbrugen | Planlagt (US-208 til US-216) |
+| 5 | Hele ISMS'et og hverdagsbrugen | I gang: US-208 bygget |
 
 ## Fase 1 – MVP
 
@@ -81,7 +81,7 @@ Tabellen viser, hvad der er bygget i hver fase, og hvad der mangler.
 
 Fasen er besluttet som stories, men ikke bygget:
 
-- scope og kontekst (US-208)
+- scope og kontekst (US-208), **bygget** (B166)
 - mål og målinger (US-209)
 - ledelsens gennemgang (US-210)
 - internt auditprogram (US-211)

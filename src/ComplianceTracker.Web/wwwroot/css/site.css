@@ -231,6 +231,15 @@ main {
   max-width: 11rem;
 }
 
+/* US-208: a reason field next to its button, and a requirement field that wraps below a width */
+.ct-max-w-16 {
+  max-width: 16rem;
+}
+
+.ct-min-w-12 {
+  min-width: 12rem;
+}
+
 .ct-progress-sm {
   height: 0.75rem;
 }

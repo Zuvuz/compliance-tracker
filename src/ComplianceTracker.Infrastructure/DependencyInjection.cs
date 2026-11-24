@@ -112,6 +112,7 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<Application.Organizations.INis2AssessmentRepository, Nis2AssessmentRepository>();
             services.AddScoped<Application.Organizations.IGapAnswerRepository, GapAnswerRepository>(); // US-189
             services.AddScoped<Application.Organizations.ISupplierRepository, SupplierRepository>(); // US-191
+            services.AddScoped<Application.Isms.IIsmsScopeRepository, IsmsScopeRepository>(); // US-208
             services.AddScoped<Application.Reminders.IReminderRepository, ReminderRepository>(); // US-183
             services.AddScoped<Application.Projects.IProjectChecklistRepository, ProjectChecklistRepository>(); // US-047
             services.AddScoped<Application.Projects.IOrganisationChecklistRepository, OrganisationChecklistRepository>(); // US-192
