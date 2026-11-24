@@ -362,7 +362,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "projectid" or "onlyprojectid" => ids.Project, // US-196: an invitation limited to one project
                 "project" => ids.Project, // US-099: My tasks filtered by project
                 "organizationid" => ids.Organization, // US-187: switching to an organisation the person is not a member of
-                "riskid" or "risk" => ids.Risk, // US-147: the risk opened in the side panel
+                "riskid" or "risk" or "riskids" => ids.Risk, // US-147: the risk opened in the side panel; US-214: the risks of an asset
                 "requirementid" => frameworks ? ids.FrameworkRequirement : ids.CraRequirement,
                 "workitemid" => ids.WorkItem,
                 "linkid" => documents ? ids.OrganisationDocumentLink : ids.Link,
@@ -383,7 +383,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "sbomid" => ids.Sbom, // US-079
                 "importid" => ids.RiskImport, // US-049
                 "auditid" or "correctsauditid" => ids.Audit, // US-134
-                "supplierid" => ids.Supplier, // US-191
+                "supplierid" or "supplierids" => ids.Supplier, // US-191; US-214: the suppliers of an asset
                 "supplierevidenceid" => ids.SupplierEvidence,
                 "contactid" => ids.SupplierContact, // US-207
                 "itemid" => ids.ChecklistItem, // US-192

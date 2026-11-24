@@ -162,7 +162,7 @@ else
             <div class="card h-100">
                 <div class="card-header">Import from a spreadsheet</div>
                 <div class="card-body">
-                    <form asp-action="ImportAssets" method="post" enctype="multipart/form-data" id="import-assets">
+                    <form asp-action="ImportAssets" method="post" enctype="multipart/form-data" id="import-assets" data-busy="Importing…">
                         <label class="form-label small" for="import-file">A CSV or Excel file with the columns @string.Join(", ", AssetImportRows.Columns). The owner is a member's name or e-mail. One bad row stops the import.</label>
                         <input class="form-control form-control-sm" type="file" id="import-file" name="file" accept=".csv,.xlsx" required />
                         <button type="submit" class="btn btn-sm btn-outline-primary mt-2">Import</button>
