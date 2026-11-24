@@ -433,6 +433,77 @@ classDiagram
   Nonconformity "*" --> "0..1" SecurityEvent : sourceId
   NonconformityService --> INonconformityRepository
 
+  %% ================= Sikkerhedsmål (US-209) =================
+  class SecurityObjective {
+    -id: Guid
+    -organizationId: Guid
+    -text: string
+    -ownerId: Guid
+    -measure: TrackerMeasure?
+    -target: decimal
+    -unit: string
+    -direction: ObjectiveDirection
+    -frequency: ObjectiveFrequency
+    -dueOn: DateOnly?
+    -createdAt: DateTime
+    -removedAt: DateTime?
+    -measurements: List~Measurement~
+    +IsManual: bool
+    +Last: Measurement?
+    +State: ObjectiveState
+    +Create(organizationId, text, ownerId, measure, target, unit, direction, frequency, dueOn, at)$ SecurityObjective
+    +Change(text, ownerId, target, unit, direction, frequency, dueOn) List~string~
+    +Record(value, on, byId, note, at) Measurement
+    +IsDueForMeasurement(today) bool
+    +StateOf(value) ObjectiveState
+    +Remove(at)
+  }
+  class Measurement {
+    -id: Guid
+    -objectiveId: Guid
+    -on: DateOnly
+    -value: decimal
+    -byId: Guid?
+    -note: string?
+    -at: DateTime
+    +ByTracker: bool
+  }
+  class TrackerMeasure {
+    <<enumeration>>
+    RequirementCoverage
+    EvidenceCoverage
+    OpenHighRisks
+    OverdueRiskActions
+    OpenNonconformities
+    OpenSecurityEvents
+  }
+  class ObjectiveState {
+    <<enumeration>>
+    NotMeasured
+    OnTarget
+    CloseToTarget
+    OffTarget
+  }
+  class TrackerMeasures {
+    +MeasureAsync(organizationId, measure, today) decimal?
+  }
+  class ObjectiveService {
+    +ViewAsync() ObjectivesView
+    +AddAsync(input) SecurityObjective
+    +ChangeAsync(objectiveId, input)
+    +RemoveAsync(objectiveId)
+    +RecordAsync(objectiveId, value, note)
+    +MeasureDueAsync() int
+  }
+  SecurityObjective "*" --> "1" Organization
+  SecurityObjective "1" *-- "*" Measurement : measurements
+  SecurityObjective ..> TrackerMeasure
+  SecurityObjective ..> ObjectiveState
+  ObjectiveService --> ISecurityObjectiveRepository
+  ObjectiveService --> TrackerMeasures
+  TrackerMeasures ..> ComplianceQueries : coverage per organisation
+  TrackerMeasures ..> IsmsScope : only projects inside
+
   %% ================= NIS2-gap-analyse =================
   class GapAnswer {
     -id: Guid

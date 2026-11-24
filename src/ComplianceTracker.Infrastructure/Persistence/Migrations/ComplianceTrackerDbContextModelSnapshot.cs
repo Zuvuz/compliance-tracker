@@ -3532,6 +3532,38 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("IsmsScopes", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Isms.Measurement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("ObjectiveId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("On")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("Value")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ObjectiveId");
+
+                    b.ToTable("ObjectiveMeasurements", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Isms.Nonconformity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3644,6 +3676,61 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("IsmsScopeProjects", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Isms.SecurityObjective", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Direction")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateOnly?>("DueOn")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Frequency")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Measure")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("RemovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("Target")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.ToTable("SecurityObjectives", (string)null);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Mappings.ApplicabilitySuggestion", b =>
@@ -8100,6 +8187,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Isms.Measurement", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Isms.SecurityObjective", null)
+                        .WithMany("Measurements")
+                        .HasForeignKey("ObjectiveId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Isms.Nonconformity", b =>
                 {
                     b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
@@ -8120,6 +8216,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasOne("ComplianceTracker.Domain.Isms.IsmsScope", null)
                         .WithMany("Projects")
                         .HasForeignKey("ScopeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Isms.SecurityObjective", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -9645,6 +9750,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("ComplianceTracker.Domain.Isms.IsmsScope", b =>
                 {
                     b.Navigation("Projects");
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Isms.SecurityObjective", b =>
+                {
+                    b.Navigation("Measurements");
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Organizations.OrganisationDocument", b =>

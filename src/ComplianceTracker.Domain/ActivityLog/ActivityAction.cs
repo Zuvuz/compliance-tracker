@@ -444,6 +444,11 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-212: a nonconformity was raised, analysed, got a corrective action, had its action done or checked (effective
         // closes it, not effective opens it again), or was opened again. SubjectId points at the organisation.
-        NonconformityChanged
+        NonconformityChanged,
+
+        // US-209: an objective was added, changed or removed, or a person entered a measurement (Details names the objective
+        // and the value). The tracker's own measurements are not logged; they are kept with the objective. SubjectId points
+        // at the organisation.
+        ObjectiveChanged
     }
 }

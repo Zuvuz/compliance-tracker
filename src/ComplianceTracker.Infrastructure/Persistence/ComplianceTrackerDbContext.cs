@@ -99,6 +99,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
         public DbSet<Domain.Isms.Asset> Assets => Set<Domain.Isms.Asset>(); // US-214
         public DbSet<Domain.Isms.ClassificationScheme> ClassificationSchemes => Set<Domain.Isms.ClassificationScheme>();
         public DbSet<Domain.Isms.Nonconformity> Nonconformities => Set<Domain.Isms.Nonconformity>(); // US-212
+        public DbSet<Domain.Isms.SecurityObjective> SecurityObjectives => Set<Domain.Isms.SecurityObjective>(); // US-209
         public DbSet<Domain.Reminders.Reminder> Reminders => Set<Domain.Reminders.Reminder>(); // US-183
         public DbSet<Domain.Projects.ProjectChecklistEntry> ProjectChecklistEntries => Set<Domain.Projects.ProjectChecklistEntry>(); // US-047
         public DbSet<Domain.Projects.OrganisationChecklistItem> OrganisationChecklistItems => Set<Domain.Projects.OrganisationChecklistItem>(); // US-192

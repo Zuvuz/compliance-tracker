@@ -19,10 +19,13 @@ namespace ComplianceTracker.Web.Controllers
         private readonly IsmsScopeService _scope;
         private readonly AssetService _assets;
         private readonly NonconformityService _nonconformities;
+        private readonly ObjectiveService _objectives;
         private readonly CurrentMember _member;
 
-        public IsmsController(IsmsScopeService scope, AssetService assets, NonconformityService nonconformities, CurrentMember member)
+        public IsmsController(IsmsScopeService scope, AssetService assets, NonconformityService nonconformities, ObjectiveService objectives,
+            CurrentMember member)
         {
+            _objectives = objectives;
             _scope = scope;
             _assets = assets;
             _nonconformities = nonconformities;
@@ -322,6 +325,65 @@ namespace ComplianceTracker.Web.Controllers
         {
             await _nonconformities.ReopenAsync(nonconformityId, reason, cancellationToken);
             return RedirectToAction(nameof(Nonconformities), null, $"nonconformity-{nonconformityId}");
+        }
+
+        // ---------------------------------------------------------- US-209: information security objectives
+
+        // GET /Isms/Objectives: every member reads them
+        [HttpGet]
+        public async Task<IActionResult> Objectives(CancellationToken cancellationToken)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is null)
+            {
+                return RedirectToAction("Create", "Organizations");
+            }
+
+            return View(await _objectives.ViewAsync(cancellationToken));
+        }
+
+        // POST /Isms/AddObjective: R1. "measure" empty is a manual objective.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Objectives))]
+        public async Task<IActionResult> AddObjective(string? text, Guid? ownerId, TrackerMeasure? measure, decimal? target, string? unit,
+            ObjectiveDirection? direction, ObjectiveFrequency? frequency, DateOnly? dueOn, CancellationToken cancellationToken)
+        {
+            var objective = await _objectives.AddAsync(new ObjectiveInput(text, ownerId, measure, target, unit, direction, frequency, dueOn), cancellationToken);
+            TempData["Success"] = objective.IsManual
+                ? "The objective is added. Enter its first measurement."
+                : "The objective is added. The tracker measures it within the hour.";
+            return RedirectToAction(nameof(Objectives), null, $"objective-{objective.Id}");
+        }
+
+        // POST /Isms/ChangeObjective
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Objectives))]
+        public async Task<IActionResult> ChangeObjective(Guid objectiveId, string? text, Guid? ownerId, decimal? target, string? unit,
+            ObjectiveDirection? direction, ObjectiveFrequency? frequency, DateOnly? dueOn, CancellationToken cancellationToken)
+        {
+            await _objectives.ChangeAsync(objectiveId, new ObjectiveInput(text, ownerId, null, target, unit, direction, frequency, dueOn), cancellationToken);
+            return RedirectToAction(nameof(Objectives), null, $"objective-{objectiveId}");
+        }
+
+        // POST /Isms/RemoveObjective
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Objectives))]
+        public async Task<IActionResult> RemoveObjective(Guid objectiveId, CancellationToken cancellationToken)
+        {
+            await _objectives.RemoveAsync(objectiveId, cancellationToken);
+            return RedirectToAction(nameof(Objectives));
+        }
+
+        // POST /Isms/RecordMeasurement: R3, R6
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Objectives))]
+        public async Task<IActionResult> RecordMeasurement(Guid objectiveId, decimal? value, string? note, CancellationToken cancellationToken)
+        {
+            await _objectives.RecordAsync(objectiveId, value, note, cancellationToken);
+            return RedirectToAction(nameof(Objectives), null, $"objective-{objectiveId}");
         }
 
         // The requirement rows of the form: the texts, and the numbers of the rows ticked as handled

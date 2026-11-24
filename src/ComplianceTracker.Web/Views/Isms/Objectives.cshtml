@@ -1,0 +1,163 @@
+@* US-209: the information security objectives (ISO/IEC 27001 6.2) and how they are measured (9.1). R1: text, owner,
+   target, direction and frequency; R2: the tracker measures its own objectives every hour; R3: a manual objective is due
+   when its frequency has passed; R4: green, yellow or red against the target; R5: the tracker counts the projects inside
+   the ISMS scope; R6: measurements are never changed, a wrong one is corrected by a new one with a note.
+   Ids and classes used by the tests: #objectives rows with data-objective and data-colour (.objective-value,
+   .objective-due), form#add-objective, form.record-measurement, form.change-objective, form.remove-objective,
+   #objectives-read-only. *@
+@model ComplianceTracker.Application.Isms.ObjectivesView
+@using System.Globalization
+@using ComplianceTracker.Application.Isms
+@using ComplianceTracker.Domain.Isms
+@{
+    ViewData["Title"] = "Objectives";
+    string Status(ObjectiveState state) => state switch
+    {
+        ObjectiveState.OnTarget => "On target",
+        ObjectiveState.CloseToTarget => "Close to target",
+        ObjectiveState.OffTarget => "Off target",
+        _ => "Not measured"
+    };
+    string Colour(ObjectiveState state) => state switch
+    {
+        ObjectiveState.OnTarget => "green",
+        ObjectiveState.CloseToTarget => "yellow",
+        ObjectiveState.OffTarget => "red",
+        _ => "none"
+    };
+    // The trend: the last eight values as a small line, scaled to the highest value or the target
+    string Points(SecurityObjective objective)
+    {
+        var values = objective.Measurements.TakeLast(8).Select(m => m.Value).ToList();
+        if (values.Count < 2)
+        {
+            return "";
+        }
+
+        var top = Math.Max(values.Max(), objective.Target);
+        top = top == 0 ? 1 : top;
+        return string.Join(" ", values.Select((v, i) => string.Create(CultureInfo.InvariantCulture,
+            $"{i * 80.0 / (values.Count - 1):0.#},{18 - (double)(v / top) * 16:0.#}")));
+    }
+}
+
+<partial name="_IsmsNav" />
+
+<page-header heading="Objectives" heading-id="objectives-title" />
+
+<p class="text-muted">What the organisation wants to achieve with information security, and how far it has come
+    (ISO/IEC 27001 6.2 and 9.1). The tracker measures its own figures every hour over the projects inside the ISMS scope;
+    the others are measured by hand.</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+@if (!Model.CanChange)
+{
+    <p class="text-muted small" id="objectives-read-only">You can read the objectives. Members who decide compliance add them and enter measurements.</p>
+}
+
+@if (Model.Objectives.Count == 0)
+{
+    <p class="text-muted" id="objectives-empty">No objectives yet.</p>
+}
+else
+{
+    <div class="table-responsive mb-3">
+        <table class="table table-sm align-middle" id="objectives">
+            <thead>
+                <tr><th>Objective</th><th>Owner</th><th>Measured</th><th>Target</th><th>Last value</th><th>Status</th><th>Trend</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var objective in Model.Objectives)
+                {
+                    var last = objective.Last;
+                    var due = objective.IsDueForMeasurement(Model.Today);
+                    <tr id="objective-@objective.Id" data-objective="@objective.Text" data-colour="@Colour(objective.State)">
+                        <td>
+                            <strong>@objective.Text</strong>
+                            @if (objective.DueOn is { } deadline)
+                            {
+                                <div class="small text-muted">Deadline @deadline.ToString("dd-MM-yyyy")</div>
+                            }
+                            @if (Model.CanChange)
+                            {
+                                <details class="mt-1">
+                                    <summary class="small">@(objective.IsManual ? "Enter a measurement" : "Correct a measurement")</summary>
+                                    <form asp-action="RecordMeasurement" method="post" class="record-measurement d-flex flex-wrap gap-2 align-items-end mt-2">
+                                        <input type="hidden" name="objectiveId" value="@objective.Id" />
+                                        <div>
+                                            <label class="form-label small mb-0" for="value-@objective.Id">Value@(objective.Unit.Length > 0 ? $" ({objective.Unit})" : "")</label>
+                                            <input class="form-control form-control-sm ct-max-w-16" type="number" step="0.01" min="0" id="value-@objective.Id" name="value" required />
+                                        </div>
+                                        <div>
+                                            <label class="form-label small mb-0" for="note-@objective.Id">Note@(objective.IsManual ? " (optional)" : "")</label>
+                                            <input class="form-control form-control-sm" id="note-@objective.Id" name="note" maxlength="@SecurityObjective.MaxNoteLength" required="@(!objective.IsManual)" />
+                                        </div>
+                                        <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                                    </form>
+                                    <form asp-action="ChangeObjective" method="post" class="change-objective row g-2 mt-2">
+                                        <input type="hidden" name="objectiveId" value="@objective.Id" />
+                                        <partial name="_ObjectiveFields" model="(Model, objective)" />
+                                        <div class="col-12"><button type="submit" class="btn btn-sm btn-outline-primary">Save the objective</button></div>
+                                    </form>
+                                    <form asp-action="RemoveObjective" method="post" class="remove-objective mt-2" data-confirm="Remove the objective @objective.Text? Its measurements are kept.">
+                                        <input type="hidden" name="objectiveId" value="@objective.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                    </form>
+                                </details>
+                            }
+                        </td>
+                        <td>@Model.NameOf(objective.OwnerId)</td>
+                        <td class="small">@(objective.Measure is { } measure ? $"By the tracker: {ObjectiveService.Label(measure)}" : "By hand")<br /><span class="text-muted">@objective.Frequency</span></td>
+                        <td>@ObjectiveService.Target(objective)</td>
+                        <td class="objective-value">
+                            @if (last is not null)
+                            {
+                                <span>@ObjectiveService.Format(last.Value, objective.Unit)</span>
+                                <div class="small text-muted">@last.On.ToString("dd-MM-yyyy"), @Model.NameOf(last.ById)@(last.Note is { } note ? $": {note}" : "")</div>
+                            }
+                        </td>
+                        <td>
+                            <status-badge status="@Status(objective.State)" />
+                            @if (due && objective.IsManual)
+                            {
+                                <span class="objective-due"><status-badge status="Due" /></span>
+                            }
+                        </td>
+                        <td>
+                            @if (Points(objective) is { Length: > 0 } points)
+                            {
+                                <svg class="objective-trend" width="80" height="20" viewBox="0 0 80 20" role="img" aria-label="Trend of the last measurements">
+                                    <polyline points="@points" fill="none" stroke="currentColor" stroke-width="1.5" />
+                                </svg>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (Model.CanChange)
+{
+    <section class="card mb-3">
+        <div class="card-header">Add an objective</div>
+        <div class="card-body">
+            <form asp-action="AddObjective" method="post" id="add-objective" class="row g-2">
+                <div class="col-md-12">
+                    <label class="form-label small" for="measure-new">How it is measured</label>
+                    <select class="form-select form-select-sm" id="measure-new" name="measure">
+                        <option value="">By hand</option>
+                        @foreach (var measure in Enum.GetValues<TrackerMeasure>())
+                        {
+                            <option value="@measure">By the tracker: @ObjectiveService.Label(measure)</option>
+                        }
+                    </select>
+                </div>
+                <partial name="_ObjectiveFields" model="(Model, (SecurityObjective?)null)" />
+                <div class="col-12"><button type="submit" class="btn btn-sm btn-primary">Add the objective</button></div>
+            </form>
+        </div>
+    </section>
+}
