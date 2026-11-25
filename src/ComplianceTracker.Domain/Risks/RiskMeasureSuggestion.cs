@@ -26,6 +26,10 @@ namespace ComplianceTracker.Domain.Risks
 
         public bool IsPending => Status == SuggestionStatus.Pending;
 
+        // US-221 R2, R6: when the person confirmed they had read the AI's argument before approving; null for decisions
+        // made before US-221
+        public DateTime? ArgumentConfirmedAt { get; private set; }
+
         // For EF Core only
         private RiskMeasureSuggestion() { }
 
@@ -51,13 +55,14 @@ namespace ComplianceTracker.Domain.Risks
 
         public bool IsFor(Guid? requirementId, Guid? workItemId) => RequirementId == requirementId && WorkItemId == workItemId;
 
-        public void Approve(Guid userId, DateTime at, UserRole? role = null)
+        public void Approve(Guid userId, DateTime at, UserRole? role = null, DateTime? argumentConfirmedAt = null)
         {
             EnsurePending();
             Status = SuggestionStatus.Approved;
             DecidedById = userId;
             DecidedRole = role;
             DecidedAt = at;
+            ArgumentConfirmedAt = argumentConfirmedAt;
         }
 
         public void Reject(RejectionReason? reason, string? comment, Guid userId, DateTime at, UserRole? role = null)

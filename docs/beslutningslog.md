@@ -2715,6 +2715,35 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At gøre siden til landingssiden efter login (brugerens valg).
   - Udløbende certifikater og leverandørevidens i "Min uge". De har ingen ejer pr. person, så de ses på leverandør- og auditsiderne.
 
+### B175 – Dobbelt bekræftelse med AI'ens argument, før et forslag laver et link (US-221)
+
+- **Beslutning:**
+  - **Hvilke forslag:** de AI-forslag, der laver et link og dermed ændrer dækningen (brugerens valg):
+    - krav ↔ story
+    - evidens ↔ krav
+    - evidens ↔ story
+    - risikotiltag
+
+    Evidens fra testkørsler og pull requests (US-058) er ikke AI, men tags og links, og er ikke med. De andre forslag (tjeklister, "ikke relevant", "needs action", sikkerhedshændelser, dokumentlinks) beholder én bekræftelse.
+  - **Første trin:** "Approve" viser argumentet på en side for sig, og intet linkes endnu. Siden virker uden JavaScript. Et risikotiltag har argumentet og fluebenet i selve formularen, fordi den også tager evidens og filer.
+  - **Andet trin:** linket laves kun, når "I have read the argument and agree" er sat. Servicen afviser en godkendelse uden flueben, så det gælder også uden om siden. "Cancel" ændrer intet.
+  - **Argumentet har fem faste dele:**
+    1. hvad kravet beder om (kode og titel)
+    2. citatet, der opfylder det
+    3. hvad der måske mangler
+    4. hvor sikker AI'en er
+    5. modeller og hvornår
+  - **Citatet:** kun forslag om evidens ↔ krav har et citat i dag (tjekket fra US-205). Uden citat står der "No quote found: the AI's judgement only", og AI'ens begrundelse vises (brugerens valg). US-222 kan give citater til stories senere.
+  - **Sikkerheden:**
+    - High fra score 0,75, Medium fra 0,55, ellers Low.
+    - Uden citat er det højst Low, fordi det kun er AI'ens vurdering.
+    - Uden tjek står der "Not checked" under "what may be missing".
+  - **Gemmes og logges:** tidspunktet for bekræftelsen gemmes på forslaget (`ArgumentConfirmedAt`), og loggen siger "argument confirmed, confidence …". Er forslaget afgjort af en anden, siger siden hvem.
+- **Begrundelse:** AI Act art. 14 kræver, at et menneske reelt vurderer AI'ens forslag. Når argumentet skal læses og bekræftes, bliver en godkendelse et bevidst valg, ikke et klik.
+- **Fravalgt:**
+  - Et dialogvindue oven på siden. En side for sig virker uden JavaScript og med den strenge CSP; et vindue kan komme senere.
+  - At bede chat-modellen om del 1 og 3 i begrundelsen. Kravets titel og tjekkets "mangler" bruges i stedet.
+
 ## Spørgsmål til klassediagrammet
 
 Der er ingen åbne spørgsmål. De første spørgsmål fra oktober 2026 er besvaret sådan:

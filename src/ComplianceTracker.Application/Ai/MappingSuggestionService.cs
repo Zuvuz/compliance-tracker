@@ -220,11 +220,13 @@ namespace ComplianceTracker.Application.Ai
         }
 
         // US-020 R6, R9: the suggestion becomes a link with the source "AI approved"
-        public async Task ApproveAsync(Guid projectId, Guid suggestionId, CancellationToken cancellationToken = default)
+        // US-221 R2: only after the person confirmed they read the argument
+        public async Task ApproveAsync(Guid projectId, Guid suggestionId, bool argumentConfirmed, CancellationToken cancellationToken = default)
         {
+            SuggestionArgument.RequireConfirmed(argumentConfirmed);
             var (project, userId, suggestion) = await SuggestionAsync(projectId, suggestionId, cancellationToken);
             var role = (await _member.RequireAsync(cancellationToken)).User.Role;
-            suggestion.Approve(userId, Now, role);
+            suggestion.Approve(userId, Now, role, Now);
 
             var active = await _links.ListActiveAsync(project.Id, cancellationToken);
             if (!active.Any(l => l.RequirementId == suggestion.RequirementId && l.WorkItemId == suggestion.WorkItemId))
@@ -233,7 +235,9 @@ namespace ComplianceTracker.Application.Ai
                     project.Id, suggestion.RequirementId, suggestion.WorkItemId, userId, Now, LinkSource.AiApproved, role), cancellationToken);
             }
 
-            await _log.LogAsync(ActivityAction.MappingApproved, project.Id, await PairAsync(project, suggestion, cancellationToken), cancellationToken);
+            await _log.LogAsync(ActivityAction.MappingApproved, project.Id,
+                $"{await PairAsync(project, suggestion, cancellationToken)} ({SuggestionArgument.Logged(SuggestionArgument.ConfidenceOf(suggestion.Score, false))})",
+                cancellationToken);
             await SaveAndNotifyAsync(project.Id, cancellationToken);
         }
 

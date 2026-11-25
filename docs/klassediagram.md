@@ -767,6 +767,36 @@ classDiagram
   IsmsOverviewService ..> ManagementReview : status
   IsmsOverviewService ..> Organization : hidesIsmsGuide
 
+  %% ================= AI-argument og dobbelt bekræftelse (US-221) =================
+  class SuggestionArgument {
+    <<record>>
+    +Asks: string
+    +Quote: string?
+    +Missing: string
+    +Confidence: string
+    +Score: double
+    +Models: string
+    +MadeAt: DateTime
+    +Rationale: string?
+    +Build(code, title, score, quote, verdict, missing, rationale, models, promptVersion, madeAt)$ SuggestionArgument
+    +ConfidenceOf(score, hasQuote)$ string
+    +RequireConfirmed(argumentConfirmed)$
+  }
+  class SuggestionKind {
+    <<enumeration>>
+    Story
+    Evidence
+    EvidenceStory
+    Measure
+  }
+  class SuggestionArgumentService {
+    +ForAsync(projectId, kind, suggestionId) SuggestionConfirmation
+  }
+  SuggestionArgumentService ..> SuggestionArgument
+  SuggestionArgumentService ..> MappingSuggestion
+  SuggestionArgumentService ..> EvidenceLinkSuggestion
+  SuggestionArgumentService ..> EvidenceStorySuggestion
+
   %% ================= NIS2-gap-analyse =================
   class GapAnswer {
     -id: Guid
@@ -1940,6 +1970,9 @@ classDiagram
     -decidedById: Guid?
     -decidedRole: UserRole?
     -decidedAt: DateTime?
+    -argumentConfirmedAt: DateTime?
+    -argumentConfirmedAt: DateTime?
+    -argumentConfirmedAt: DateTime?
     +Create(projectId, frameworkId, requirementId, reason, contextUsed, classifiedAt, model, promptVersion, at)$ ApplicabilitySuggestion
     +Accept(userId: Guid, at: DateTime, role: UserRole?)
     +Reject(userId: Guid, at: DateTime, role: UserRole?)
@@ -2019,6 +2052,7 @@ classDiagram
     -status: SuggestionStatus
     -decidedById: Guid?
     -decidedAt: DateTime?
+    -argumentConfirmedAt: DateTime?
     -rejectionReason: RejectionReason?
     -comment: string?
     +Approve(userId: Guid, at: DateTime)

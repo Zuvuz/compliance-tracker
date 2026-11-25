@@ -267,7 +267,7 @@ namespace ComplianceTracker.Web.Controllers
         [RequestFormLimits(MultipartBodyLengthLimit = MaxEvidenceRequestSize)]
         public async Task<IActionResult> ApproveMeasure(
             Guid id, Guid suggestionId, string? evidenceTitle, string? evidenceUrl, IFormFile? evidenceFile, DateOnly? evidenceValidUntil,
-            [FromServices] MeasureEvidenceService measures, CancellationToken cancellationToken, Guid? existingEvidenceId = null)
+            [FromServices] MeasureEvidenceService measures, CancellationToken cancellationToken, Guid? existingEvidenceId = null, bool argumentConfirmed = false)
         {
             byte[]? content = null;
             if (evidenceFile is { Length: > 0 })
@@ -278,7 +278,8 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             await measures.ApproveAsync(await ProjectOfAsync(id, cancellationToken), suggestionId,
-                new MeasureEvidence(evidenceTitle, evidenceUrl, evidenceFile?.FileName, content, evidenceValidUntil, existingEvidenceId), cancellationToken);
+                new MeasureEvidence(evidenceTitle, evidenceUrl, evidenceFile?.FileName, content, evidenceValidUntil, existingEvidenceId), argumentConfirmed,
+                cancellationToken); // US-221 R2: the argument and the tick are in the form itself
             return RedirectToAction(nameof(Details), new { id });
         }
 

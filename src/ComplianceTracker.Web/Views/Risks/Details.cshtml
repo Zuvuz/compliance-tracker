@@ -382,6 +382,17 @@
                             <form asp-action="ApproveMeasure" method="post" enctype="multipart/form-data" class="approve-measure d-flex flex-wrap align-items-start gap-1" data-busy="Uploading…">
                                 <input type="hidden" name="id" value="@risk.Id" />
                                 <input type="hidden" name="suggestionId" value="@suggestion.Id" />
+                                @* US-221: the AI's argument and the second confirmation are in the form itself, as it also takes evidence *@
+                                <div class="w-100 measure-argument">
+                                    <details class="small">
+                                        <summary>Read the AI's argument</summary>
+                                        <partial name="_SuggestionArgument" model="@ComplianceTracker.Domain.Mappings.SuggestionArgument.Build("The measure", name, suggestion.Score, null, null, null, null, [suggestion.EmbeddingModel], null, suggestion.CreatedAt)" />
+                                    </details>
+                                    <div class="form-check small">
+                                        <input class="form-check-input" type="checkbox" id="argument-confirmed-@suggestion.Id" name="argumentConfirmed" value="true" required />
+                                        <label class="form-check-label" for="argument-confirmed-@suggestion.Id">I have read the argument and agree</label>
+                                    </div>
+                                </div>
                                 <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
                                 @if (canLinkWork)
                                 {

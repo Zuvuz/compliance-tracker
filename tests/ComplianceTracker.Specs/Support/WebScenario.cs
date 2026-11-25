@@ -110,6 +110,22 @@ namespace ComplianceTracker.Specs.Support
             Page = await ParseAsync(Response);
         }
 
+        // US-221: approving an AI suggestion that makes a link shows its argument first; this ticks "I have read the argument
+        // and agree" and sends the confirmation. Nothing happens when the page has no confirmation (e.g. an error was shown).
+        public async Task ConfirmArgumentAsync()
+        {
+            if (Page?.QuerySelector("form#confirm-suggestion") is not { } form)
+            {
+                return;
+            }
+
+            var fields = form.QuerySelectorAll("input[type=hidden]")
+                .Where(i => i.GetAttribute("name") is { } name && name != "__RequestVerificationToken")
+                .ToDictionary(i => i.GetAttribute("name")!, i => i.GetAttribute("value") ?? "");
+            fields["argumentConfirmed"] = "true";
+            await PostFormAsync(form.GetAttribute("action")!, fields);
+        }
+
         // The hidden antiforgery token in the current page's form, with a clear error if there is none
         public string AntiforgeryToken()
      => Page?.QuerySelector<IHtmlInputElement>("input[name='__RequestVerificationToken']")?.Value

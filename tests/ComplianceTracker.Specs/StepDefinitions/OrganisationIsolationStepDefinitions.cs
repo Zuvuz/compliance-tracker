@@ -62,6 +62,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             ["Frameworks.CrossMapping"] = "The page only takes versions the organisation's projects use, and the fixture's framework is used by none (US-037), tested in CrossMapping.feature",
             ["Projects.SealedReport"] = "Only a sealed report has this file; sealing needs a seal certificate and two signers (US-132), tested in SigningReports.feature",
             ["Projects.StatementOfApplicability"] = "Only an organisation with its own ISO/IEC 27001 has one; the fixture's one framework is a policy (US-053), tested in StatementOfApplicability.feature",
+            ["Projects.ConfirmSuggestion"] = "The fixture has no AI suggestion, so there is nothing to confirm (US-221), tested in SuggestionArgument.feature",
             ["Isms.ManagementReview"] = "The fixture has no management review, so a review id is not found (US-210), tested in ManagementReview.feature",
             ["Isms.ReviewPdf"] = "The fixture has no management review, so there is no PDF (US-210), tested in ManagementReview.feature"
         };

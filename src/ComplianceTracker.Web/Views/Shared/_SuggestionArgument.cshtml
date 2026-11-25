@@ -1,0 +1,31 @@
+@* US-221 R3: the AI's argument for a suggestion in five fixed parts. A missing quote is said plainly. Used on the
+   confirmation page and in the risk page's measure form. Classes used by the tests: .suggestion-argument with
+   .argument-asks, .argument-quote, .argument-missing, .argument-confidence, .argument-models. *@
+@model ComplianceTracker.Domain.Mappings.SuggestionArgument
+@using ComplianceTracker.Domain.Mappings
+<dl class="row small mb-2 suggestion-argument">
+    <dt class="col-sm-4">1. What the requirement asks for</dt>
+    <dd class="col-sm-8 argument-asks">@Model.Asks</dd>
+    <dt class="col-sm-4">2. What meets it</dt>
+    <dd class="col-sm-8 argument-quote">
+        @if (Model.Quote is { } quote)
+        {
+            <blockquote class="mb-0 border-start ps-2">“@quote”</blockquote>
+        }
+        else
+        {
+            <span class="text-muted">@SuggestionArgument.NoQuote</span>
+        }
+        @if (Model.Rationale is { } rationale)
+        {
+            <div class="text-muted mt-1"><span class="badge text-bg-info">AI-generated</span> @rationale</div>
+        }
+    </dd>
+    <dt class="col-sm-4">3. What may be missing</dt>
+    <dd class="col-sm-8 argument-missing">@Model.Missing</dd>
+    <dt class="col-sm-4">4. How sure</dt>
+    <dd class="col-sm-8 argument-confidence" title="Score @Model.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)">@Model.Confidence
+        <span class="text-muted">(score @Model.Score.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)@(Model.HasQuote ? "" : "; without a quote at most Low"))</span></dd>
+    <dt class="col-sm-4">5. Model and when</dt>
+    <dd class="col-sm-8 argument-models">@Model.Models, @Model.MadeAt.ToLocalTime().ToString("dd-MM-yyyy")</dd>
+</dl>

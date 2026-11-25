@@ -50,6 +50,10 @@ namespace ComplianceTracker.Domain.Mappings
 
         public bool IsPending => Status == SuggestionStatus.Pending;
 
+        // US-221 R2, R6: when the person confirmed they had read the AI's argument before approving; null for decisions
+        // made before US-221
+        public DateTime? ArgumentConfirmedAt { get; private set; }
+
         // For EF Core only
         private MappingSuggestion() { }
 
@@ -95,13 +99,14 @@ namespace ComplianceTracker.Domain.Mappings
         }
 
         // US-020 R6: the caller creates the link
-        public void Approve(Guid userId, DateTime at, UserRole? role = null)
+        public void Approve(Guid userId, DateTime at, UserRole? role = null, DateTime? argumentConfirmedAt = null)
         {
             EnsurePending();
             DecidedRole = role;
             Status = SuggestionStatus.Approved;
             DecidedById = userId;
             DecidedAt = at;
+            ArgumentConfirmedAt = argumentConfirmedAt;
         }
 
         // US-020 R7: a reason from the fixed list is required; "Other" also needs a comment

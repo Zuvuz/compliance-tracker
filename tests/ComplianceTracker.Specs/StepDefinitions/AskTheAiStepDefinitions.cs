@@ -42,6 +42,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             var form = Row(code).QuerySelectorAll(".ai-evidence-suggestion").Single(s => s.GetAttribute("data-evidence") == title)
                 .QuerySelector("form.approve-row-evidence-suggestion")!;
             await _web.PostFormAsync(form.GetAttribute("action")!, Hidden(form));
+            await _web.ConfirmArgumentAsync(); // US-221
             await _compliance.OpenSubTabWithAsync(Project, code);
         }
 
@@ -89,7 +90,9 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             var form = _web.Page!.QuerySelectorAll(".measure-suggestion").FirstOrDefault(m => m.GetAttribute("data-measure")!.StartsWith(code + " ", StringComparison.Ordinal))
                 ?.QuerySelector("form.approve-measure") ?? throw new Xunit.Sdk.XunitException($"'{code}' is not suggested.");
-            await _web.PostFormAsync(form.GetAttribute("action")!, Hidden(form));
+            var fields = Hidden(form);
+            fields["argumentConfirmed"] = "true"; // US-221: the tick in the form
+            await _web.PostFormAsync(form.GetAttribute("action")!, fields);
         }
 
         // ---------------------------------------------------------- Then

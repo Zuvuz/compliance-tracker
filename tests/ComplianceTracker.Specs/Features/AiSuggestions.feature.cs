@@ -639,7 +639,8 @@ namespace ComplianceTracker.Specs.Features
                         " Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 89
-    await testRunner.AndAsync("the \"MappingApproved\" entry says \"SP-1 ↔ [US-004] Sign in with OpenID Connect\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the \"MappingApproved\" entry says \"SP-1 ↔ [US-004] Sign in with OpenID Connect (ar" +
+                        "gument confirmed, confidence Low)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

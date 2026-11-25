@@ -18,7 +18,7 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.14")
+                .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -4485,6 +4485,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("ArgumentConfirmedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("CheckMissing")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
@@ -4641,6 +4644,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ArgumentConfirmedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Comment")
                         .HasMaxLength(1000)
@@ -4808,6 +4814,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ArgumentConfirmedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Comment")
                         .HasMaxLength(1000)
@@ -7241,6 +7250,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ArgumentConfirmedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Comment")
                         .HasMaxLength(1000)

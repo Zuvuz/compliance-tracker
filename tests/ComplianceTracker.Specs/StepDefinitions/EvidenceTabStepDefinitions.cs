@@ -158,6 +158,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await OpenTabAsync(Project);
             var form = Suggestion(title, code)!.QuerySelector("form.approve-evidence-suggestion")!;
             await _web.PostFormAsync(form.GetAttribute("action")!, HiddenFields(form));
+            await _web.ConfirmArgumentAsync(); // US-221
         }
 
         [When("I ask for more evidence suggestions for {string}")]

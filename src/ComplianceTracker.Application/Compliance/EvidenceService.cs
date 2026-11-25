@@ -269,22 +269,26 @@ namespace ComplianceTracker.Application.Compliance
         }
 
         // R4: approving creates the link (source AiApproved)
-        public async Task ApproveAsync(Guid projectId, Guid suggestionId, CancellationToken cancellationToken = default)
+        // US-221 R2: only after the person confirmed they read the argument
+        public async Task ApproveAsync(Guid projectId, Guid suggestionId, bool argumentConfirmed, CancellationToken cancellationToken = default)
         {
+            SuggestionArgument.RequireConfirmed(argumentConfirmed);
             var (organizationId, user, project) = await OpenProjectAsync(projectId, cancellationToken);
             var suggestion = await RequireSuggestionAsync(project, suggestionId, cancellationToken);
             var evidence = await RequireEvidenceAsync(project, suggestion.EvidenceId, cancellationToken);
             var requirement = (await RequirementsOfProjectAsync(organizationId, project, cancellationToken)).GetValueOrDefault(suggestion.RequirementId)
                 ?? throw new DomainException("The requirement is not in a framework version the project follows");
 
-            suggestion.Approve(user.Id, Now, user.Role);
+            suggestion.Approve(user.Id, Now, user.Role, Now);
             if (!(await _evidence.ListActiveLinksAsync(project.Id, cancellationToken)).Any(l => l.EvidenceId == evidence.Id && l.RequirementId == requirement.Id))
             {
                 await _evidence.AddLinkAsync(
                     EvidenceLink.Create(project.Id, evidence.Id, requirement.Id, user.Id, user.Role, Now, LinkSource.AiApproved), cancellationToken);
             }
 
-            await _log.LogAsync(ActivityAction.EvidenceLinkApproved, project.Id, $"{requirement.Code}: {evidence.Title}", cancellationToken);
+            await _log.LogAsync(ActivityAction.EvidenceLinkApproved, project.Id,
+                $"{requirement.Code}: {evidence.Title} ({SuggestionArgument.Logged(SuggestionArgument.ConfidenceOf(suggestion.Score, suggestion.CheckPassage is not null))})",
+                cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
@@ -345,14 +349,17 @@ namespace ComplianceTracker.Application.Compliance
         }
 
         // R6: approving links them (source AiApproved)
-        public async Task ApproveStoryAsync(Guid projectId, Guid suggestionId, CancellationToken cancellationToken = default)
+        // US-221 R2: only after the person confirmed they read the argument
+        public async Task ApproveStoryAsync(Guid projectId, Guid suggestionId, bool argumentConfirmed, CancellationToken cancellationToken = default)
         {
+            SuggestionArgument.RequireConfirmed(argumentConfirmed);
             var (_, user, project) = await OpenProjectAsync(projectId, cancellationToken);
             var suggestion = await RequireStorySuggestionAsync(project, suggestionId, cancellationToken);
             var evidence = await RequireEvidenceAsync(project, suggestion.EvidenceId, cancellationToken);
             var story = await RequireStoryAsync(project, suggestion.WorkItemId, cancellationToken);
-            suggestion.Approve(user.Id, Now, user.Role);
-            await AddStoryLinkAsync(project, evidence, story, user, LinkSource.AiApproved, cancellationToken);
+            suggestion.Approve(user.Id, Now, user.Role, Now);
+            await AddStoryLinkAsync(project, evidence, story, user, LinkSource.AiApproved, cancellationToken,
+                SuggestionArgument.Logged(SuggestionArgument.ConfidenceOf(suggestion.Score, false)));
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
@@ -400,7 +407,8 @@ namespace ComplianceTracker.Application.Compliance
             return evidence;
         }
 
-        private async Task AddStoryLinkAsync(Project project, Evidence evidence, Domain.WorkItems.WorkItem story, User user, LinkSource source, CancellationToken cancellationToken)
+        private async Task AddStoryLinkAsync(Project project, Evidence evidence, Domain.WorkItems.WorkItem story, User user, LinkSource source, CancellationToken cancellationToken,
+            string? confirmed = null)
         {
             if ((await _stories.ListActiveLinksAsync(project.Id, cancellationToken)).Any(l => l.EvidenceId == evidence.Id && l.WorkItemId == story.Id))
             {
@@ -415,7 +423,7 @@ namespace ComplianceTracker.Application.Compliance
             }
 
             await _log.LogAsync(ActivityAction.EvidenceLinkedToStory, project.Id,
-                $"{story.Title}: {evidence.Title}{(source == LinkSource.AiApproved ? " (AI suggestion approved)" : "")}", cancellationToken);
+                $"{story.Title}: {evidence.Title}{(source == LinkSource.AiApproved ? $" (AI suggestion approved{(confirmed is null ? "" : $", {confirmed}")})" : "")}", cancellationToken);
         }
 
         private async Task<Domain.WorkItems.WorkItem> RequireStoryAsync(Project project, Guid workItemId, CancellationToken cancellationToken)

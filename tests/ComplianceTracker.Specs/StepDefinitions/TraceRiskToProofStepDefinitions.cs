@@ -59,6 +59,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             await OpenTabAsync("evidence");
             var form = StorySuggestion(title, story).QuerySelector("form.approve-evidence-story-suggestion")!;
             await _web.PostFormAsync(form.GetAttribute("action")!, Hidden(form));
+            await _web.ConfirmArgumentAsync(); // US-221
             await WhenIOpenTheEvidence(title);
         }
 

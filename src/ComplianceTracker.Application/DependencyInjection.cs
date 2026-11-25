@@ -41,6 +41,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<VersionCarryOver>(); // US-069 R6
             services.AddScoped<MappingSuggestionService>();
             services.AddScoped<AskTheAiService>(); // US-106
+            services.AddScoped<SuggestionArgumentService>(); // US-221
             services.AddScoped<StoryDraftLinker>(); // US-106 R5
             services.AddScoped<GapDraftService>(); // US-108
             services.AddScoped<Projects.GapFinder>(); // US-119

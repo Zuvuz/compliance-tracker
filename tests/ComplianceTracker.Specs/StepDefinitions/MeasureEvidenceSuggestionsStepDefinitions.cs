@@ -47,6 +47,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             }
 
             content.Add(new StringContent(choice.GetAttribute("value")!), "existingEvidenceId");
+            content.Add(new StringContent("true"), "argumentConfirmed"); // US-221: the tick in the form
             _web.Response = await _web.Client.PostAsync(form.GetAttribute("action")!, content);
             _web.Page = await WebScenario.ParseAsync(_web.Response);
             Assert.True(_web.Response.IsSuccessStatusCode, $"Approving answered {(int)_web.Response.StatusCode}");

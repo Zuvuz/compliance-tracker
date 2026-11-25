@@ -67,6 +67,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             var form = Row(code).QuerySelector("form.approve-suggestion")
                 ?? throw new Xunit.Sdk.XunitException($"The row '{code}' has no Approve button.");
             await _web.PostFormAsync(form.GetAttribute("action")!, HiddenFields(form));
+            await _web.ConfirmArgumentAsync(); // US-221
         }
 
         // Another member, with their own sign-in; the page is kept for the Then steps

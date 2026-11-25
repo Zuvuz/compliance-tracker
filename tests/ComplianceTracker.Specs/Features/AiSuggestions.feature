@@ -86,4 +86,4 @@ Feature: The local AI suggests mappings, and every decision is kept
     And I have clicked "Suggest mappings" for "Acme Portal"
     When I approve the suggestion "SP-1" for "[US-004] Sign in with OpenID Connect"
     Then the activity log for "Acme ApS" has "MappingApproved" for "Anna" concerning "Acme Portal"
-    And the "MappingApproved" entry says "SP-1 ↔ [US-004] Sign in with OpenID Connect"
+    And the "MappingApproved" entry says "SP-1 ↔ [US-004] Sign in with OpenID Connect (argument confirmed, confidence Low)"

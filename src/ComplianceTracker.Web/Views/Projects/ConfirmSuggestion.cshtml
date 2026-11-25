@@ -1,0 +1,68 @@
+@* US-221: the second step of approving an AI suggestion that makes a link. R1: the argument is shown first and nothing is
+   linked yet; R2: the link is made only with "I have read the argument and agree" ticked; R4: Cancel changes nothing;
+   R5: a suggestion someone else decided first says who.
+   Ids used by the tests: #suggestion-confirmation, form#confirm-suggestion with the checkbox #argument-confirmed,
+   a#cancel-suggestion, #suggestion-decided. *@
+@model ComplianceTracker.Application.Ai.SuggestionConfirmation
+@using ComplianceTracker.Domain.Mappings
+@{
+    ViewData["Title"] = "Approve the AI suggestion";
+    var back = ViewData["Back"] as string ?? Url.Action("Details", new { id = Model.ProjectId });
+    var action = Model.Kind switch
+    {
+        SuggestionKind.Evidence => "ApproveEvidenceSuggestion",
+        SuggestionKind.EvidenceStory => "ApproveEvidenceStorySuggestion",
+        _ => "ApproveSuggestion"
+    };
+    var what = Model.Kind switch
+    {
+        SuggestionKind.Evidence => "evidence for the requirement",
+        SuggestionKind.EvidenceStory => "evidence for the user story",
+        _ => "the user story covering the requirement"
+    };
+}
+
+<page-header heading="Approve the AI suggestion" heading-id="confirm-title" back-href="@back" back-text="Back without approving" />
+
+<section class="card mb-3" id="suggestion-confirmation">
+    <div class="card-body">
+        <p class="mb-1 text-muted small">@Model.ProjectName · the AI suggests @what</p>
+        <p class="mb-3"><strong>@Model.Item</strong> → <strong>@Model.Target</strong></p>
+
+        <partial name="_SuggestionArgument" model="Model.Argument" />
+
+        @if (!Model.IsPending)
+        {
+            <div class="alert alert-info mb-0" id="suggestion-decided" role="status">
+                Nothing was changed: this suggestion was @Model.Status.ToString().ToLowerInvariant()@(Model.DecidedBy is { } by ? $" by {by}" : "") before you confirmed.
+            </div>
+        }
+        else
+        {
+            <form asp-action="@action" method="post" id="confirm-suggestion" class="mt-3">
+                <input type="hidden" name="projectId" value="@Model.ProjectId" />
+                <input type="hidden" name="suggestionId" value="@Model.SuggestionId" />
+                @if (ViewData["Sub"] is string sub)
+                {
+                    <input type="hidden" name="sub" value="@sub" />
+                }
+                @if (ViewData["Show"] is string show)
+                {
+                    <input type="hidden" name="show" value="@show" />
+                }
+                @if (ViewData["Req"] is string req)
+                {
+                    <input type="hidden" name="req" value="@req" />
+                }
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="argument-confirmed" name="argumentConfirmed" value="true" required />
+                    <label class="form-check-label" for="argument-confirmed">I have read the argument and agree</label>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="submit" class="btn btn-primary">Confirm link</button>
+                    <a class="btn btn-outline-secondary" id="cancel-suggestion" href="@back">Cancel</a>
+                </div>
+            </form>
+        }
+    </div>
+</section>
