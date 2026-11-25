@@ -459,6 +459,10 @@ namespace ComplianceTracker.Domain.ActivityLog
         // US-213: a competence or a person without a user was added or removed, or a training was recorded (CompetenceChanged);
         // a member confirmed they read the current version of a policy (PolicyConfirmed). SubjectId points at the organisation.
         CompetenceChanged,
-        PolicyConfirmed
+        PolicyConfirmed,
+
+        // US-215: a task in the yearly plan was added (by hand or from the starting plan), removed, or done (Details names the
+        // day, the evidence file and the next deadline). SubjectId points at the organisation.
+        RecurringTaskChanged
     }
 }

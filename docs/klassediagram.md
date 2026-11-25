@@ -623,6 +623,60 @@ classDiagram
   CompetenceService --> ICompetenceRepository
   TrackerMeasures ..> CompetenceService : policies read
 
+  %% ================= Årshjul (US-215) =================
+  class RecurringTask {
+    -id: Guid
+    -organizationId: Guid
+    -title: string
+    -description: string?
+    -interval: TaskInterval
+    -ownerId: Guid
+    -nextDueOn: DateOnly
+    -controls: List~string~
+    -evidenceNeeded: string?
+    -suggestionKey: string?
+    -removedAt: DateTime?
+    -completions: List~TaskCompletion~
+    +Create(organizationId, title, description, interval, ownerId, firstDueOn, controls, evidenceNeeded, suggestionKey, at)$ RecurringTask
+    +Complete(doneOn, byId, note, evidenceDocumentId, today, at) TaskCompletion
+    +IsOverdue(today) bool
+    +DeadlinesUntil(until) List~DateOnly~
+    +Next(due, interval)$ DateOnly
+  }
+  class TaskCompletion {
+    -id: Guid
+    -taskId: Guid
+    -dueOn: DateOnly
+    -doneOn: DateOnly
+    -byId: Guid
+    -note: string?
+    -evidenceDocumentId: Guid?
+    +WasLate: bool
+  }
+  class TaskSuggestion {
+    <<record>>
+    +Key: string
+    +Title: string
+    +Interval: TaskInterval
+    +Controls: List~string~
+    +Evidence: string?
+    +Trigger: string?
+    +For(applicableControls, accepted)$ List~TaskSuggestion~
+  }
+  class YearlyPlanService {
+    +ViewAsync() YearlyPlanView
+    +AddAsync(input) RecurringTask
+    +AcceptSuggestionAsync(key, ownerId, firstDueOn) RecurringTask
+    +CompleteAsync(taskId, doneOn, note, fileName, content) TaskCompletion
+    +RaiseNonconformityAsync(taskId) Nonconformity
+  }
+  RecurringTask "*" --> "1" Organization
+  RecurringTask "1" *-- "*" TaskCompletion : completions
+  TaskCompletion "*" --> "0..1" OrganisationDocument : evidence
+  YearlyPlanService --> IRecurringTaskRepository
+  YearlyPlanService ..> OrganisationDocumentService : evidence to the controls
+  YearlyPlanService ..> Nonconformity : overdue becomes
+
   %% ================= NIS2-gap-analyse =================
   class GapAnswer {
     -id: Guid

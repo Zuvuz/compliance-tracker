@@ -22,11 +22,13 @@ namespace ComplianceTracker.Web.Controllers
         private readonly ObjectiveService _objectives;
         private readonly AuditProgrammeService _programme;
         private readonly CompetenceService _competence;
+        private readonly YearlyPlanService _plan;
         private readonly CurrentMember _member;
 
         public IsmsController(IsmsScopeService scope, AssetService assets, NonconformityService nonconformities, ObjectiveService objectives,
-            AuditProgrammeService programme, CompetenceService competence, CurrentMember member)
+            AuditProgrammeService programme, CompetenceService competence, YearlyPlanService plan, CurrentMember member)
         {
+            _plan = plan;
             _competence = competence;
             _programme = programme;
             _objectives = objectives;
@@ -531,6 +533,82 @@ namespace ComplianceTracker.Web.Controllers
         {
             await _competence.ConfirmPolicyAsync(documentId, cancellationToken);
             return RedirectToAction(nameof(Competence), null, "policies-to-read");
+        }
+
+        // ---------------------------------------------------------- US-215: the yearly plan
+
+        // GET /Isms/YearlyPlan: every member reads the plan
+        [HttpGet]
+        public async Task<IActionResult> YearlyPlan(CancellationToken cancellationToken)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is null)
+            {
+                return RedirectToAction("Create", "Organizations");
+            }
+
+            return View(await _plan.ViewAsync(cancellationToken));
+        }
+
+        // POST /Isms/AddRecurringTask: R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(YearlyPlan))]
+        public async Task<IActionResult> AddRecurringTask(string? title, string? description, TaskInterval? interval, Guid? ownerId, DateOnly? nextDueOn,
+            string? controls, string? evidenceNeeded, CancellationToken cancellationToken)
+        {
+            var task = await _plan.AddAsync(new RecurringTaskInput(title, description, interval, ownerId, nextDueOn, controls, evidenceNeeded), cancellationToken);
+            return RedirectToAction(nameof(YearlyPlan), null, $"task-{task.Id}");
+        }
+
+        // POST /Isms/AcceptTaskSuggestion: R6
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(YearlyPlan))]
+        public async Task<IActionResult> AcceptTaskSuggestion(string? key, Guid? ownerId, DateOnly? nextDueOn, CancellationToken cancellationToken)
+        {
+            var task = await _plan.AcceptSuggestionAsync(key, ownerId, nextDueOn, cancellationToken);
+            return RedirectToAction(nameof(YearlyPlan), null, $"task-{task.Id}");
+        }
+
+        // POST /Isms/RemoveRecurringTask
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(YearlyPlan))]
+        public async Task<IActionResult> RemoveRecurringTask(Guid taskId, CancellationToken cancellationToken)
+        {
+            await _plan.RemoveAsync(taskId, cancellationToken);
+            return RedirectToAction(nameof(YearlyPlan));
+        }
+
+        // POST /Isms/CompleteRecurringTask: R2, R3, R4, with the evidence file
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(20 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 20 * 1024 * 1024)]
+        [OnDomainError(nameof(YearlyPlan))]
+        public async Task<IActionResult> CompleteRecurringTask(Guid taskId, DateOnly? doneOn, string? note, IFormFile? file, CancellationToken cancellationToken)
+        {
+            byte[]? content = null;
+            if (file is { Length: > 0 })
+            {
+                using var memory = new MemoryStream();
+                await file.CopyToAsync(memory, cancellationToken);
+                content = memory.ToArray();
+            }
+
+            await _plan.CompleteAsync(taskId, doneOn, note, file?.FileName, content, cancellationToken);
+            TempData["Success"] = "The task is done.";
+            return RedirectToAction(nameof(YearlyPlan), null, $"task-{taskId}");
+        }
+
+        // POST /Isms/RecurringTaskNonconformity: R5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(YearlyPlan))]
+        public async Task<IActionResult> RecurringTaskNonconformity(Guid taskId, CancellationToken cancellationToken)
+        {
+            var nonconformity = await _plan.RaiseNonconformityAsync(taskId, cancellationToken);
+            return RedirectToAction(nameof(Nonconformities), null, $"nonconformity-{nonconformity.Id}");
         }
 
         // The requirement rows of the form: the texts, and the numbers of the rows ticked as handled

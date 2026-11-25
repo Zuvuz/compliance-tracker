@@ -1,0 +1,195 @@
+@* US-215: the ISMS yearly plan (ISO/IEC 27001 8.1): recurring tasks with an interval, an owner and a deadline. R2: done
+   moves the deadline by the interval; R3: a task that needs evidence needs a file; R4: the file is linked to the task's
+   controls; R5: an overdue task can become a nonconformity; R6: the starting plan is only suggested.
+   Ids and classes used by the tests: #task-suggestions items with data-suggestion (form.accept-suggestion), #year-wheel
+   months with data-month, #recurring-tasks rows with data-task, data-due and data-overdue (form.complete-task,
+   form.task-nonconformity), form#add-task, #yearly-plan-read-only. *@
+@model ComplianceTracker.Application.Isms.YearlyPlanView
+@using ComplianceTracker.Domain.Isms
+@{
+    ViewData["Title"] = "Yearly plan";
+}
+
+<partial name="_IsmsNav" />
+
+<page-header heading="Yearly plan" heading-id="yearly-plan-title" />
+
+<p class="text-muted">The tasks that keep the ISMS running, each with an owner and a deadline (ISO/IEC 27001 8.1). When a task is
+    done, its evidence goes to the controls it shows, and the next deadline comes from the interval.</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+@if (!Model.CanChange)
+{
+    <p class="text-muted small" id="yearly-plan-read-only">You can read the plan. Members who decide compliance add tasks and mark them done.</p>
+}
+
+@if (Model.CanChange && Model.Suggestions.Count > 0)
+{
+    <section class="card mb-3" id="task-suggestions">
+        <div class="card-header">Suggested from your controls</div>
+        <div class="card-body small">
+            <p class="text-muted">Nothing is added before you accept it.</p>
+            @foreach (var suggestion in Model.Suggestions)
+            {
+                <form asp-action="AcceptTaskSuggestion" method="post" class="accept-suggestion d-flex flex-wrap gap-2 align-items-end mb-2" data-suggestion="@suggestion.Title">
+                    <input type="hidden" name="key" value="@suggestion.Key" />
+                    <div class="ct-min-w-12">
+                        <strong>@suggestion.Title</strong>
+                        <div class="text-muted">@suggestion.Interval, @string.Join(", ", suggestion.Controls)@(suggestion.Evidence is { } evidence ? $", needs {evidence}" : "")</div>
+                    </div>
+                    <div>
+                        <label class="form-label small mb-0" for="suggestion-owner-@suggestion.Key">Owner</label>
+                        <select class="form-select form-select-sm" id="suggestion-owner-@suggestion.Key" name="ownerId" required>
+                            @foreach (var member in Model.Members.OrderBy(m => m.Value, StringComparer.OrdinalIgnoreCase))
+                            {
+                                <option value="@member.Key">@member.Value</option>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label small mb-0" for="suggestion-due-@suggestion.Key">First deadline</label>
+                        <input class="form-control form-control-sm" type="date" id="suggestion-due-@suggestion.Key" name="nextDueOn" required />
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Add to the plan</button>
+                </form>
+            }
+        </div>
+    </section>
+}
+
+<section class="mb-4">
+    <h2 class="h5">The next twelve months</h2>
+    <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-2" id="year-wheel">
+        @foreach (var month in Model.Months)
+        {
+            <div class="col" data-month="@month.Month.ToString("yyyy-MM")">
+                <div class="border rounded p-2 h-100 small">
+                    <strong>@month.Month.ToString("MMM yyyy", System.Globalization.CultureInfo.InvariantCulture)</strong>
+                    @foreach (var (task, due) in month.Deadlines)
+                    {
+                        <div class="@(due < Model.Today ? "text-danger" : "")">@due.ToString("dd") @task.Title</div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</section>
+
+<section class="mb-4">
+    <h2 class="h5">Tasks</h2>
+    @if (Model.Tasks.Count == 0)
+    {
+        <p class="text-muted small" id="recurring-tasks-empty">No tasks yet.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm align-middle" id="recurring-tasks">
+                <thead><tr><th>Task</th><th>Every</th><th>Owner</th><th>Controls</th><th>Next deadline</th><th>Last done</th></tr></thead>
+                <tbody>
+                    @foreach (var task in Model.Tasks)
+                    {
+                        var overdue = task.IsOverdue(Model.Today);
+                        var last = task.Completions.FirstOrDefault();
+                        <tr id="task-@task.Id" data-task="@task.Title" data-due="@task.NextDueOn.ToString("yyyy-MM-dd")" data-overdue="@overdue.ToString().ToLowerInvariant()">
+                            <td>
+                                <strong>@task.Title</strong>
+                                @if (task.EvidenceNeeded is { } evidence)
+                                {
+                                    <div class="small text-muted">Needs evidence: @evidence</div>
+                                }
+                                @if (Model.CanChange)
+                                {
+                                    <details class="mt-1">
+                                        <summary class="small">Mark as done</summary>
+                                        <form asp-action="CompleteRecurringTask" method="post" enctype="multipart/form-data" class="complete-task d-flex flex-wrap gap-2 align-items-end mt-2" data-busy="Uploading…">
+                                            <input type="hidden" name="taskId" value="@task.Id" />
+                                            <div>
+                                                <label class="form-label small mb-0" for="done-@task.Id">Done on</label>
+                                                <input class="form-control form-control-sm" type="date" id="done-@task.Id" name="doneOn" value="@Model.Today.ToString("yyyy-MM-dd")" required />
+                                            </div>
+                                            <div>
+                                                <label class="form-label small mb-0" for="file-@task.Id">Evidence@(task.EvidenceNeeded is null ? " (optional)" : "")</label>
+                                                <input class="form-control form-control-sm" type="file" id="file-@task.Id" name="file" required="@(task.EvidenceNeeded is not null)" />
+                                            </div>
+                                            <div>
+                                                <label class="form-label small mb-0" for="note-@task.Id">Note</label>
+                                                <input class="form-control form-control-sm" id="note-@task.Id" name="note" maxlength="@RecurringTask.MaxTextLength" />
+                                            </div>
+                                            <button type="submit" class="btn btn-sm btn-primary">Done</button>
+                                        </form>
+                                        <form asp-action="RemoveRecurringTask" method="post" class="remove-task mt-2" data-confirm="Remove @task.Title from the plan? What was done is kept.">
+                                            <input type="hidden" name="taskId" value="@task.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                        </form>
+                                    </details>
+                                }
+                            </td>
+                            <td>@task.Interval</td>
+                            <td>@Model.NameOf(task.OwnerId)</td>
+                            <td class="small">@string.Join(", ", task.Controls)</td>
+                            <td>
+                                @task.NextDueOn.ToString("dd-MM-yyyy")
+                                @if (overdue)
+                                {
+                                    <status-badge status="Overdue" />
+                                    @if (Model.CanChange)
+                                    {
+                                        <form asp-action="RecurringTaskNonconformity" method="post" class="task-nonconformity mt-1">
+                                            <input type="hidden" name="taskId" value="@task.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Raise a nonconformity</button>
+                                        </form>
+                                    }
+                                }
+                            </td>
+                            <td class="small">@(last is null ? "" : $"{last.DoneOn:dd-MM-yyyy} by {Model.NameOf(last.ById)}{(last.WasLate ? " (late)" : "")}")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    @if (Model.CanChange)
+    {
+        <form asp-action="AddRecurringTask" method="post" id="add-task" class="card card-body small row g-2 mx-0">
+            <strong>Add a task</strong>
+            <div class="col-md-6">
+                <label class="form-label small" for="task-title">Title</label>
+                <input class="form-control form-control-sm" id="task-title" name="title" maxlength="@RecurringTask.MaxTitleLength" required />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small" for="task-interval">Every</label>
+                <select class="form-select form-select-sm" id="task-interval" name="interval">
+                    @foreach (var interval in Enum.GetValues<TaskInterval>())
+                    {
+                        <option value="@interval" selected="@(interval == TaskInterval.Quarterly)">@interval</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small" for="task-due">First deadline</label>
+                <input class="form-control form-control-sm" type="date" id="task-due" name="nextDueOn" required />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small" for="task-owner">Owner</label>
+                <select class="form-select form-select-sm" id="task-owner" name="ownerId" required>
+                    @foreach (var member in Model.Members.OrderBy(m => m.Value, StringComparer.OrdinalIgnoreCase))
+                    {
+                        <option value="@member.Key">@member.Value</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small" for="task-controls">Controls or clauses <span class="text-muted">(e.g. A.5.18, 9.3)</span></label>
+                <input class="form-control form-control-sm" id="task-controls" name="controls" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small" for="task-evidence">Evidence needed <span class="text-muted">(empty: none)</span></label>
+                <input class="form-control form-control-sm" id="task-evidence" name="evidenceNeeded" maxlength="@RecurringTask.MaxTextLength" />
+            </div>
+            <div class="col-12"><button type="submit" class="btn btn-sm btn-primary">Add the task</button></div>
+        </form>
+    }
+</section>

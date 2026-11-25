@@ -2641,6 +2641,29 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At uploade et bevis-dokument for hver uddannelse. Indtil videre er det en tekst.
   - "Policies to read" på startsiden. Den kommer med US-216.
 
+### B172 – Årshjulet: faste opgaver, hvis evidens bliver organisationsdokumenter (US-215)
+
+- **Beslutning:**
+  - **Siden "Yearly plan"** ligger i ISMS-området. Den har:
+    - et årshjul over de næste 12 måneder med hver frist; forfaldne vises i denne måned
+    - en liste over opgaverne
+  - **En fast opgave** har:
+    - titel og interval (månedlig, kvartalsvis, halvårlig eller årlig)
+    - ejer og næste frist
+    - de kontroller eller klausuler, den viser
+    - hvilken evidens den kræver, hvis nogen
+  - **Udført:** når en opgave er udført, bliver næste frist den gamle frist plus intervallet, ikke den dag, den blev udført. Sidste dag i en måned forbliver sidste dag (2026-12-31 → 2027-03-31). En opgave, der kræver evidens, kan ikke udføres uden en fil.
+  - **Evidensen bliver et organisationsdokument** (US-136) af arten Other, fx "Access review 2027-01-05". Det kobles til opgavens kontroller i organisationens ISO/IEC 27001. Så får hvert projekt, der følger kontrollen, det som evidens på samme måde som politikkerne (US-057). Har organisationen ikke ISO/IEC 27001, gemmes filen uden koblinger.
+  - **Afvigelse:** en forfalden opgave kan med ét klik blive en afvigelse (US-212) med kilden Missed deadline, kun én ad gangen.
+  - **Startplanen** foreslås, og intet lægges ind, før personen accepterer forslaget med ejer og første frist.
+    - Forslag ud fra kontroller i brug i SoA'en: A.5.18 adgangsgennemgang, A.8.13 restore-test, A.5.1 gennemgang af politikker, A.8.8 sårbarhedsscanninger, A.5.24 beredskabsøvelse, A.6.3 awareness og A.5.19 leverandørgennemgang.
+    - Forslag, der altid kommer: gennemgang af risikovurderingen, intern audit og ledelsens gennemgang.
+  - **Log:** ændringer logges som `RecurringTaskChanged`.
+- **Begrundelse:** ISO 27001 8.1 kræver, at det planlagte bliver gjort. Når evidensen følger med opgaven, bliver kontrollerne dokumenteret, mens arbejdet gøres.
+- **Fravalgt:**
+  - Påmindelser om frister (US-183). De kan komme senere.
+  - Et cirkulært hjul som grafik. Månederne vises som et gitter, der også virker på en telefon.
+
 ## Spørgsmål til klassediagrammet
 
 Der er ingen åbne spørgsmål. De første spørgsmål fra oktober 2026 er besvaret sådan:
