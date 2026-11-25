@@ -100,6 +100,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped<ComplianceTracker.Application.Isms.INonconformityRepository, NonconformityRepository>(); // US-212
                 services.AddScoped<ComplianceTracker.Application.Isms.ISecurityObjectiveRepository, SecurityObjectiveRepository>(); // US-209
                 services.AddScoped<ComplianceTracker.Application.Isms.IAuditProgrammeRepository, AuditProgrammeRepository>(); // US-211
+                services.AddScoped<ComplianceTracker.Application.Isms.ICompetenceRepository, CompetenceRepository>(); // US-213
                 services.AddScoped<ComplianceTracker.Application.Reminders.IReminderRepository, ReminderRepository>(); // US-183
                 services.AddScoped<ComplianceTracker.Application.Projects.IProjectChecklistRepository, ProjectChecklistRepository>(); // US-047
                 services.AddScoped<ComplianceTracker.Application.Projects.IOrganisationChecklistRepository, OrganisationChecklistRepository>(); // US-192

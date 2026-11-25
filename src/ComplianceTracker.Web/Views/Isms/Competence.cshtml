@@ -1,0 +1,194 @@
+@* US-213: competence and awareness (ISO/IEC 27001 7.2, 7.3). R1: the competences and the roles that need them; R2: a
+   training is valid until its renewal; R3: a new version of a policy must be read again; R4: each member confirms a policy
+   themself; R5: people who left are not counted.
+   Ids and classes used by the tests: #policies-to-read items with data-policy (form.confirm-policy), #competence-matrix rows
+   with data-person and cells with data-competence and data-state, #policy-readers rows with data-policy (.policy-not-read),
+   form#add-competence, form#record-training, form#add-staff-person, #competence-read-only. *@
+@model ComplianceTracker.Application.Isms.CompetenceView
+@using ComplianceTracker.Application.Isms
+@using ComplianceTracker.Domain.Isms
+@using ComplianceTracker.Domain.Users
+@{
+    ViewData["Title"] = "Competence and awareness";
+    string Status(CompetenceState state) => state switch
+    {
+        CompetenceState.Valid => "Valid",
+        CompetenceState.Expired => "Expired",
+        CompetenceState.Missing => "Missing",
+        _ => "Not required"
+    };
+}
+
+<partial name="_IsmsNav" />
+
+<page-header heading="Competence and awareness" heading-id="competence-title" />
+
+<p class="text-muted">Who has the competences the organisation needs, and who has read the current policies
+    (ISO/IEC 27001 7.2 and 7.3).</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+<section class="card mb-3" id="policies-to-read">
+    <div class="card-header">Policies to read</div>
+    <div class="card-body small">
+        @if (Model.MyPoliciesToRead.Count == 0)
+        {
+            <p class="mb-0 text-muted">You have read the current version of every policy.</p>
+        }
+        else
+        {
+            <ul class="list-unstyled mb-0">
+                @foreach (var policy in Model.MyPoliciesToRead)
+                {
+                    <li class="d-flex flex-wrap gap-2 align-items-center mb-1" data-policy="@policy.Title">
+                        <a asp-controller="Documents" asp-action="File" asp-route-id="@policy.Id">@policy.Title</a>
+                        <span class="text-muted">version @policy.Version</span>
+                        <form asp-action="ConfirmPolicy" method="post" class="confirm-policy">
+                            <input type="hidden" name="documentId" value="@policy.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-primary">I have read it</button>
+                        </form>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</section>
+
+@if (!Model.CanChange)
+{
+    <p class="text-muted small" id="competence-read-only">You can read the overview. Members who decide compliance record the training.</p>
+}
+
+<section class="mb-4">
+    <h2 class="h5">Competences</h2>
+    @if (Model.Competences.Count == 0)
+    {
+        <p class="text-muted small">No competences yet.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm align-middle" id="competence-matrix">
+                <thead>
+                    <tr>
+                        <th>Person</th>
+                        @foreach (var competence in Model.Competences)
+                        {
+                            <th class="small">
+                                @competence.Name
+                                <div class="text-muted fw-normal">@(competence.RenewalMonths is { } months ? $"every {months} months" : "once")</div>
+                                @if (Model.CanChange)
+                                {
+                                    <form asp-action="RemoveCompetence" method="post" class="remove-competence" data-confirm="Remove the competence @competence.Name? The training records are kept.">
+                                        <input type="hidden" name="competenceId" value="@competence.Id" />
+                                        <button type="submit" class="btn btn-link btn-sm p-0">Remove</button>
+                                    </form>
+                                }
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var person in Model.People)
+                    {
+                        <tr data-person="@person.Name">
+                            <td>@person.Name <div class="small text-muted">@(person.Role?.ToString() ?? "No user")</div></td>
+                            @foreach (var competence in Model.Competences)
+                            {
+                                var state = person.States[competence.Id];
+                                <td data-competence="@competence.Name" data-state="@state"><status-badge status="@Status(state)" /></td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    @if (Model.CanChange)
+    {
+        <div class="row g-3">
+            @if (Model.Competences.Count > 0)
+            {
+                <div class="col-md-6">
+                    <form asp-action="RecordTraining" method="post" id="record-training" class="card card-body small">
+                        <strong class="mb-2">Record a training</strong>
+                        <label class="form-label small" for="training-person">Person</label>
+                        <select class="form-select form-select-sm" id="training-person" name="person" required>
+                            @foreach (var person in Model.People)
+                            {
+                                <option value="@person.Key">@person.Name</option>
+                            }
+                        </select>
+                        <label class="form-label small mt-1" for="training-competence">Competence</label>
+                        <select class="form-select form-select-sm" id="training-competence" name="competenceId" required>
+                            @foreach (var competence in Model.Competences)
+                            {
+                                <option value="@competence.Id">@competence.Name</option>
+                            }
+                        </select>
+                        <label class="form-label small mt-1" for="training-on">Trained on</label>
+                        <input class="form-control form-control-sm" type="date" id="training-on" name="trainedOn" required />
+                        <label class="form-label small mt-1" for="training-evidence">Evidence <span class="text-muted">(e.g. the course certificate's number)</span></label>
+                        <input class="form-control form-control-sm" id="training-evidence" name="evidence" maxlength="@TrainingRecord.MaxEvidenceLength" />
+                        <button type="submit" class="btn btn-sm btn-primary mt-2">Record</button>
+                    </form>
+                </div>
+            }
+            <div class="col-md-6">
+                <form asp-action="AddCompetence" method="post" id="add-competence" class="card card-body small">
+                    <strong class="mb-2">Add a competence</strong>
+                    <label class="form-label small" for="competence-name">Name</label>
+                    <input class="form-control form-control-sm" id="competence-name" name="name" maxlength="@Competence.MaxNameLength" required />
+                    <label class="form-label small mt-1" for="competence-renewal">Renewed every … months <span class="text-muted">(empty: once)</span></label>
+                    <input class="form-control form-control-sm" type="number" min="1" max="@Competence.MaxRenewalMonths" id="competence-renewal" name="renewalMonths" />
+                    <span class="form-label small mt-1">Needed by</span>
+                    @foreach (var role in Enum.GetValues<UserRole>())
+                    {
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="competence-role-@role" name="roles" value="@role" />
+                            <label class="form-check-label" for="competence-role-@role">@role</label>
+                        </div>
+                    }
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="competence-people" name="forPeopleWithoutUser" value="true" />
+                        <label class="form-check-label" for="competence-people">People without a user</label>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-outline-primary mt-2">Add</button>
+                </form>
+                <form asp-action="AddStaffPerson" method="post" id="add-staff-person" class="d-flex flex-wrap gap-2 align-items-end mt-2">
+                    <div>
+                        <label class="form-label small mb-0" for="staff-name">A person without a user</label>
+                        <input class="form-control form-control-sm" id="staff-name" name="name" maxlength="@StaffPerson.MaxNameLength" required />
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Add</button>
+                </form>
+            </div>
+        </div>
+    }
+</section>
+
+<section class="mb-4">
+    <h2 class="h5">Who has read the policies</h2>
+    @if (Model.Policies.Count == 0)
+    {
+        <p class="text-muted small">No policies yet. Upload them on the organisation's Documents page.</p>
+    }
+    else
+    {
+        <table class="table table-sm" id="policy-readers">
+            <thead><tr><th>Policy</th><th>Version</th><th>Read</th><th>Not read</th></tr></thead>
+            <tbody>
+                @foreach (var reading in Model.Policies)
+                {
+                    <tr data-policy="@reading.Policy.Title">
+                        <td>@reading.Policy.Title</td>
+                        <td>@reading.Policy.Version</td>
+                        <td class="small policy-read">@string.Join(", ", reading.Read)</td>
+                        <td class="small policy-not-read">@string.Join(", ", reading.NotRead)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>

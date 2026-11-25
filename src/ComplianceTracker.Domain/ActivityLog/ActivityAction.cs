@@ -454,6 +454,11 @@ namespace ComplianceTracker.Domain.ActivityLog
         // US-211: the internal audit programme got its cycle, a control owner, a planned audit (with the reason when the
         // auditor owns a control in it), or a planned audit was removed or linked to its recorded audit. SubjectId points at
         // the organisation.
-        AuditProgrammeChanged
+        AuditProgrammeChanged,
+
+        // US-213: a competence or a person without a user was added or removed, or a training was recorded (CompetenceChanged);
+        // a member confirmed they read the current version of a policy (PolicyConfirmed). SubjectId points at the organisation.
+        CompetenceChanged,
+        PolicyConfirmed
     }
 }

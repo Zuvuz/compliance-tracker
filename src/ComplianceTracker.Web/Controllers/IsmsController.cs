@@ -21,11 +21,13 @@ namespace ComplianceTracker.Web.Controllers
         private readonly NonconformityService _nonconformities;
         private readonly ObjectiveService _objectives;
         private readonly AuditProgrammeService _programme;
+        private readonly CompetenceService _competence;
         private readonly CurrentMember _member;
 
         public IsmsController(IsmsScopeService scope, AssetService assets, NonconformityService nonconformities, ObjectiveService objectives,
-            AuditProgrammeService programme, CurrentMember member)
+            AuditProgrammeService programme, CompetenceService competence, CurrentMember member)
         {
+            _competence = competence;
             _programme = programme;
             _objectives = objectives;
             _scope = scope;
@@ -453,6 +455,82 @@ namespace ComplianceTracker.Web.Controllers
             var raised = await _programme.LinkAsync(plannedAuditId, auditId, cancellationToken);
             TempData["Success"] = raised == 0 ? "The audit is done." : $"The audit is done; {raised} finding{(raised == 1 ? "" : "s")} went to the nonconformities.";
             return RedirectToAction(nameof(InternalAudits), null, $"planned-{plannedAuditId}");
+        }
+
+        // ---------------------------------------------------------- US-213: competence and awareness
+
+        // GET /Isms/Competence: every member reads the matrix and confirms the policies they must read
+        [HttpGet]
+        public async Task<IActionResult> Competence(CancellationToken cancellationToken)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is null)
+            {
+                return RedirectToAction("Create", "Organizations");
+            }
+
+            return View(await _competence.ViewAsync(cancellationToken));
+        }
+
+        // POST /Isms/AddCompetence: R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Competence))]
+        public async Task<IActionResult> AddCompetence(string? name, int? renewalMonths, List<Domain.Users.UserRole>? roles, bool forPeopleWithoutUser,
+            CancellationToken cancellationToken)
+        {
+            await _competence.AddCompetenceAsync(name, renewalMonths, roles, forPeopleWithoutUser, cancellationToken);
+            return RedirectToAction(nameof(Competence), null, "competence-matrix");
+        }
+
+        // POST /Isms/RemoveCompetence
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Competence))]
+        public async Task<IActionResult> RemoveCompetence(Guid competenceId, CancellationToken cancellationToken)
+        {
+            await _competence.RemoveCompetenceAsync(competenceId, cancellationToken);
+            return RedirectToAction(nameof(Competence), null, "competence-matrix");
+        }
+
+        // POST /Isms/AddStaffPerson: someone without a user
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Competence))]
+        public async Task<IActionResult> AddStaffPerson(string? name, CancellationToken cancellationToken)
+        {
+            await _competence.AddPersonAsync(name, cancellationToken);
+            return RedirectToAction(nameof(Competence), null, "competence-matrix");
+        }
+
+        // POST /Isms/RemoveStaffPerson: R5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Competence))]
+        public async Task<IActionResult> RemoveStaffPerson(Guid staffPersonId, CancellationToken cancellationToken)
+        {
+            await _competence.RemovePersonAsync(staffPersonId, cancellationToken);
+            return RedirectToAction(nameof(Competence), null, "competence-matrix");
+        }
+
+        // POST /Isms/RecordTraining: R2
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Competence))]
+        public async Task<IActionResult> RecordTraining(Guid competenceId, string? person, DateOnly? trainedOn, string? evidence, CancellationToken cancellationToken)
+        {
+            await _competence.RecordTrainingAsync(competenceId, person, trainedOn, evidence, cancellationToken);
+            TempData["Success"] = "The training is recorded.";
+            return RedirectToAction(nameof(Competence), null, "competence-matrix");
+        }
+
+        // POST /Isms/ConfirmPolicy: R3, R4, the member confirms themself
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Competence))]
+        public async Task<IActionResult> ConfirmPolicy(Guid documentId, CancellationToken cancellationToken)
+        {
+            await _competence.ConfirmPolicyAsync(documentId, cancellationToken);
+            return RedirectToAction(nameof(Competence), null, "policies-to-read");
         }
 
         // The requirement rows of the form: the texts, and the numbers of the rows ticked as handled

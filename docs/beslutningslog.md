@@ -2616,6 +2616,31 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - En tidslinje-grafik. Planen vises som en liste sorteret efter dato.
   - At kun interne audits kan kobles. Alle registrerede audits kan vælges, og deres art står ved dem.
 
+### B171 – Kompetencer og læste politikker pr. person (US-213)
+
+- **Beslutning:**
+  - **Siden "Competence and awareness"** ligger i ISMS-området.
+  - **En kompetence** har:
+    - navn
+    - hvor tit den skal fornyes (1–60 måneder eller aldrig)
+    - de roller, der skal have den
+    - om personer uden en bruger skal have den
+  - **Personer uden bruger:** de tilføjes med navn alene, fx rengøring.
+  - **Uddannelse:** den registreres med person, kompetence, dato og en valgfri henvisning til beviset. Den gælder til fornyelsen, så en årlig uddannelse fra 2025-10-01 er udløbet 2026-10-01. Den nyeste uddannelse afgør status.
+  - **Matrixen** viser hver person og kompetence som Valid, Expired, Missing eller Not required. De, der mangler mest, står øverst.
+  - **Politikker** er organisationens dokumenter af arten Policy (US-136).
+    - Hvert medlem ser "Policies to read" og bekræfter selv med ét klik. Ingen kan bekræfte for andre.
+    - En ny version skal bekræftes igen.
+    - Tabellen viser for hver politik, hvem der har læst den nuværende version, og hvem der ikke har.
+  - **Den, der går:** et medlem eller en person, der fjernes, beholder sin historik, men tælles ikke længere.
+  - **Mål:** andelen af læste politikker er et nyt trackermål for målene (US-209), "Policies read by the members", i procent over hele organisationen.
+  - **Log:** ændringer logges som `CompetenceChanged`, og bekræftelser som `PolicyConfirmed`.
+- **Begrundelse:** ISO 27001 7.2 og 7.3 kræver, at organisationen kan vise, at folk har de nødvendige kompetencer og kender politikkerne. Bekræftelsen skal være personens egen, ellers beviser den ikke noget.
+- **Fravalgt:**
+  - Påmindelser om manglende uddannelse og ulæste politikker (US-183). De kan komme senere.
+  - At uploade et bevis-dokument for hver uddannelse. Indtil videre er det en tekst.
+  - "Policies to read" på startsiden. Den kommer med US-216.
+
 ## Spørgsmål til klassediagrammet
 
 Der er ingen åbne spørgsmål. De første spørgsmål fra oktober 2026 er besvaret sådan:
