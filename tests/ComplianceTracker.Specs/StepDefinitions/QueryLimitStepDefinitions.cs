@@ -124,6 +124,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 ["Project activity"] = $"/Projects/Details/{id}/activity",
                 ["Frameworks"] = "/Frameworks",
                 ["Organisation activity"] = "/Activity",
+                ["ISMS"] = "/Isms", // US-216
                 ["Traceability download"] = $"/Projects/Traceability/{id}?format=xlsx"
             };
 

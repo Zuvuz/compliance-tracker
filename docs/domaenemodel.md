@@ -350,7 +350,7 @@ classDiagram
 
 ### 5. ISMS'et (US-208 til US-216)
 
-Begreberne hører til organisationen, og projekterne er det, ISMS'et dækker. ISMS-scope og Interessent er bygget (US-208), og det er Aktiv og Klassifikationsskema (US-214) Afvigelse (US-212) Sikkerhedsmål med Måling (US-209) Auditprogram (US-211) Kompetence, Uddannelse og LæstPolitik (US-213) FastOpgave (US-215) og Ledelsensgennemgang (US-210) også. De andre er besluttet som stories og markeret «planlagt».
+Begreberne hører til organisationen, og projekterne er det, ISMS'et dækker. ISMS-scope og Interessent er bygget (US-208), og det er Aktiv og Klassifikationsskema (US-214) Afvigelse (US-212) Sikkerhedsmål med Måling (US-209) Auditprogram (US-211) Kompetence, Uddannelse og LæstPolitik (US-213) FastOpgave (US-215) og Ledelsensgennemgang (US-210) også. ISMS-forsiden (US-216) læser dem alle og har ingen egne begreber.
 
 ```mermaid
 classDiagram
@@ -395,7 +395,6 @@ classDiagram
     kontrolejere
   }
   class PlanlagtAudit {
-    <<planlagt>>
     dato
     kapitlerOgKontroller
     auditor
@@ -538,6 +537,10 @@ Disse begreber fra den første model (oktober 2026) er ikke bygget, og deres opg
 | Kontrol | ISO 27001's kontroller er krav i Annex A. Statement of Applicability (US-053) og kravplacering i organisationen (US-115) dækker det, en kontrol skulle. |
 | Kravvurdering | Koblede stories, evidens og "Ikke relevant" med begrundelse viser, om et krav er opfyldt (B33). |
 | Release | Livsfasen og supportperioden ligger på projektet (US-024, US-047), og en SBOM hører til et versionsnummer (B87). |
+
+## Ændret 2026-11-25
+
+- **Hele ISMS'et er bygget** (US-208 til US-216, B166–B174), så ingen ISMS-begreber er længere markeret som planlagt.
 
 ## Ændret 2026-11-21
 

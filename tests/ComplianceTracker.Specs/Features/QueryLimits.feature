@@ -31,6 +31,7 @@ Feature: Each page has a limit on database queries
     # Definition of Done and the ticks: three fixed queries, only when something is finished): Overview 55 -> 58.
     # US-040: the Reports tab reads the management report texts and whether the member may change them (fixed queries;
     # the figures only when there are texts): Reports 31 -> 33.
+    # US-216: the ISMS start page reads each part of the ISMS once (the risks of all projects in one query): 17.
     Then each page stays within its limit and does not grow with the data:
       | Page                  | Limit |
       | Dashboard             | 12    |
@@ -45,3 +46,4 @@ Feature: Each page has a limit on database queries
       | Frameworks            | 5     |
       | Organisation activity | 8     |
       | Traceability download | 65    |
+      | ISMS                  | 17    |

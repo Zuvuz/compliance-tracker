@@ -2686,6 +2686,35 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At intervallet på 12 måneder kan ændres. Det er fast indtil videre.
   - At en handling bliver en afvigelses korrigerende handling (US-212). Det kan komme senere.
 
+### B174 – ISMS-forsiden: min uge, status pr. del og en guidet start (US-216)
+
+- **Beslutning:**
+  - **Forsiden ligger i ISMS-området** (brugerens valg). "ISMS" i topmenuen åbner den. Man lander stadig på projekterne efter login, så resten af flowet er uændret.
+  - **Min uge** viser kun personens egne ting, skrevet som noget at gøre, fx "Review access rights". De forfaldne står først, så efter frist, op til 7 dage frem. Resten ligger under "Show more". Tingene kommer fra:
+    - faste opgaver (US-215)
+    - risikohandlinger (US-111)
+    - handlinger fra ledelsens gennemgang (US-210)
+    - korrigerende handlinger (US-212)
+    - politikker at læse (US-213) og dokumenter at gennemgå (US-136)
+    - mål at måle (US-209)
+    - planlagte audits, hvor personen er auditor (US-211)
+  - **En politik skal læses inden for 14 dage** efter, at versionen kom. Det er fristen, den har i "Min uge".
+  - **Status pr. del:** Context (4), Leadership (5), Planning (6), Support (7), Operation (8), Performance evaluation (9), Improvement (10) og SoA'en.
+    - Rød, når noget krævet mangler eller er forfaldent. Gul, når noget forfalder inden for 30 dage. Ellers grøn.
+    - Rød vinder over gul i samme del.
+    - Hver rød eller gul del har én sætning om, hvad der mangler, fx "No management review for 14 months", og et link til siden, hvor det rettes.
+    - Status vises også som ord og ikon, så den kan læses uden farver.
+  - **Guidet start:** rækkefølgen er scope → politikker → aktiver → risici → SoA → mål → årshjul.
+    - Hvert trin siger hvorfor i én sætning.
+    - Den vises, til alle trin er gjort, eller organisationen skjuler den.
+    - Den kan vises igen fra siden. Det gemmes på organisationen (`HidesIsmsGuide`).
+  - **Læserettigheder:** en rolle, der kun må læse, ser status, men ingen knapper.
+  - **Antal forespørgsler:** risici fra alle projekter hentes i én forespørgsel, så siden har en fast grænse på 17 i QueryLimits.feature.
+- **Begrundelse:** ISMS'et bruges hver dag af folk, der ikke kan ISO 27001 udenad. Siden binder US-208 til US-215 sammen og siger, hvad der skal gøres, og hvor det gøres.
+- **Fravalgt:**
+  - At gøre siden til landingssiden efter login (brugerens valg).
+  - Udløbende certifikater og leverandørevidens i "Min uge". De har ingen ejer pr. person, så de ses på leverandør- og auditsiderne.
+
 ## Spørgsmål til klassediagrammet
 
 Der er ingen åbne spørgsmål. De første spørgsmål fra oktober 2026 er besvaret sådan:
