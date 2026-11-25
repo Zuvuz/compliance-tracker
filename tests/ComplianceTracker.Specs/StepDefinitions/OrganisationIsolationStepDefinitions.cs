@@ -49,7 +49,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
             ["objectiveId"] = "The fixture has no objective (US-209); the service only finds the organisation's own",
             ["plannedAuditId"] = "The fixture has no audit programme (US-211); the service only finds the organisation's own",
             ["competenceId"] = "The fixture has no competence (US-213); the service only finds the organisation's own",
-            ["staffPersonId"] = "The fixture has no person without a user (US-213); the service only finds the organisation's own"
+            ["staffPersonId"] = "The fixture has no person without a user (US-213); the service only finds the organisation's own",
+            ["taskId"] = "The fixture has no recurring task (US-215); the service only finds the organisation's own"
         };
 
         // Pages the own member gets "not found" for, because the fixture has nothing there yet, and why. They are still
