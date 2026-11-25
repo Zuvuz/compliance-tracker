@@ -5980,6 +5980,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(12);
 
+                    b.Property<bool>("HidesIsmsGuide")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Industry")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");

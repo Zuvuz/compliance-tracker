@@ -97,7 +97,10 @@ namespace ComplianceTracker.Web.Models
             // US-210: a management review
             ["Held"] = Tone.Info,
             ["Locked"] = Tone.Neutral,
-            ["Review due"] = Tone.Attention
+            ["Review due"] = Tone.Attention,
+
+            // US-216 R3, R7: a part of the ISMS, as text too ("Due soon" and "Needs action" are above)
+            ["OK"] = Tone.Good
         };
 
         public static Tone ToneOf(string? status) => status is not null && Known.TryGetValue(status.Trim(), out var tone) ? tone : Tone.Info;

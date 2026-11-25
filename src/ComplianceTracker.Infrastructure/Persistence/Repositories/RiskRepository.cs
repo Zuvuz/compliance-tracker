@@ -58,6 +58,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         public async Task<IReadOnlyList<Risk>> ListAsync(Guid projectId, CancellationToken cancellationToken = default)
             => await _db.Risks.Where(r => r.ProjectId == projectId).ToListAsync(cancellationToken);
 
+        public async Task<IReadOnlyList<Risk>> ListAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default)
+            => await _db.Risks.Where(r => projectIds.Contains(r.ProjectId)).ToListAsync(cancellationToken);
+
         public Task<Risk?> GetAsync(Guid projectId, Guid riskId, CancellationToken cancellationToken = default)
             => _db.Risks.FirstOrDefaultAsync(r => r.Id == riskId && r.ProjectId == projectId, cancellationToken);
 

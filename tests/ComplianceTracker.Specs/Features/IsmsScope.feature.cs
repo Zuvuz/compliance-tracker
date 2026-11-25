@@ -714,7 +714,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I open \"ISMS\" from the top bar", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 97
-    await testRunner.ThenAsync("I am on the page \"/Isms/Scope\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("I am on the page \"/Isms\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 98
     await testRunner.AndAsync("the top bar has at most 5 items", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

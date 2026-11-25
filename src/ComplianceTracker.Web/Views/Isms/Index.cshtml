@@ -1,0 +1,132 @@
+@* US-216: the ISMS start page. R1, R2: my week, overdue first, as things to do; R3, R4, R7: each part of the ISMS with its
+   state as a word and an icon, what is missing and a link to fix it; R5: the guided start until every step is done or it
+   is hidden; R6: a reader sees the status but no buttons.
+   Ids and classes used by the tests: #my-week items with data-item and data-overdue, #my-week-later, #isms-parts rows with
+   data-part and data-state (.part-missing), #isms-guide (.guide-next), form#hide-guide, form#show-guide. *@
+@model ComplianceTracker.Application.Isms.IsmsOverview
+@using ComplianceTracker.Application.Isms
+@{
+    ViewData["Title"] = "ISMS";
+    string Href(string page, string? fragment = null)
+    {
+        var url = page switch
+        {
+            "Documents" => Url.Action("Index", "Documents"),
+            "Projects" => Url.Action("Index", "Projects"),
+            "Frameworks" => Url.Action("Index", "Frameworks"),
+            _ when page.StartsWith("risk:", StringComparison.Ordinal) => Url.Action("Details", "Risks", new { id = page[5..] }),
+            _ => Url.Action(page, "Isms")
+        } ?? "#";
+        return fragment is null ? url : $"{url}#{fragment}";
+    }
+    string Word(PartState state) => state switch { PartState.Red => "Needs action", PartState.Yellow => "Due soon", _ => "OK" };
+    string Icon(PartState state) => state switch { PartState.Red => "✗", PartState.Yellow => "!", _ => "✓" };
+}
+
+<partial name="_IsmsNav" />
+
+<page-header heading="ISMS" heading-id="isms-title" />
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+@if (Model.ShowsGuide && Model.NextStep is { } next)
+{
+    <section class="card mb-3 border-primary" id="isms-guide">
+        <div class="card-body">
+            <p class="h6 mb-1 guide-next">@next.Next</p>
+            <p class="small text-muted mb-2">@next.Why</p>
+            <ol class="small mb-2">
+                @foreach (var step in Model.Guide)
+                {
+                    <li class="@(step.Done ? "text-muted" : "")">@(step.Done ? "✓ " : "")<a href="@Href(step.Page)">@step.Next["Next: ".Length..]</a></li>
+                }
+            </ol>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-sm btn-primary" href="@Href(next.Page)">Go to the step</a>
+                @if (Model.CanChange)
+                {
+                    <form asp-action="IsmsGuide" method="post" id="hide-guide">
+                        <input type="hidden" name="hidden" value="true" />
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Hide the guided start</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+<div class="row g-3">
+    <section class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">My week</div>
+            <div class="card-body small">
+                @if (Model.MyWeek.Count == 0)
+                {
+                    <p class="text-muted mb-0" id="my-week-empty">Nothing for you in the next @IsmsOverviewService.WeekDays days.</p>
+                }
+                else
+                {
+                    <ul class="list-unstyled mb-0" id="my-week">
+                        @foreach (var item in Model.MyWeek)
+                        {
+                            var overdue = item.IsOverdue(Model.Today);
+                            <li class="mb-1" data-item="@item.Text" data-overdue="@overdue.ToString().ToLowerInvariant()">
+                                <a href="@Href(item.Page, item.Fragment)">@item.Text</a>
+                                <span class="text-muted">@item.DueOn.ToString("dd-MM-yyyy")</span>
+                                @if (overdue)
+                                {
+                                    <status-badge status="Overdue" />
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+                @if (Model.Later.Count > 0)
+                {
+                    <details class="mt-2" id="my-week-later">
+                        <summary>Show more (@Model.Later.Count)</summary>
+                        <ul class="list-unstyled mt-1 mb-0">
+                            @foreach (var item in Model.Later)
+                            {
+                                <li class="mb-1" data-item="@item.Text"><a href="@Href(item.Page, item.Fragment)">@item.Text</a> <span class="text-muted">@item.DueOn.ToString("dd-MM-yyyy")</span></li>
+                            }
+                        </ul>
+                    </details>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">How far the ISMS is</div>
+            <div class="card-body small p-0">
+                <table class="table table-sm mb-0" id="isms-parts">
+                    <tbody>
+                        @foreach (var part in Model.Parts)
+                        {
+                            <tr data-part="@part.Name" data-state="@part.State">
+                                <td class="text-nowrap"><span aria-hidden="true">@Icon(part.State)</span> <status-badge status="@Word(part.State)" /></td>
+                                <td>
+                                    <strong>@part.Name</strong> <span class="text-muted">(@(part.Clause.Contains('.') ? part.Clause : $"clause {part.Clause}"))</span>
+                                    @if (part.Missing is { } missing)
+                                    {
+                                        <div class="part-missing">@missing. <a href="@Href(part.Page)">Fix it</a></div>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>
+
+@if (Model.GuideHidden && Model.NextStep is not null && Model.CanChange)
+{
+    <form asp-action="IsmsGuide" method="post" id="show-guide" class="mt-3">
+        <input type="hidden" name="hidden" value="false" />
+        <button type="submit" class="btn btn-sm btn-link p-0">Show the guided start again</button>
+    </form>
+}

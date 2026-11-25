@@ -40,8 +40,27 @@ namespace ComplianceTracker.Web.Controllers
             _member = member;
         }
 
-        // GET /Isms
-        public IActionResult Index() => RedirectToAction(nameof(Scope));
+        // GET /Isms: US-216, the ISMS start page: my week, the status of each part and the guided start
+        [HttpGet]
+        public async Task<IActionResult> Index([FromServices] IsmsOverviewService overview, CancellationToken cancellationToken)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is null)
+            {
+                return RedirectToAction("Create", "Organizations");
+            }
+
+            return View(await overview.ViewAsync(cancellationToken));
+        }
+
+        // POST /Isms/IsmsGuide: R5, hide or show the guided start
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> IsmsGuide(bool hidden, [FromServices] IsmsOverviewService overview, CancellationToken cancellationToken)
+        {
+            await overview.SetGuideHiddenAsync(hidden, cancellationToken);
+            return RedirectToAction(nameof(Index));
+        }
 
         // GET /Isms/Scope: R6, everyone in the organisation reads it
         [HttpGet]

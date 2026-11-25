@@ -94,5 +94,5 @@ Feature: The ISMS scope and context of the organisation
   @US-208 @integration
   Scenario: ISMS is its own area in the top bar
     When I open "ISMS" from the top bar
-    Then I am on the page "/Isms/Scope"
+    Then I am on the page "/Isms"
     And the top bar has at most 5 items

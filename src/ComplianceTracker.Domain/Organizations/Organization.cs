@@ -113,6 +113,11 @@ namespace ComplianceTracker.Domain.Organizations
             AuditCertificateMonths = checkedDefaults.AuditCertificate;
         }
 
+        // US-216 R5: the organisation hid the guided start on the ISMS page; it comes back from the page itself
+        public bool HidesIsmsGuide { get; private set; }
+
+        public void SetIsmsGuideHidden(bool hidden) => HidesIsmsGuide = hidden;
+
         public void SetReminderDaysBefore(int days)
         {
             if (days < 1 || days > Reminders.ReminderKinds.MaxDaysBefore)

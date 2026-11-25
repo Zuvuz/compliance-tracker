@@ -12,7 +12,7 @@ Tabellen viser, hvad der er bygget i hver fase, og hvad der mangler.
 | 2 | Revision og dokumentation | Næsten færdig (to stories mangler) |
 | 3 | Sårbarheder og risiko | Næsten færdig (Jira mangler) |
 | 4 | Bredere dækning og klogere AI | Delvist |
-| 5 | Hele ISMS'et og hverdagsbrugen | I gang: kun US-216 (ISMS-startside) mangler |
+| 5 | Hele ISMS'et og hverdagsbrugen | Bygget: US-208 til US-216 |
 
 ## Fase 1 – MVP
 
@@ -89,7 +89,7 @@ Fasen er besluttet som stories, men ikke bygget:
 - kompetencer og awareness (US-213), **bygget** (B171)
 - aktivfortegnelse (US-214), **bygget** (B167)
 - årshjul (US-215), **bygget** (B172)
-- ISMS-forsiden (US-216)
+- ISMS-forsiden (US-216), **bygget** (B174)
 
 Politikkerne er US-136. Begreberne står som planlagte i [domænemodellen](domaenemodel.md).
 

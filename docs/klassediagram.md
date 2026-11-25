@@ -738,6 +738,35 @@ classDiagram
   ManagementReviewService ..> AuditProgramme : audit results
   ManagementReviewService ..> ReportService : locks the PDF
 
+  %% ================= ISMS-forsiden (US-216) =================
+  class IsmsOverviewService {
+    +ViewAsync() IsmsOverview
+    +SetGuideHiddenAsync(hidden)
+    +Week(items, today)$ (Week, Later)
+    +Parts(facts, today)$ List~IsmsPart~
+    +Guide(scope, policies, assets, risks, soa, objectives, plan)$ List~GuideStep~
+    +Verb(title)$ string
+  }
+  class IsmsPart {
+    <<record>>
+    +Clause: string
+    +Name: string
+    +State: PartState
+    +Missing: string?
+    +Page: string
+  }
+  class WeekItem {
+    <<record>>
+    +Text: string
+    +DueOn: DateOnly
+    +Page: string
+  }
+  IsmsOverviewService ..> IsmsPart
+  IsmsOverviewService ..> WeekItem
+  IsmsOverviewService ..> RecurringTask : my week
+  IsmsOverviewService ..> ManagementReview : status
+  IsmsOverviewService ..> Organization : hidesIsmsGuide
+
   %% ================= NIS2-gap-analyse =================
   class GapAnswer {
     -id: Guid

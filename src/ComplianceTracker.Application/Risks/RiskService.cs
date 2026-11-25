@@ -19,6 +19,9 @@ namespace ComplianceTracker.Application.Risks
         // The project's risks, also closed ones, with their measures
         Task<IReadOnlyList<Risk>> ListAsync(Guid projectId, CancellationToken cancellationToken = default);
 
+        // US-216: the risks of several projects in one query, for the ISMS start page
+        Task<IReadOnlyList<Risk>> ListAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default);
+
         Task<Risk?> GetAsync(Guid projectId, Guid riskId, CancellationToken cancellationToken = default);
 
         // By id alone; the caller checks the project's organisation

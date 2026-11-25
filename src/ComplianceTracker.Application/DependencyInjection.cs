@@ -133,6 +133,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<Isms.CompetenceService>(); // US-213
             services.AddScoped<Isms.YearlyPlanService>(); // US-215
             services.AddScoped<Isms.ManagementReviewService>(); // US-210
+            services.AddScoped<Isms.IsmsOverviewService>(); // US-216
             services.AddScoped<Reminders.ReminderService>(); // US-183
             services.AddScoped<Reminders.ReminderSettingsService>();
             services.AddScoped<Reports.ReportFiles>(); // US-131
