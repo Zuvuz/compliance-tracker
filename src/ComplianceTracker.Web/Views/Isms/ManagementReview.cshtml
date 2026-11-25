@@ -1,0 +1,208 @@
+@* US-210: the management review of the ISMS (ISO/IEC 27001 9.3). R1: a date and participants; R2: the input pack with every
+   input of 9.3.2; R3: the inputs are kept when the review is held; R4: decisions with actions; R5: locked minutes, actions
+   can still be done; R6: a review is due when none has been held for 12 months.
+   Ids and classes used by the tests: #review-due, form#plan-review, #review-status, #input-pack sections with data-input
+   (li lines), form#change-review, form#hold-review, #review-decisions rows with data-decision, data-owner and data-open
+   (form.review-action-done), form#review-decision, form#lock-review, a#review-pdf, #review-history, #management-review-read-only. *@
+@model ComplianceTracker.Application.Isms.ManagementReviewView
+@using ComplianceTracker.Domain.Isms
+@{
+    ViewData["Title"] = "Management review";
+    var review = Model.Current;
+    var members = Model.Members.OrderBy(m => m.Value, StringComparer.OrdinalIgnoreCase).ToList();
+}
+
+<partial name="_IsmsNav" />
+
+<page-header heading="Management review" heading-id="management-review-title" status="@(review?.Status.ToString())" status-id="review-status">
+    @if (review is not null)
+    {
+        <a class="btn btn-outline-secondary" id="review-pdf" asp-action="ReviewPdf" asp-route-reviewId="@review.Id">Download PDF</a>
+    }
+</page-header>
+
+<p class="text-muted">Top management reviews the ISMS at least once a year (ISO/IEC 27001 9.3). The tracker gathers the inputs the
+    standard asks for; when the review is held they are kept as they were, so the minutes show what the management saw.</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+@if (Model.ReviewIsDue)
+{
+    <div class="alert alert-warning" id="review-due" role="alert">Management review due: no review has been held in the last @ManagementReview.IntervalMonths months.</div>
+}
+
+@if (!Model.CanChange)
+{
+    <p class="text-muted small" id="management-review-read-only">You can read the reviews. Members who decide compliance plan and record them.</p>
+}
+
+@if (Model.CanChange && (review is null || review.Status != ReviewStatus.Planned))
+{
+    <form asp-action="PlanReview" method="post" id="plan-review" class="card card-body small mb-3">
+        <strong class="mb-2">Plan the next review</strong>
+        <div class="d-flex flex-wrap gap-3 align-items-end">
+            <div>
+                <label class="form-label small mb-0" for="plan-review-on">Date</label>
+                <input class="form-control form-control-sm" type="date" id="plan-review-on" name="plannedOn" required />
+            </div>
+            <div>
+                <span class="form-label small d-block">Participants</span>
+                @foreach (var member in members)
+                {
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="plan-participant-@member.Key" name="participants" value="@member.Value" />
+                        <label class="form-check-label" for="plan-participant-@member.Key">@member.Value</label>
+                    </div>
+                }
+            </div>
+            <div>
+                <label class="form-label small mb-0" for="plan-review-others">Others, one per line</label>
+                <textarea class="form-control form-control-sm" id="plan-review-others" name="otherParticipants" rows="2"></textarea>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">Plan</button>
+        </div>
+    </form>
+}
+
+@if (review is null)
+{
+    <p class="text-muted" id="management-review-empty">No management review yet.</p>
+    return;
+}
+
+<div class="d-flex flex-wrap gap-3 small mb-3" id="review-facts">
+    <span>Planned: <strong>@review.PlannedOn.ToString("dd-MM-yyyy")</strong>@(review.IsOverdue(Model.Today) ? " (overdue)" : "")</span>
+    <span>Held: <strong>@(review.HeldOn?.ToString("dd-MM-yyyy") ?? "not yet")</strong></span>
+    <span>Participants: <strong>@string.Join(", ", review.Participants)</strong></span>
+</div>
+
+@if (Model.CanChange && review.Status == ReviewStatus.Planned)
+{
+    <details class="mb-3">
+        <summary>Change the date, participants and the inputs written by hand</summary>
+        <form asp-action="ChangeReview" method="post" id="change-review" class="card card-body small mt-2">
+            <input type="hidden" name="reviewId" value="@review.Id" />
+            <label class="form-label small" for="change-review-on">Date</label>
+            <input class="form-control form-control-sm ct-max-w-16" type="date" id="change-review-on" name="plannedOn" value="@review.PlannedOn.ToString("yyyy-MM-dd")" required />
+            <label class="form-label small mt-1" for="change-review-others">Participants, one per line</label>
+            <textarea class="form-control form-control-sm" id="change-review-others" name="otherParticipants" rows="3">@string.Join("\n", review.Participants)</textarea>
+            <label class="form-label small mt-1" for="change-review-feedback">Feedback from interested parties (9.3.2 e)</label>
+            <textarea class="form-control form-control-sm" id="change-review-feedback" name="feedback" rows="3" maxlength="@ManagementReview.MaxTextLength">@review.Feedback</textarea>
+            <label class="form-label small mt-1" for="change-review-improvements">Opportunities for improvement (9.3.2 g)</label>
+            <textarea class="form-control form-control-sm" id="change-review-improvements" name="improvements" rows="3" maxlength="@ManagementReview.MaxTextLength">@review.Improvements</textarea>
+            <button type="submit" class="btn btn-sm btn-outline-primary mt-2">Save</button>
+        </form>
+    </details>
+}
+
+<section class="mb-4" id="input-pack">
+    <h2 class="h5">Input pack @(review.Status == ReviewStatus.Planned ? "(as of today)" : $"(kept {review.HeldOn:dd-MM-yyyy})")</h2>
+    @foreach (var input in Model.Inputs)
+    {
+        <div class="mb-2" data-input="@input.Title">
+            <strong>@input.Title</strong> <span class="small text-muted">@input.Clause</span>
+            <ul class="small mb-0">
+                @foreach (var line in input.Lines)
+                {
+                    <li class="@(line == ReviewInput.NothingToReport ? "text-muted" : "")">@line</li>
+                }
+            </ul>
+        </div>
+    }
+    @if (Model.CanChange && review.Status == ReviewStatus.Planned)
+    {
+        <form asp-action="HoldReview" method="post" id="hold-review" class="d-flex flex-wrap gap-2 align-items-end mt-3"
+              data-confirm="Record the review as held? The inputs are kept as they are now.">
+            <input type="hidden" name="reviewId" value="@review.Id" />
+            <div>
+                <label class="form-label small mb-0" for="hold-review-on">Held on</label>
+                <input class="form-control form-control-sm" type="date" id="hold-review-on" name="heldOn" value="@Model.Today.ToString("yyyy-MM-dd")" required />
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">The review was held</button>
+        </form>
+    }
+</section>
+
+@if (review.Status != ReviewStatus.Planned)
+{
+    <section class="mb-4">
+        <h2 class="h5">Decisions and actions</h2>
+        @if (review.Decisions.Count == 0)
+        {
+            <p class="text-muted small">No decisions recorded.</p>
+        }
+        else
+        {
+            <table class="table table-sm" id="review-decisions">
+                <thead><tr><th>Decision</th><th>Action owner</th><th>Deadline</th><th>Done</th></tr></thead>
+                <tbody>
+                    @foreach (var decision in review.Decisions)
+                    {
+                        <tr data-decision="@decision.Text" data-owner="@Model.NameOf(decision.ActionOwnerId)" data-open="@decision.IsOpen.ToString().ToLowerInvariant()">
+                            <td>@decision.Text</td>
+                            <td>@Model.NameOf(decision.ActionOwnerId)</td>
+                            <td>@decision.ActionDueOn?.ToString("dd-MM-yyyy")</td>
+                            <td>
+                                @if (decision.ActionDoneAt is { } done)
+                                {
+                                    @done.ToLocalTime().ToString("dd-MM-yyyy")
+                                }
+                                else if (decision.HasAction && Model.CanChange)
+                                {
+                                    <form asp-action="ReviewActionDone" method="post" class="review-action-done">
+                                        <input type="hidden" name="reviewId" value="@review.Id" />
+                                        <input type="hidden" name="decisionId" value="@decision.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">Done</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        @if (Model.CanChange && review.Status == ReviewStatus.Held)
+        {
+            <form asp-action="ReviewDecision" method="post" id="review-decision" class="card card-body small row g-2 mx-0">
+                <input type="hidden" name="reviewId" value="@review.Id" />
+                <div class="col-md-6">
+                    <label class="form-label small" for="decision-text">Decision</label>
+                    <input class="form-control form-control-sm" id="decision-text" name="text" maxlength="@ManagementReview.MaxTextLength" required />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small" for="decision-owner">Action owner <span class="text-muted">(optional)</span></label>
+                    <select class="form-select form-select-sm" id="decision-owner" name="actionOwnerId">
+                        <option value="">No action</option>
+                        @foreach (var member in members)
+                        {
+                            <option value="@member.Key">@member.Value</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small" for="decision-due">Deadline</label>
+                    <input class="form-control form-control-sm" type="date" id="decision-due" name="actionDueOn" />
+                </div>
+                <div class="col-12"><button type="submit" class="btn btn-sm btn-outline-primary">Record the decision</button></div>
+            </form>
+            <form asp-action="LockReview" method="post" id="lock-review" class="mt-2" data-confirm="Lock the minutes? They cannot be changed afterwards; actions can still be marked done.">
+                <input type="hidden" name="reviewId" value="@review.Id" />
+                <button type="submit" class="btn btn-sm btn-primary">Lock the minutes</button>
+            </form>
+        }
+    </section>
+}
+
+@if (Model.Reviews.Count > 1)
+{
+    <section class="mb-4" id="review-history">
+        <h2 class="h5">Earlier reviews</h2>
+        <ul class="small">
+            @foreach (var earlier in Model.Reviews.Where(r => r.Id != review.Id))
+            {
+                <li><a asp-action="ManagementReview" asp-route-reviewId="@earlier.Id">@((earlier.HeldOn ?? earlier.PlannedOn).ToString("dd-MM-yyyy"))</a> (@earlier.Status)</li>
+            }
+        </ul>
+    </section>
+}

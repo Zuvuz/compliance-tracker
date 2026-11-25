@@ -3594,6 +3594,54 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("IsmsScopes", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Isms.ManagementReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Feedback")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateOnly?>("HeldOn")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Improvements")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Inputs")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime?>("LockedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.PrimitiveCollection<List<string>>("Participants")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<DateOnly>("PlannedOn")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.ToTable("ManagementReviews", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Isms.Measurement", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3839,6 +3887,38 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrganizationId");
 
                     b.ToTable("RecurringTasks", (string)null);
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Isms.ReviewDecision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ActionDoneAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly?>("ActionDueOn")
+                        .HasColumnType("date");
+
+                    b.Property<Guid?>("ActionOwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ReviewId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReviewId");
+
+                    b.ToTable("ReviewDecisions", (string)null);
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Isms.ScopedProject", b =>
@@ -8498,6 +8578,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.Isms.ManagementReview", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Isms.Measurement", b =>
                 {
                     b.HasOne("ComplianceTracker.Domain.Isms.SecurityObjective", null)
@@ -8539,6 +8628,15 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.HasOne("ComplianceTracker.Domain.Organizations.Organization", null)
                         .WithMany()
                         .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Isms.ReviewDecision", b =>
+                {
+                    b.HasOne("ComplianceTracker.Domain.Isms.ManagementReview", null)
+                        .WithMany("Decisions")
+                        .HasForeignKey("ReviewId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -10126,6 +10224,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("ComplianceTracker.Domain.Isms.IsmsScope", b =>
                 {
                     b.Navigation("Projects");
+                });
+
+            modelBuilder.Entity("ComplianceTracker.Domain.Isms.ManagementReview", b =>
+                {
+                    b.Navigation("Decisions");
                 });
 
             modelBuilder.Entity("ComplianceTracker.Domain.Isms.RecurringTask", b =>

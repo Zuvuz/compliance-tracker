@@ -350,7 +350,7 @@ classDiagram
 
 ### 5. ISMS'et (US-208 til US-216)
 
-Begreberne hører til organisationen, og projekterne er det, ISMS'et dækker. ISMS-scope og Interessent er bygget (US-208), og det er Aktiv og Klassifikationsskema (US-214) Afvigelse (US-212) Sikkerhedsmål med Måling (US-209) Auditprogram (US-211) Kompetence, Uddannelse og LæstPolitik (US-213) og FastOpgave (US-215) også. De andre er besluttet som stories og markeret «planlagt».
+Begreberne hører til organisationen, og projekterne er det, ISMS'et dækker. ISMS-scope og Interessent er bygget (US-208), og det er Aktiv og Klassifikationsskema (US-214) Afvigelse (US-212) Sikkerhedsmål med Måling (US-209) Auditprogram (US-211) Kompetence, Uddannelse og LæstPolitik (US-213) FastOpgave (US-215) og Ledelsensgennemgang (US-210) også. De andre er besluttet som stories og markeret «planlagt».
 
 ```mermaid
 classDiagram
@@ -384,7 +384,6 @@ classDiagram
     værdi
   }
   class Ledelsensgennemgang {
-    <<planlagt>>
     dato
     deltagere
     input
@@ -513,6 +512,7 @@ classDiagram
 | Uddannelse | At en person blev uddannet i en kompetence på en dato; gælder til fornyelsen. | US-213 |
 | LæstPolitik | At et medlem selv har bekræftet at have læst en bestemt version af en politik. En ny version skal læses igen. | US-213 |
 | FastOpgave | En opgave i årshjulet, der kommer igen med sit interval, med ejer, frist og de kontroller, den viser. Evidensen bliver et organisationsdokument koblet til kontrollerne. | US-215 |
+| Ledelsensgennemgang | Ledelsens årlige gennemgang af ISMS'et med de input, standarden kræver, gemt som de var på mødet, og beslutninger med handlinger. Referatet låses. | US-210 |
 | Afvigelse | Noget, der gik galt, fra en audit, en sikkerhedshændelse, en overskredet frist eller en klage: korrektion, årsag, korrigerende handling og et tjek af, om handlingen virkede. | US-212 |
 
 ## Regler

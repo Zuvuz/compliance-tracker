@@ -463,6 +463,10 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-215: a task in the yearly plan was added (by hand or from the starting plan), removed, or done (Details names the
         // day, the evidence file and the next deadline). SubjectId points at the organisation.
-        RecurringTaskChanged
+        RecurringTaskChanged,
+
+        // US-210: a management review was planned or changed, held (its inputs kept), got a decision, had its minutes locked,
+        // or an action was done. SubjectId points at the organisation.
+        ManagementReviewChanged
     }
 }

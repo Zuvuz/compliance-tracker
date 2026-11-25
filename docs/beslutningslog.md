@@ -2664,6 +2664,28 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Påmindelser om frister (US-183). De kan komme senere.
   - Et cirkulært hjul som grafik. Månederne vises som et gitter, der også virker på en telefon.
 
+### B173 – Ledelsens gennemgang med et input-sæt, som trackeren samler (US-210)
+
+- **Beslutning:**
+  - **Siden "Management review"** ligger i ISMS-området. En gennemgang planlægges med dato og mindst én deltager. Deltagerne vælges blandt medlemmerne eller skrives ind, fx "CEO". Kun én gennemgang kan være planlagt ad gangen.
+  - **Input-sættet** har altid alle input fra 9.3.2. Et tomt input siger "Nothing to report" i stedet for at mangle. Inputtene er:
+    - a) åbne handlinger fra tidligere gennemgange
+    - b) ændringer i konteksten (scope-version, ændret siden godkendelsen, projekter i scopet og interessenter)
+    - c) interessenternes krav, der ikke er håndteret
+    - d) målene med seneste værdi, afvigelserne (åbne, lukkede de sidste 12 måneder, forfaldne og dem, hvor en handling ikke virkede) og auditresultaterne (programmet og audits de sidste 12 måneder)
+    - e) feedback fra interessenter, skrevet i hånden
+    - f) åbne High- og Critical-risici i projekterne i scopet
+    - g) muligheder for forbedring, skrevet i hånden
+  - **Snapshot:** før mødet samles inputtene, hver gang siden åbnes. Når gennemgangen er holdt, gemmes de som de var, og senere ændringer ændrer ikke, hvad ledelsen så.
+  - **Beslutninger** kan have en handling med ejer og frist. En åben handling er input a) i næste gennemgang.
+  - **Låsning:** referatet låses. Derefter kan intet ændres, men handlinger kan stadig markeres udført. PDF'en låses samtidig med fingeraftryk på organisationsområdets Reports-fane (US-050).
+  - **Forfalden:** siden siger "Management review due", når der ikke er holdt en gennemgang i 12 måneder.
+  - **Log:** ændringer logges som `ManagementReviewChanged`.
+- **Begrundelse:** ISO 27001 9.3 kræver bestemte input og, at beslutningerne dokumenteres. Når trackeren samler inputtene fra resten af ISMS'et, bliver forberedelsen kort. Snapshottet sikrer, at referatet viser det, ledelsen faktisk så.
+- **Fravalgt:**
+  - At intervallet på 12 måneder kan ændres. Det er fast indtil videre.
+  - At en handling bliver en afvigelses korrigerende handling (US-212). Det kan komme senere.
+
 ## Spørgsmål til klassediagrammet
 
 Der er ingen åbne spørgsmål. De første spørgsmål fra oktober 2026 er besvaret sådan:

@@ -23,11 +23,13 @@ namespace ComplianceTracker.Web.Controllers
         private readonly AuditProgrammeService _programme;
         private readonly CompetenceService _competence;
         private readonly YearlyPlanService _plan;
+        private readonly ManagementReviewService _review;
         private readonly CurrentMember _member;
 
         public IsmsController(IsmsScopeService scope, AssetService assets, NonconformityService nonconformities, ObjectiveService objectives,
-            AuditProgrammeService programme, CompetenceService competence, YearlyPlanService plan, CurrentMember member)
+            AuditProgrammeService programme, CompetenceService competence, YearlyPlanService plan, ManagementReviewService review, CurrentMember member)
         {
+            _review = review;
             _plan = plan;
             _competence = competence;
             _programme = programme;
@@ -610,6 +612,105 @@ namespace ComplianceTracker.Web.Controllers
             var nonconformity = await _plan.RaiseNonconformityAsync(taskId, cancellationToken);
             return RedirectToAction(nameof(Nonconformities), null, $"nonconformity-{nonconformity.Id}");
         }
+
+        // ---------------------------------------------------------- US-210: the management review
+
+        // GET /Isms/ManagementReview: every member reads the reviews; reviewId shows an earlier one
+        [HttpGet]
+        public async Task<IActionResult> ManagementReview(Guid? reviewId, CancellationToken cancellationToken)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is null)
+            {
+                return RedirectToAction("Create", "Organizations");
+            }
+
+            var view = await _review.ViewAsync(reviewId, cancellationToken);
+            return reviewId is { } id && view.Current?.Id != id ? NotFound() : View(view);
+        }
+
+        // POST /Isms/PlanReview: R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(ManagementReview))]
+        public async Task<IActionResult> PlanReview(DateOnly? plannedOn, List<string?>? participants, string? otherParticipants, CancellationToken cancellationToken)
+        {
+            var review = await _review.PlanAsync(plannedOn, Participants(participants, otherParticipants), cancellationToken);
+            return RedirectToAction(nameof(ManagementReview), new { reviewId = review.Id });
+        }
+
+        // POST /Isms/ChangeReview: the date, participants and the manual inputs e) and g)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(ManagementReview))]
+        public async Task<IActionResult> ChangeReview(Guid reviewId, DateOnly? plannedOn, List<string?>? participants, string? otherParticipants,
+            string? feedback, string? improvements, CancellationToken cancellationToken)
+        {
+            await _review.ChangeAsync(reviewId, plannedOn, Participants(participants, otherParticipants), feedback, improvements, cancellationToken);
+            return RedirectToAction(nameof(ManagementReview), new { reviewId });
+        }
+
+        // POST /Isms/HoldReview: R3
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(ManagementReview))]
+        public async Task<IActionResult> HoldReview(Guid reviewId, DateOnly? heldOn, CancellationToken cancellationToken)
+        {
+            await _review.HoldAsync(reviewId, heldOn, cancellationToken);
+            return RedirectToAction(nameof(ManagementReview), new { reviewId });
+        }
+
+        // POST /Isms/ReviewDecision: R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(ManagementReview))]
+        public async Task<IActionResult> ReviewDecision(Guid reviewId, string? text, Guid? actionOwnerId, DateOnly? actionDueOn, CancellationToken cancellationToken)
+        {
+            await _review.DecideAsync(reviewId, text, actionOwnerId, actionDueOn, cancellationToken);
+            return RedirectToAction(nameof(ManagementReview), null, new { reviewId }, "review-decisions");
+        }
+
+        // POST /Isms/LockReview: R5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(ManagementReview))]
+        public async Task<IActionResult> LockReview(Guid reviewId, CancellationToken cancellationToken)
+        {
+            await _review.LockAsync(reviewId, cancellationToken);
+            TempData["Success"] = "The minutes are locked, and the PDF is on the organisation's Reports tab.";
+            return RedirectToAction(nameof(ManagementReview), new { reviewId });
+        }
+
+        // POST /Isms/ReviewActionDone: R5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(ManagementReview))]
+        public async Task<IActionResult> ReviewActionDone(Guid reviewId, Guid decisionId, CancellationToken cancellationToken)
+        {
+            await _review.MarkActionDoneAsync(reviewId, decisionId, cancellationToken);
+            return RedirectToAction(nameof(ManagementReview), null, new { reviewId }, "review-decisions");
+        }
+
+        // GET /Isms/ReviewPdf
+        [HttpGet]
+        public async Task<IActionResult> ReviewPdf(Guid reviewId, CancellationToken cancellationToken)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is null)
+            {
+                return NotFound();
+            }
+
+            if ((await _review.ViewAsync(reviewId, cancellationToken)).Current?.Id != reviewId)
+            {
+                return NotFound();
+            }
+
+            var file = await _review.PdfAsync(reviewId, cancellationToken);
+            return File(file.Content, file.ContentType, file.FileName);
+        }
+
+        // The participants ticked among the members and the others written one per line
+        public static IReadOnlyList<string?> Participants(List<string?>? members, string? others)
+            => (members ?? []).Concat((others ?? "").Split('\n')).ToList();
 
         // The requirement rows of the form: the texts, and the numbers of the rows ticked as handled
         public static IReadOnlyList<(string? Text, bool Handled)> Lines(List<string?>? requirement, List<int>? handled)

@@ -677,6 +677,67 @@ classDiagram
   YearlyPlanService ..> OrganisationDocumentService : evidence to the controls
   YearlyPlanService ..> Nonconformity : overdue becomes
 
+  %% ================= Ledelsens gennemgang (US-210) =================
+  class ManagementReview {
+    -id: Guid
+    -organizationId: Guid
+    -plannedOn: DateOnly
+    -participants: List~string~
+    -status: ReviewStatus
+    -heldOn: DateOnly?
+    -feedback: string?
+    -improvements: string?
+    -inputs: List~ReviewInput~
+    -lockedAt: DateTime?
+    -decisions: List~ReviewDecision~
+    +Plan(organizationId, plannedOn, participants, at)$ ManagementReview
+    +Change(plannedOn, participants)
+    +Describe(feedback, improvements)
+    +Hold(heldOn, inputs, today)
+    +Decide(text, actionOwnerId, actionDueOn, at) ReviewDecision
+    +Lock(at)
+    +MarkActionDone(decisionId, at) ReviewDecision
+    +ReviewIsDue(reviews, today)$ bool
+  }
+  class ReviewDecision {
+    -id: Guid
+    -reviewId: Guid
+    -text: string
+    -actionOwnerId: Guid?
+    -actionDueOn: DateOnly?
+    -actionDoneAt: DateTime?
+    +IsOpen: bool
+  }
+  class ReviewInput {
+    <<record>>
+    +Clause: string
+    +Title: string
+    +Lines: List~string~
+  }
+  class ReviewStatus {
+    <<enumeration>>
+    Planned
+    Held
+    Locked
+  }
+  class ManagementReviewService {
+    +ViewAsync(reviewId) ManagementReviewView
+    +PlanAsync(plannedOn, participants) ManagementReview
+    +HoldAsync(reviewId, heldOn)
+    +DecideAsync(reviewId, text, actionOwnerId, actionDueOn)
+    +LockAsync(reviewId)
+    +Compose(facts)$ List~ReviewInput~
+  }
+  ManagementReview "*" --> "1" Organization
+  ManagementReview "1" *-- "*" ReviewDecision : decisions
+  ManagementReview "1" *-- "*" ReviewInput : inputs (JSON)
+  ManagementReview ..> ReviewStatus
+  ManagementReviewService --> IManagementReviewRepository
+  ManagementReviewService ..> SecurityObjective : objectives
+  ManagementReviewService ..> Nonconformity : nonconformities
+  ManagementReviewService ..> AuditProgramme : audit results
+  ManagementReviewService ..> ReportService : locks the PDF
+
   %% ================= NIS2-gap-analyse =================
   class GapAnswer {
     -id: Guid

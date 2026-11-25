@@ -50,7 +50,9 @@ namespace ComplianceTracker.Specs.StepDefinitions
             ["plannedAuditId"] = "The fixture has no audit programme (US-211); the service only finds the organisation's own",
             ["competenceId"] = "The fixture has no competence (US-213); the service only finds the organisation's own",
             ["staffPersonId"] = "The fixture has no person without a user (US-213); the service only finds the organisation's own",
-            ["taskId"] = "The fixture has no recurring task (US-215); the service only finds the organisation's own"
+            ["taskId"] = "The fixture has no recurring task (US-215); the service only finds the organisation's own",
+            ["reviewId"] = "The fixture has no management review (US-210); the service only finds the organisation's own",
+            ["decisionId"] = "The fixture has no management review (US-210); the service only finds the organisation's own"
         };
 
         // Pages the own member gets "not found" for, because the fixture has nothing there yet, and why. They are still
@@ -59,7 +61,9 @@ namespace ComplianceTracker.Specs.StepDefinitions
         {
             ["Frameworks.CrossMapping"] = "The page only takes versions the organisation's projects use, and the fixture's framework is used by none (US-037), tested in CrossMapping.feature",
             ["Projects.SealedReport"] = "Only a sealed report has this file; sealing needs a seal certificate and two signers (US-132), tested in SigningReports.feature",
-            ["Projects.StatementOfApplicability"] = "Only an organisation with its own ISO/IEC 27001 has one; the fixture's one framework is a policy (US-053), tested in StatementOfApplicability.feature"
+            ["Projects.StatementOfApplicability"] = "Only an organisation with its own ISO/IEC 27001 has one; the fixture's one framework is a policy (US-053), tested in StatementOfApplicability.feature",
+            ["Isms.ManagementReview"] = "The fixture has no management review, so a review id is not found (US-210), tested in ManagementReview.feature",
+            ["Isms.ReviewPdf"] = "The fixture has no management review, so there is no PDF (US-210), tested in ManagementReview.feature"
         };
 
         private readonly WebScenario _web;
@@ -379,7 +383,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "from" or "to" => ids.FrameworkVersion, // US-037: the Cross-mapping page's two versions
                 "v" => ids.FrameworkVersion, // US-206: the versions chosen on the page for several frameworks
                 "projectids" => ids.Project, // US-206: the projects an approved match applies to
-                "memberid" or "ownerid" or "auditorid" => ids.Member, // US-211: the auditor of a planned audit
+                "memberid" or "ownerid" or "auditorid" or "actionownerid" => ids.Member, // US-211: the auditor of a planned audit; US-210: an action's owner
                 "invitationid" => ids.Invitation,
                 "measureid" => ids.Measure,
                 "eventid" => ids.SecurityEvent, // US-073
