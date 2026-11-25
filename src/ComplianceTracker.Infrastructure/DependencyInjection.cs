@@ -119,6 +119,7 @@ namespace ComplianceTracker.Infrastructure
             services.AddScoped<Application.Isms.IAuditProgrammeRepository, AuditProgrammeRepository>(); // US-211
             services.AddScoped<Application.Isms.ICompetenceRepository, CompetenceRepository>(); // US-213
             services.AddScoped<Application.Isms.IRecurringTaskRepository, RecurringTaskRepository>(); // US-215
+            services.AddScoped<Application.Isms.IManagementReviewRepository, ManagementReviewRepository>(); // US-210
             services.AddScoped<Application.Reminders.IReminderRepository, ReminderRepository>(); // US-183
             services.AddScoped<Application.Projects.IProjectChecklistRepository, ProjectChecklistRepository>(); // US-047
             services.AddScoped<Application.Projects.IOrganisationChecklistRepository, OrganisationChecklistRepository>(); // US-192

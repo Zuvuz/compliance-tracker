@@ -92,7 +92,12 @@ namespace ComplianceTracker.Web.Models
 
             // US-213: a person and a competence
             ["Valid"] = Tone.Good,
-            ["Not required"] = Tone.Neutral
+            ["Not required"] = Tone.Neutral,
+
+            // US-210: a management review
+            ["Held"] = Tone.Info,
+            ["Locked"] = Tone.Neutral,
+            ["Review due"] = Tone.Attention
         };
 
         public static Tone ToneOf(string? status) => status is not null && Known.TryGetValue(status.Trim(), out var tone) ? tone : Tone.Info;
