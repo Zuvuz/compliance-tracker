@@ -1,6 +1,6 @@
 # Compliance-tracker – Klassediagram
 
-Senest opdateret: 2026-11-24
+Senest opdateret: 2026-11-25
 
 Klassediagrammet bygger på [domænemodellen](domaenemodel.md) og viser modellagets klasser med attributter, datatyper og associationer. **Metoder tilføjes løbende**, når en user story kræver dem, og opdateres i samme pull request som koden. Reglerne, som metoderne skal håndhæve, står i domænemodellen.
 
@@ -503,6 +503,67 @@ classDiagram
   ObjectiveService --> TrackerMeasures
   TrackerMeasures ..> ComplianceQueries : coverage per organisation
   TrackerMeasures ..> IsmsScope : only projects inside
+
+  %% ================= Internt auditprogram (US-211) =================
+  class AuditProgramme {
+    -id: Guid
+    -organizationId: Guid
+    -startsOn: DateOnly
+    -years: int
+    -controlOwners: List~ControlOwner~
+    -audits: List~PlannedAudit~
+    +EndsOn: DateOnly
+    +Create(organizationId, startsOn, years)$ AuditProgramme
+    +Change(startsOn, years)
+    +SetOwner(code, ownerId)
+    +OwnerOf(code) Guid?
+    +Plan(on, clauses, controls, projectIds, auditorId, auditorName, auditorLabel, reason) PlannedAudit
+    +Remove(auditId) PlannedAudit
+    +Coverage(controls) List
+    +ControlCode(text)$ string?
+  }
+  class PlannedAudit {
+    -id: Guid
+    -programmeId: Guid
+    -on: DateOnly
+    -clauses: List~string~
+    -controls: List~string~
+    -projectIds: List~Guid~
+    -auditorId: Guid?
+    -auditorName: string?
+    -impartialityReason: string?
+    -recordedAuditId: Guid?
+    +IsDone: bool
+    +Covers(item) bool
+    +IsOverdue(today) bool
+    +MarkDone(recordedAuditId)
+  }
+  class ControlOwner {
+    <<record>>
+    +Code: string
+    +OwnerId: Guid
+  }
+  class CoverageState {
+    <<enumeration>>
+    Missing
+    Planned
+    Done
+  }
+  class AuditProgrammeService {
+    +ViewAsync() AuditProgrammeView
+    +SetCycleAsync(startsOn, years)
+    +SetOwnerAsync(code, ownerId)
+    +PlanAsync(on, clauses, controls, projectIds, auditorId, auditorName, reason) PlannedAudit
+    +RemoveAsync(plannedId)
+    +LinkAsync(plannedId, recordedAuditId) int
+  }
+  AuditProgramme "0..1" --> "1" Organization
+  AuditProgramme "1" *-- "*" PlannedAudit : audits
+  AuditProgramme "1" *-- "*" ControlOwner : controlOwners (JSON)
+  PlannedAudit "0..1" --> "0..1" Audit : recordedAuditId
+  AuditProgrammeService --> IAuditProgrammeRepository
+  AuditProgrammeService ..> StatementOfApplicabilityQueries : applicable controls
+  AuditProgrammeService ..> Nonconformity : findings become
 
   %% ================= NIS2-gap-analyse =================
   class GapAnswer {

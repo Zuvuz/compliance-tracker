@@ -46,7 +46,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
             ["partyId"] = "The fixture has no interested party (US-208); IsmsScope.feature tests it",
             ["assetId"] = "The fixture has no asset (US-214); the service only finds the organisation's own assets",
             ["nonconformityId"] = "The fixture has no nonconformity (US-212); the service only finds the organisation's own",
-            ["objectiveId"] = "The fixture has no objective (US-209); the service only finds the organisation's own"
+            ["objectiveId"] = "The fixture has no objective (US-209); the service only finds the organisation's own",
+            ["plannedAuditId"] = "The fixture has no audit programme (US-211); the service only finds the organisation's own"
         };
 
         // Pages the own member gets "not found" for, because the fixture has nothing there yet, and why. They are still
@@ -375,7 +376,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 "from" or "to" => ids.FrameworkVersion, // US-037: the Cross-mapping page's two versions
                 "v" => ids.FrameworkVersion, // US-206: the versions chosen on the page for several frameworks
                 "projectids" => ids.Project, // US-206: the projects an approved match applies to
-                "memberid" or "ownerid" => ids.Member,
+                "memberid" or "ownerid" or "auditorid" => ids.Member, // US-211: the auditor of a planned audit
                 "invitationid" => ids.Invitation,
                 "measureid" => ids.Measure,
                 "eventid" => ids.SecurityEvent, // US-073

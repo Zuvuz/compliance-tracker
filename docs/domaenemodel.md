@@ -1,6 +1,6 @@
 # Compliance-tracker – Domænemodel
 
-Senest opdateret: 2026-11-24
+Senest opdateret: 2026-11-25
 
 ## Formål
 
@@ -350,7 +350,7 @@ classDiagram
 
 ### 5. ISMS'et (US-208 til US-216)
 
-Begreberne hører til organisationen, og projekterne er det, ISMS'et dækker. ISMS-scope og Interessent er bygget (US-208), og det er Aktiv og Klassifikationsskema (US-214) Afvigelse (US-212) og Sikkerhedsmål med Måling (US-209) også. De andre er besluttet som stories og markeret «planlagt».
+Begreberne hører til organisationen, og projekterne er det, ISMS'et dækker. ISMS-scope og Interessent er bygget (US-208), og det er Aktiv og Klassifikationsskema (US-214) Afvigelse (US-212) Sikkerhedsmål med Måling (US-209) og Auditprogram (US-211) også. De andre er besluttet som stories og markeret «planlagt».
 
 ```mermaid
 classDiagram
@@ -391,9 +391,9 @@ classDiagram
     beslutninger
   }
   class Auditprogram {
-    <<planlagt>>
     start
     længde
+    kontrolejere
   }
   class PlanlagtAudit {
     <<planlagt>>
@@ -512,6 +512,7 @@ classDiagram
 | Klassifikationsskema | Organisationens egne klassifikationsniveauer, lavest først. Et niveau i brug kan ikke fjernes. | US-214 |
 | Sikkerhedsmål | Hvad organisationen vil nå med informationssikkerhed: et mål-tal, en retning og en frekvens. Måles af trackeren selv over projekterne i scopet eller i hånden, og vises grøn, gul eller rød. | US-209 |
 | Måling | En værdi for et sikkerhedsmål på en dato, taget af trackeren eller en person. Ændres aldrig; en fejl rettes med en ny måling med en note. | US-209 |
+| Auditprogram | Organisationens interne audits over en cyklus på 1–5 år, så klausul 4–10 og de kontroller, der gælder, bliver auditeret. Kontrolejere sættes her, og en auditor bør ikke auditere sin egen kontrol. | US-211 |
 | Afvigelse | Noget, der gik galt, fra en audit, en sikkerhedshændelse, en overskredet frist eller en klage: korrektion, årsag, korrigerende handling og et tjek af, om handlingen virkede. | US-212 |
 
 ## Regler
