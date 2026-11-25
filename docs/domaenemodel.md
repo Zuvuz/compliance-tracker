@@ -350,7 +350,7 @@ classDiagram
 
 ### 5. ISMS'et (US-208 til US-216)
 
-Begreberne hører til organisationen, og projekterne er det, ISMS'et dækker. ISMS-scope og Interessent er bygget (US-208), og det er Aktiv og Klassifikationsskema (US-214) Afvigelse (US-212) Sikkerhedsmål med Måling (US-209) og Auditprogram (US-211) også. De andre er besluttet som stories og markeret «planlagt».
+Begreberne hører til organisationen, og projekterne er det, ISMS'et dækker. ISMS-scope og Interessent er bygget (US-208), og det er Aktiv og Klassifikationsskema (US-214) Afvigelse (US-212) Sikkerhedsmål med Måling (US-209) Auditprogram (US-211) og Kompetence, Uddannelse og LæstPolitik (US-213) også. De andre er besluttet som stories og markeret «planlagt».
 
 ```mermaid
 classDiagram
@@ -409,17 +409,14 @@ classDiagram
     effektiv
   }
   class Kompetence {
-    <<planlagt>>
     navn
     fornyes
   }
   class Uddannelse {
-    <<planlagt>>
     dato
     gyldigTil
   }
   class LæstPolitik {
-    <<planlagt>>
     version
     dato
   }
@@ -513,6 +510,9 @@ classDiagram
 | Sikkerhedsmål | Hvad organisationen vil nå med informationssikkerhed: et mål-tal, en retning og en frekvens. Måles af trackeren selv over projekterne i scopet eller i hånden, og vises grøn, gul eller rød. | US-209 |
 | Måling | En værdi for et sikkerhedsmål på en dato, taget af trackeren eller en person. Ændres aldrig; en fejl rettes med en ny måling med en note. | US-209 |
 | Auditprogram | Organisationens interne audits over en cyklus på 1–5 år, så klausul 4–10 og de kontroller, der gælder, bliver auditeret. Kontrolejere sættes her, og en auditor bør ikke auditere sin egen kontrol. | US-211 |
+| Kompetence | Noget, organisationens folk skal kunne, fx security awareness, med de roller, der skal have den, og hvor tit den fornyes. | US-213 |
+| Uddannelse | At en person blev uddannet i en kompetence på en dato; gælder til fornyelsen. | US-213 |
+| LæstPolitik | At et medlem selv har bekræftet at have læst en bestemt version af en politik. En ny version skal læses igen. | US-213 |
 | Afvigelse | Noget, der gik galt, fra en audit, en sikkerhedshændelse, en overskredet frist eller en klage: korrektion, årsag, korrigerende handling og et tjek af, om handlingen virkede. | US-212 |
 
 ## Regler

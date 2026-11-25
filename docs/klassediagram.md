@@ -565,6 +565,64 @@ classDiagram
   AuditProgrammeService ..> StatementOfApplicabilityQueries : applicable controls
   AuditProgrammeService ..> Nonconformity : findings become
 
+  %% ================= Kompetencer og awareness (US-213) =================
+  class Competence {
+    -id: Guid
+    -organizationId: Guid
+    -name: string
+    -renewalMonths: int?
+    -requiredRoles: List~UserRole~
+    -forPeopleWithoutUser: bool
+    -removedAt: DateTime?
+    +Create(organizationId, name, renewalMonths, roles, forPeopleWithoutUser, at)$ Competence
+    +IsRequiredFor(role) bool
+    +ValidUntil(trainedOn) DateOnly?
+    +Remove(at)
+  }
+  class StaffPerson {
+    -id: Guid
+    -organizationId: Guid
+    -name: string
+    -removedAt: DateTime?
+    +Create(organizationId, name, at)$ StaffPerson
+    +Remove(at)
+  }
+  class TrainingRecord {
+    -id: Guid
+    -competenceId: Guid
+    -userId: Guid?
+    -staffPersonId: Guid?
+    -trainedOn: DateOnly
+    -validUntil: DateOnly?
+    -evidence: string?
+    +Create(organizationId, competence, userId, staffPersonId, trainedOn, evidence, recordedById, today, at)$ TrainingRecord
+    +IsValidOn(day) bool
+  }
+  class PolicyAcknowledgement {
+    -id: Guid
+    -documentId: Guid
+    -userId: Guid
+    -version: string
+    -confirmedAt: DateTime
+    +Confirm(organizationId, documentId, userId, version, at)$ PolicyAcknowledgement
+  }
+  class CompetenceService {
+    +ViewAsync() CompetenceView
+    +AddCompetenceAsync(name, renewalMonths, roles, forPeopleWithoutUser) Competence
+    +RecordTrainingAsync(competenceId, person, trainedOn, evidence)
+    +ConfirmPolicyAsync(documentId)
+    +ShareRead(policies, members, acknowledgements)$ decimal?
+  }
+  Competence "*" --> "1" Organization
+  StaffPerson "*" --> "1" Organization
+  TrainingRecord "*" --> "1" Competence
+  TrainingRecord "*" --> "0..1" User
+  TrainingRecord "*" --> "0..1" StaffPerson
+  PolicyAcknowledgement "*" --> "1" OrganisationDocument
+  PolicyAcknowledgement "*" --> "1" User
+  CompetenceService --> ICompetenceRepository
+  TrackerMeasures ..> CompetenceService : policies read
+
   %% ================= NIS2-gap-analyse =================
   class GapAnswer {
     -id: Guid

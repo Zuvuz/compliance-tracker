@@ -23,7 +23,10 @@ namespace ComplianceTracker.Domain.Isms
         OpenHighRisks,
         OverdueRiskActions,
         OpenNonconformities,
-        OpenSecurityEvents
+        OpenSecurityEvents,
+
+        // US-213 R6: the share of the members' confirmations of the current policies, over the whole organisation
+        PoliciesRead
     }
 
     // US-209 R4: how the last value stands against the target
@@ -210,7 +213,7 @@ namespace ComplianceTracker.Domain.Isms
 
         public static string UnitOf(TrackerMeasure? measure, string? unit) => measure switch
         {
-            TrackerMeasure.RequirementCoverage or TrackerMeasure.EvidenceCoverage => "%",
+            TrackerMeasure.RequirementCoverage or TrackerMeasure.EvidenceCoverage or TrackerMeasure.PoliciesRead => "%",
             null => (unit ?? "").Trim(),
             _ => ""
         };

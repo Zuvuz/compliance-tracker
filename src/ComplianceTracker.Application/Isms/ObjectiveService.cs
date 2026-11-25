@@ -44,10 +44,17 @@ namespace ComplianceTracker.Application.Isms
         private readonly IRiskRepository _risks;
         private readonly INonconformityRepository _nonconformities;
         private readonly ISecurityEventRepository _events;
+        private readonly Organizations.IOrganizationRepository _organizations;
+        private readonly Organizations.IOrganisationDocumentRepository _documents;
+        private readonly ICompetenceRepository _competences;
 
         public TrackerMeasures(IProjectRepository projects, IIsmsScopeRepository scopes, ComplianceQueries compliance, IRiskRepository risks,
-            INonconformityRepository nonconformities, ISecurityEventRepository events)
+            INonconformityRepository nonconformities, ISecurityEventRepository events, Organizations.IOrganizationRepository organizations,
+            Organizations.IOrganisationDocumentRepository documents, ICompetenceRepository competences)
         {
+            _organizations = organizations;
+            _documents = documents;
+            _competences = competences;
             _projects = projects;
             _scopes = scopes;
             _compliance = compliance;
@@ -61,6 +68,19 @@ namespace ComplianceTracker.Application.Isms
             if (measure == TrackerMeasure.OpenNonconformities)
             {
                 return (await _nonconformities.ListAsync(organizationId, cancellationToken)).Count(n => !n.IsClosed);
+            }
+
+            // US-213 R6: the whole organisation's members and policies
+            if (measure == TrackerMeasure.PoliciesRead)
+            {
+                if (await _organizations.GetByIdAsync(organizationId, cancellationToken) is not { } organization)
+                {
+                    return null;
+                }
+
+                var policies = (await _documents.ListAsync(organizationId, cancellationToken: cancellationToken))
+                    .Where(d => d.IsActive && d.Kind == Domain.Organizations.OrganisationDocumentKind.Policy).ToList();
+                return CompetenceService.ShareRead(policies, organization.Members, await _competences.ListAcknowledgementsAsync(organizationId, cancellationToken));
             }
 
             // R5: only the projects inside the scope; none inside, nothing to measure
@@ -238,6 +258,7 @@ namespace ComplianceTracker.Application.Isms
             TrackerMeasure.OpenHighRisks => "Open high and critical risks",
             TrackerMeasure.OverdueRiskActions => "Overdue risk actions",
             TrackerMeasure.OpenNonconformities => "Open nonconformities",
+            TrackerMeasure.PoliciesRead => "Policies read by the members",
             _ => "Open security events"
         };
 

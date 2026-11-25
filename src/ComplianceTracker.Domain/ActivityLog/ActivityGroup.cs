@@ -47,6 +47,7 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.NonconformityChanged // US-212
                 or ActivityAction.ObjectiveChanged // US-209
                 or ActivityAction.AuditProgrammeChanged // US-211
+                or ActivityAction.CompetenceChanged or ActivityAction.PolicyConfirmed // US-213
                 or ActivityAction.IndustryProfileChosen => ActivityGroup.Organisation,
             ActivityAction.CatalogImported or ActivityAction.CatalogActivated or ActivityAction.FrameworkEnabled
                 or ActivityAction.FrameworkDisabled
