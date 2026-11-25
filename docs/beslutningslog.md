@@ -2591,6 +2591,31 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Andelen af læste politikker. Den kommer med US-213.
   - Sikkerhedshændelser efter deres frist. Indtil videre tælles de åbne.
 
+### B170 – Et internt auditprogram med kontrolejere sat på siden (US-211)
+
+- **Beslutning:**
+  - **Siden "Internal audits"** ligger i ISMS-området. Programmet har en start og en længde på 1–5 år, ét pr. organisation.
+  - **En planlagt audit** har:
+    - en dato inden for programmet
+    - de klausuler (4–10) og Annex A-kontroller, den dækker (mindst én)
+    - projekterne
+    - en auditor: et medlem eller navnet på en ekstern
+  - **Dækningen** viser hver klausul 4–10 og hver kontrol som Done, Planned eller Missing i cyklussen. Kontrollerne er:
+    - dem, der gælder i SoA'en (US-053), når organisationen har ISO/IEC 27001
+    - de kontroller, der er planlagt
+
+    Øverst står fx "Missing: 9, 10 and 53 controls".
+  - **Kontrolejere sættes på siden** (brugerens valg). Trackeren havde ingen ejere på kontroller.
+  - **Uafhængighed:** en auditor, der ejer en kontrol i planen, får en advarsel med navn og kontroller. Planen gemmes kun med en begrundelse, som vises ved auditten og står i loggen.
+  - **Udført:** en planlagt audit bliver Done, når en registreret audit (US-134) kobles til den. Auditens åbne fund bliver afvigelser (US-212) med kilden Internal audit. Et fund, der allerede har en åben afvigelse, får ikke en til.
+  - **Forfalden:** en planlagt audit efter sin dato uden en registreret audit er Overdue.
+  - **Rettigheder:** alle læser programmet. Kun roller med `DecideCompliance` ændrer det. Alt logges som `AuditProgrammeChanged`.
+- **Begrundelse:** ISO 27001 9.2 kræver et program, der over tid dækker hele ledelsessystemet, og auditorer, der er uafhængige af det, de auditerer. Når auditterne kobles til de registrerede, kommer fundene ind i den samme afvigelsesproces.
+- **Fravalgt:**
+  - At udlede ejeren af, hvem der har tilføjet evidensen.
+  - En tidslinje-grafik. Planen vises som en liste sorteret efter dato.
+  - At kun interne audits kan kobles. Alle registrerede audits kan vælges, og deres art står ved dem.
+
 ## Spørgsmål til klassediagrammet
 
 Der er ingen åbne spørgsmål. De første spørgsmål fra oktober 2026 er besvaret sådan:

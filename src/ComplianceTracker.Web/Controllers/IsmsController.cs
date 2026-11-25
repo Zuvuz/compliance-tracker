@@ -20,11 +20,13 @@ namespace ComplianceTracker.Web.Controllers
         private readonly AssetService _assets;
         private readonly NonconformityService _nonconformities;
         private readonly ObjectiveService _objectives;
+        private readonly AuditProgrammeService _programme;
         private readonly CurrentMember _member;
 
         public IsmsController(IsmsScopeService scope, AssetService assets, NonconformityService nonconformities, ObjectiveService objectives,
-            CurrentMember member)
+            AuditProgrammeService programme, CurrentMember member)
         {
+            _programme = programme;
             _objectives = objectives;
             _scope = scope;
             _assets = assets;
@@ -384,6 +386,73 @@ namespace ComplianceTracker.Web.Controllers
         {
             await _objectives.RecordAsync(objectiveId, value, note, cancellationToken);
             return RedirectToAction(nameof(Objectives), null, $"objective-{objectiveId}");
+        }
+
+        // ---------------------------------------------------------- US-211: the internal audit programme
+
+        // GET /Isms/InternalAudits: every member reads the programme
+        [HttpGet]
+        public async Task<IActionResult> InternalAudits(CancellationToken cancellationToken)
+        {
+            if (await _member.FindOrganizationAsync(cancellationToken) is null)
+            {
+                return RedirectToAction("Create", "Organizations");
+            }
+
+            return View(await _programme.ViewAsync(cancellationToken));
+        }
+
+        // POST /Isms/AuditCycle: R1
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(InternalAudits))]
+        public async Task<IActionResult> AuditCycle(DateOnly? startsOn, int? years, CancellationToken cancellationToken)
+        {
+            await _programme.SetCycleAsync(startsOn, years, cancellationToken);
+            TempData["Success"] = "The audit programme is saved.";
+            return RedirectToAction(nameof(InternalAudits));
+        }
+
+        // POST /Isms/ControlOwner: R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(InternalAudits))]
+        public async Task<IActionResult> ControlOwner(string? code, Guid? ownerId, CancellationToken cancellationToken)
+        {
+            await _programme.SetOwnerAsync(code, ownerId, cancellationToken);
+            return RedirectToAction(nameof(InternalAudits), null, "control-owners");
+        }
+
+        // POST /Isms/PlanAudit: R2, R4
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(InternalAudits))]
+        public async Task<IActionResult> PlanAudit(DateOnly? on, List<string?>? clauses, string? controls, List<Guid>? projectIds, Guid? auditorId,
+            string? auditorName, string? reason, CancellationToken cancellationToken)
+        {
+            var planned = await _programme.PlanAsync(on, clauses, controls, projectIds, auditorId, auditorName, reason, cancellationToken);
+            return RedirectToAction(nameof(InternalAudits), null, $"planned-{planned.Id}");
+        }
+
+        // POST /Isms/RemovePlannedAudit
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(InternalAudits))]
+        public async Task<IActionResult> RemovePlannedAudit(Guid plannedAuditId, CancellationToken cancellationToken)
+        {
+            await _programme.RemoveAsync(plannedAuditId, cancellationToken);
+            return RedirectToAction(nameof(InternalAudits));
+        }
+
+        // POST /Isms/LinkRecordedAudit: R5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(InternalAudits))]
+        public async Task<IActionResult> LinkRecordedAudit(Guid plannedAuditId, Guid auditId, CancellationToken cancellationToken)
+        {
+            var raised = await _programme.LinkAsync(plannedAuditId, auditId, cancellationToken);
+            TempData["Success"] = raised == 0 ? "The audit is done." : $"The audit is done; {raised} finding{(raised == 1 ? "" : "s")} went to the nonconformities.";
+            return RedirectToAction(nameof(InternalAudits), null, $"planned-{plannedAuditId}");
         }
 
         // The requirement rows of the form: the texts, and the numbers of the rows ticked as handled

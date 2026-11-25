@@ -1,0 +1,242 @@
+@* US-211: the internal audit programme (ISO/IEC 27001 9.2). R1: a cycle of 1–5 years; R2: each planned audit covers a
+   clause or control; R3: the coverage of clauses 4–10 and the applicable Annex A controls; R4: an auditor who owns a control
+   is warned and needs a reason; R5: a planned audit is done when its recorded audit is linked, and the findings go to the
+   nonconformities; R6: a planned audit past its date is overdue.
+   Ids and classes used by the tests: form#audit-cycle, #audit-coverage rows with data-item and data-state,
+   #audit-missing, form#control-owner, #control-owners rows with data-control, form#plan-audit, #planned-audits rows with
+   data-planned and data-done (.planned-overdue), form.link-recorded-audit, form.remove-planned-audit,
+   #internal-audits-read-only. *@
+@model ComplianceTracker.Application.Isms.AuditProgrammeView
+@using ComplianceTracker.Application.Isms
+@using ComplianceTracker.Domain.Isms
+@{
+    ViewData["Title"] = "Internal audits";
+    var programme = Model.Programme;
+}
+
+<partial name="_IsmsNav" />
+
+<page-header heading="Internal audits" heading-id="internal-audits-title" />
+
+<p class="text-muted">The internal audit programme: over its cycle the planned audits must cover clauses 4–10 and every Annex A
+    control that applies in the Statement of Applicability (ISO/IEC 27001 9.2). An auditor should not audit their own work.</p>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+@if (!Model.CanChange)
+{
+    <p class="text-muted small" id="internal-audits-read-only">You can read the programme. Members who decide compliance plan the audits.</p>
+}
+
+@if (Model.CanChange)
+{
+    <form asp-action="AuditCycle" method="post" id="audit-cycle" class="d-flex flex-wrap gap-2 align-items-end mb-3">
+        <div>
+            <label class="form-label small mb-0" for="cycle-start">Programme starts</label>
+            <input class="form-control form-control-sm" type="date" id="cycle-start" name="startsOn" value="@programme?.StartsOn.ToString("yyyy-MM-dd")" required />
+        </div>
+        <div>
+            <label class="form-label small mb-0" for="cycle-years">Years</label>
+            <select class="form-select form-select-sm" id="cycle-years" name="years">
+                @for (var y = AuditProgramme.MinYears; y <= AuditProgramme.MaxYears; y++)
+                {
+                    <option value="@y" selected="@((programme?.Years ?? 3) == y)">@y</option>
+                }
+            </select>
+        </div>
+        <button type="submit" class="btn btn-sm btn-outline-primary">@(programme is null ? "Start the programme" : "Save the cycle")</button>
+    </form>
+}
+
+@if (programme is null)
+{
+    <p class="text-muted" id="audit-programme-empty">No audit programme yet.</p>
+    return;
+}
+
+<p class="small" id="audit-cycle-text">Cycle: <strong>@programme.StartsOn.ToString("dd-MM-yyyy") to @programme.EndsOn.ToString("dd-MM-yyyy")</strong> (@programme.Years year@(programme.Years == 1 ? "" : "s"))</p>
+
+<section class="mb-4">
+    <h2 class="h5">Planned audits</h2>
+    @if (programme.Audits.Count == 0)
+    {
+        <p class="text-muted small">Nothing planned yet.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm align-middle" id="planned-audits">
+                <thead><tr><th>Date</th><th>Covers</th><th>Projects</th><th>Auditor</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var audit in programme.Audits)
+                    {
+                        <tr id="planned-@audit.Id" data-planned="@audit.On.ToString("yyyy-MM-dd")" data-done="@audit.IsDone.ToString().ToLowerInvariant()">
+                            <td>@audit.On.ToString("dd-MM-yyyy")</td>
+                            <td class="small">@string.Join(", ", audit.Clauses.Select(c => $"Clause {c}").Concat(audit.Controls))</td>
+                            <td class="small">@Model.ProjectsOf(audit)</td>
+                            <td>
+                                @Model.AuditorOf(audit)
+                                @if (audit.ImpartialityReason is { } reason)
+                                {
+                                    <div class="small text-muted planned-reason">Owns a control in it; kept because @reason</div>
+                                }
+                            </td>
+                            <td>
+                                @if (audit.IsDone)
+                                {
+                                    <status-badge status="Done" />
+                                }
+                                else if (audit.IsOverdue(Model.Today))
+                                {
+                                    <span class="planned-overdue"><status-badge status="Overdue" /></span>
+                                }
+                                else
+                                {
+                                    <status-badge status="Planned" />
+                                }
+                            </td>
+                            <td>
+                                @if (Model.CanChange && !audit.IsDone)
+                                {
+                                    @if (Model.RecordedAudits.Count > 0)
+                                    {
+                                        <form asp-action="LinkRecordedAudit" method="post" class="link-recorded-audit d-flex flex-wrap gap-1 mb-1">
+                                            <input type="hidden" name="plannedAuditId" value="@audit.Id" />
+                                            <select class="form-select form-select-sm" name="auditId" aria-label="Recorded audit">
+                                                @foreach (var recorded in Model.RecordedAudits)
+                                                {
+                                                    <option value="@recorded.Id">@recorded.Label</option>
+                                                }
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Mark done</button>
+                                        </form>
+                                    }
+                                    <form asp-action="RemovePlannedAudit" method="post" class="remove-planned-audit" data-confirm="Remove the audit planned on @audit.On.ToString("dd-MM-yyyy")?">
+                                        <input type="hidden" name="plannedAuditId" value="@audit.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    @if (Model.CanChange)
+    {
+        <form asp-action="PlanAudit" method="post" id="plan-audit" class="card card-body small row g-2 mx-0">
+            <div class="col-md-3">
+                <label class="form-label small" for="plan-on">Date</label>
+                <input class="form-control form-control-sm" type="date" id="plan-on" name="on" required />
+            </div>
+            <div class="col-md-9">
+                <span class="form-label small d-block">Clauses</span>
+                @foreach (var clause in AuditProgramme.Clauses)
+                {
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="plan-clause-@clause" name="clauses" value="@clause" />
+                        <label class="form-check-label" for="plan-clause-@clause">@clause</label>
+                    </div>
+                }
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small" for="plan-controls">Annex A controls <span class="text-muted">(e.g. A.5.1, A.8.13)</span></label>
+                <input class="form-control form-control-sm" id="plan-controls" name="controls" list="applicable-controls" />
+                <datalist id="applicable-controls">
+                    @foreach (var control in Model.ApplicableControls)
+                    {
+                        <option value="@control"></option>
+                    }
+                </datalist>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small" for="plan-projects">Projects</label>
+                <select class="form-select form-select-sm" id="plan-projects" name="projectIds" multiple size="2">
+                    @foreach (var project in Model.Projects)
+                    {
+                        <option value="@project.Id">@project.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small" for="plan-auditor">Auditor</label>
+                <select class="form-select form-select-sm" id="plan-auditor" name="auditorId">
+                    <option value="">External (write the name)</option>
+                    @foreach (var member in Model.Members.OrderBy(m => m.Value, StringComparer.OrdinalIgnoreCase))
+                    {
+                        <option value="@member.Key">@member.Value</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small" for="plan-auditor-name">External auditor</label>
+                <input class="form-control form-control-sm" id="plan-auditor-name" name="auditorName" maxlength="200" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small" for="plan-reason">Reason to keep an auditor who owns a control</label>
+                <input class="form-control form-control-sm" id="plan-reason" name="reason" maxlength="1000" />
+            </div>
+            <div class="col-12"><button type="submit" class="btn btn-sm btn-primary">Plan the audit</button></div>
+        </form>
+    }
+</section>
+
+<section class="mb-4">
+    <h2 class="h5">Coverage in the cycle</h2>
+    @if (Model.MissingText is { } missing)
+    {
+        <p class="small" id="audit-missing"><status-badge status="Missing" /> @missing</p>
+    }
+    @if (Model.ApplicableControls.Count == 0)
+    {
+        <p class="small text-muted">The organisation has no ISO/IEC 27001 framework, so only the clauses and the planned controls are listed.</p>
+    }
+    <table class="table table-sm" id="audit-coverage">
+        <thead><tr><th>Clause or control</th><th>Owner</th><th>In the cycle</th></tr></thead>
+        <tbody>
+            @foreach (var (item, state) in Model.Coverage)
+            {
+                <tr data-item="@item" data-state="@state">
+                    <td>@(AuditProgramme.Clauses.Contains(item) ? $"Clause {item}" : item)</td>
+                    <td class="small">@Model.NameOf(programme.OwnerOf(item))</td>
+                    <td><status-badge status="@state.ToString()" /></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="mb-4" id="control-owners">
+    <h2 class="h5">Control owners</h2>
+    @if (programme.ControlOwners.Count > 0)
+    {
+        <ul class="small">
+            @foreach (var owner in programme.ControlOwners)
+            {
+                <li data-control="@owner.Code">@owner.Code: @Model.NameOf(owner.OwnerId)</li>
+            }
+        </ul>
+    }
+    @if (Model.CanChange)
+    {
+        <form asp-action="ControlOwner" method="post" id="control-owner" class="d-flex flex-wrap gap-2 align-items-end">
+            <div>
+                <label class="form-label small mb-0" for="owner-control">Control</label>
+                <input class="form-control form-control-sm" id="owner-control" name="code" list="applicable-controls" required />
+            </div>
+            <div>
+                <label class="form-label small mb-0" for="owner-member">Owner</label>
+                <select class="form-select form-select-sm" id="owner-member" name="ownerId">
+                    <option value="">No owner</option>
+                    @foreach (var member in Model.Members.OrderBy(m => m.Value, StringComparer.OrdinalIgnoreCase))
+                    {
+                        <option value="@member.Key">@member.Value</option>
+                    }
+                </select>
+            </div>
+            <button type="submit" class="btn btn-sm btn-outline-primary">Save the owner</button>
+        </form>
+    }
+</section>

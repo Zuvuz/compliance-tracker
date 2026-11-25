@@ -449,6 +449,11 @@ namespace ComplianceTracker.Domain.ActivityLog
         // US-209: an objective was added, changed or removed, or a person entered a measurement (Details names the objective
         // and the value). The tracker's own measurements are not logged; they are kept with the objective. SubjectId points
         // at the organisation.
-        ObjectiveChanged
+        ObjectiveChanged,
+
+        // US-211: the internal audit programme got its cycle, a control owner, a planned audit (with the reason when the
+        // auditor owns a control in it), or a planned audit was removed or linked to its recorded audit. SubjectId points at
+        // the organisation.
+        AuditProgrammeChanged
     }
 }
