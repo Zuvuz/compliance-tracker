@@ -98,6 +98,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             var form = (await SuggestionAsync(story, code)).QuerySelector("form.approve-suggestion")
                 ?? throw new Xunit.Sdk.XunitException($"The suggestion '{code}' has no Approve button.");
             await _web.PostFormAsync("/Projects/ApproveSuggestion", HiddenFields(form));
+            await _web.ConfirmArgumentAsync(); // US-221
         }
 
         [Given("I reject the suggestion {string} for {string} with the reason {string} and the comment {string}")]

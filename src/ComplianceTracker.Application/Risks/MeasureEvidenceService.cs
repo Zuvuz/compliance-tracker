@@ -48,11 +48,14 @@ namespace ComplianceTracker.Application.Risks
             _member = member;
         }
 
-        public async Task ApproveAsync(Guid projectId, Guid suggestionId, MeasureEvidence? evidence, CancellationToken cancellationToken = default)
+        // US-221 R2: only after the person confirmed they read the argument, before anything is saved
+        public async Task ApproveAsync(Guid projectId, Guid suggestionId, MeasureEvidence? evidence, bool argumentConfirmed,
+            CancellationToken cancellationToken = default)
         {
+            Domain.Mappings.SuggestionArgument.RequireConfirmed(argumentConfirmed);
             if (evidence is not { IsGiven: true })
             {
-                await _ai.ApproveMeasureAsync(projectId, suggestionId, cancellationToken); // R1: as today
+                await _ai.ApproveMeasureAsync(projectId, suggestionId, argumentConfirmed, cancellationToken); // R1: as today
                 return;
             }
 
@@ -95,7 +98,7 @@ namespace ComplianceTracker.Application.Risks
                 await _evidence.LinkStoryAsync(projectId, added.Evidence.Id, storyId, cancellationToken);
             }
 
-            await _ai.ApproveMeasureAsync(projectId, suggestionId, cancellationToken);
+            await _ai.ApproveMeasureAsync(projectId, suggestionId, argumentConfirmed, cancellationToken);
         }
     }
 }

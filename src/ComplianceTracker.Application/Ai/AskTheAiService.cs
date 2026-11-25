@@ -371,18 +371,21 @@ namespace ComplianceTracker.Application.Ai
         }
 
         // R12: approving adds the measure; never by itself
-        public async Task ApproveMeasureAsync(Guid projectId, Guid suggestionId, CancellationToken cancellationToken = default)
+        // US-221 R2: only after the person confirmed they read the argument
+        public async Task ApproveMeasureAsync(Guid projectId, Guid suggestionId, bool argumentConfirmed, CancellationToken cancellationToken = default)
         {
+            SuggestionArgument.RequireConfirmed(argumentConfirmed);
             var (_, user, project) = await OpenAsync(projectId, Permission.ManageRisks, cancellationToken);
             var suggestion = await MeasureOfAsync(project, suggestionId, cancellationToken);
             var risk = await _risks.GetAsync(project.Id, suggestion.RiskId, cancellationToken) ?? throw new DomainException("Risk not found");
-            suggestion.Approve(user.Id, Now, user.Role);
+            suggestion.Approve(user.Id, Now, user.Role, Now);
             if (!risk.Measures.Any(m => m.RequirementId == suggestion.RequirementId && m.WorkItemId == suggestion.WorkItemId))
             {
                 risk.AddMeasure(suggestion.RequirementId, suggestion.WorkItemId);
             }
 
-            await _log.LogAsync(ActivityAction.RiskMeasureSuggestionApproved, project.Id, $"{risk.Title}: {await MeasureNameAsync(project, suggestion, cancellationToken)}", cancellationToken);
+            await _log.LogAsync(ActivityAction.RiskMeasureSuggestionApproved, project.Id, $"{risk.Title}: {await MeasureNameAsync(project, suggestion, cancellationToken)} ({SuggestionArgument.Logged(SuggestionArgument.ConfidenceOf(suggestion.Score, false))})",
+                cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 

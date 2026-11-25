@@ -977,9 +977,15 @@ namespace ComplianceTracker.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
-        public async Task<IActionResult> ApproveEvidenceSuggestion(Guid projectId, Guid suggestionId, string? sub, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
+        public async Task<IActionResult> ApproveEvidenceSuggestion(Guid projectId, Guid suggestionId, string? sub, [FromServices] EvidenceService evidence, CancellationToken cancellationToken,
+            bool argumentConfirmed = false)
         {
-            await evidence.ApproveAsync(projectId, suggestionId, cancellationToken);
+            if (!argumentConfirmed)
+            {
+                return ToConfirmation(projectId, Domain.Mappings.SuggestionKind.Evidence, suggestionId, sub, null); // US-221 R1
+            }
+
+            await evidence.ApproveAsync(projectId, suggestionId, argumentConfirmed, cancellationToken);
             return BackFromSuggestion(projectId, sub); // US-106: from the Compliance tab, back there
         }
 
@@ -1712,9 +1718,15 @@ namespace ComplianceTracker.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Evidence)]
-        public async Task<IActionResult> ApproveEvidenceStorySuggestion(Guid projectId, Guid suggestionId, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
+        public async Task<IActionResult> ApproveEvidenceStorySuggestion(Guid projectId, Guid suggestionId, [FromServices] EvidenceService evidence, CancellationToken cancellationToken,
+            bool argumentConfirmed = false)
         {
-            await evidence.ApproveStoryAsync(projectId, suggestionId, cancellationToken);
+            if (!argumentConfirmed)
+            {
+                return ToConfirmation(projectId, Domain.Mappings.SuggestionKind.EvidenceStory, suggestionId, null, null); // US-221 R1
+            }
+
+            await evidence.ApproveStoryAsync(projectId, suggestionId, argumentConfirmed, cancellationToken);
             return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
         }
 
@@ -2103,11 +2115,53 @@ namespace ComplianceTracker.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [OnDomainError(nameof(Details), IdFrom = "projectId", Tab = ProjectTabs.Compliance, SubFrom = "sub")]
-        public async Task<IActionResult> ApproveSuggestion(Guid projectId, Guid suggestionId, string? sub, string? show, CancellationToken cancellationToken)
+        public async Task<IActionResult> ApproveSuggestion(Guid projectId, Guid suggestionId, string? sub, string? show, CancellationToken cancellationToken,
+            bool argumentConfirmed = false)
         {
-            await _suggestions.ApproveAsync(projectId, suggestionId, cancellationToken);
+            if (!argumentConfirmed)
+            {
+                return ToConfirmation(projectId, Domain.Mappings.SuggestionKind.Story, suggestionId, sub, show); // US-221 R1
+            }
+
+            await _suggestions.ApproveAsync(projectId, suggestionId, argumentConfirmed, cancellationToken);
             return BackToCompliance(projectId, sub, show);
         }
+
+        // GET /Projects/ConfirmSuggestion: US-221 R1-R5, the AI's argument and the second confirmation before a link is made.
+        // A page of its own, so it works without JavaScript.
+        [HttpGet]
+        public async Task<IActionResult> ConfirmSuggestion(Guid projectId, Domain.Mappings.SuggestionKind kind, Guid suggestionId, string? sub, string? show,
+            string? req, [FromServices] Application.Ai.SuggestionArgumentService arguments, CancellationToken cancellationToken)
+        {
+            var confirmation = await arguments.ForAsync(projectId, kind, suggestionId, cancellationToken);
+            if (confirmation is null)
+            {
+                return NotFound();
+            }
+
+            req = RequirementPages.Clean(req);
+            ViewData["Sub"] = sub;
+            ViewData["Show"] = show;
+            ViewData["Req"] = req;
+            ViewData["Back"] = kind == Domain.Mappings.SuggestionKind.Story || (kind == Domain.Mappings.SuggestionKind.Evidence && (sub is not null || req is not null))
+                ? Url.Action(nameof(Details), new
+                {
+                    id = projectId,
+                    tab = ProjectTabs.Compliance,
+                    sub = req is not null && sub is null ? ComplianceFilters.AllSub : sub,
+                    req,
+                    show = string.IsNullOrEmpty(show) || req is not null ? null : show
+                })
+                : Url.Action(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+            return View(confirmation);
+        }
+
+        private RedirectToActionResult ToConfirmation(Guid projectId, Domain.Mappings.SuggestionKind kind, Guid suggestionId, string? sub, string? show)
+            => RedirectToAction(nameof(ConfirmSuggestion), new
+            {
+                projectId, kind, suggestionId, sub, show,
+                req = Request.HasFormContentType ? RequirementPages.Clean(Request.Form["req"]) : null // the requirement page comes back to itself
+            });
 
         // POST /Projects/RejectSuggestion: US-020 R7. An unknown reason binds as null and is refused by the domain.
         [HttpPost]

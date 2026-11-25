@@ -73,6 +73,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 content.Add(new StringContent(value), name);
             }
 
+            content.Add(new StringContent("true"), "argumentConfirmed"); // US-221: the tick in the form
+
             if (file is { } f)
             {
                 var bytes = new ByteArrayContent(f.Content);
