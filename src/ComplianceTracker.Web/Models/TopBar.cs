@@ -22,9 +22,9 @@ namespace ComplianceTracker.Web.Models
                 "Review" => Home,
                 "Projects" or "Risks" => Projects,
                 "Frameworks" or "GapAnalysis" or "Checklists" => Compliance,
-                "Isms" => Isms,
+                "Isms" or "Documents" or "Suppliers" => Isms, // US-226
                 "Organisation" when action == "Index" => Compliance,
-                "Organisation" or "Users" or "Activity" or "Settings" or "Documents" or "Suppliers" => Organisation,
+                "Organisation" or "Users" or "Activity" or "Settings" => Organisation,
                 _ => null
             };
         }

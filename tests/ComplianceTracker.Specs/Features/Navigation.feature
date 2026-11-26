@@ -42,8 +42,8 @@ Feature: The main pages are in the top bar
 
   @US-045 @integration
   Scenario: The open organisation page is marked
-    When I open the organisation's page "Suppliers"
-    Then the organisation's page "Suppliers" is marked
+    When I open the organisation's page "Settings"
+    Then the organisation's page "Settings" is marked
     And the top bar marks "Organisation"
 
   @US-045 @integration

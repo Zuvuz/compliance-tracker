@@ -22,8 +22,10 @@ namespace ComplianceTracker.Web.Controllers
         }
 
         // GET /Documents
-        public async Task<IActionResult> Index(CancellationToken cancellationToken)
+        // US-226: the organisation's documents are an ISMS page; ?kind= filters them, policies first (kind=all shows every one)
+        public async Task<IActionResult> Index(CancellationToken cancellationToken, string? kind = null)
         {
+            ViewData["Kind"] = Models.DocumentKinds.Clean(kind);
             var view = await _service.ViewAsync(cancellationToken);
             return view is null
                 ? RedirectToAction("Index", "Projects")

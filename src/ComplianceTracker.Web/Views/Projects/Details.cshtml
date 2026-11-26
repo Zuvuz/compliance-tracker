@@ -8,10 +8,6 @@
     ViewData["AreaTab"] = Model.Tab; // US-225: the area's risks are ISMS, its other pages Compliance
 }
 
-@if (Model.Project.IsOrganisationArea && Model.Tab == ProjectTabs.Risks)
-{
-    <partial name="_IsmsNav" />
-}
 <partial name="_ProjectHeader" model="Model" />
 
 @switch (Model.Tab)

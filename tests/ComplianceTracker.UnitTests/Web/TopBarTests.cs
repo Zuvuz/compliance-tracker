@@ -16,7 +16,6 @@ public class TopBarTests
     [InlineData("Organisation", "Profile", TopBar.Organisation)]
     [InlineData("Users", "Index", TopBar.Organisation)]
     [InlineData("Settings", "Index", TopBar.Organisation)]
-    [InlineData("Suppliers", "Index", TopBar.Organisation)]
     [InlineData("Isms", "Scope", TopBar.Isms)]
     public void A_page_belongs_to_one_item(string controller, string action, string item)
         => Assert.Equal(item, TopBar.SectionOf(controller, action, false, null));

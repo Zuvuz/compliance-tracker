@@ -138,7 +138,7 @@
     </header>
     <div class="container">
         <main role="main" class="pb-3">
-            @* US-225: the row of subpages of the top bar item; the ISMS pages draw their own row (_IsmsNav) *@
+            @* US-225: the row of subpages of the top bar item *@
             @if (signedIn && !await Permissions.IsLimitedAsync() && section == TopBar.Organisation)
             {
                 <partial name="_OrganisationNav" />
@@ -146,6 +146,10 @@
             else if (signedIn && !await Permissions.IsLimitedAsync() && section == TopBar.Compliance)
             {
                 <partial name="_ComplianceNav" />
+            }
+            else if (signedIn && !await Permissions.IsLimitedAsync() && section == TopBar.Isms)
+            {
+                <partial name="/Views/Isms/_IsmsNav.cshtml" />
             }
             @if (TempData["FeedbackSent"] is string thanks)
             {

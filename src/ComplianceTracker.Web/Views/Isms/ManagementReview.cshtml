@@ -12,8 +12,6 @@
     var members = Model.Members.OrderBy(m => m.Value, StringComparer.OrdinalIgnoreCase).ToList();
 }
 
-<partial name="_IsmsNav" />
-
 <page-header heading="Management review" heading-id="management-review-title" status="@(review?.Status.ToString())" status-id="review-status">
     @if (review is not null)
     {
