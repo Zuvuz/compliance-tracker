@@ -50,6 +50,7 @@ namespace ComplianceTracker.Domain.ActivityLog
                 or ActivityAction.CompetenceChanged or ActivityAction.PolicyConfirmed // US-213
                 or ActivityAction.RecurringTaskChanged // US-215
                 or ActivityAction.ManagementReviewChanged // US-210
+                or ActivityAction.RiskApproverRolesChanged // US-217
                 or ActivityAction.IndustryProfileChosen => ActivityGroup.Organisation,
             ActivityAction.CatalogImported or ActivityAction.CatalogActivated or ActivityAction.FrameworkEnabled
                 or ActivityAction.FrameworkDisabled

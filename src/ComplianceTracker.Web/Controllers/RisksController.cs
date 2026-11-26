@@ -305,7 +305,7 @@ namespace ComplianceTracker.Web.Controllers
             if (!await _service.AcceptAsync(await ProjectOfAsync(id, cancellationToken), id, reason, cancellationToken))
             {
                 // US-135 R2
-                TempData["ApprovalRequested"] = "The risk is High or Critical, so another member must approve accepting it. It waits on the project's Overview.";
+                TempData["ApprovalRequested"] = "The risk is High or Critical, so a member with an approver role must approve accepting it. It waits on the project's Overview.";
             }
 
             return RedirectToAction(nameof(Details), new { id });

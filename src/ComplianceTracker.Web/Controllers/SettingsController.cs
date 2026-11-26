@@ -83,6 +83,18 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Index), null, null, "review-defaults");
         }
 
+        // POST /Settings/SetRiskApprovers: US-217 R1, R7, the organisation admin only (checked in the use case)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> SetRiskApprovers(List<UserRole>? roles, [FromServices] Application.Risks.RiskApproverService approvers,
+            CancellationToken cancellationToken)
+        {
+            await approvers.SetAsync(roles, cancellationToken);
+            TempData["Success"] = "The roles that approve accepting High and Critical risks are saved.";
+            return RedirectToAction(nameof(Index), null, null, "risk-approvers");
+        }
+
         // GET /Settings/Export: US-184 R1, R2, every piece of the organisation's data as one ZIP
         [HttpGet]
         public async Task<IActionResult> Export([FromServices] Application.Organizations.OrganisationExitService exit, CancellationToken cancellationToken)

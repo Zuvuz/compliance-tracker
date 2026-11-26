@@ -598,11 +598,30 @@
         </form>
         @if (risk.Status != RiskStatus.Accepted && canDecide)
         {
-            <form asp-action="Accept" method="post" data-confirm="The risk is accepted with your reason. A High or Critical risk needs another member's approval." data-confirm-final="true" class="d-flex gap-1" id="accept-risk">
-                <input type="hidden" name="id" value="@risk.Id" />
-                <input name="reason" class="form-control form-control-sm" placeholder="Why the risk is accepted" aria-label="Reason for accepting" />
-                <button type="submit" class="btn btn-outline-warning btn-sm text-nowrap">Accept risk</button>
-            </form>
+            @* US-217 R2, R3, R8: an approver role accepts at once; others ask, and are told who can approve and how many members have that role *@
+            var askFirst = risk.NeedsApprovalToAccept && !await Permissions.IsRiskApproverAsync();
+            var approverRoles = Model.Organization.RiskApproverRoles;
+            var approvers = Model.Organization.Members.Count(m => approverRoles.Contains(m.Role));
+            <div>
+                <form asp-action="Accept" method="post" data-confirm="@(askFirst ? $"The risk is {risk.ResidualLevel ?? risk.Level}, so {ComplianceTracker.Application.Risks.RiskApproverService.Titles(approverRoles)} must approve accepting it." : "The risk is accepted with your reason.")" data-confirm-final="true" class="d-flex gap-1" id="accept-risk">
+                    <input type="hidden" name="id" value="@risk.Id" />
+                    <input name="reason" class="form-control form-control-sm" placeholder="Why the risk is accepted" aria-label="Reason for accepting" />
+                    <button type="submit" class="btn btn-outline-warning btn-sm text-nowrap">@(askFirst ? "Ask for approval" : "Accept risk")</button>
+                </form>
+                @if (askFirst)
+                {
+                    <div class="small text-muted mt-1" id="risk-approvers">
+                        @if (approvers == 0)
+                        {
+                            <span>No member has the role @ComplianceTracker.Application.Risks.RiskApproverService.Titles(approverRoles) yet; the request waits until one is invited.</span>
+                        }
+                        else
+                        {
+                            <span>Approved by @ComplianceTracker.Application.Risks.RiskApproverService.Titles(approverRoles) (@approvers @(approvers == 1 ? "member" : "members")).</span>
+                        }
+                    </div>
+                }
+            </div>
         }
         @if (risk.Status == RiskStatus.Open)
         {

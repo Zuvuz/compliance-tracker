@@ -57,6 +57,23 @@
         <div class="col-12"><button type="submit" class="btn btn-sm btn-primary">Save review dates</button></div>
     </form>
 
+    @* US-217 R1, R7: the roles that accept a High or Critical risk at once and approve others' requests. Ids used by the
+       tests: form#set-risk-approvers with the checkboxes name="roles". *@
+    <h2 class="h4" id="risk-approvers">Who approves accepting High and Critical risks</h2>
+    <p class="text-muted small">A member with one of these roles accepts a High or Critical risk at once and approves the requests of others.
+        Other members who decide compliance must ask one of them. Only roles that may decide compliance can be chosen.</p>
+    <form asp-action="SetRiskApprovers" method="post" class="mb-4" id="set-risk-approvers">
+        @foreach (var role in Enum.GetValues<ComplianceTracker.Domain.Users.UserRole>()
+                      .Where(r => ComplianceTracker.Domain.Users.RolePermissions.Can(r, ComplianceTracker.Domain.Users.Permission.DecideCompliance)))
+        {
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="risk-approver-@role" name="roles" value="@role" checked="@Model.IsRiskApprover(role)" />
+                <label class="form-check-label" for="risk-approver-@role">@ComplianceTracker.Domain.Users.RolePermissions.Title(role)</label>
+            </div>
+        }
+        <div><button type="submit" class="btn btn-sm btn-primary mt-1">Save the approver roles</button></div>
+    </form>
+
 </section>
 
 @* US-132: the certificate signed reports are sealed with. The file and password are kept encrypted and never shown. *@

@@ -9,6 +9,8 @@ Feature: Confirmation and four-eyes approval
     And I am signed in as "Anna"
     And the project "Acme Portal" exists
     And "Bo" is in "Acme ApS" with the role "ComplianceManager"
+    # US-217: Anna (the organisation admin) asks and Bo approves, so here the Compliance manager is the approver role
+    And only "Compliance manager" approves accepting High and Critical risks
 
   @US-135 @iso27001-A.5.3 @integration
   Scenario: A high risk needs a second person
