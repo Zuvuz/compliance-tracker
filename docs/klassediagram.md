@@ -1,6 +1,6 @@
 # Compliance-tracker – Klassediagram
 
-Senest opdateret: 2026-11-25
+Senest opdateret: 2026-11-26
 
 Klassediagrammet bygger på [domænemodellen](domaenemodel.md) og viser modellagets klasser med attributter, datatyper og associationer. **Metoder tilføjes løbende**, når en user story kræver dem, og opdateres i samme pull request som koden. Reglerne, som metoderne skal håndhæve, står i domænemodellen.
 
@@ -41,7 +41,12 @@ classDiagram
     -users: List~User~
     -projects: List~Project~
     -frameworks: List~OrganizationFramework~
+    -riskApproverRoles: List~UserRole~
+    -hidesIsmsGuide: bool
     +Create(name: string, cvr: string, sector: Sector?, size: OrganizationSize?, creator: UserIdentity)$ Organization
+    +IsRiskApprover(role: UserRole) bool
+    +SetRiskApproverRoles(roles: List~UserRole~) List~UserRole~
+    +SetIsmsGuideHidden(hidden: bool)
     +Members: List~User~
     +RemoveMember(memberId: Guid, removedById: Guid, at: DateTime) User
     +Update(name: string, sector: Sector?, size: OrganizationSize?, userId: Guid) List~ProjectChange~

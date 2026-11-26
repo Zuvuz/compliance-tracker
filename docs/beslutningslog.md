@@ -2744,6 +2744,26 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Et dialogvindue oven på siden. En side for sig virker uden JavaScript og med den strenge CSP; et vindue kan komme senere.
   - At bede chat-modellen om del 1 og 3 i begrundelsen. Kravets titel og tjekkets "mangler" bruges i stedet.
 
+### B176 – Valgte roller godkender at acceptere High- og Critical-risici (US-217)
+
+- **Beslutning:**
+  - **Godkenderroller:** organisationen vælger de roller, der godkender at acceptere en High- eller Critical-risiko. Standarden er Organisation admin, og eksisterende organisationer får den. Det er en udvidelse af B69 (US-135).
+  - **Valg af roller:** kun roller med `DecideCompliance` (Organisation admin og Compliance manager) kan vælges, og mindst én skal vælges.
+  - **Hvem ændrer:** kun organisationens admin, under Settings → "Who approves accepting High and Critical risks". Ændringen logges som `RiskApproverRolesChanged` med de gamle og nye roller.
+  - **Med en godkenderrolle** accepterer man risikoen med det samme. Loggen siger fx "as Organisation admin (approver role, no approval needed; risk owner Anna)", og risikoejeren nævnes, som brugeren valgte.
+  - **Uden en godkenderrolle**, men med `DecideCompliance`, skal man bede om godkendelse.
+    - Risikosiden siger "Ask for approval" og nævner rollerne og hvor mange medlemmer, der har dem.
+    - Har ingen medlem rollen, siger siden det, og anmodningen venter.
+  - **Kun en godkenderrolle kan godkende.** Andre får "Only Organisation admin can approve this". Ingen kan godkende sin egen anmodning, og det tjekkes først.
+    - En ventende anmodning følger reglerne, når den godkendes. Det gælder også, hvis rollerne er ændret imens.
+  - **Medium og Low** accepteres som før. Den resterende risiko tæller, når den er sat (B69).
+  - **Andre fire-øjne-handlinger er uændrede:** "ikke rapporteringspligtig", end of support og aktivering af frameworkversioner.
+  - **Teknik:** `IApprovalExecutor` har fået `MayApprove` og `WhoMayApprove`. Standarden er handlingens tilladelse, og risici overskriver den.
+- **Begrundelse:** ISO 27001 6.1.3 og A.5.3: accept af de største risici skal ligge hos dem, organisationen har udpeget. Hos små organisationer skal admin kunne gøre det alene. Med to-personers-princippet kunne admin ikke det før.
+- **Fravalgt:**
+  - At risikoejeren også skal sige ja (brugerens valg).
+  - At en accept udløber og skal fornyes (brugerens valg).
+
 ## Spørgsmål til klassediagrammet
 
 Der er ingen åbne spørgsmål. De første spørgsmål fra oktober 2026 er besvaret sådan:

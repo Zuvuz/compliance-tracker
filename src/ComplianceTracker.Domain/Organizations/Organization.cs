@@ -113,6 +113,32 @@ namespace ComplianceTracker.Domain.Organizations
             AuditCertificateMonths = checkedDefaults.AuditCertificate;
         }
 
+        // US-217 R1: the roles that approve accepting a High or Critical risk; a member with one of them accepts at once.
+        // Only roles that may decide compliance; Organisation admin by default.
+        public List<UserRole> RiskApproverRoles { get; private set; } = [UserRole.Admin];
+
+        public bool IsRiskApprover(UserRole role) => RiskApproverRoles.Contains(role);
+
+        // R1, R7: returns the old roles, for the log; throws when no role or a role that may not decide compliance is chosen
+        public IReadOnlyList<UserRole> SetRiskApproverRoles(IEnumerable<UserRole>? roles)
+        {
+            var chosen = (roles ?? []).Distinct().OrderBy(r => r).ToList();
+            if (chosen.Count == 0)
+            {
+                throw new DomainException("Choose at least one role that approves accepting High and Critical risks");
+            }
+
+            var invalid = chosen.Where(r => !Enum.IsDefined(r) || !RolePermissions.Can(r, Permission.DecideCompliance)).ToList();
+            if (invalid.Count > 0)
+            {
+                throw new DomainException($"{RolePermissions.Title(invalid[0])} may not decide compliance, so it cannot approve risks");
+            }
+
+            var old = RiskApproverRoles.ToList();
+            RiskApproverRoles = chosen;
+            return old;
+        }
+
         // US-216 R5: the organisation hid the guided start on the ISMS page; it comes back from the page itself
         public bool HidesIsmsGuide { get; private set; }
 

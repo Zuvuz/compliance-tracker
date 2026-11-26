@@ -467,6 +467,10 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-210: a management review was planned or changed, held (its inputs kept), got a decision, had its minutes locked,
         // or an action was done. SubjectId points at the organisation.
-        ManagementReviewChanged
+        ManagementReviewChanged,
+
+        // US-217 R7: the organisation admin changed the roles that approve accepting High and Critical risks (Details has the
+        // old and new roles). SubjectId points at the organisation.
+        RiskApproverRolesChanged
     }
 }

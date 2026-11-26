@@ -110,11 +110,12 @@ namespace ComplianceTracker.Application.Risks
         }
 
         // R4. US-135 R2: a High or Critical risk waits for a second person; returns false when it waits.
+        // US-217 R2, R3: a member with one of the organisation's approver roles accepts it at once.
         public async Task<bool> AcceptAsync(Guid projectId, Guid riskId, string? reason, CancellationToken cancellationToken = default)
         {
             var (organization, userId, project, risk) = await RiskAsync(projectId, riskId, cancellationToken, Permission.DecideCompliance);
             var user = organization.Users.First(u => u.Id == userId);
-            if (risk.NeedsApprovalToAccept)
+            if (risk.NeedsApprovalToAccept && !organization.IsRiskApprover(user.Role))
             {
                 risk.CheckAccept(reason);
                 await _approvals.RequestAsync(
@@ -125,10 +126,32 @@ namespace ComplianceTracker.Application.Risks
                 return false;
             }
 
-            await LogChangeAsync(organization, project, risk, [risk.Accept(reason, userId, Now, user.Role)], cancellationToken);
+            var needed = risk.NeedsApprovalToAccept;
+            var accepted = risk.Accept(reason, userId, Now, user.Role);
+            if (needed)
+            {
+                // US-217: the log says it needed no approval, and names the risk owner
+                var owner = organization.Users.FirstOrDefault(u => u.Id == risk.OwnerId)?.Name ?? "unknown";
+                accepted = accepted with
+                {
+                    NewValue = $"{accepted.NewValue} as {RolePermissions.Title(user.Role)} (approver role, no approval needed; risk owner {owner})"
+                };
+            }
+
+            await LogChangeAsync(organization, project, risk, [accepted], cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return true;
         }
+
+        // US-217 R3: only a member with an approver role may approve accepting a High or Critical risk
+        bool IApprovalExecutor.MayApprove(Organization organization, User user)
+            => user.Can(Permission.DecideCompliance) && organization.IsRiskApprover(user.Role);
+
+        string IApprovalExecutor.WhoMayApprove(Organization organization) => $"Only {ApproverTitles(organization)} can approve this";
+
+        // e.g. "Organisation admin or Compliance manager"
+        public static string ApproverTitles(Organization organization)
+            => string.Join(" or ", organization.RiskApproverRoles.Select(RolePermissions.Title));
 
         // ---------------------------------------------------------- US-135: the approved acceptance
 

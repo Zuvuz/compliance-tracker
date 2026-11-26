@@ -6008,6 +6008,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(30);
 
+                    b.Property<string[]>("RiskApproverRoles")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text[]")
+                        .HasDefaultValueSql("ARRAY['Admin']::text[]");
+
                     b.Property<string>("Sector")
                         .IsRequired()
                         .HasMaxLength(50)

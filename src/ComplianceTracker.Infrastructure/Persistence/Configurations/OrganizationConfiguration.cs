@@ -42,6 +42,17 @@ namespace ComplianceTracker.Infrastructure.Persistence.Configurations
             builder.Property(o => o.AuditCertificateMonths).HasDefaultValue(ReviewDefaults.Standard.AuditCertificate);
             builder.Ignore(o => o.ReviewDefaults);
 
+            // US-217 R1: the roles that approve accepting High and Critical risks, as role names; existing organisations get
+            // Organisation admin
+            builder.Property(o => o.RiskApproverRoles)
+                .HasConversion(
+                    roles => roles.Select(r => r.ToString()).ToArray(),
+                    names => names.Select(n => Enum.Parse<Domain.Users.UserRole>(n)).ToList(),
+                    new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<Domain.Users.UserRole>>(
+                        (a, b) => a!.SequenceEqual(b!), c => c.Aggregate(0, (h, r) => HashCode.Combine(h, r)), c => c.ToList()))
+                .HasColumnType("text[]")
+                .HasDefaultValueSql("ARRAY['Admin']::text[]");
+
             // The users belong to the organisation. The foreign key only exists in the database
             // (a "shadow property"), so the User class in the domain does not need it.
             builder.HasMany(o => o.Users)

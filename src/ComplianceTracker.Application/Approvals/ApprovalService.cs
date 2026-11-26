@@ -37,6 +37,12 @@ namespace ComplianceTracker.Application.Approvals
 
         // Done as the person who asked, after another person approved; logged as the person who asked
         Task ExecuteAsync(ApprovalRequest request, Organization organization, User requester, User approver, CancellationToken cancellationToken = default);
+
+        // US-217 R3: who may approve; by default anyone with the action's permission
+        bool MayApprove(Organization organization, User user) => user.Can(Permission);
+
+        // US-217 R3: what someone who may not approve is told
+        string WhoMayApprove(Organization organization) => "Your role does not allow this";
     }
 
     // US-135: where a use case asks for approval instead of acting at once. It does not save; the use case does.
@@ -109,14 +115,15 @@ namespace ComplianceTracker.Application.Approvals
         public async Task ApproveAsync(Guid requestId, CancellationToken cancellationToken = default)
         {
             var (organization, user, request, executor) = await OpenAsync(requestId, cancellationToken);
-            if (!user.Can(executor.Permission))
-            {
-                throw new DomainException("Your role does not allow this");
-            }
-
+            // R4 first: one's own request is never approved, whatever the role
             if (user.Id == request.RequestedById)
             {
                 throw new DomainException("Another person must approve this");
+            }
+
+            if (!executor.MayApprove(organization, user))
+            {
+                throw new DomainException(executor.WhoMayApprove(organization));
             }
 
             await EnsureOpenAsync(organization, request, executor, cancellationToken);
@@ -131,9 +138,9 @@ namespace ComplianceTracker.Application.Approvals
         public async Task RejectAsync(Guid requestId, string? reason, CancellationToken cancellationToken = default)
         {
             var (organization, user, request, executor) = await OpenAsync(requestId, cancellationToken);
-            if (!user.Can(executor.Permission))
+            if (!executor.MayApprove(organization, user))
             {
-                throw new DomainException("Your role does not allow this");
+                throw new DomainException(executor.WhoMayApprove(organization));
             }
 
             await EnsureOpenAsync(organization, request, executor, cancellationToken);
@@ -185,6 +192,10 @@ namespace ComplianceTracker.Application.Approvals
         public static bool AnyoneElseMayApprove(Organization organization, Guid requestedById, Permission permission)
             => organization.Members.Any(u => u.Id != requestedById && u.Can(permission));
 
+        // US-217 R8: the same, with the executor's own rule for who may approve
+        public static bool AnyoneElseMayApprove(Organization organization, Guid requestedById, IApprovalExecutor executor)
+            => organization.Members.Any(u => u.Id != requestedById && executor.MayApprove(organization, u));
+
         private ApprovalView View(Organization organization, User user, ApprovalRequest request)
         {
             var open = request.IsPending && !request.IsDue(Now);
@@ -192,9 +203,9 @@ namespace ComplianceTracker.Application.Approvals
                 request,
                 organization.Users.FirstOrDefault(u => u.Id == request.RequestedById)?.Name ?? "?",
                 request.DecidedById is { } id ? organization.Users.FirstOrDefault(u => u.Id == id)?.Name : null,
-                open && user.Id != request.RequestedById && user.Can(Executor(request.Action).Permission),
+                open && user.Id != request.RequestedById && Executor(request.Action).MayApprove(organization, user),
                 open && user.Id == request.RequestedById,
-                open && !AnyoneElseMayApprove(organization, request.RequestedById, Executor(request.Action).Permission));
+                open && !AnyoneElseMayApprove(organization, request.RequestedById, Executor(request.Action)));
         }
 
         // R4, R5: an expired or stale request is closed and saved, and the member is told why

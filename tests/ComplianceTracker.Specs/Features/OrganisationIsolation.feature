@@ -24,6 +24,8 @@ Feature: No organisation can reach another organisation's data
       | Title        | Likelihood | Impact |
       | Old firmware | 2          | 3      |
     And I have created the upload token "GitHub Actions" for "Acme Portal"
+    # US-217: Anna asks for approval only when her role is not an approver role
+    And only "Compliance manager" approves accepting High and Critical risks
     And I ask to accept the risk "Phishing" with the reason "Training given"
     And I have uploaded the policy "Access control policy" version "v1" with the content "Policy text v1"
     And I link the document "Access control policy" to "I.2(d)"
