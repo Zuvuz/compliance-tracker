@@ -180,8 +180,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I open the front page", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 15
-    await testRunner.ThenAsync("the top bar has the links \"Projects\", \"Frameworks\", \"Organisation\" and \"My tasks\"" +
-                        "", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the top bar has the links \"Home\", \"Projects\", \"Compliance\" and \"Organisation\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 16
     await testRunner.AndAsync("the top bar opens no menu", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -236,7 +235,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("\"Bo\" opens the front page", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 25
-    await testRunner.ThenAsync("the top bar has the links \"Projects\" and \"Frameworks\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the top bar has the links \"Projects\" and \"Compliance\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 26
     await testRunner.AndAsync("the top bar has no link \"Users\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

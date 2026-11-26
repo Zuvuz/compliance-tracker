@@ -140,7 +140,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // (US-045; #52: the organisation's pages are a row of links on the organisation's pages).
         private async Task<IEnumerable<string[]>> UserRowsAsync()
         {
-            await _web.OpenAsync("/Organisation");
+            await _web.OpenAsync("/Organisation/Profile");
             var usersLink = _web.Page!.QuerySelector("#organisation-nav a#nav-users")?.GetAttribute("href")
                 ?? throw new Xunit.Sdk.XunitException($"The page {_web.CurrentPath} has no Users link among the organisation's pages.");
 

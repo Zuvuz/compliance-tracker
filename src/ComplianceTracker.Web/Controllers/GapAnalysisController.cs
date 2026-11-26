@@ -40,7 +40,6 @@ namespace ComplianceTracker.Web.Controllers
                 return RedirectToAction("Create", "Organizations");
             }
 
-            ViewData["OrganisationArea"] = true;
             var (areaId, lines, reports) = await _report.CurrentAsync(cancellationToken); // US-190
             return View(new GapAnalysisViewModel(
                 await _suggestions.PendingForAsync(IsNis2, cancellationToken),

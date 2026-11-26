@@ -198,19 +198,19 @@ namespace ComplianceTracker.Specs.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="A risk of the organisation keeps \"Organisation\" marked in the top bar")]
+        [global::Xunit.SkippableFactAttribute(DisplayName="A risk of the organisation keeps \"ISMS\" marked in the top bar")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Small fixes to the pages (#52)")]
-        [global::Xunit.TraitAttribute("Description", "A risk of the organisation keeps \"Organisation\" marked in the top bar")]
+        [global::Xunit.TraitAttribute("Description", "A risk of the organisation keeps \"ISMS\" marked in the top bar")]
         [global::Xunit.TraitAttribute("Category", "issue-52")]
         [global::Xunit.TraitAttribute("Category", "integration")]
-        public async global::System.Threading.Tasks.Task ARiskOfTheOrganisationKeepsOrganisationMarkedInTheTopBar()
+        public async global::System.Threading.Tasks.Task ARiskOfTheOrganisationKeepsISMSMarkedInTheTopBar()
         {
             string[] tagsOfScenario = new string[] {
                     "issue-52",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "1";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A risk of the organisation keeps \"Organisation\" marked in the top bar", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A risk of the organisation keeps \"ISMS\" marked in the top bar", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 20
@@ -227,7 +227,7 @@ namespace ComplianceTracker.Specs.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 21
-    await testRunner.WhenAsync("I open \"Organisation\" from the top bar", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.WhenAsync("I open the Compliance page \"NIS2 scope\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 22
     await testRunner.AndAsync("I add the risk \"Phishing\" to \"Organisation\" with likelihood 3 and impact 4", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -236,7 +236,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.AndAsync("I open the risk \"Phishing\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 24
-    await testRunner.ThenAsync("the top bar marks \"Organisation\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the top bar marks \"ISMS\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

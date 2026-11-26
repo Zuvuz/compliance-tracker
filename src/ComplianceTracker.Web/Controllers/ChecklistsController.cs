@@ -22,7 +22,6 @@ namespace ComplianceTracker.Web.Controllers
         // GET /Checklists
         public async Task<IActionResult> Index([FromServices] ChecklistSuggestionService suggestions, CancellationToken cancellationToken)
         {
-            ViewData["OrganisationArea"] = true;
             ViewData["ChecklistSuggestions"] = await suggestions.PendingAsync(cancellationToken); // US-193
             return View(await _checklists.ViewAsync(cancellationToken));
         }

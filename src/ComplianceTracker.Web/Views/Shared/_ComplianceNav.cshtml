@@ -1,0 +1,20 @@
+@* US-225: the Compliance item's pages as one row of links: the regulations the whole organisation follows. The organisation
+   area's tabs (US-142) are pages here, reached through /Organisation?tab=…. Ids used by the tests: #compliance-nav with
+   a.nav-link, the open page has .active. *@
+@{
+    var controller = ViewContext.RouteData.Values["controller"] as string;
+    var open = ComplianceTracker.Web.Models.TopBar.ComplianceOpen(controller, ViewData["OrganisationArea"] is true, ViewData["AreaTab"] as string);
+    string Mark(string page) => page == open ? "active" : "";
+    string? Current(string page) => page == open ? "page" : null;
+}
+<nav aria-label="Compliance" class="mb-3">
+    <ul class="nav nav-pills small flex-wrap" id="compliance-nav">
+        <li class="nav-item"><a class="nav-link @Mark("Frameworks")" aria-current="@Current("Frameworks")" id="nav-frameworks" asp-area="" asp-controller="Frameworks" asp-action="Index">Frameworks</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("Nis2")" aria-current="@Current("Nis2")" id="nav-nis2-scope" asp-area="" asp-controller="Organisation" asp-action="Index">NIS2 scope</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("GapAnalysis")" aria-current="@Current("GapAnalysis")" id="nav-gap-analysis" asp-area="" asp-controller="GapAnalysis" asp-action="Index">NIS2 gap analysis</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("Requirements")" aria-current="@Current("Requirements")" id="nav-compliance-requirements" asp-area="" asp-controller="Organisation" asp-action="Index" asp-route-tab="@ProjectTabs.Compliance">Requirements</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("Evidence")" aria-current="@Current("Evidence")" id="nav-compliance-evidence" asp-area="" asp-controller="Organisation" asp-action="Index" asp-route-tab="@ProjectTabs.Evidence">Evidence</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("Checklists")" aria-current="@Current("Checklists")" id="nav-checklists" asp-area="" asp-controller="Checklists" asp-action="Index">Checklists</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("Reports")" aria-current="@Current("Reports")" id="nav-compliance-reports" asp-area="" asp-controller="Organisation" asp-action="Index" asp-route-tab="@ProjectTabs.Reports">Reports</a></li>
+    </ul>
+</nav>

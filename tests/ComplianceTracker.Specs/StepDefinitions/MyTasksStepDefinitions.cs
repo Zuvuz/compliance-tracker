@@ -22,8 +22,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task WhenIOpenMyTasks()
         {
             await _web.OpenAsync("/Projects");
-            var link = _web.Page!.QuerySelector("#top-bar a#nav-review") ?? throw new Xunit.Sdk.XunitException("The top bar has no \"My tasks\".");
-            Assert.StartsWith("My tasks", link.TextContent.Trim());
+            var link = _web.Page!.QuerySelector("#top-bar a#nav-review") ?? throw new Xunit.Sdk.XunitException("The top bar has no \"Home\".");
+            Assert.StartsWith("Home", link.TextContent.Trim()); // US-225: My tasks is Home
             await _web.OpenAsync(link.GetAttribute("href")!);
         }
 

@@ -4,9 +4,14 @@
 @model ProjectDetailsViewModel
 @{
     ViewData["Title"] = Model.Project.IsOrganisationArea ? $"Organisation – {Model.Organization?.Name}" : Model.Project.Name;
-    ViewData["OrganisationArea"] = Model.Project.IsOrganisationArea; // US-142: the top bar marks "Organisation"
+    ViewData["OrganisationArea"] = Model.Project.IsOrganisationArea; // US-142
+    ViewData["AreaTab"] = Model.Tab; // US-225: the area's risks are ISMS, its other pages Compliance
 }
 
+@if (Model.Project.IsOrganisationArea && Model.Tab == ProjectTabs.Risks)
+{
+    <partial name="_IsmsNav" />
+}
 <partial name="_ProjectHeader" model="Model" />
 
 @switch (Model.Tab)

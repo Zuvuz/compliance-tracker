@@ -38,14 +38,14 @@ namespace ComplianceTracker.Specs.StepDefinitions
         public async Task WhenOpensTheOrganisationsPages(string userName)
         {
             using var client = _web.CreateClient(signedInAs: userName);
-            _web.Response = await client.GetAsync("/Organisation");
+            _web.Response = await client.GetAsync("/Organisation/Profile"); // US-225: the administration
             _web.Page = await WebScenario.ParseAsync(_web.Response);
         }
 
         [When("I open the organisation's page {string}")]
         public async Task WhenIOpenTheOrganisationsPage(string text)
         {
-            await _web.OpenAsync("/Organisation");
+            await _web.OpenAsync("/Organisation/Profile"); // US-225: the administration
             var link = _web.Page!.QuerySelectorAll("#organisation-nav a.nav-link").FirstOrDefault(a => a.TextContent.Trim() == text)
                 ?? throw new Xunit.Sdk.XunitException($"The organisation's pages have no link '{text}'.");
             await _web.OpenAsync(link.GetAttribute("href")!);

@@ -2764,6 +2764,24 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - At risikoejeren også skal sige ja (brugerens valg).
   - At en accept udløber og skal fornyes (brugerens valg).
 
+### B177 – Fem punkter i topmenuen, hvert med én række undersider (US-225)
+
+- **Beslutning:**
+  - **Topmenuen:** Home · Projects · Compliance · ISMS · Organisation (brugerens valg efter en mockup).
+    - **Home** er "My tasks" indtil videre, med tælleren for det forfaldne. US-227 gør det til "Your week" og landingssiden.
+    - "Frameworks" og "My tasks" er ikke længere selvstændige punkter.
+  - **Compliance** er de regler, hele organisationen følger: Frameworks (først), NIS2 scope, NIS2 gap analysis, Requirements, Evidence, Checklists og Reports. Link-siden kommer med US-220.
+  - **Organisation** er administrationen: Profile, Suppliers, Documents, Users, Activity og Settings. Documents og Suppliers flytter til ISMS med US-226.
+  - **Organisationsområdet** (US-142) er stadig et projekt i data, men vises ikke længere med et projekts faner og tre "Overview".
+    - Dets sider er sider under Compliance med Compliances række: NIS2 scope er områdets oversigt, og Requirements, Evidence og Reports er dets faner.
+    - Dets risici ligger under ISMS og vises med ISMS' række.
+  - **Én række undersider:** hver side har højst én række. Den tegnes i layoutet ud fra det topmenupunkt, siden hører til (`TopBar.SectionOf`). ISMS-siderne tegner selv deres række.
+  - **Gamle adresser virker:** fx `/Organisation?tab=nis2-scope` sender stadig videre til NIS2-scopetjekket, nu under Compliance.
+- **Begrundelse:** det var svært at finde rundt, når organisationens sider lå i tre lag med "Overview" tre gange. Nu har hver side ét sted og én række undersider.
+- **Fravalgt:**
+  - At ændre organisationsområdet i data. Det er kun visningen, der er ændret.
+  - Områdets aktivitetslog som egen side under Compliance. Den ses i organisationens Activity og på sin gamle adresse.
+
 ## Spørgsmål til klassediagrammet
 
 Der er ingen åbne spørgsmål. De første spørgsmål fra oktober 2026 er besvaret sådan:

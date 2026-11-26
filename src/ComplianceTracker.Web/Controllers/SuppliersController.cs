@@ -32,7 +32,6 @@ namespace ComplianceTracker.Web.Controllers
                 return RedirectToAction("Create", "Organizations");
             }
 
-            ViewData["OrganisationArea"] = true;
             ViewData["SupplierAssets"] = await assets.BySupplierAsync(cancellationToken); // US-214
             var organization = await _member.FindOrganizationAsync(cancellationToken);
             return View(new SuppliersViewModel(await _suppliers.ListAsync(cancellationToken), await _member.CanAsync(Permission.DecideCompliance, cancellationToken))

@@ -11,9 +11,10 @@ Feature: NIS2 at organisation level
   @US-142 @nis2-art3 @integration
   Scenario: The organisation area is in the top bar and is not a project
     When I open the front page
-    Then the top bar has the links "Organisation" and "Frameworks"
-    When I open "Organisation" from the top bar
-    Then I see the organisation area of "Acme ApS" with the tabs "Overview", "NIS2 scope", "Compliance" and "Reports"
+    Then the top bar has the links "Organisation" and "Compliance"
+    When I open "Compliance" from the top bar
+    And I open the Compliance page "NIS2 scope"
+    Then I see the Compliance pages of "Acme ApS" with "Frameworks", "NIS2 scope", "Requirements" and "Reports"
     And the Projects page does not list "Organisation"
 
   @US-142 @nis2-art3 @integration
@@ -118,6 +119,6 @@ Feature: NIS2 at organisation level
   Scenario: Only members who decide on compliance can switch NIS2 on or off
     Given "Bo" is in "Acme ApS" with the role "Developer"
     And I am signed in as "Bo"
-    When I open "Organisation" from the top bar
+    When I open the Compliance page "NIS2 scope"
     Then NIS2 is "Off"
     And there is no NIS2 switch

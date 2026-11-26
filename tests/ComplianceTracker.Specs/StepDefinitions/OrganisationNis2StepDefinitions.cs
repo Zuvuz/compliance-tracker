@@ -33,7 +33,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I open the NIS2 scope tab")]
         public async Task WhenIOpenTheNis2ScopeTab()
         {
-            await WhenIOpenFromTheTopBar("Organisation");
+            await _web.OpenAsync("/Organisation"); // US-225: the NIS2 scope page under Compliance
             await _web.OpenAsync($"/Projects/Details/{await AreaIdAsync()}/nis2-scope");
         }
 
@@ -102,7 +102,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I switch NIS2 {word} on the organisation's Overview")]
         public async Task WhenISwitchNis2(string state)
         {
-            await WhenIOpenFromTheTopBar("Organisation");
+            await _web.OpenAsync("/Organisation"); // US-225: the NIS2 scope page under Compliance
             var form = _web.Page!.QuerySelector("form#nis2-toggle") ?? throw new Xunit.Sdk.XunitException("The Overview has no NIS2 switch.");
             Assert.Equal(state == "on" ? "true" : "false", form.QuerySelector("input[name=on]")!.GetAttribute("value"));
             Assert.NotNull(form.GetAttribute("data-confirm")); // US-135: asks before it changes what the organisation follows
@@ -113,17 +113,24 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         // ---------------------------------------------------------- Then
 
-        [Then("I see the organisation area of {string} with the tabs {string}, {string}, {string} and {string}")]
-        public async Task ThenISeeTheOrganisationArea(string organisation, string first, string second, string third, string fourth)
+        // US-225: the organisation area is a page under Compliance, with Compliance's row of subpages and no project tabs
+        [When("I open the Compliance page {string}")]
+        public async Task WhenIOpenTheCompliancePage(string text)
+        {
+            await _web.OpenAsync("/Frameworks");
+            var link = _web.Page!.QuerySelectorAll("#compliance-nav a.nav-link").FirstOrDefault(a => a.TextContent.Trim() == text)
+                ?? throw new Xunit.Sdk.XunitException($"The Compliance pages have no link '{text}'.");
+            await _web.OpenAsync(link.GetAttribute("href")!);
+        }
+
+        [Then("I see the Compliance pages of {string} with {string}, {string}, {string} and {string}")]
+        public void ThenISeeTheCompliancePages(string organisation, string first, string second, string third, string fourth)
         {
             Assert.Contains(organisation, _web.Page!.QuerySelector("#organisation-area-title")?.TextContent ?? "");
-            // #52: every group's tabs, opening each group like a user
-            var tabs = (await ProjectNav.AllTabsAsync(_web)).Select(t => t.Title).ToList();
-            Assert.All(new[] { first, second, third, fourth }, t => Assert.Contains(t, tabs));
-            // Only what makes sense for the organisation (no product requirements, scans or security events yet)
-            Assert.DoesNotContain("Product requirements", tabs);
-            Assert.DoesNotContain("Scans", tabs);
-            Assert.Equal("active fw-semibold", _web.Page.QuerySelector("#nav-organisation")?.ClassList.Where(c => c is "active" or "fw-semibold").Aggregate((a, b) => a + " " + b));
+            var links = _web.Page.QuerySelectorAll("#compliance-nav a.nav-link").Select(a => a.TextContent.Trim()).ToList();
+            Assert.All(new[] { first, second, third, fourth }, t => Assert.Contains(t, links));
+            Assert.Null(_web.Page.QuerySelector("#project-groups"));
+            Assert.True(_web.Page.QuerySelector("#nav-compliance")?.ClassList.Contains("active") == true);
         }
 
         [Then("the Projects page does not list {string}")]
@@ -211,7 +218,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         private async Task CheckAsync(string sector, string service, int employees, int turnover)
         {
-            await WhenIOpenFromTheTopBar("Organisation");
+            await _web.OpenAsync("/Organisation"); // US-225: the NIS2 scope page under Compliance
             await _web.OpenAsync($"/Projects/Details/{await AreaIdAsync()}/nis2-scope");
             var form = _web.Page!.QuerySelector("form#nis2-scope-check") ?? throw new Xunit.Sdk.XunitException("The NIS2 scope tab has no check form.");
             await _web.PostFormAsync(form.GetAttribute("action")!, new Dictionary<string, string>
