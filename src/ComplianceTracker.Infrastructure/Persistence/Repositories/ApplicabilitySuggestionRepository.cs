@@ -17,6 +17,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         public async Task<IReadOnlyList<ApplicabilitySuggestion>> ListAsync(Guid projectId, CancellationToken cancellationToken = default)
             => await _db.ApplicabilitySuggestions.Where(s => s.ProjectId == projectId).ToListAsync(cancellationToken);
 
+        public async Task<IReadOnlyList<ApplicabilitySuggestion>> ListForProjectsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default)
+            => await _db.ApplicabilitySuggestions.Where(s => projectIds.Contains(s.ProjectId)).ToListAsync(cancellationToken);
+
         public Task<ApplicabilitySuggestion?> GetAsync(Guid projectId, Guid suggestionId, CancellationToken cancellationToken = default)
             => _db.ApplicabilitySuggestions.FirstOrDefaultAsync(s => s.Id == suggestionId && s.ProjectId == projectId, cancellationToken);
 

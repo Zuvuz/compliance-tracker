@@ -18,6 +18,9 @@ namespace ComplianceTracker.Application.Compliance
         // Every suggestion of the project, in every status
         Task<IReadOnlyList<EvidenceLinkSuggestion>> ListAsync(Guid projectId, CancellationToken cancellationToken = default);
 
+        // US-227: the same for many projects in one query, so Home makes a fixed number of queries
+        Task<IReadOnlyList<EvidenceLinkSuggestion>> ListForProjectsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default);
+
         Task AddRangeAsync(IEnumerable<EvidenceLinkSuggestion> suggestions, CancellationToken cancellationToken = default);
 
         // For the background job: pending suggestions without a rationale, best ranked first

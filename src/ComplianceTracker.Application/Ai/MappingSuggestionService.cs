@@ -20,6 +20,9 @@ namespace ComplianceTracker.Application.Ai
         // Every suggestion of the project, in every status (also replaced ones)
         Task<IReadOnlyList<MappingSuggestion>> ListAsync(Guid projectId, CancellationToken cancellationToken = default);
 
+        // US-227: the same for many projects in one query, so Home makes a fixed number of queries
+        Task<IReadOnlyList<MappingSuggestion>> ListForProjectsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default);
+
         Task<MappingSuggestion?> GetAsync(Guid projectId, Guid suggestionId, CancellationToken cancellationToken = default);
 
         Task AddRangeAsync(IEnumerable<MappingSuggestion> suggestions, CancellationToken cancellationToken = default);

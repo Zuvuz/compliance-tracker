@@ -113,7 +113,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
             var id = await db.Projects.Where(p => p.Name == Project).Select(p => p.Id).SingleAsync();
             var pages = new Dictionary<string, string>
             {
-                ["Dashboard"] = "/",
+                ["Home"] = "/", // US-227: sign-in lands on Home
                 ["Projects"] = "/Projects",
                 ["Overview"] = $"/Projects/Details/{id}",
                 ["Compliance"] = $"/Projects/Details/{id}/compliance",

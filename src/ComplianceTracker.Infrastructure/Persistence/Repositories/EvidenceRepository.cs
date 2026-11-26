@@ -19,6 +19,11 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
                 .Where(e => e.ProjectId == projectId && e.RemovedAt == null)
                 .ToListAsync(cancellationToken);
 
+        public async Task<IReadOnlyList<Evidence>> ListActiveForProjectsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default)
+            => await _db.Evidence
+                .Where(e => projectIds.Contains(e.ProjectId) && e.RemovedAt == null)
+                .ToListAsync(cancellationToken);
+
         public Task<Evidence?> GetAsync(Guid projectId, Guid evidenceId, CancellationToken cancellationToken = default)
             => _db.Evidence.FirstOrDefaultAsync(e => e.Id == evidenceId && e.ProjectId == projectId && e.RemovedAt == null, cancellationToken);
 

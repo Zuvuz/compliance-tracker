@@ -42,6 +42,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         public async Task<IReadOnlyList<RiskDraft>> ListAsync(Guid projectId, CancellationToken cancellationToken = default)
             => await _db.RiskDrafts.Where(d => d.ProjectId == projectId).ToListAsync(cancellationToken);
 
+        public async Task<IReadOnlyList<RiskDraft>> ListForProjectsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default)
+            => await _db.RiskDrafts.Where(d => projectIds.Contains(d.ProjectId)).ToListAsync(cancellationToken);
+
         public async Task AddRangeAsync(IEnumerable<RiskDraft> drafts, CancellationToken cancellationToken = default)
             => await _db.RiskDrafts.AddRangeAsync(drafts, cancellationToken);
     }

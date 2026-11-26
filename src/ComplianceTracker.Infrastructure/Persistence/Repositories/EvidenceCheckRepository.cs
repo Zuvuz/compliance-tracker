@@ -17,6 +17,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         public async Task<IReadOnlyList<EvidenceCheck>> ListAsync(Guid projectId, CancellationToken cancellationToken = default)
             => await _db.EvidenceChecks.Where(c => c.ProjectId == projectId).OrderByDescending(c => c.CheckedAt).ToListAsync(cancellationToken);
 
+        public async Task<IReadOnlyList<EvidenceCheck>> ListForProjectsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default)
+            => await _db.EvidenceChecks.Where(c => projectIds.Contains(c.ProjectId)).OrderByDescending(c => c.CheckedAt).ToListAsync(cancellationToken);
+
         public async Task AddAsync(EvidenceCheck check, CancellationToken cancellationToken = default)
             => await _db.EvidenceChecks.AddAsync(check, cancellationToken);
     }

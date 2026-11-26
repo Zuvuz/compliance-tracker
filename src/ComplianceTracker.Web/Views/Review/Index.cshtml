@@ -1,21 +1,20 @@
-@* US-099: "My tasks": what has a deadline, sorted by due date and filtered by project and kind, and below it what waits
-   for the member's decision (US-169 R3, R4), per project. Each line links to where it is handled; a task the member's
-   role cannot handle has no link (R6).
+@* US-227: Home, the page after sign-in. "Your week" is the member's tasks with a deadline (US-099), the ISMS overview's
+   "My week" (US-216) and the approvals that wait for the member (US-135), as one list, overdue first, up to 7 days ahead;
+   the rest is under "Show more". Below it what waits for the member's decision (US-169 R3, R4), per project. Each line
+   links to where it is handled; a task the member's role cannot handle has no link (US-099 R6).
    Ids and classes used by the tests: #task-filter (select name=project, select name=kind), #my-tasks with li.task-item
-   (data-kind, data-project) holding .task-project, .task-title, .task-due and a.task-open; #tasks-empty;
+   (data-kind: a task kind, Isms or Approval; data-project) holding .task-project, .task-title, .task-due and a.task-open;
+   #my-tasks-later with the same items; #tasks-empty;
    #review-inbox, .review-project[data-project] with .review-item (data-kind) and its a.review-open; #review-empty. *@
 @model MyTasksViewModel
 @using ComplianceTracker.Application.Review
 @using ComplianceTracker.Web.Controllers
 @{
-    ViewData["Title"] = "My tasks";
-
-    string DueStatus(DateTime due)
-        => MyTaskPlan.IsOverdue(due, Model.Now) ? "Overdue" : MyTaskPlan.IsSoon(due, Model.Now) ? "Due soon" : "Later";
+    ViewData["Title"] = "Home";
 }
 
-<page-header heading="My tasks" heading-id="my-tasks-title" />
-<p class="text-muted mb-3">What needs doing across your projects: deadlines first, then what waits for your decision.</p>
+<page-header heading="Your week" heading-id="my-tasks-title" />
+<p class="text-muted mb-3">What you must do, overdue first: your deadlines in the projects and the ISMS, and what waits for your approval or decision.</p>
 
 <form method="get" class="d-flex flex-wrap align-items-end gap-2 mb-3" id="task-filter" aria-label="Filter the tasks">
     <div>
@@ -46,7 +45,7 @@
 </form>
 
 <section class="mb-4" aria-labelledby="deadlines-title">
-    <h2 class="h5" id="deadlines-title">Deadlines
+    <h2 class="h5" id="deadlines-title">The next @MyTaskPlan.SoonDays days
         @if (Model.Soon > 0)
         {
             <span class="badge text-bg-danger ms-1" id="tasks-soon" title="Overdue or due within @MyTaskPlan.SoonDays days">@Model.Soon</span>
@@ -54,29 +53,29 @@
     </h2>
     @if (Model.Tasks.Count == 0)
     {
-        <empty-state id="tasks-empty" title="@(Model.Filtered ? "No deadlines match the filter." : "No deadlines right now.")"
-                     why="Expiring evidence, risk reviews, reporting deadlines and your audit findings show here when they are due." />
+        <empty-state id="tasks-empty" title="@(Model.Filtered ? "Nothing matches the filter this week." : "Nothing for you this week.")"
+                     why="Your deadlines in the projects and the ISMS, and what waits for your approval, show here when they are due." />
     }
     else
     {
         <ul class="list-unstyled border rounded mb-0" id="my-tasks">
             @foreach (var task in Model.Tasks)
             {
-                <li class="task-item d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom" data-kind="@task.Kind" data-project="@task.ProjectName">
-                    <status-badge status="@DueStatus(task.Due)" text="@MyTaskPlan.DueText(task.Due, Model.Now)" class="task-due" />
-                    <span class="task-project text-muted small">@task.ProjectName</span>
-                    <span class="task-title">@task.Title</span>
-                    @if (task.CanAct)
-                    {
-                        <a class="ms-auto btn btn-sm btn-outline-primary task-open" href="@task.Path">Open</a>
-                    }
-                    else
-                    {
-                        <span class="ms-auto small text-muted task-read-only">Your role can only read this</span>
-                    }
-                </li>
+                <partial name="_HomeItem" model="(task, Model.Now)" />
             }
         </ul>
+    }
+    @if (Model.Later.Count > 0)
+    {
+        <details class="mt-2" id="my-tasks-later">
+            <summary>Show more (@Model.Later.Count)</summary>
+            <ul class="list-unstyled border rounded mt-1 mb-0">
+                @foreach (var task in Model.Later)
+                {
+                    <partial name="_HomeItem" model="(task, Model.Now)" />
+                }
+            </ul>
+        </details>
     }
 </section>
 

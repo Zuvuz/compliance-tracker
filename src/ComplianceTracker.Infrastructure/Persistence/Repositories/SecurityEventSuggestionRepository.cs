@@ -17,6 +17,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         public async Task<IReadOnlyList<SecurityEventSuggestion>> ListAsync(Guid projectId, CancellationToken cancellationToken = default)
             => await _db.SecurityEventSuggestions.Where(s => s.ProjectId == projectId).ToListAsync(cancellationToken);
 
+        public async Task<IReadOnlyList<SecurityEventSuggestion>> ListForProjectsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default)
+            => await _db.SecurityEventSuggestions.Where(s => projectIds.Contains(s.ProjectId)).ToListAsync(cancellationToken);
+
         public Task<SecurityEventSuggestion?> GetAsync(Guid projectId, Guid suggestionId, CancellationToken cancellationToken = default)
             => _db.SecurityEventSuggestions.FirstOrDefaultAsync(s => s.Id == suggestionId && s.ProjectId == projectId, cancellationToken);
 

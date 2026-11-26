@@ -19,6 +19,9 @@ namespace ComplianceTracker.Application.Risks
     {
         Task<IReadOnlyList<RiskDraft>> ListAsync(Guid projectId, CancellationToken cancellationToken = default);
 
+        // US-227: the same for many projects in one query, so Home makes a fixed number of queries
+        Task<IReadOnlyList<RiskDraft>> ListForProjectsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default);
+
         Task AddRangeAsync(IEnumerable<RiskDraft> drafts, CancellationToken cancellationToken = default);
     }
 

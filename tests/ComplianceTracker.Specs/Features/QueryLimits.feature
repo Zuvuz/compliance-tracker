@@ -32,9 +32,11 @@ Feature: Each page has a limit on database queries
     # US-040: the Reports tab reads the management report texts and whether the member may change them (fixed queries;
     # the figures only when there are texts): Reports 31 -> 33.
     # US-216: the ISMS start page reads each part of the ISMS once (the risks of all projects in one query): 17.
+    # US-227: sign-in lands on Home instead of the projects. Home reads the tasks, the decisions, the ISMS week and the
+    # approvals, each kind for all the projects at once (before, My tasks read them per project: 244 with 16 projects): 35.
     Then each page stays within its limit and does not grow with the data:
       | Page                  | Limit |
-      | Dashboard             | 12    |
+      | Home                  | 35    |
       | Projects              | 12    |
       | Overview              | 58    |
       | Compliance            | 54    |

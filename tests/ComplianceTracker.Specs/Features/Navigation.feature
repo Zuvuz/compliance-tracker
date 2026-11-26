@@ -47,9 +47,9 @@ Feature: The main pages are in the top bar
     And the top bar marks "Organisation"
 
   @US-045 @integration
-  Scenario: The front page after sign-in is the projects page
+  Scenario: The front page after sign-in is Home
     When I open the front page
-    Then I am on the page "/Projects"
+    Then I am on the page "/Review"
 
   @US-045 @integration
   Scenario: Old addresses still work
