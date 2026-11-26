@@ -17,11 +17,11 @@ Feature: Small fixes to the pages (#52)
     And the tab group "Requirements" opens its first tab
 
   @issue-52 @integration
-  Scenario: A risk of the organisation keeps "Organisation" marked in the top bar
-    When I open "Organisation" from the top bar
+  Scenario: A risk of the organisation keeps "ISMS" marked in the top bar
+    When I open the Compliance page "NIS2 scope"
     And I add the risk "Phishing" to "Organisation" with likelihood 3 and impact 4
     And I open the risk "Phishing"
-    Then the top bar marks "Organisation"
+    Then the top bar marks "ISMS"
 
   @issue-52 @integration
   Scenario: A measure is added above the list of measures

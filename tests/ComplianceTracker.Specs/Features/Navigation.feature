@@ -12,7 +12,7 @@ Feature: The main pages are in the top bar
   @US-045 @integration
   Scenario: The organisation admin sees all the main pages
     When I open the front page
-    Then the top bar has the links "Projects", "Frameworks", "Organisation" and "My tasks"
+    Then the top bar has the links "Home", "Projects", "Compliance" and "Organisation"
     And the top bar opens no menu
     And the page has no tab "Overview"
     When I open "Organisation" from the top bar
@@ -22,7 +22,7 @@ Feature: The main pages are in the top bar
   Scenario: A developer does not see Users and Settings
     Given "Bo" has joined "Acme ApS" as "Developer"
     When "Bo" opens the front page
-    Then the top bar has the links "Projects" and "Frameworks"
+    Then the top bar has the links "Projects" and "Compliance"
     And the top bar has no link "Users"
     When "Bo" opens the organisation's pages
     Then the organisation's pages have no link "Users"

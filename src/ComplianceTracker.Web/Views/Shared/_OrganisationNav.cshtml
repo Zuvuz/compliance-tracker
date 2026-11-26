@@ -1,26 +1,22 @@
 @using ComplianceTracker.Domain.Users
-@* The organisation's pages as one row of links instead of a dropdown in the top bar (#52). Shown on every organisation
-   page, also on the organisation area's project page (US-142), with the open page marked. *@
+@* The organisation's pages as one row of links instead of a dropdown in the top bar (#52). US-225: the administration only;
+   the regulations are under Compliance (_ComplianceNav), and Documents and Suppliers move to ISMS with US-226. *@
 @{
     var controller = ViewContext.RouteData.Values["controller"] as string;
     var action = ViewContext.RouteData.Values["action"] as string;
     var open = controller switch
     {
-        "Organisation" when action == "Profile" => "Profile",
-        "GapAnalysis" or "Suppliers" or "Checklists" or "Documents" or "Users" or "Activity" or "Settings" => controller,
-        _ => "Overview"
+        "Suppliers" or "Documents" or "Users" or "Activity" or "Settings" => controller,
+        _ => "Profile"
     };
     string Mark(string page) => page == open ? "active" : "";
     string? Current(string page) => page == open ? "page" : null;
 }
 <nav aria-label="Organisation" class="mb-3">
     <ul class="nav nav-pills small flex-wrap" id="organisation-nav">
-        <li class="nav-item"><a class="nav-link @Mark("Overview")" aria-current="@Current("Overview")" id="nav-organisation-overview" asp-area="" asp-controller="Organisation" asp-action="Index">Overview</a></li>
         @* US-027: the organisation's details *@
         <li class="nav-item"><a class="nav-link @Mark("Profile")" aria-current="@Current("Profile")" id="nav-organisation-profile" asp-area="" asp-controller="Organisation" asp-action="Profile">Profile</a></li>
-        <li class="nav-item"><a class="nav-link @Mark("GapAnalysis")" aria-current="@Current("GapAnalysis")" id="nav-gap-analysis" asp-area="" asp-controller="GapAnalysis" asp-action="Index">NIS2 gap analysis</a></li>
         <li class="nav-item"><a class="nav-link @Mark("Suppliers")" aria-current="@Current("Suppliers")" id="nav-suppliers" asp-area="" asp-controller="Suppliers" asp-action="Index">Suppliers</a></li>
-        <li class="nav-item"><a class="nav-link @Mark("Checklists")" aria-current="@Current("Checklists")" id="nav-checklists" asp-area="" asp-controller="Checklists" asp-action="Index">Checklists</a></li>
         @* US-136 *@
         <li class="nav-item"><a class="nav-link @Mark("Documents")" aria-current="@Current("Documents")" id="nav-documents" asp-area="" asp-controller="Documents" asp-action="Index">Documents</a></li>
         @if (await Permissions.CanAsync(Permission.ManageMembers))

@@ -28,10 +28,12 @@
                     @{
                         var signedIn = User.Identity?.IsAuthenticated == true;
                         var current = ViewContext.RouteData.Values["controller"] as string;
-                        // US-142: the organisation area is shown on the project page, but belongs to "Organisation"
+                        // US-142: the organisation area is shown on the project page. US-225: its risks belong to ISMS and the rest to
+                        // Compliance; Section names the top bar item a page belongs to
                         var organisationArea = ViewData["OrganisationArea"] is true;
-                        string Active(params string[] controllers)
-                            => (organisationArea ? controllers.Contains("Organisation") : controllers.Contains(current)) ? "active fw-semibold" : "";
+                        var section = TopBar.SectionOf(current, ViewContext.RouteData.Values["action"] as string, organisationArea,
+                            ViewData["AreaTab"] as string);
+                        string Active(string item) => section == item ? "active fw-semibold" : "";
                     }
                     <ul class="navbar-nav flex-wrap flex-grow-1" id="top-bar">
                         @if (signedIn && await Permissions.IsLimitedAsync())
@@ -41,25 +43,25 @@
                         }
                         else if (signedIn)
                         {
+                            @* US-225: five items, each with one row of subpages. Home is what waits for me (US-169 R3, US-099); its badge
+                               counts what is overdue or due within 7 days, fetched after the page has loaded (site.js) *@
                             <li class="nav-item">
-                                <a class="nav-link @Active("Projects", "Risks")" id="nav-projects" asp-area="" asp-controller="Projects" asp-action="Index">Projects</a>
+                                <a class="nav-link @Active(TopBar.Home)" id="nav-review" asp-area="" asp-controller="Review" asp-action="Index">Home<span class="badge rounded-pill text-bg-danger ms-1 d-none" id="nav-tasks-count" data-count-url="@Url.Action("Count", "Review")"></span></a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link @Active("Frameworks")" id="nav-frameworks" asp-area="" asp-controller="Frameworks" asp-action="Index">Frameworks</a>
+                                <a class="nav-link @Active(TopBar.Projects)" id="nav-projects" asp-area="" asp-controller="Projects" asp-action="Index">Projects</a>
                             </li>
-                            @* US-169 R1: Organisation holds the organisation's pages, so the top bar has at most 5 items. #52: it is a
-                               plain link; the organisation's pages are a row of links on each of them (_OrganisationNav) *@
+                            @* US-225: the regulations the whole organisation follows: frameworks, NIS2, requirements, evidence, checklists, reports *@
                             <li class="nav-item">
-                                <a class="nav-link @Active("Organisation", "Documents", "Users", "Activity", "Settings", "GapAnalysis", "Suppliers", "Checklists")" id="nav-organisation" asp-area="" asp-controller="Organisation" asp-action="Index">Organisation</a>
+                                <a class="nav-link @Active(TopBar.Compliance)" id="nav-compliance" asp-area="" asp-controller="Frameworks" asp-action="Index">Compliance</a>
                             </li>
                             @* US-208: the organisation's ISMS (ISO/IEC 27001 4–10) has its own area with its pages as a row of links *@
                             <li class="nav-item">
-                                <a class="nav-link @Active("Isms")" id="nav-isms" asp-area="" asp-controller="Isms" asp-action="Index">ISMS</a>
+                                <a class="nav-link @Active(TopBar.Isms)" id="nav-isms" asp-area="" asp-controller="Isms" asp-action="Index">ISMS</a>
                             </li>
+                            @* US-225: the administration: profile, users, settings, the activity log *@
                             <li class="nav-item">
-                                @* US-169 R3: everything that waits for my decision. US-099: and my deadlines; R4: the number of tasks that
-                                   are overdue or due within 7 days is fetched after the page has loaded (site.js) *@
-                                <a class="nav-link @Active("Review")" id="nav-review" asp-area="" asp-controller="Review" asp-action="Index">My tasks<span class="badge rounded-pill text-bg-danger ms-1 d-none" id="nav-tasks-count" data-count-url="@Url.Action("Count", "Review")"></span></a>
+                                <a class="nav-link @Active(TopBar.Organisation)" id="nav-organisation" asp-area="" asp-controller="Organisation" asp-action="Profile">Organisation</a>
                             </li>
                             @if (User.HasClaim(ComplianceTracker.Web.Security.SystemAdmin.ClaimType, ComplianceTracker.Web.Security.SystemAdmin.Role))
                             {
@@ -136,10 +138,14 @@
     </header>
     <div class="container">
         <main role="main" class="pb-3">
-            @if (signedIn && !await Permissions.IsLimitedAsync()
-                 && (organisationArea || current is "Organisation" or "Documents" or "Users" or "Activity" or "Settings" or "GapAnalysis" or "Suppliers" or "Checklists"))
+            @* US-225: the row of subpages of the top bar item; the ISMS pages draw their own row (_IsmsNav) *@
+            @if (signedIn && !await Permissions.IsLimitedAsync() && section == TopBar.Organisation)
             {
                 <partial name="_OrganisationNav" />
+            }
+            else if (signedIn && !await Permissions.IsLimitedAsync() && section == TopBar.Compliance)
+            {
+                <partial name="_ComplianceNav" />
             }
             @if (TempData["FeedbackSent"] is string thanks)
             {

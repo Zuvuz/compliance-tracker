@@ -9,9 +9,20 @@
 
 @if (project.IsOrganisationArea)
 {
-    @* US-142: the organisation area: no lifecycle, no support period, nothing to edit *@
-    <h1 class="mb-1" id="organisation-area-title">Organisation <span class="text-muted fs-4" id="project-name">@Model.Organization?.Name</span></h1>
-    <p class="text-muted mb-3" id="project-intended-purpose">The frameworks the whole organisation follows, such as NIS2.</p>
+    @* US-142: the organisation area: no lifecycle, no support period, nothing to edit. US-225: it is shown as a page under
+       Compliance (or ISMS for its risks), with that item's row of subpages instead of a project's tabs *@
+    var areaTitle = Model.Tab switch
+    {
+        ProjectTabs.Risks => "Risks",
+        ProjectTabs.Compliance => "Requirements",
+        ProjectTabs.Evidence => "Evidence",
+        ProjectTabs.Reports => "Reports",
+        ProjectTabs.Frameworks => "Frameworks the organisation follows",
+        ProjectTabs.Activity => "Activity",
+        _ => "NIS2 scope"
+    };
+    <h1 class="mb-1" id="organisation-area-title">@areaTitle <span class="text-muted fs-4" id="project-name">@Model.Organization?.Name</span></h1>
+    <p class="text-muted mb-3" id="project-intended-purpose">For the whole organisation, such as NIS2.</p>
     <partial name="_CertificateBadges" model="Model" />
 }
 else
@@ -58,11 +69,11 @@ else
 
 @* US-169 R2: at most 6 groups; a group with several tabs links to its first tab and shows its tabs as a row below when it is
    the current one (#52: no menu, so the tabs are not shown twice). Every tab keeps its own address and data-tab. *@
-@{
+@if (!project.IsOrganisationArea)
+{
     var groups = ProjectTabs.GroupsFor(project);
     var currentGroup = groups.FirstOrDefault(g => g.Tabs.Any(t => t.Slug == Model.Tab));
     string TabUrl(string slug) => Url.Action("Details", new { id = project.Id, tab = slug == ProjectTabs.Overview ? null : slug, sub = "", req = "" })!;
-}
 @* US-175 R1, R4: the member's last tab of the project is remembered in this browser (site.js); data-tabs lists the valid ones *@
 <div id="project-nav" class="mb-3" data-project="@project.Id" data-current-tab="@Model.Tab"
      data-tabs="@string.Join(",", groups.SelectMany(g => g.Tabs).Select(t => t.Slug))">
@@ -98,6 +109,7 @@ else
         </ul>
     }
 </div>
+}
 
 @* The domain's error messages from every action on the page, e.g. "The project already uses Security policy" *@
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>

@@ -182,16 +182,19 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I open the front page", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 14
-    await testRunner.ThenAsync("the top bar has the links \"Organisation\" and \"Frameworks\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the top bar has the links \"Organisation\" and \"Compliance\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 15
-    await testRunner.WhenAsync("I open \"Organisation\" from the top bar", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.WhenAsync("I open \"Compliance\" from the top bar", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 16
-    await testRunner.ThenAsync("I see the organisation area of \"Acme ApS\" with the tabs \"Overview\", \"NIS2 scope\"," +
-                        " \"Compliance\" and \"Reports\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.AndAsync("I open the Compliance page \"NIS2 scope\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 17
+    await testRunner.ThenAsync("I see the Compliance pages of \"Acme ApS\" with \"Frameworks\", \"NIS2 scope\", \"Requir" +
+                        "ements\" and \"Reports\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 18
     await testRunner.AndAsync("the Projects page does not list \"Organisation\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -218,7 +221,7 @@ namespace ComplianceTracker.Specs.Features
                     "w", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 20
+#line 21
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -231,22 +234,22 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 21
+#line 22
     await testRunner.WhenAsync("I do the NIS2 scope check with sector \"Manufacturing\", 60 employees and a turnove" +
                         "r of 12 million euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 22
+#line 23
     await testRunner.ThenAsync("the NIS2 result is \"Important\" with the reason \"Annex II, medium-sized\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 23
+#line 24
     await testRunner.AndAsync("the organisation follows \"NIS2 – Directive (EU) 2022/2555\" and \"NIS 2-loven – Lov" +
                         " nr. 434 af 6. maj 2025 (Denmark)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 24
+#line 25
     await testRunner.AndAsync("the organisation does not follow \"NIS2 technical measures – Implementing Regulati" +
                         "on (EU) 2024/2690\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 25
+#line 26
     await testRunner.AndAsync("the activity log has \"Nis2ScopeChecked\" saying \"Important: Annex II, medium-sized" +
                         "\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
@@ -271,7 +274,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A small company is not covered, and NIS2 is not switched on", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 28
+#line 29
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -284,18 +287,18 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 29
+#line 30
     await testRunner.WhenAsync("I do the NIS2 scope check with sector \"Manufacturing\", 20 employees and a turnove" +
                         "r of 3 million euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 30
+#line 31
     await testRunner.ThenAsync("the NIS2 result is \"NotCovered\" with the reason \"Annex II, but small: under the s" +
                         "ize limit (Art. 2(1))\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 31
+#line 32
     await testRunner.AndAsync("the organisation follows no framework", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 32
+#line 33
     await testRunner.AndAsync("the page says \"You can still follow NIS2 by choice\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -319,7 +322,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A medium-sized cloud provider is important and gets the technical measures too", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 35
+#line 36
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -332,14 +335,14 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 36
+#line 37
     await testRunner.WhenAsync("I do the NIS2 scope check with sector \"DigitalInfrastructure\" and service \"CloudC" +
                         "omputing\", 120 employees and a turnover of 30 million euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 37
+#line 38
     await testRunner.ThenAsync("the NIS2 result is \"Important\" with the reason \"Annex I, medium-sized\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 38
+#line 39
     await testRunner.AndAsync("the organisation follows \"NIS2 technical measures – Implementing Regulation (EU) " +
                         "2024/2690\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
@@ -364,7 +367,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Outside Denmark the Danish law is not switched on", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 41
+#line 42
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -377,21 +380,21 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 42
+#line 43
     await testRunner.GivenAsync("the organisation\'s country is set to \"DE\" on the organisation\'s profile", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 43
+#line 44
     await testRunner.WhenAsync("I do the NIS2 scope check with sector \"Manufacturing\", 60 employees and a turnove" +
                         "r of 12 million euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 44
+#line 45
     await testRunner.ThenAsync("the organisation follows \"NIS2 – Directive (EU) 2022/2555\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 45
+#line 46
     await testRunner.AndAsync("the organisation does not follow \"NIS 2-loven – Lov nr. 434 af 6. maj 2025 (Denma" +
                         "rk)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 46
+#line 47
     await testRunner.AndAsync("the activity log has \"OrganisationCountryChanged\" saying \"DE\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -418,7 +421,7 @@ namespace ComplianceTracker.Specs.Features
                     " it", "", tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 49
+#line 50
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -431,24 +434,24 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 51
+#line 52
     await testRunner.GivenAsync("I have done the NIS2 scope check as an important entity", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 52
+#line 53
     await testRunner.AndAsync("I have uploaded the policy \"Information security policy\" version \"v1\" with the co" +
                         "ntent \"How we keep information safe\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 53
+#line 54
     await testRunner.WhenAsync("I link the document \"Information security policy\" to \"Art. 21(2)(a)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 54
+#line 55
     await testRunner.ThenAsync("the organisation\'s Compliance tab for \"NIS2\" shows \"Art. 21(2)(a)\" as \"Covered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 55
+#line 56
     await testRunner.AndAsync("the organisation\'s Compliance tab for \"NIS 2-loven\" shows \"§ 6, stk. 1, nr. 1\" as" +
                         " \"Covered\" through \"NIS2 Art. 21(2)(a)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 56
+#line 57
     await testRunner.AndAsync("the organisation\'s Compliance tab for \"NIS 2-loven\" shows that \"§ 6, stk. 1, nr. " +
                         "1\" implements \"NIS2 Art. 21(2)(a)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
@@ -473,7 +476,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A procedure alone documents a NIS2 measure in the organisation area", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 59
+#line 60
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -486,17 +489,17 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 60
+#line 61
     await testRunner.GivenAsync("I have done the NIS2 scope check as an important entity", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 61
+#line 62
     await testRunner.AndAsync("I have uploaded the policy \"Incident response plan\" version \"v1\" with the content" +
                         " \"How we handle incidents\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 62
+#line 63
     await testRunner.WhenAsync("I link the document \"Incident response plan\" to \"Art. 21(2)(b)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 63
+#line 64
     await testRunner.ThenAsync("the organisation\'s Compliance tab for \"NIS2\" shows \"Art. 21(2)(b)\" as \"Documented" +
                         " – proof missing\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
@@ -519,7 +522,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("An organisation-level framework cannot be used on a project", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 66
+#line 67
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -532,19 +535,19 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 67
+#line 68
     await testRunner.GivenAsync("I have done the NIS2 scope check as an important entity", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 68
+#line 69
     await testRunner.AndAsync("the project \"Acme Portal\" exists", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 69
+#line 70
     await testRunner.WhenAsync("I try to add \"NIS2 – Directive (EU) 2022/2555\" to \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 70
+#line 71
     await testRunner.ThenAsync("I see the error \"NIS2 applies to the organisation, not to a project\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 71
+#line 72
     await testRunner.AndAsync("the Frameworks tab of \"Acme Portal\" does not offer \"NIS2 – Directive (EU) 2022/25" +
                         "55\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
@@ -567,7 +570,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Texts follow the page language with English as fallback", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 74
+#line 75
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -580,34 +583,34 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 75
+#line 76
     await testRunner.GivenAsync("I have done the NIS2 scope check as an important entity", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 76
+#line 77
     await testRunner.WhenAsync("I open the organisation\'s Compliance tab for \"NIS2\" in \"da\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 77
+#line 78
     await testRunner.ThenAsync("the requirement \"Art. 21(2)(b)\" is titled \"Håndtering af hændelser\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 78
+#line 79
     await testRunner.WhenAsync("I open the organisation\'s Compliance tab for \"NIS2\" in \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 79
+#line 80
     await testRunner.ThenAsync("the requirement \"Art. 21(2)(b)\" is titled \"Incident handling\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 80
+#line 81
     await testRunner.GivenAsync("\"CRA – Regulation (EU) 2024/2847\" is switched on", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 81
+#line 82
     await testRunner.AndAsync("the project \"Acme Portal\" exists", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 82
+#line 83
     await testRunner.AndAsync("\"Acme Portal\" uses \"CRA – Regulation (EU) 2024/2847\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 83
+#line 84
     await testRunner.WhenAsync("I open the Compliance tab of \"Acme Portal\" in \"da\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 84
+#line 85
     await testRunner.ThenAsync("the page says \"Not translated yet: the requirements are shown in English.\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -629,7 +632,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Only members who decide on compliance can do the scope check", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 87
+#line 88
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -642,22 +645,22 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 88
+#line 89
     await testRunner.GivenAsync("\"Bo\" is in \"Acme ApS\" with the role \"Developer\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 89
+#line 90
     await testRunner.AndAsync("I am signed in as \"Bo\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 90
+#line 91
     await testRunner.WhenAsync("I open the NIS2 scope tab", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 91
+#line 92
     await testRunner.ThenAsync("there is no NIS2 scope check form", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 92
+#line 93
     await testRunner.WhenAsync("I post the NIS2 scope check anyway", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 93
+#line 94
     await testRunner.ThenAsync("the NIS2 result is \"none\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -679,7 +682,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("NIS2 can be switched off and on again, and the coverage comes back", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 96
+#line 97
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -692,40 +695,40 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 97
+#line 98
     await testRunner.GivenAsync("I have done the NIS2 scope check as an important entity", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 98
+#line 99
     await testRunner.AndAsync("I have uploaded the policy \"Information security policy\" version \"v1\" with the co" +
                         "ntent \"How we keep information safe\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 99
+#line 100
     await testRunner.AndAsync("I link the document \"Information security policy\" to \"Art. 21(2)(a)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 100
+#line 101
     await testRunner.WhenAsync("I switch NIS2 off on the organisation\'s Overview", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 101
+#line 102
     await testRunner.ThenAsync("NIS2 is \"Off\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 102
+#line 103
     await testRunner.AndAsync("the organisation follows no framework", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 103
+#line 104
     await testRunner.AndAsync("the activity log has \"ProjectFrameworkRemoved\" saying \"NIS2 – Directive (EU) 2022" +
                         "/2555\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 104
+#line 105
     await testRunner.WhenAsync("I switch NIS2 on on the organisation\'s Overview", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 105
+#line 106
     await testRunner.ThenAsync("NIS2 is \"On\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 106
+#line 107
     await testRunner.AndAsync("the organisation follows \"NIS2 – Directive (EU) 2022/2555\" and \"NIS 2-loven – Lov" +
                         " nr. 434 af 6. maj 2025 (Denmark)\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 107
+#line 108
     await testRunner.AndAsync("the organisation\'s Compliance tab for \"NIS2\" shows \"Art. 21(2)(a)\" as \"Covered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -747,7 +750,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("NIS2 can be switched on by choice without being covered", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 110
+#line 111
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -760,20 +763,20 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 111
+#line 112
     await testRunner.WhenAsync("I do the NIS2 scope check with sector \"Manufacturing\", 20 employees and a turnove" +
                         "r of 3 million euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 112
+#line 113
     await testRunner.AndAsync("I switch NIS2 on on the organisation\'s Overview", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 113
+#line 114
     await testRunner.ThenAsync("NIS2 is \"On\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 114
+#line 115
     await testRunner.AndAsync("the organisation follows \"NIS2 – Directive (EU) 2022/2555\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 115
+#line 116
     await testRunner.AndAsync("the page says \"NIS2 is followed by choice\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -795,7 +798,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Only members who decide on compliance can switch NIS2 on or off", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 118
+#line 119
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -808,19 +811,19 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 119
+#line 120
     await testRunner.GivenAsync("\"Bo\" is in \"Acme ApS\" with the role \"Developer\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 120
+#line 121
     await testRunner.AndAsync("I am signed in as \"Bo\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 121
-    await testRunner.WhenAsync("I open \"Organisation\" from the top bar", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
 #line 122
-    await testRunner.ThenAsync("NIS2 is \"Off\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.WhenAsync("I open the Compliance page \"NIS2 scope\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 123
+    await testRunner.ThenAsync("NIS2 is \"Off\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 124
     await testRunner.AndAsync("there is no NIS2 switch", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }

@@ -62,8 +62,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [Then("the top bar marks {string}")]
         public void ThenTheTopBarMarks(string text)
         {
-            var link = _web.Page!.QuerySelector("#nav-organisation") ?? throw new Xunit.Sdk.XunitException("No 'Organisation' in the top bar.");
-            Assert.Equal(text, link.TextContent.Trim());
+            var link = _web.Page!.QuerySelectorAll("#top-bar a.nav-link").FirstOrDefault(a => a.TextContent.Trim() == text)
+                ?? throw new Xunit.Sdk.XunitException($"No '{text}' in the top bar.");
             Assert.Contains("active", link.ClassList);
         }
 
