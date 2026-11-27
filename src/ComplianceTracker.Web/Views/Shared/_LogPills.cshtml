@@ -1,0 +1,21 @@
+@* US-219 R4: "Changes" (the change log, for everyone who can read) and "Access" (the access log, for Organisation admin,
+   Compliance manager and Auditor). Each is shown only to those who may see it. Ids used by the tests: #log-pills with
+   a#log-changes and a#log-access, the open one has .active. *@
+@model LogPills
+@if (Model.CanSeeChanges || Model.CanSeeAccess)
+{
+    var changes = Model.Project is { } p
+        ? Url.Action("Details", "Projects", new { id = p.Id, tab = ProjectTabs.Activity })
+        : Url.Action("Index", "Activity");
+    var access = Url.Action("Index", "AccessLog", new { project = Model.Project?.Id });
+    <ul class="nav nav-pills small mb-3" id="log-pills">
+        @if (Model.CanSeeChanges)
+        {
+            <li class="nav-item"><a class="nav-link @(Model.Open == LogPills.Changes ? "active" : "")" id="log-changes" href="@changes">Changes</a></li>
+        }
+        @if (Model.CanSeeAccess)
+        {
+            <li class="nav-item"><a class="nav-link @(Model.Open == LogPills.Access ? "active" : "")" id="log-access" href="@access">Access</a></li>
+        }
+    </ul>
+}

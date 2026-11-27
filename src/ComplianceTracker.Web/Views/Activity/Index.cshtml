@@ -27,4 +27,5 @@
     </div>
 </div>
 
+<partial name="_LogPills" model="@(new LogPills(LogPills.Changes, true, null, await AccessLog.CanSeeAsync()))" /> @* US-219 *@
 <partial name="_ActivityLog" model="Model" />

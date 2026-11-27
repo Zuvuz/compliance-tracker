@@ -15,6 +15,10 @@
     <li data-item="role">Your organisation and your role in it</li>
     <li data-item="activity">What you did in the tracker and when (the activity log), including your sign-ins</li>
     <li data-item="content">What you wrote yourself, such as reasons, risk descriptions and comments</li>
+    <li data-item="access-log">Only when your organisation has turned the access log on: which pages with sensitive data you
+        opened (a project's pages, a risk, evidence, a report, the suppliers), when, and for how long they were visible.
+        It starts at least 6 weeks after your organisation turns it on, and you are told first. Only your organisation's
+        admins, compliance managers and auditors see it. You see your own: <a asp-controller="AccessLog" asp-action="Mine" id="my-visits-link">my page visits</a></li>
 </ul>
 
 <h2 class="h5">Why, and on what basis</h2>
@@ -27,6 +31,9 @@
     and e-mail are then replaced by a pseudonym such as "Former member 7F3A" everywhere in the tracker. The activity log
     is kept for as long as the law or your organisation requires, under the pseudonym; it is never deleted, because
     it must show that nothing was changed afterwards. Text you wrote yourself is kept as it is.</p>
+<p id="access-log-retention">The access log (who opened which page) is deleted after the time your organisation chose: 12 months
+    unless it chose otherwise, and never more than 5 years. It shows who knew what and when, in an audit or after an
+    incident (ISO/IEC 27001 A.8.15, NIS2 Art. 23); the basis is your organisation's legitimate interest (GDPR Art. 6(1)(f), Art. 88).</p>
 
 <h2 class="h5">Your rights</h2>
 <ul>

@@ -1,0 +1,13 @@
+@* US-219 R3: the other members on this page now, for the roles that see the access log, e.g. "Bo – on the page now (3 min)".
+   Ids used by the tests: #on-this-page with li.on-this-page (data-user). *@
+@using ComplianceTracker.Domain.ActivityLog
+@if (ViewData[PageVisits.OnPageNowKey] is IReadOnlyList<ComplianceTracker.Application.ActivityLog.VisitRow> { Count: > 0 } here)
+{
+    var now = DateTime.UtcNow;
+    <ul class="list-inline small text-muted mt-2 mb-0" id="on-this-page" aria-label="On this page now">
+        @foreach (var row in here)
+        {
+            <li class="list-inline-item on-this-page" data-user="@row.UserName">@row.UserName – on the page now (@AccessLogRules.Text(now - row.Visit.StartedAt))</li>
+        }
+    </ul>
+}

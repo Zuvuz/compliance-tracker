@@ -35,6 +35,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
         // Ids the fixture has no data for; a random id is used, which can only prove "not found"
         private static readonly Dictionary<string, string> NoDataFor = new()
         {
+            ["visitId"] = "The access log is off in the fixture (US-219), so there are no visits; a sign of life only changes the member's own visit in their own organisation",
             ["suggestionId"] = "The fixture has no AI suggestion (that needs the pretend AI's ranking)",
             ["statusTextId"] = "The fixture has no management report text (US-040; that needs the pretend AI)",
             ["draftId"] = "The fixture has no story draft (that needs the pretend AI's writing); AskTheAi.feature tests it (US-106)",

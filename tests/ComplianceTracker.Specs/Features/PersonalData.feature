@@ -12,7 +12,8 @@ Feature: Personal data: privacy notice, access and erasure
   @US-095 @gdpr-art13 @integration
   Scenario: The privacy page says what is kept
     When I open the privacy page
-    Then the privacy page lists "name", "keycloak-id", "role", "activity" and "content"
+    # US-219: and the access log, when the organisation turns it on
+    Then the privacy page lists "name", "keycloak-id", "role", "activity", "content" and "access-log"
     And the privacy page links to "my data"
 
   @US-095 @gdpr-art15 @integration

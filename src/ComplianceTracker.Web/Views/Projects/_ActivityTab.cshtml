@@ -12,4 +12,6 @@
         Model.Organization);
 }
 
+@* US-219 R4: the change log for everyone who can read the project; the access log for those who may see it *@
+<partial name="_LogPills" model="@(new LogPills(LogPills.Changes, true, Model.Project, await AccessLog.CanSeeAsync()))" />
 <partial name="_ActivityLog" model="log" />

@@ -60,6 +60,7 @@ namespace ComplianceTracker.Infrastructure
             // therefore share the same DbContext and save in the same transaction.
             services.AddScoped<IOrganizationRepository, OrganizationRepository>();
             services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
+            services.AddScoped<IPageVisitRepository, PageVisitRepository>(); // US-219
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IFrameworkRepository, FrameworkRepository>();
             services.AddScoped<IProjectRepository, ProjectRepository>();

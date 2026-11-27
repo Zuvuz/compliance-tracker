@@ -31,8 +31,12 @@ namespace ComplianceTracker.Application.ActivityLog
         private readonly IPdfWriter _pdf;
         private readonly TimeProvider _clock;
 
-        public ActivityLogExportService(ActivityLogQueries queries, CurrentMember member, IActivityLogger log, IUnitOfWork unitOfWork, IPdfWriter pdf, TimeProvider clock)
+        private readonly AccessLogService? _accessLog; // US-219 R8
+
+        public ActivityLogExportService(ActivityLogQueries queries, CurrentMember member, IActivityLogger log, IUnitOfWork unitOfWork, IPdfWriter pdf, TimeProvider clock,
+            AccessLogService? accessLog = null)
         {
+            _accessLog = accessLog;
             _queries = queries;
             _member = member;
             _log = log;
@@ -64,11 +68,20 @@ namespace ComplianceTracker.Application.ActivityLog
             var periodText = $"{period.From:dd-MM-yyyy} – {period.To:dd-MM-yyyy}";
             var stem = $"activity-log-{period.From:yyyy-MM-dd}-to-{period.To:yyyy-MM-dd}";
 
+            // US-219 R8: the access log for the same period as its own sheet, for those who may see it (R4)
+            List<ReportSheet> sheets = [new ReportSheet("Entries", Columns, -1, rows.Select(r => new ReportRow(r, ReportStatus.Normal)).ToList())];
+            if (format == ActivityExportFormat.Pdf && _accessLog is not null && AccessLogRules.CanSee(user.Role) && scope != ActivityProjectScope.NotAboutAProject)
+            {
+                var visits = AccessLogService.CsvRows(await _accessLog.ForPeriodAsync(organization, scope == ActivityProjectScope.OneProject ? projectId : null,
+                    period.From, period.To, cancellationToken)).ToList();
+                sheets.Add(new ReportSheet("Access log", AccessLogService.Columns, -1, visits.Select(r => new ReportRow(r, ReportStatus.Normal)).ToList()));
+            }
+
             var file = format == ActivityExportFormat.Pdf
                 ? new ActivityExportFile(stem + ".pdf", "application/pdf", _pdf.FromReport(
                     new ReportDocument("Activity log",
                         [("Period", periodText), ("Projects", projectName), ("Entries", rows.Count.ToString(CultureInfo.InvariantCulture))],
-                        [new ReportSheet("Entries", Columns, -1, rows.Select(r => new ReportRow(r, ReportStatus.Normal)).ToList())]),
+                        sheets),
                     new PdfHeader(organization.Name, projectName, "Activity log", now, user.Name)), rows.Count)
                 : new ActivityExportFile(stem + ".csv", "text/csv; charset=utf-8", CsvFile.Write(Columns, rows), rows.Count);
 

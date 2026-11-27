@@ -1,6 +1,6 @@
 # Compliance-tracker – Klassediagram
 
-Senest opdateret: 2026-11-26
+Senest opdateret: 2026-11-27
 
 Klassediagrammet bygger på [domænemodellen](domaenemodel.md) og viser modellagets klasser med attributter, datatyper og associationer. **Metoder tilføjes løbende**, når en user story kræver dem, og opdateres i samme pull request som koden. Reglerne, som metoderne skal håndhæve, står i domænemodellen.
 
@@ -43,10 +43,15 @@ classDiagram
     -frameworks: List~OrganizationFramework~
     -riskApproverRoles: List~UserRole~
     -hidesIsmsGuide: bool
+    -accessLogStartsOn: DateOnly?
+    -accessLogRetentionMonths: int
     +Create(name: string, cvr: string, sector: Sector?, size: OrganizationSize?, creator: UserIdentity)$ Organization
     +IsRiskApprover(role: UserRole) bool
     +SetRiskApproverRoles(roles: List~UserRole~) List~UserRole~
     +SetIsmsGuideHidden(hidden: bool)
+    +IsAccessLogOn(today: DateOnly) bool
+    +TurnOnAccessLog(startsOn: DateOnly, retentionMonths: int, today: DateOnly)
+    +TurnOffAccessLog()
     +Members: List~User~
     +RemoveMember(memberId: Guid, removedById: Guid, at: DateTime) User
     +Update(name: string, sector: Sector?, size: OrganizationSize?, userId: Guid) List~ProjectChange~
@@ -213,6 +218,49 @@ classDiagram
   ActivityLogChain ..> ActivityLogEntry
   ActivityLogChain ..> ChainCheck
   ActivityLogEntry "*" --> "1" Organization
+  class PageVisit {
+    -id: Guid
+    -organizationId: Guid
+    -userId: Guid
+    -role: UserRole
+    -projectId: Guid?
+    -kind: VisitKind
+    -itemId: Guid?
+    -tab: string?
+    -title: string
+    -startedAt: DateTime
+    -lastSeenAt: DateTime
+    -secondsSpent: int
+    -visible: bool
+    -ended: bool
+    +Start(organizationId: Guid, userId: Guid, role: UserRole, projectId: Guid?, kind: VisitKind, itemId: Guid?, tab: string?, title: string, at: DateTime)$ PageVisit
+    +SignOfLife(now: DateTime, visible: bool) bool
+    +End(now: DateTime) bool
+    +IsOver(now: DateTime) bool
+    +IsOnPage(now: DateTime) bool
+  }
+  class VisitKind {
+    <<enumeration>>
+    Tab
+    Risk
+    SecurityEvent
+    Evidence
+    Report
+    AuditPackage
+    Supplier
+    Approval
+  }
+  class AccessLogRules {
+    <<static>>
+    +CanSee(role: UserRole) bool
+    +DeleteBefore(now: DateTime, retentionMonths: int) DateTime
+    +TotalTime(visits: IEnumerable~PageVisit~) TimeSpan
+  }
+  PageVisit "*" --> "1" Organization
+  PageVisit "*" --> "1" User
+  PageVisit "*" --> "0..1" Project
+  PageVisit --> VisitKind
+  AccessLogRules ..> PageVisit
   ActivityLogEntry "*" --> "1" User
   %% ================= ISMS-scope (US-208) =================
   class IsmsScope {

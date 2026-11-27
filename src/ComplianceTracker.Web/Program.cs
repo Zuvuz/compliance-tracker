@@ -94,6 +94,7 @@ builder.Services.AddSingleton(provider => new ComplianceTracker.Application.Remi
 });
 builder.Services.AddHostedService<ReminderWorker>();
 builder.Services.AddHostedService<ObjectiveWorker>(); // US-209
+builder.Services.AddHostedService<AccessLogCleanupWorker>(); // US-219
 
 // US-156: assesses again what needs action after the product changed
 builder.Services.AddSingleton<ComplianceTracker.Application.Ai.IReassessmentScopes, ReassessmentScopes>();

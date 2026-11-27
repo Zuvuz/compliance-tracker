@@ -45,6 +45,7 @@ namespace ComplianceTracker.Specs.Support
                 services.AddScoped(_ => TestDatabase.CreateContext(connectionString, interceptors));
                 services.AddScoped<IOrganizationRepository, OrganizationRepository>();
                 services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
+                services.AddScoped<IPageVisitRepository, PageVisitRepository>(); // US-219
                 services.AddScoped<IFrameworkRepository, FrameworkRepository>();
                 services.AddScoped<IProjectRepository, ProjectRepository>();
                 services.AddScoped<IUnitOfWork, UnitOfWork>();

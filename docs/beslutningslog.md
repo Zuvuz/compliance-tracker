@@ -2834,6 +2834,43 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** det var svært at følge med i, hvad der var linket. På én side kan man se, hvad der mangler for hvert krav.
 - **Fravalgt:** træk og slip og at linke flere krav på én gang (uden for US-220).
 
+### B181 – Adgangsloggen: hvem så hvad, og hvornår (US-219)
+
+- **Beslutning:**
+  - **Den er slået fra fra start.** Organisationens admin slår den til under Settings med en startdato mindst 6 uger fremme. Medlemmerne får det at vide først, fordi man i Danmark skal varsle kontrolforanstaltninger. Indtil startdatoen logges intet. Når den slås fra, stopper logningen med det samme.
+  - **Det, der logges,** er en ny `PageVisit`: medlemmet, rollen på tidspunktet, projektet, hvad der blev åbnet og hvornår, og den tid, siden var synlig. Et besøg ændres aldrig af en person.
+  - **Følsomme sider:**
+    - et projekts faner og et enkelt bevis
+    - en risiko
+    - leverandørerne
+    - en låst rapport eller en auditpakke, der hentes, og en auditrapport. Et hentet dokument er et besøg uden tid.
+  - **Ikke besøg:** sikkerhedshændelser har ingen side for sig selv og logges som projektets fane. Godkendelser logges heller ikke for sig.
+  - **Tid brugt:**
+    - Siden sender et livstegn hvert 30. sekund og siger, om den er synlig. Det gør den også, mens fanen er skjult, så besøget ikke slutter. Kun den synlige tid tæller.
+    - Besøget slutter, når siden forlades, eller 2 minutter efter sidste livstegn.
+    - Et livstegn, der kommer senere, ændrer intet.
+    - To faner på samme side tæller kun én gang i "Seen by".
+  - **Hvem ser hvad:**
+    - Organisation admin, Compliance manager og Auditor ser adgangsloggen. Alle, der kan læse et projekt, ser stadig dets ændringslog ("Changes").
+    - Adgangsloggen ligger under /AccessLog og kan filtreres på projekt, medlem, type og periode.
+    - Projektets Activity-fane og organisationens Activity-side har "Changes" og "Access".
+  - **"On the page now"** vises i projektets hoved for de samme roller, når andre har sendt et livstegn inden for 2 minutter. Det vises kun, mens loggen er slået til, så siderne ikke laver ekstra forespørgsler, når den er slået fra.
+  - **"Seen by"** vises på en risiko og et bevis.
+  - **Opbevaring:** 12 måneder som standard, mindst 1 måned og højst 5 år. En gang i døgnet slettes ældre besøg, og antallet skrives i ændringsloggen som en handling udført af systemet.
+  - **Medlemmerne får det at vide:**
+    - en kort besked på Home, indtil medlemmet har trykket "I have read it". Det huskes med en cookie pr. organisation og startdato.
+    - et afsnit på siden Privacy
+    - medlemmets egne besøg under /AccessLog/Mine og i "download my data" (GDPR art. 15)
+  - **Rapporter:**
+    - Auditpakken får `05-access-log-…csv` for sin periode, når den, der laver pakken, må se adgangsloggen. Ellers står det i indholdsfortegnelsen, hvorfor filen mangler.
+    - Aktivitetsloggens PDF-eksport får arket "Access log", og adgangsloggen kan hentes som CSV.
+- **Begrundelse:** efter en hændelse eller i en audit skal det kunne vises, hvem der kendte informationen og hvornår (ISO/IEC 27001 A.8.15, A.5.28, NIS2 art. 23). At logge medarbejderes læsning er behandling af personoplysninger i ansættelsesforhold (GDPR art. 88). Derfor logges kun følsomme sider, loggen slettes efter sin tid, og medlemmerne varsles.
+- **Fravalgt:**
+  - at logge klik og scroll
+  - advarsler, når nogen åbner noget
+  - at logge læsning gennem API'et
+  - at gemme "beskeden er læst" i databasen. En cookie er nok til en besked, og afsnittet på Privacy står der altid.
+
 ## Spørgsmål til klassediagrammet
 
 Der er ingen åbne spørgsmål. De første spørgsmål fra oktober 2026 er besvaret sådan:

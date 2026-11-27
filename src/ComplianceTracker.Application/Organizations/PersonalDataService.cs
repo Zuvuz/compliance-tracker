@@ -20,8 +20,12 @@ namespace ComplianceTracker.Application.Organizations
         private readonly IUnitOfWork _unitOfWork;
         private readonly TimeProvider _clock;
 
-        public PersonalDataService(CurrentMember member, IActivityLogRepository log, IActivityLogger logger, IUnitOfWork unitOfWork, TimeProvider clock)
+        private readonly IPageVisitRepository? _visits; // US-219: the member's own visits
+
+        public PersonalDataService(CurrentMember member, IActivityLogRepository log, IActivityLogger logger, IUnitOfWork unitOfWork, TimeProvider clock,
+            IPageVisitRepository? visits = null)
         {
+            _visits = visits;
             _member = member;
             _log = log;
             _logger = logger;
@@ -41,7 +45,10 @@ namespace ComplianceTracker.Application.Organizations
                 madeAt = _clock.GetUtcNow().UtcDateTime,
                 profile = new { user.Name, user.Email, keycloakId = user.ExternalId, role = user.Role.ToString(), user.SignsForManagement },
                 organisation = new { organization.Name, organization.Cvr },
-                activity = entries.Select(e => new { time = e.OccurredAt, action = e.Action.ToString(), role = e.Role?.ToString(), details = e.Details })
+                activity = entries.Select(e => new { time = e.OccurredAt, action = e.Action.ToString(), role = e.Role?.ToString(), details = e.Details }),
+                // US-219 R7: the pages the member opened, from the access log
+                pageVisits = (_visits is null ? [] : await _visits.ForUserAsync(organization.Id, user.Id, MaxEntries, cancellationToken))
+                    .Select(v => new { opened = v.StartedAt, lastSeen = v.LastSeenAt, secondsSpent = v.SecondsSpent, what = v.Title, role = v.Role.ToString() })
             };
 
             await _logger.LogAsync(ActivityAction.PersonalDataExported, user.Id, $"{entries.Count} log entries", cancellationToken);

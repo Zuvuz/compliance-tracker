@@ -139,6 +139,45 @@ namespace ComplianceTracker.Domain.Organizations
             return old;
         }
 
+        // US-219 R7: the access log is off until the organisation admin turns it on with a start date at least 6 weeks
+        // ahead, so the members are told first. Null is off. Nothing is logged before the start date.
+        public DateOnly? AccessLogStartsOn { get; private set; }
+
+        // US-219 R6: how long visits are kept; 12 months by default, at most 5 years
+        public int AccessLogRetentionMonths { get; private set; } = ActivityLog.AccessLogRules.DefaultRetentionMonths;
+
+        public bool IsAccessLogOn(DateOnly today) => AccessLogStartsOn is { } starts && today >= starts;
+
+        // R7: turned on, but the start date has not come yet; the members are being told
+        public bool IsAccessLogAnnounced(DateOnly today) => AccessLogStartsOn is { } starts && today < starts;
+
+        // R6, R7: throws when the start is less than 6 weeks ahead or the retention period is outside 1 month to 5 years.
+        // A log that is already on keeps its start date; only the retention period changes.
+        public void TurnOnAccessLog(DateOnly startsOn, int retentionMonths, DateOnly today)
+        {
+            if (retentionMonths is < ActivityLog.AccessLogRules.MinRetentionMonths or > ActivityLog.AccessLogRules.MaxRetentionMonths)
+            {
+                throw new DomainException(
+                    $"Keep the access log for {ActivityLog.AccessLogRules.MinRetentionMonths} to {ActivityLog.AccessLogRules.MaxRetentionMonths} months (at most 5 years)");
+            }
+
+            if (AccessLogStartsOn is null || IsAccessLogAnnounced(today))
+            {
+                var earliest = today.AddDays(ActivityLog.AccessLogRules.NoticeDays);
+                if (startsOn < earliest)
+                {
+                    throw new DomainException($"The access log can start on {earliest:dd-MM-yyyy} at the earliest, so the members are told 6 weeks before");
+                }
+
+                AccessLogStartsOn = startsOn;
+            }
+
+            AccessLogRetentionMonths = retentionMonths;
+        }
+
+        // R7: off at once; the visits already logged are kept until their retention period ends
+        public void TurnOffAccessLog() => AccessLogStartsOn = null;
+
         // US-216 R5: the organisation hid the guided start on the ISMS page; it comes back from the page itself
         public bool HidesIsmsGuide { get; private set; }
 

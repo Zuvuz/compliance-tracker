@@ -23,6 +23,7 @@ namespace ComplianceTracker.Infrastructure.Persistence
 
         public DbSet<Organization> Organizations => Set<Organization>();
         public DbSet<ActivityLogEntry> ActivityLog => Set<ActivityLogEntry>();
+        public DbSet<PageVisit> PageVisits => Set<PageVisit>(); // US-219
         public DbSet<Framework> Frameworks => Set <Framework>();
         public DbSet<FrameworkVersion> FrameworkVersions => Set<FrameworkVersion>();
         public DbSet<Requirement> Requirements => Set<Requirement>();

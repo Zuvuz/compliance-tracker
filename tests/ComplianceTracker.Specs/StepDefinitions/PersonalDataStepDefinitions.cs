@@ -61,9 +61,9 @@ namespace ComplianceTracker.Specs.StepDefinitions
             }));
         }
 
-        [Then("the privacy page lists {string}, {string}, {string}, {string} and {string}")]
-        public void ThenThePrivacyPageLists(string a, string b, string c, string d, string e)
-            => Assert.Equal([a, b, c, d, e], _web.Page!.QuerySelectorAll("#personal-data li").Select(li => li.GetAttribute("data-item")!));
+        [Then("the privacy page lists {string}, {string}, {string}, {string}, {string} and {string}")]
+        public void ThenThePrivacyPageLists(string a, string b, string c, string d, string e, string f)
+            => Assert.Equal([a, b, c, d, e, f], _web.Page!.QuerySelectorAll("#personal-data li").Select(li => li.GetAttribute("data-item")!));
 
         [Then("the privacy page links to {string}")]
         public void ThenThePrivacyPageLinksTo(string text)

@@ -225,6 +225,15 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    @if (ViewData[ComplianceTracker.Web.Models.PageVisits.Key] is Guid pageVisit)
+    {
+        @* US-219 R2: the signs of life of this visit for the access log *@
+        <form id="page-visit" hidden method="post" action="@Url.Action("SignOfLife", "AccessLog")" data-every="@((int)ComplianceTracker.Domain.ActivityLog.AccessLogRules.SignOfLifeEvery.TotalMilliseconds)">
+            <input type="hidden" name="visitId" value="@pageVisit" />
+            @Html.AntiForgeryToken()
+        </form>
+        <script src="~/js/access-log.js" asp-append-version="true"></script>
+    }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
