@@ -1,18 +1,32 @@
-@* US-208: the ISMS area's pages as one row of links, like the organisation's pages. The next ISMS stories add theirs here. *@
+@* US-208, US-226: all the organisation-wide parts of the ISMS as one row of links, in the order of ISO/IEC 27001 and the guided
+   start. The layout draws it on every ISMS page (US-225). Documents and Suppliers have their own controllers; Risks are the
+   organisation area's risks (US-142). Ids used by the tests: #isms-nav with a.nav-link, the open page has .active. *@
 @{
+    var controller = ViewContext.RouteData.Values["controller"] as string;
     var action = ViewContext.RouteData.Values["action"] as string;
-    string Mark(params string[] actions) => actions.Contains(action) ? "active" : "";
+    var open = controller switch
+    {
+        "Documents" => "Documents",
+        "Suppliers" => "Suppliers",
+        "Projects" or "Risks" => "Risks",
+        _ => action
+    };
+    string Mark(string page) => page == open ? "active" : "";
+    string? Current(string page) => page == open ? "page" : null;
 }
 <nav aria-label="ISMS" class="mb-3">
     <ul class="nav nav-pills small flex-wrap" id="isms-nav">
-        <li class="nav-item"><a class="nav-link @Mark("Index")" id="nav-isms-overview" asp-controller="Isms" asp-action="Index">Overview</a></li>
-        <li class="nav-item"><a class="nav-link @Mark("Scope")" id="nav-isms-scope" asp-controller="Isms" asp-action="Scope">Scope and context</a></li>
-        <li class="nav-item"><a class="nav-link @Mark("Objectives")" id="nav-isms-objectives" asp-controller="Isms" asp-action="Objectives">Objectives</a></li>
-        <li class="nav-item"><a class="nav-link @Mark("YearlyPlan")" id="nav-isms-yearly-plan" asp-controller="Isms" asp-action="YearlyPlan">Yearly plan</a></li>
-        <li class="nav-item"><a class="nav-link @Mark("Assets")" id="nav-isms-assets" asp-controller="Isms" asp-action="Assets">Assets</a></li>
-        <li class="nav-item"><a class="nav-link @Mark("Nonconformities")" id="nav-isms-nonconformities" asp-controller="Isms" asp-action="Nonconformities">Nonconformities</a></li>
-        <li class="nav-item"><a class="nav-link @Mark("InternalAudits")" id="nav-isms-internal-audits" asp-controller="Isms" asp-action="InternalAudits">Internal audits</a></li>
-        <li class="nav-item"><a class="nav-link @Mark("ManagementReview")" id="nav-isms-management-review" asp-controller="Isms" asp-action="ManagementReview">Management review</a></li>
-        <li class="nav-item"><a class="nav-link @Mark("Competence")" id="nav-isms-competence" asp-controller="Isms" asp-action="Competence">Competence and awareness</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("Index")" aria-current="@Current("Index")" id="nav-isms-overview" asp-area="" asp-controller="Isms" asp-action="Index">Overview</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("Scope")" aria-current="@Current("Scope")" id="nav-isms-scope" asp-area="" asp-controller="Isms" asp-action="Scope">Scope</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("Documents")" aria-current="@Current("Documents")" id="nav-documents" asp-area="" asp-controller="Documents" asp-action="Index">Documents</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("Risks")" aria-current="@Current("Risks")" id="nav-isms-risks" asp-area="" asp-controller="Organisation" asp-action="Index" asp-route-tab="@ProjectTabs.Risks">Risks</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("Assets")" aria-current="@Current("Assets")" id="nav-isms-assets" asp-area="" asp-controller="Isms" asp-action="Assets">Assets</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("Suppliers")" aria-current="@Current("Suppliers")" id="nav-suppliers" asp-area="" asp-controller="Suppliers" asp-action="Index">Suppliers</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("Objectives")" aria-current="@Current("Objectives")" id="nav-isms-objectives" asp-area="" asp-controller="Isms" asp-action="Objectives">Objectives</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("Competence")" aria-current="@Current("Competence")" id="nav-isms-competence" asp-area="" asp-controller="Isms" asp-action="Competence">Competence</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("YearlyPlan")" aria-current="@Current("YearlyPlan")" id="nav-isms-yearly-plan" asp-area="" asp-controller="Isms" asp-action="YearlyPlan">Yearly plan</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("InternalAudits")" aria-current="@Current("InternalAudits")" id="nav-isms-internal-audits" asp-area="" asp-controller="Isms" asp-action="InternalAudits">Internal audits</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("ManagementReview")" aria-current="@Current("ManagementReview")" id="nav-isms-management-review" asp-area="" asp-controller="Isms" asp-action="ManagementReview">Management review</a></li>
+        <li class="nav-item"><a class="nav-link @Mark("Nonconformities")" aria-current="@Current("Nonconformities")" id="nav-isms-nonconformities" asp-area="" asp-controller="Isms" asp-action="Nonconformities">Nonconformities</a></li>
     </ul>
 </nav>

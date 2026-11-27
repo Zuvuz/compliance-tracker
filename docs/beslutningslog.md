@@ -2771,16 +2771,28 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
     - **Home** er "My tasks" indtil videre, med tælleren for det forfaldne. US-227 gør det til "Your week" og landingssiden.
     - "Frameworks" og "My tasks" er ikke længere selvstændige punkter.
   - **Compliance** er de regler, hele organisationen følger: Frameworks (først), NIS2 scope, NIS2 gap analysis, Requirements, Evidence, Checklists og Reports. Link-siden kommer med US-220.
-  - **Organisation** er administrationen: Profile, Suppliers, Documents, Users, Activity og Settings. Documents og Suppliers flytter til ISMS med US-226.
+  - **Organisation** er administrationen: Profile, Suppliers, Documents, Users, Activity og Settings. Documents og Suppliers er flyttet til ISMS med US-226 (B178).
   - **Organisationsområdet** (US-142) er stadig et projekt i data, men vises ikke længere med et projekts faner og tre "Overview".
     - Dets sider er sider under Compliance med Compliances række: NIS2 scope er områdets oversigt, og Requirements, Evidence og Reports er dets faner.
     - Dets risici ligger under ISMS og vises med ISMS' række.
-  - **Én række undersider:** hver side har højst én række. Den tegnes i layoutet ud fra det topmenupunkt, siden hører til (`TopBar.SectionOf`). ISMS-siderne tegner selv deres række.
+  - **Én række undersider:** hver side har højst én række. Den tegnes i layoutet ud fra det topmenupunkt, siden hører til (`TopBar.SectionOf`). Fra US-226 gælder det også ISMS-siderne (B178).
   - **Gamle adresser virker:** fx `/Organisation?tab=nis2-scope` sender stadig videre til NIS2-scopetjekket, nu under Compliance.
 - **Begrundelse:** det var svært at finde rundt, når organisationens sider lå i tre lag med "Overview" tre gange. Nu har hver side ét sted og én række undersider.
 - **Fravalgt:**
   - At ændre organisationsområdet i data. Det er kun visningen, der er ændret.
   - Områdets aktivitetslog som egen side under Compliance. Den ses i organisationens Activity og på sin gamle adresse.
+
+### B178 – Hele ISMS samlet ét sted i standardens rækkefølge (US-226)
+
+- **Beslutning:**
+  - **ISMS' række** følger ISO/IEC 27001 og den guidede start: Overview, Scope, Documents, Risks, Assets, Suppliers, Objectives, Competence, Yearly plan, Internal audits, Management review og Nonconformities (brugerens valg: "ISO order").
+  - **Documents og Suppliers** er flyttet fra Organisation til ISMS. Organisation er nu kun Profile, Users, Activity og Settings.
+  - **Risks** er organisationsområdets risici (US-142) og vises med ISMS' række.
+  - **Alle dokumenter ligger under ISMS → Documents** (brugerens valg). Siden har et filter øverst: Policies, Procedures, Risk tables, Other og All. Den åbner på Policies, fordi politikkerne er det første, en auditor spørger efter.
+  - **Checklists** bliver under Compliance.
+  - Layoutet tegner ISMS' række på alle ISMS-sider. Siderne tegner den ikke længere selv.
+- **Begrundelse:** ISMS' dele lå spredt under både Organisation og ISMS. Nu ligger de ét sted i den rækkefølge, man bygger et ISMS op i.
+- **Fravalgt:** Et separat dokumentbibliotek under Organisation. Det ville give to steder at lede efter den samme politik.
 
 ## Spørgsmål til klassediagrammet
 

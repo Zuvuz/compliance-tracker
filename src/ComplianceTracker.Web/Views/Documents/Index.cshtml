@@ -92,8 +92,25 @@
     </empty-state>
 }
 
+@* US-226: the documents by kind, policies first. Ids used by the tests: #document-filter a[data-kind] (.active when chosen). *@
+@{
+    var kindFilter = ViewData["Kind"] as string ?? ComplianceTracker.Web.Models.DocumentKinds.All;
+}
+@if (Model.Documents.Count > 0)
+{
+    <ul class="nav nav-pills small mb-2" id="document-filter">
+        @foreach (var (value, title) in ComplianceTracker.Web.Models.DocumentKinds.Filters)
+        {
+            var count = value == ComplianceTracker.Web.Models.DocumentKinds.All
+                ? Model.Documents.Count
+                : Model.Documents.Count(d => ComplianceTracker.Web.Models.DocumentKinds.Shows(value, d.Kind));
+            <li class="nav-item"><a class="nav-link py-1 @(kindFilter == value ? "active" : "")" data-kind="@value" asp-action="Index" asp-route-kind="@value">@title (@count)</a></li>
+        }
+    </ul>
+}
+
 <ul class="list-unstyled" id="organisation-documents">
-    @foreach (var document in Model.Documents)
+    @foreach (var document in Model.Documents.Where(d => ComplianceTracker.Web.Models.DocumentKinds.Shows(kindFilter, d.Kind)))
     {
         var links = document.ActiveLinks;
         var projects = Model.ProjectsUsing.GetValueOrDefault(document.Id) ?? [];

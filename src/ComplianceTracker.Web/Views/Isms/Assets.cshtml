@@ -18,8 +18,6 @@
     var noOwner = Model.Assets.Count(a => !a.HasOwner);
 }
 
-<partial name="_IsmsNav" />
-
 <page-header heading="Assets" heading-id="assets-title">
     <a class="btn btn-outline-secondary" id="assets-excel" asp-action="AssetsExcel" asp-all-route-data="query">Download Excel</a>
 </page-header>

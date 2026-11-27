@@ -367,10 +367,10 @@ namespace ComplianceTracker.Specs.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 45
-    await testRunner.WhenAsync("I open the organisation\'s page \"Suppliers\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.WhenAsync("I open the organisation\'s page \"Settings\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 46
-    await testRunner.ThenAsync("the organisation\'s page \"Suppliers\" is marked", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("the organisation\'s page \"Settings\" is marked", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 47
     await testRunner.AndAsync("the top bar marks \"Organisation\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

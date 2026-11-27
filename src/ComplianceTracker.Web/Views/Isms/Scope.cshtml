@@ -21,8 +21,6 @@
     var inside = Model.Projects.Count(p => p.State == ScopeState.Inside);
 }
 
-<partial name="_IsmsNav" />
-
 <page-header heading="Scope and context" heading-id="scope-title" status="@status" status-id="scope-version">
     <a class="btn btn-outline-secondary" id="scope-pdf" asp-action="ScopePdf">Download PDF</a>
     @if (Model.CanChange && scope is { Version: > 0, ChangedSinceApproval: false })

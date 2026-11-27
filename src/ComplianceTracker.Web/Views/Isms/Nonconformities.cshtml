@@ -14,8 +14,6 @@
     var open = Model.Counts.Where(c => c.Key != NonconformityStatus.Effective).Sum(c => c.Value);
 }
 
-<partial name="_IsmsNav" />
-
 <page-header heading="Nonconformities" heading-id="nonconformities-title" />
 
 <p class="text-muted">What went wrong, from audits, security events, missed deadlines and complaints: the correction, the cause,

@@ -23,8 +23,6 @@
     string Icon(PartState state) => state switch { PartState.Red => "✗", PartState.Yellow => "!", _ => "✓" };
 }
 
-<partial name="_IsmsNav" />
-
 <page-header heading="ISMS" heading-id="isms-title" />
 
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
