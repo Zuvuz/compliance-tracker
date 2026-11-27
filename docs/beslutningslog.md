@@ -2812,6 +2812,28 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 - **Begrundelse:** man skal kunne starte dagen fra én side uden at lede på flere.
 - **Fravalgt:** ISMS-status og projekternes dækning på Home. Brugeren valgte kun "Your week", så siden er kort.
 
+### B180 – Én Link-side med kravene, produktkravene og beviserne side om side (US-220)
+
+- **Beslutning:**
+  - **Hvor:** en "Link"-fane i hvert projekt, efter Compliance. Organisationen har den samme side som "Link" under Compliance i topbaren.
+  - **Tre kolonner** (mockup'en, brugerens valg 2026-11-25):
+    1. compliance-kravene i én ramme. Hver har et mærke: "Covered", "Partly", "Not covered" eller "Not applicable", og "AI", når AI'en har forslag.
+    2. produktkravene: de linkede først, så AI'ens forslag med grunden på én linje, så resten
+    3. beviserne: det samme
+  - **Mærkerne:**
+    - "Covered" kræver både et produktkrav og et bevis, der tæller.
+    - "Partly" betyder, at kun det ene er der, eller at et link venter på gennemsyn.
+    - Filteret "Not covered" bruger Compliance-fanens regel (intet produktkrav dækker kravet), så de to sider tæller ens.
+  - **Siden åbner med filteret "Not covered".** "Has suggestions" og "All" kan vælges, og filteret står i adressen, så det kan deles.
+  - **Link og Unlink** bruger Compliance-fanens handlinger. Derfor er rettighederne og loggen de samme. Efter en handling vises Link-siden igen med det samme krav valgt.
+  - **AI-forslag** godkendes med den dobbelte bekræftelse (US-221). Bagefter kommer man tilbage til Link-siden.
+  - **Et krav, der ikke gælder,** viser sin grund og kan ikke få links, før mærket fjernes på kravets side.
+  - **Resten af en kolonne** viser højst 50. En søgning finder de øvrige.
+  - **Upload af en ny fil** sker på kravets side, hvor upload-formularen er. Kravets side linker til Link-siden.
+  - **Tastatur og telefon:** piletasterne flytter i en kolonne, og Enter linker. På en telefon står kolonnerne under hinanden som tre trin.
+- **Begrundelse:** det var svært at følge med i, hvad der var linket. På én side kan man se, hvad der mangler for hvert krav.
+- **Fravalgt:** træk og slip og at linke flere krav på én gang (uden for US-220).
+
 ## Spørgsmål til klassediagrammet
 
 Der er ingen åbne spørgsmål. De første spørgsmål fra oktober 2026 er besvaret sådan:

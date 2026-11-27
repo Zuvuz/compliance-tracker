@@ -34,6 +34,7 @@ public class TopBarTests
 
     [Theory]
     [InlineData("compliance", "Requirements")]
+    [InlineData("link", "Link")] // US-220
     [InlineData("evidence", "Evidence")]
     [InlineData("reports", "Reports")]
     [InlineData("frameworks", "Frameworks")]

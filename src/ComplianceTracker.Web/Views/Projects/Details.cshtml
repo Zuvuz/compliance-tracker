@@ -18,6 +18,9 @@
     case ProjectTabs.Compliance:
         <partial name="_ComplianceTab" model="Model" />
         break;
+    case ProjectTabs.Link:
+        <partial name="_LinkTab" model="Model" />
+        break;
     case ProjectTabs.Evidence:
         <partial name="_EvidenceTab" model="Model" />
         break;
@@ -58,6 +61,10 @@
 }
 
 @section Scripts {
+    @if (Model.Tab == ProjectTabs.Link)
+    {
+        <script src="~/js/link-page.js" asp-append-version="true"></script> @* US-220 R7 *@
+    }
     @* US-018 R7: live updates, only on the tab that shows the user stories *@
     @if (Model.Tab == ProjectTabs.ProductRequirements && Model.Project.GitHub is not null)
     {

@@ -77,6 +77,7 @@ namespace ComplianceTracker.Web.Models
         public const string Overview = "overview";
         public const string Frameworks = "frameworks";
         public const string Compliance = "compliance";
+        public const string Link = "link"; // US-220: the one page for linking
         public const string Evidence = "evidence";
         public const string Risks = "risks";
         public const string SecurityEvents = "security-events";
@@ -95,6 +96,7 @@ namespace ComplianceTracker.Web.Models
             (Overview, "Overview"),
             (Frameworks, "Frameworks"),
             (Compliance, "Compliance"),
+            (Link, "Link"),
             (Evidence, "Evidence"),
             (Risks, "Risks"),
             (SecurityEvents, "Security events"),
@@ -112,6 +114,7 @@ namespace ComplianceTracker.Web.Models
             (Nis2Scope, "NIS2 scope"),
             (Frameworks, "Frameworks"),
             (Compliance, "Compliance"),
+            (Link, "Link"),
             (Evidence, "Evidence"),
             (Risks, "Risks"),
             (Activity, "Activity"),
@@ -125,7 +128,7 @@ namespace ComplianceTracker.Web.Models
         public static readonly IReadOnlyList<(string Title, string[] Slugs)> Groups =
         [
             ("Overview", [Overview, Nis2Scope, Suggestions, Activity]),
-            ("Requirements", [Compliance, ProductRequirements, Frameworks]),
+            ("Requirements", [Compliance, Link, ProductRequirements, Frameworks]),
             ("Evidence", [Evidence]),
             ("Risks", [Risks]),
             ("Security", [SecurityEvents, Scans]),
@@ -308,6 +311,9 @@ namespace ComplianceTracker.Web.Models
         public Application.Projects.GapsView? Gaps { get; init; }
         public string? Search { get; init; }
         public string ComplianceFilter { get; init; } = ComplianceFilters.All;
+
+        // US-220: the Link tab's three columns; null on the other tabs
+        public LinkPage? LinkPage { get; init; }
 
         // US-042: the Risks tab's register (already filtered), the filters and the time for "Review due"
         public IReadOnlyList<Risk> Risks { get; init; } = [];

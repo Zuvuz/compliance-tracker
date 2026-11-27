@@ -54,6 +54,10 @@
                 {
                     <input type="hidden" name="req" value="@req" />
                 }
+                @if (ViewData["BackTo"] is string backTo)
+                {
+                    <input type="hidden" name="back" value="@backTo" />
+                }
                 <div class="form-check mb-2">
                     <input class="form-check-input" type="checkbox" id="argument-confirmed" name="argumentConfirmed" value="true" required />
                     <label class="form-check-label" for="argument-confirmed">I have read the argument and agree</label>

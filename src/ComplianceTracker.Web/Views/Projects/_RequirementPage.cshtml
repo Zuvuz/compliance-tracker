@@ -49,6 +49,9 @@
             <span class="text-muted">·</span>
         }
         <a id="back-to-requirements" href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Compliance, sub = Model.Sub ?? sub, req = "" })">‹ All @FrameworkNames.Short(framework.Framework.Name) requirements</a>
+        @* US-220: the same requirement on the Link page *@
+        <span class="text-muted">·</span>
+        <a id="open-on-link-page" href="@Url.Action("Details", new { id = project.Id, tab = ProjectTabs.Link, sub, req = requirement.Code, show = ComplianceFilters.All })">Link on the Link page</a>
         @if (requirement.Group is not null)
         {
             <span class="text-muted"> · @requirement.Group</span>
