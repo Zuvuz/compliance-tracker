@@ -18,6 +18,7 @@
     var canDecide = !project.IsClosed && await Permissions.CanAsync(Permission.DecideCompliance);
     var chosen = link?.Chosen;
     var code = chosen?.Requirement.Code;
+    var here = link is null ? null : ReturnAddress.ForLink(link.Sub, code, link.Filter); // US-228: every form comes back to the Link page
     string MarkClass(string mark) => mark switch
     {
         LinkMarks.Covered => "text-bg-success",
@@ -128,7 +129,7 @@
                                     <form asp-action="UnlinkRequirement" method="post" class="link-unlink">
                                         <input type="hidden" name="projectId" value="@project.Id" />
                                         <input type="hidden" name="linkId" value="@linked.LinkId" />
-                                        <partial name="_LinkBack" model="link" />
+                                        <partial name="_ReturnAddress" model="here" />
                                         <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Unlink @linked.WorkItem.Title">Unlink</button>
                                     </form>
                                 }
@@ -148,13 +149,13 @@
                                         <form asp-action="ApproveSuggestion" method="post" class="link-approve">
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="suggestionId" value="@entry.Suggestion.Id" />
-                                            <partial name="_LinkBack" model="link" />
+                                            <partial name="_ReturnAddress" model="here" />
                                             <button type="submit" class="btn btn-sm btn-outline-success" aria-label="Link @entry.WorkItem.Title">Link</button>
                                         </form>
                                         <form asp-action="RejectSuggestion" method="post" class="d-flex flex-wrap gap-1 link-reject">
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="suggestionId" value="@entry.Suggestion.Id" />
-                                            <partial name="_LinkBack" model="link" />
+                                            <partial name="_ReturnAddress" model="here" />
                                             <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason" required>
                                                 <option value="">Reason…</option>
                                                 @foreach (var reason in Enum.GetValues<ComplianceTracker.Domain.Mappings.RejectionReason>())
@@ -186,7 +187,7 @@
                                         <input type="hidden" name="projectId" value="@project.Id" />
                                         <input type="hidden" name="requirementId" value="@chosen.Requirement.Id" />
                                         <input type="hidden" name="workItemId" value="@story.Id" />
-                                        <partial name="_LinkBack" model="link" />
+                                        <partial name="_ReturnAddress" model="here" />
                                         <button type="submit" class="btn btn-sm btn-outline-primary" aria-label="Link @story.Title">Link</button>
                                     </form>
                                 }
@@ -231,7 +232,7 @@
                                         <input type="hidden" name="projectId" value="@project.Id" />
                                         <input type="hidden" name="evidenceId" value="@item.Evidence.Id" />
                                         <input type="hidden" name="requirementId" value="@chosen.Requirement.Id" />
-                                        <partial name="_LinkBack" model="link" />
+                                        <partial name="_ReturnAddress" model="here" />
                                         <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Unlink @item.Evidence.Title">Unlink</button>
                                     </form>
                                 }
@@ -251,13 +252,13 @@
                                         <form asp-action="ApproveEvidenceSuggestion" method="post" class="link-approve">
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="suggestionId" value="@entry.Suggestion.Id" />
-                                            <partial name="_LinkBack" model="link" />
+                                            <partial name="_ReturnAddress" model="here" />
                                             <button type="submit" class="btn btn-sm btn-outline-success" aria-label="Link @entry.Evidence.Title">Link</button>
                                         </form>
                                         <form asp-action="RejectEvidenceSuggestion" method="post" class="d-flex flex-wrap gap-1 link-reject">
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="suggestionId" value="@entry.Suggestion.Id" />
-                                            <partial name="_LinkBack" model="link" />
+                                            <partial name="_ReturnAddress" model="here" />
                                             <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason" required>
                                                 <option value="">Reason…</option>
                                                 @foreach (var reason in Enum.GetValues<ComplianceTracker.Domain.Mappings.RejectionReason>())
@@ -289,7 +290,7 @@
                                         <input type="hidden" name="projectId" value="@project.Id" />
                                         <input type="hidden" name="requirementId" value="@chosen.Requirement.Id" />
                                         <input type="hidden" name="evidenceId" value="@evidence.Id" />
-                                        <partial name="_LinkBack" model="link" />
+                                        <partial name="_ReturnAddress" model="here" />
                                         <button type="submit" class="btn btn-sm btn-outline-primary" aria-label="Link @evidence.Title">Link</button>
                                     </form>
                                 }

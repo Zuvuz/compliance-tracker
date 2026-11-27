@@ -52,6 +52,15 @@ Feature: One Link page for requirements, product requirements and evidence
     Then "[US-004] Sign in with OpenID Connect" is linked to "SP-1" with the source "AiApproved"
     And the Link page still has "SP-1" chosen
 
+  @US-228 @usability @integration
+  Scenario: A rule broken on the Link page shows its message on the Link page
+    Given the AI rates "[US-004] Sign in with OpenID Connect" against "SP-1" with 0.86
+    And I have clicked "Suggest mappings" for "Acme Portal"
+    When I open the Link page of "Acme Portal" and choose "SP-1"
+    And I reject the suggested product requirement "[US-004] Sign in with OpenID Connect" without a reason
+    Then I see the error "Choose a reason"
+    And the Link page still has "SP-1" chosen
+
   @US-220 @usability @integration
   Scenario: The page opens with only the requirements that are not covered
     Given the user story "[US-007] Lock the account after 5 attempts" is linked to the requirement "SP-1"

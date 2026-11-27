@@ -414,47 +414,15 @@ namespace ComplianceTracker.Web.Controllers
             });
         }
 
-        // US-153 R4: after an action on a requirement's page, the same page; from the overview, the overview.
-        // The page's forms send the requirement's code as "req".
-        private RedirectToActionResult BackToCompliance(Guid projectId, string? sub, string? show = null)
-        {
-            if (BackToLinkPage(projectId, sub) is { } link)
-            {
-                return link; // US-220
-            }
+        // US-228 R1, R5: after an action, the page the form came from (its ReturnAddress); a form that names no page goes to
+        // the fallback the action gives
+        private RedirectToActionResult BackTo(Guid projectId, ReturnAddress fallback)
+            => RedirectToAction(nameof(Details), (ReturnAddress.From(Request) ?? fallback).RouteValues(projectId));
 
-            var req = Request.HasFormContentType ? RequirementPages.Clean(Request.Form["req"]) : null;
-            return RedirectToAction(nameof(Details), new
-            {
-                id = projectId,
-                tab = ProjectTabs.Compliance,
-                sub = req is not null && sub is null ? ComplianceFilters.AllSub : sub,
-                req,
-                show = string.IsNullOrEmpty(show) || req is not null ? null : show
-            });
-        }
-
-        // US-220: the Link page's forms send back=link with the framework, the requirement and the filter, so the page is
-        // shown again with the same requirement chosen and its marks changed (R4). Null for every other page.
-        private RedirectToActionResult? BackToLinkPage(Guid projectId, string? sub)
-        {
-            if (!Request.HasFormContentType || Request.Form["back"] != LinkBack)
-            {
-                return null;
-            }
-
-            var show = Request.Form["show"].ToString();
-            return RedirectToAction(nameof(Details), new
-            {
-                id = projectId,
-                tab = ProjectTabs.Link,
-                sub = string.IsNullOrEmpty(sub) || sub == ComplianceFilters.AllSub ? null : sub,
-                req = RequirementPages.Clean(Request.Form["req"]),
-                show = string.IsNullOrEmpty(show) ? null : LinkPage.FilterOf(show)
-            });
-        }
-
-        public const string LinkBack = "link";
+        // US-153 R4, US-228: the fallback of the Compliance tab's actions, as it was before the forms named their page: a
+        // requirement's page when the form sent its code ("req"), otherwise the framework's list
+        private ReturnAddress ComplianceFallback(string? sub, string? show = null)
+            => ReturnAddress.FallbackToCompliance(sub, Request.HasFormContentType ? Request.Form["req"].ToString() : null, show);
 
         // POST /Projects/AssessNis2: US-142 R3, the NIS2 scope check of the organisation (DecideCompliance)
         [HttpPost]
@@ -623,7 +591,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> LinkRequirement(Guid projectId, Guid requirementId, Guid workItemId, string? sub, CancellationToken cancellationToken)
         {
             await _compliance.LinkAsync(projectId, requirementId, workItemId, cancellationToken);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/UnlinkRequirement: the link is kept as history
@@ -637,12 +605,9 @@ namespace ComplianceTracker.Web.Controllers
             UndoOffer.Offer(TempData, _clock.GetUtcNow().UtcDateTime, $"Removed the link to {name}", "Projects", nameof(LinkRequirement), new()
             {
                 ["projectId"] = projectId.ToString(), ["requirementId"] = requirementId.ToString(), ["workItemId"] = workItemId.ToString(),
-                ["sub"] = sub ?? "", ["req"] = Request.HasFormContentType ? Request.Form["req"].ToString() : "",
-                // US-220: from the Link page, the Undo goes back there
-                ["back"] = Request.HasFormContentType ? Request.Form["back"].ToString() : "",
-                ["show"] = Request.HasFormContentType ? Request.Form["show"].ToString() : ""
-            });
-            return BackToCompliance(projectId, sub);
+                ["sub"] = sub ?? ""
+            }, ReturnAddress.From(Request) ?? ComplianceFallback(sub)); // US-228 R5
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/MarkNotApplicable: US-043 R5. The reason is required.
@@ -653,7 +618,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> MarkNotApplicable(Guid projectId, Guid requirementId, string? reason, string? sub, Guid? riskId, CancellationToken cancellationToken)
         {
             await _compliance.MarkNotApplicableAsync(projectId, requirementId, reason ?? "", cancellationToken, riskId);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // GET /Projects/Inherited/{id}: US-115 R4, the requirements a product inherits from the organisation
@@ -710,7 +675,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] InheritedRequirements inherited, CancellationToken cancellationToken)
         {
             await inherited.ChangeScopeAsync(requirementId, scope, reason ?? "", cancellationToken);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // GET /Projects/DoneAudit/{id}?show=failing: US-109 R6, every work item with its Definition of Done; for everyone, the
@@ -786,7 +751,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> DecideDocumentationEnough(Guid projectId, Guid requirementId, bool enough, string? reason, string? sub, CancellationToken cancellationToken)
         {
             await _compliance.DecideDocumentationEnoughAsync(projectId, requirementId, enough, reason ?? "", cancellationToken);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/ChangeEvidenceKind: US-204 R2, documentation or proof
@@ -807,7 +772,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> MarkApplicable(Guid projectId, Guid requirementId, string? sub, CancellationToken cancellationToken)
         {
             await _compliance.MarkApplicableAsync(projectId, requirementId, cancellationToken);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/ConfirmReview: US-110 R5
@@ -817,7 +782,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> ConfirmReview(Guid projectId, Guid requirementId, string? sub, string? show, CancellationToken cancellationToken)
         {
             await _compliance.ConfirmReviewAsync(projectId, requirementId, cancellationToken);
-            return BackToCompliance(projectId, sub, show);
+            return BackTo(projectId, ComplianceFallback(sub, show));
         }
 
         // ---------------------------------------------------------- Evidence (US-057)
@@ -856,7 +821,7 @@ namespace ComplianceTracker.Web.Controllers
                 TempData["NoReviewDate"] = Domain.Organizations.ReviewDefaults.NoDateWarning; // US-195 R2
             }
 
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/RemoveEvidence: R5, kept as history. US-059: off this requirement; removed when it proved nothing else.
@@ -870,12 +835,9 @@ namespace ComplianceTracker.Web.Controllers
             UndoOffer.Offer(TempData, _clock.GetUtcNow().UtcDateTime, "Removed the evidence from the requirement", "Projects", nameof(LinkExistingEvidence), new()
             {
                 ["projectId"] = projectId.ToString(), ["requirementId"] = requirementId.ToString(), ["evidenceId"] = evidenceId.ToString(),
-                ["sub"] = sub ?? "", ["req"] = Request.HasFormContentType ? Request.Form["req"].ToString() : "",
-                // US-220: from the Link page, the Undo goes back there
-                ["back"] = Request.HasFormContentType ? Request.Form["back"].ToString() : "",
-                ["show"] = Request.HasFormContentType ? Request.Form["show"].ToString() : ""
-            });
-            return BackToCompliance(projectId, sub);
+                ["sub"] = sub ?? ""
+            }, ReturnAddress.From(Request) ?? ComplianceFallback(sub)); // US-228 R5
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/LinkExistingEvidence: US-059, "Pick existing evidence" on a Compliance tab row
@@ -885,7 +847,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> LinkExistingEvidence(Guid projectId, Guid requirementId, Guid evidenceId, string? sub, CancellationToken cancellationToken)
         {
             await _compliance.LinkExistingEvidenceAsync(projectId, requirementId, evidenceId, cancellationToken);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // ---------------------------------------------------------- Evidence suggestions (US-058)
@@ -932,7 +894,7 @@ namespace ComplianceTracker.Web.Controllers
             Guid projectId, Guid suggestionId, string? sub, [FromServices] EvidenceSuggestionService suggestions, CancellationToken cancellationToken)
         {
             await suggestions.AcceptAsync(projectId, suggestionId, cancellationToken);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/RejectSuggestedEvidence: R5, with a reason
@@ -943,7 +905,7 @@ namespace ComplianceTracker.Web.Controllers
             Guid projectId, Guid suggestionId, string? reason, string? sub, [FromServices] EvidenceSuggestionService suggestions, CancellationToken cancellationToken)
         {
             await suggestions.RejectAsync(projectId, suggestionId, reason, cancellationToken);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // ---------------------------------------------------------- Evidence tab (US-059)
@@ -1003,8 +965,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> UnlinkEvidence(Guid projectId, Guid linkId, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
         {
             await evidence.UnlinkAsync(projectId, linkId, cancellationToken);
-            return BackToLinkPage(projectId, Request.HasFormContentType ? Request.Form["sub"].ToString() : null)
-                ?? RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+            return BackTo(projectId, ReturnAddress.ForEvidence()); // US-228: the Link page or the Evidence tab
         }
 
         // POST /Projects/RemoveProjectEvidence: R7, off every requirement
@@ -1045,7 +1006,8 @@ namespace ComplianceTracker.Web.Controllers
         {
             if (!argumentConfirmed)
             {
-                return ToConfirmation(projectId, Domain.Mappings.SuggestionKind.Evidence, suggestionId, sub, null); // US-221 R1
+                return ToConfirmation(projectId, Domain.Mappings.SuggestionKind.Evidence, suggestionId,
+                    sub is null ? ReturnAddress.ForEvidence() : ComplianceFallback(sub)); // US-221 R1
             }
 
             await evidence.ApproveAsync(projectId, suggestionId, argumentConfirmed, cancellationToken);
@@ -1054,9 +1016,7 @@ namespace ComplianceTracker.Web.Controllers
 
         // US-106: a decision made in a requirement row goes back to the Compliance tab (sub is set), else to the Evidence tab
         private RedirectToActionResult BackFromSuggestion(Guid projectId, string? sub)
-            => BackToLinkPage(projectId, sub) ?? (sub is null
-                ? RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence })
-                : BackToCompliance(projectId, sub));
+            => BackTo(projectId, sub is null ? ReturnAddress.ForEvidence() : ComplianceFallback(sub));
 
         // POST /Projects/UndoEvidenceRejection, UndoStoryRejection: US-145 R6, the pair can be suggested again
         [HttpPost]
@@ -1074,7 +1034,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> UndoStoryRejection(Guid projectId, Guid suggestionId, string? sub, [FromServices] Application.Ai.MappingSuggestionService mappings, CancellationToken cancellationToken)
         {
             await mappings.UndoRejectionAsync(projectId, suggestionId, cancellationToken);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/CheckEvidence: US-038 R1, R8. ConfirmEvidenceCheck, OverruleEvidenceCheck: R2.
@@ -1086,7 +1046,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] EvidenceCheckService checks, CancellationToken cancellationToken)
         {
             await checks.CheckAsync(projectId, evidenceId, requirementId, cancellationToken);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         [HttpPost]
@@ -1095,7 +1055,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> ConfirmEvidenceCheck(Guid projectId, Guid checkId, string? sub, [FromServices] EvidenceCheckService checks, CancellationToken cancellationToken)
         {
             await checks.ConfirmAsync(projectId, checkId, cancellationToken);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         [HttpPost]
@@ -1105,7 +1065,7 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] EvidenceCheckService checks, CancellationToken cancellationToken)
         {
             await checks.OverruleAsync(projectId, checkId, verdict, reason, cancellationToken);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/AskTheAi: US-106 R1–R3, about one requirement
@@ -1117,7 +1077,7 @@ namespace ComplianceTracker.Web.Controllers
         {
             var result = await ai.AskAboutRequirementAsync(projectId, requirementId, cancellationToken);
             TempData["ApplicabilityMessage"] = result.Summary;
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/DraftForGaps: US-108 R1–R5, the AI drafts work for one regulation's gaps in the project's form
@@ -1193,7 +1153,7 @@ namespace ComplianceTracker.Web.Controllers
                 ? $"\"{draft.Title}\" is accepted. Add it to the project's requirements; it is linked when it comes in."
                 : $"\"{draft.Title}\" is accepted. Create the issue in GitHub; it is linked to the requirement at the next sync.";
             TempData["NewIssueAddress"] = address;
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/DiscardStoryDraft: US-106 R6
@@ -1203,7 +1163,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> DiscardStoryDraft(Guid projectId, Guid draftId, string? reason, string? sub, [FromServices] Application.Ai.AskTheAiService ai, CancellationToken cancellationToken)
         {
             await ai.DiscardDraftAsync(projectId, draftId, reason, cancellationToken);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/RejectEvidenceSuggestion: R4, with a reason
@@ -1786,7 +1746,7 @@ namespace ComplianceTracker.Web.Controllers
         {
             if (!argumentConfirmed)
             {
-                return ToConfirmation(projectId, Domain.Mappings.SuggestionKind.EvidenceStory, suggestionId, null, null); // US-221 R1
+                return ToConfirmation(projectId, Domain.Mappings.SuggestionKind.EvidenceStory, suggestionId, ReturnAddress.ForEvidence()); // US-221 R1
             }
 
             await evidence.ApproveStoryAsync(projectId, suggestionId, argumentConfirmed, cancellationToken);
@@ -2070,7 +2030,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> SuggestForNotCovered(Guid projectId, Guid frameworkId, string? sub, CancellationToken cancellationToken)
         {
             await _suggestions.SuggestForNotCoveredAsync(projectId, frameworkId, cancellationToken);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // ---------------------------------------------------------- Requirements that need action (US-155)
@@ -2085,7 +2045,7 @@ namespace ComplianceTracker.Web.Controllers
         {
             var (needs, notApplying) = await needsAction.FindAsync(projectId, frameworkId, cancellationToken);
             TempData["ApplicabilityMessage"] = NeedsActionTexts.Found(needs, notApplying);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/SuggestStoriesForRequirement: #52. The project's own stories for one requirement (US-020), from its
@@ -2100,7 +2060,7 @@ namespace ComplianceTracker.Web.Controllers
             TempData["ApplicabilityMessage"] = made == 0
                 ? "No story in the project matches this requirement well enough. A new story can be drafted under More."
                 : made == 1 ? "1 story from the project is suggested below." : $"{made} stories from the project are suggested below.";
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/CreateStoryForNeedsAction: R5. The person agrees; the AI drafts a story (US-106).
@@ -2113,7 +2073,7 @@ namespace ComplianceTracker.Web.Controllers
         {
             var result = await needsAction.CreateStoryAsync(projectId, markId, cancellationToken);
             TempData["ApplicabilityMessage"] = result.Summary;
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/DismissNeedsAction: R6. Not needed: the requirement becomes not applicable with the reason.
@@ -2125,7 +2085,7 @@ namespace ComplianceTracker.Web.Controllers
             CancellationToken cancellationToken)
         {
             await needsAction.DismissAsync(projectId, markId, reason, riskId, cancellationToken);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // ---------------------------------------------------------- Not applicable, suggested by the AI (US-060, US-061)
@@ -2142,7 +2102,7 @@ namespace ComplianceTracker.Web.Controllers
             TempData["ApplicabilityMessage"] = made == 0
                 ? "The AI found no requirement that clearly does not apply"
                 : $"The AI suggests {made} {(made == 1 ? "requirement" : "requirements")} as not applicable. Accept or reject each one.";
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/AcceptApplicability: US-060 R6, R8. The reason can be edited before it is accepted.
@@ -2154,7 +2114,7 @@ namespace ComplianceTracker.Web.Controllers
             CancellationToken cancellationToken)
         {
             await applicability.AcceptAsync(projectId, suggestionId, reason, cancellationToken);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/RejectApplicability: US-060 R8
@@ -2165,7 +2125,7 @@ namespace ComplianceTracker.Web.Controllers
             Guid projectId, Guid suggestionId, string? sub, [FromServices] ApplicabilitySuggestionService applicability, CancellationToken cancellationToken)
         {
             await applicability.RejectAsync(projectId, suggestionId, cancellationToken);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/KeepNotApplicable: US-061 R3
@@ -2175,7 +2135,7 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> KeepNotApplicable(Guid projectId, Guid requirementId, string? sub, CancellationToken cancellationToken)
         {
             await _compliance.KeepNotApplicableAsync(projectId, requirementId, cancellationToken);
-            return BackToCompliance(projectId, sub);
+            return BackTo(projectId, ComplianceFallback(sub));
         }
 
         // POST /Projects/ApproveSuggestion: US-020 R6. US-044 R5: decided on the Compliance tab, back to the same view.
@@ -2187,18 +2147,18 @@ namespace ComplianceTracker.Web.Controllers
         {
             if (!argumentConfirmed)
             {
-                return ToConfirmation(projectId, Domain.Mappings.SuggestionKind.Story, suggestionId, sub, show); // US-221 R1
+                return ToConfirmation(projectId, Domain.Mappings.SuggestionKind.Story, suggestionId, ComplianceFallback(sub, show)); // US-221 R1
             }
 
             await _suggestions.ApproveAsync(projectId, suggestionId, argumentConfirmed, cancellationToken);
-            return BackToCompliance(projectId, sub, show);
+            return BackTo(projectId, ComplianceFallback(sub, show));
         }
 
         // GET /Projects/ConfirmSuggestion: US-221 R1-R5, the AI's argument and the second confirmation before a link is made.
         // A page of its own, so it works without JavaScript.
         [HttpGet]
         public async Task<IActionResult> ConfirmSuggestion(Guid projectId, Domain.Mappings.SuggestionKind kind, Guid suggestionId, string? sub, string? show,
-            string? req, [FromServices] Application.Ai.SuggestionArgumentService arguments, CancellationToken cancellationToken, string? back = null)
+            string? req, [FromServices] Application.Ai.SuggestionArgumentService arguments, CancellationToken cancellationToken)
         {
             var confirmation = await arguments.ForAsync(projectId, kind, suggestionId, cancellationToken);
             if (confirmation is null)
@@ -2206,38 +2166,27 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound();
             }
 
-            req = RequirementPages.Clean(req);
-            ViewData["Sub"] = sub;
-            ViewData["Show"] = show;
-            ViewData["Req"] = req;
-            if (back == LinkBack)
-            {
-                // US-220: approved from the Link page, back to it with the same requirement chosen
-                ViewData["BackTo"] = LinkBack;
-                ViewData["Back"] = Url.Action(nameof(Details), new { id = projectId, tab = ProjectTabs.Link, sub, req, show = string.IsNullOrEmpty(show) ? null : LinkPage.FilterOf(show) });
-                return View(confirmation);
-            }
-
-            ViewData["Back"] = kind == Domain.Mappings.SuggestionKind.Story || (kind == Domain.Mappings.SuggestionKind.Evidence && (sub is not null || req is not null))
-                ? Url.Action(nameof(Details), new
-                {
-                    id = projectId,
-                    tab = ProjectTabs.Compliance,
-                    sub = req is not null && sub is null ? ComplianceFilters.AllSub : sub,
-                    req,
-                    show = string.IsNullOrEmpty(show) || req is not null ? null : show
-                })
-                : Url.Action(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+            // US-228 R4: Cancel and Confirm go back to where the suggestion was opened; without an address, as before: a
+            // story or a requirement's evidence to the Compliance tab, the rest to the Evidence tab
+            var address = ReturnAddress.From(Request)
+                ?? (kind == Domain.Mappings.SuggestionKind.Story || (kind == Domain.Mappings.SuggestionKind.Evidence && (sub is not null || RequirementPages.Clean(req) is not null))
+                    ? ReturnAddress.FallbackToCompliance(sub, req, show)
+                    : ReturnAddress.ForEvidence());
+            ViewData["ReturnAddress"] = address;
+            ViewData["Back"] = Url.Action(nameof(Details), address.RouteValues(projectId));
             return View(confirmation);
         }
 
-        private RedirectToActionResult ToConfirmation(Guid projectId, Domain.Mappings.SuggestionKind kind, Guid suggestionId, string? sub, string? show)
-            => RedirectToAction(nameof(ConfirmSuggestion), new
+        private RedirectToActionResult ToConfirmation(Guid projectId, Domain.Mappings.SuggestionKind kind, Guid suggestionId, ReturnAddress fallback)
+        {
+            var values = new RouteValueDictionary { ["projectId"] = projectId, ["kind"] = kind, ["suggestionId"] = suggestionId };
+            foreach (var (name, value) in (ReturnAddress.From(Request) ?? fallback).Fields())
             {
-                projectId, kind, suggestionId, sub, show,
-                req = Request.HasFormContentType ? RequirementPages.Clean(Request.Form["req"]) : null, // the requirement page comes back to itself
-                back = Request.HasFormContentType && Request.Form["back"] == LinkBack ? LinkBack : null // US-220
-            });
+                values[name] = value;
+            }
+
+            return RedirectToAction(nameof(ConfirmSuggestion), values);
+        }
 
         // POST /Projects/RejectSuggestion: US-020 R7. An unknown reason binds as null and is refused by the domain.
         [HttpPost]
@@ -2247,7 +2196,7 @@ namespace ComplianceTracker.Web.Controllers
             Guid projectId, Guid suggestionId, RejectionReason? reason, string? comment, string? sub, string? show, CancellationToken cancellationToken)
         {
             await _suggestions.RejectAsync(projectId, suggestionId, reason, comment, cancellationToken);
-            return BackToCompliance(projectId, sub, show);
+            return BackTo(projectId, ComplianceFallback(sub, show));
         }
 
         // ---------------------------------------------------------- Editing (US-024)
