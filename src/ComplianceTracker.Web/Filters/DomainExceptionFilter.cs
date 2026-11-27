@@ -70,6 +70,17 @@ namespace ComplianceTracker.Web.Filters
             }
 
             controller.TempData[TempDataKey] = error.Message;
+
+            // US-228 R2: on a project page, the page the form came from, as after the action; the attribute is the fallback
+            if (controller is Controllers.ProjectsController && target.Action == nameof(Controllers.ProjectsController.Details) && target.Controller is null
+                && target.IdFrom is not null && context.ActionArguments.TryGetValue(target.IdFrom, out var projectId) && projectId is Guid project
+                && Models.ReturnAddress.From(context.HttpContext.Request) is { } address)
+            {
+                executed.Result = controller.RedirectToAction(target.Action, address.RouteValues(project));
+                executed.ExceptionHandled = true;
+                return;
+            }
+
             var routeValues = target.IdFrom is not null && context.ActionArguments.TryGetValue(target.IdFrom, out var id)
                 ? new
                 {

@@ -20,6 +20,7 @@
     var framework = Model.Framework;
     // The forms go back to this requirement's framework; "req" brings them back to this page (R4)
     var sub = FrameworkNames.Slug(framework.Framework.Name);
+    var here = ReturnAddress.ForRequirement(sub, requirement.Code); // US-228: every form comes back to this page
     var text = requirement.Show(Model.Language); // US-142 R8
     var linkable = Model.OpenStories.Where(w => row.Links.All(l => l.WorkItem.Id != w.Id)).ToList();
     var canLinkHere = !project.IsClosed && Model.CanLink && linkable.Count > 0 && row.IsApplicable;
@@ -99,8 +100,7 @@
                             <form asp-action="KeepNotApplicable" method="post" class="keep-not-applicable">
                                 <input type="hidden" name="projectId" value="@project.Id" />
                                 <input type="hidden" name="requirementId" value="@requirement.Id" />
-                                <input type="hidden" name="sub" value="@sub" />
-                                <input type="hidden" name="req" value="@requirement.Code" />
+                                <partial name="_ReturnAddress" model="here" />
                                 <button type="submit" class="btn btn-sm btn-link p-0">Still not applicable</button>
                             </form>
                         }
@@ -110,8 +110,7 @@
                         <form asp-action="MarkApplicable" method="post" class="mark-applicable">
                             <input type="hidden" name="projectId" value="@project.Id" />
                             <input type="hidden" name="requirementId" value="@requirement.Id" />
-                            <input type="hidden" name="sub" value="@sub" />
-                            <input type="hidden" name="req" value="@requirement.Code" />
+                            <partial name="_ReturnAddress" model="here" />
                             <button type="submit" class="btn btn-sm btn-link p-0">Make applicable</button>
                         </form>
                     }
@@ -175,8 +174,7 @@
                                     <form asp-action="AskTheAi" method="post" class="ask-the-ai" data-busy="Working… this can take a minute">
                                         <input type="hidden" name="projectId" value="@project.Id" />
                                         <input type="hidden" name="requirementId" value="@requirement.Id" />
-                                        <input type="hidden" name="sub" value="@sub" />
-                                        <input type="hidden" name="req" value="@requirement.Code" />
+                                        <partial name="_ReturnAddress" model="here" />
                                         <button type="submit" class="btn btn-sm btn-outline-info py-0" title="The local AI looks for stories and evidence that meet this requirement, and drafts a story when nothing does.">Ask the AI</button>
                                     </form>
                                 }
@@ -191,8 +189,7 @@
                     <form asp-action="MarkNotApplicable" method="post" class="d-flex flex-column gap-1 mt-1 mark-not-applicable">
                         <input type="hidden" name="projectId" value="@project.Id" />
                         <input type="hidden" name="requirementId" value="@requirement.Id" />
-                        <input type="hidden" name="sub" value="@sub" />
-                        <input type="hidden" name="req" value="@requirement.Code" />
+                        <partial name="_ReturnAddress" model="here" />
                         <input name="reason" class="form-control form-control-sm" placeholder="Reason, e.g. from the risk assessment" aria-label="Why @requirement.Code does not apply" />
                         @if (Model.ProjectRisks.Count > 0)
                         {
@@ -245,8 +242,7 @@
                         <input type="hidden" name="projectId" value="@project.Id" />
                         <input type="hidden" name="requirementId" value="@requirement.Id" />
                         <input type="hidden" name="scope" value="@otherScope" />
-                        <input type="hidden" name="sub" value="@sub" />
-                        <input type="hidden" name="req" value="@requirement.Code" />
+                        <partial name="_ReturnAddress" model="here" />
                         <input name="reason" maxlength="500" required class="form-control form-control-sm w-auto" placeholder="Why" aria-label="Why @requirement.Code is met there" />
                         <button type="submit" class="btn btn-sm btn-outline-secondary">Save</button>
                     </form>
@@ -348,8 +344,7 @@
                         <form asp-action="SuggestStoriesForRequirement" method="post" class="suggest-stories-for-requirement" data-busy="Finding stories… this can take a minute">
                             <input type="hidden" name="projectId" value="@project.Id" />
                             <input type="hidden" name="requirementId" value="@requirement.Id" />
-                            <input type="hidden" name="sub" value="@sub" />
-                            <input type="hidden" name="req" value="@requirement.Code" />
+                            <partial name="_ReturnAddress" model="here" />
                             <button type="submit" class="btn btn-sm btn-primary">Suggest stories from the project</button>
                         </form>
                     }
@@ -358,8 +353,7 @@
                         <form asp-action="DismissNeedsAction" method="post" class="d-flex flex-column gap-1 mt-1 dismiss-needs-action">
                             <input type="hidden" name="projectId" value="@project.Id" />
                             <input type="hidden" name="markId" value="@mark.Id" />
-                            <input type="hidden" name="sub" value="@sub" />
-                            <input type="hidden" name="req" value="@requirement.Code" />
+                            <partial name="_ReturnAddress" model="here" />
                             <input name="reason" class="form-control form-control-sm" maxlength="1000" required placeholder="Why it is not needed" aria-label="Why @requirement.Code is not needed" />
                             @if (Model.ProjectRisks.Count > 0)
                             {
@@ -383,8 +377,7 @@
                             <form asp-action="CreateStoryForNeedsAction" method="post" class="create-story-for-needs-action mt-1" data-busy="Working… this can take a minute">
                                 <input type="hidden" name="projectId" value="@project.Id" />
                                 <input type="hidden" name="markId" value="@mark.Id" />
-                                <input type="hidden" name="sub" value="@sub" />
-                                <input type="hidden" name="req" value="@requirement.Code" />
+                                <partial name="_ReturnAddress" model="here" />
                                 <button type="submit" class="btn btn-sm btn-outline-primary">Create a new story with the AI</button>
                             </form>
                         </details>
@@ -457,9 +450,7 @@
                         <form asp-action="ConfirmReview" method="post" class="confirm-review mt-1">
                             <input type="hidden" name="projectId" value="@project.Id" />
                             <input type="hidden" name="requirementId" value="@requirement.Id" />
-                            <input type="hidden" name="sub" value="@sub" />
-                            <input type="hidden" name="req" value="@requirement.Code" />
-                            <input type="hidden" name="show" value="@Model.ShowFilter" />
+                            <partial name="_ReturnAddress" model="here" />
                             <button type="submit" class="btn btn-sm btn-outline-success">Still correct</button>
                         </form>
                     }
@@ -501,8 +492,7 @@
                                         <form asp-action="UnlinkRequirement" method="post" class="unlink-requirement mt-1">
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="linkId" value="@link.LinkId" />
-                                            <input type="hidden" name="sub" value="@sub" />
-                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <partial name="_ReturnAddress" model="here" />
                                             <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Remove link to @link.WorkItem.Title">Remove link</button>
                                         </form>
                                     </details>
@@ -519,8 +509,7 @@
                     <form asp-action="LinkRequirement" method="post" class="d-flex flex-wrap gap-1 mt-1 link-requirement">
                         <input type="hidden" name="projectId" value="@project.Id" />
                         <input type="hidden" name="requirementId" value="@requirement.Id" />
-                        <input type="hidden" name="sub" value="@sub" />
-                        <input type="hidden" name="req" value="@requirement.Code" />
+                        <partial name="_ReturnAddress" model="here" />
                         <select name="workItemId" class="form-select form-select-sm" aria-label="User story for @requirement.Code">
                             @foreach (var story in linkable)
                             {
@@ -615,15 +604,13 @@
                                                     <form asp-action="ConfirmEvidenceCheck" method="post" class="confirm-evidence-check">
                                                         <input type="hidden" name="projectId" value="@project.Id" />
                                                         <input type="hidden" name="checkId" value="@check.Id" />
-                                                        <input type="hidden" name="sub" value="@sub" />
-                                                        <input type="hidden" name="req" value="@requirement.Code" />
+                                                        <partial name="_ReturnAddress" model="here" />
                                                         <button type="submit" class="btn btn-sm btn-outline-success">Confirm</button>
                                                     </form>
                                                     <form asp-action="OverruleEvidenceCheck" method="post" class="d-flex flex-wrap gap-1 overrule-evidence-check">
                                                         <input type="hidden" name="projectId" value="@project.Id" />
                                                         <input type="hidden" name="checkId" value="@check.Id" />
-                                                        <input type="hidden" name="sub" value="@sub" />
-                                                        <input type="hidden" name="req" value="@requirement.Code" />
+                                                        <partial name="_ReturnAddress" model="here" />
                                                         <select name="verdict" class="form-select form-select-sm w-auto" aria-label="Your verdict">
                                                             @foreach (var option in Enum.GetValues<ComplianceTracker.Domain.Mappings.EvidenceVerdict>().Where(v => v != check.AiVerdict))
                                                             {
@@ -643,8 +630,7 @@
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="evidenceId" value="@evidence.Id" />
                                             <input type="hidden" name="requirementId" value="@requirement.Id" />
-                                            <input type="hidden" name="sub" value="@sub" />
-                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <partial name="_ReturnAddress" model="here" />
                                             <button type="submit" class="btn btn-sm btn-link p-0">@(item.Check is null ? "Check with AI" : "Check again with AI")</button>
                                         </form>
                                     }
@@ -670,8 +656,7 @@
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="evidenceId" value="@evidence.Id" />
                                             <input type="hidden" name="requirementId" value="@requirement.Id" />
-                                            <input type="hidden" name="sub" value="@sub" />
-                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <partial name="_ReturnAddress" model="here" />
                                             <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Remove evidence @evidence.Title">Remove evidence</button>
                                         </form>
                                     </details>
@@ -701,8 +686,7 @@
                                     <input type="hidden" name="projectId" value="@project.Id" />
                                     <input type="hidden" name="requirementId" value="@requirement.Id" />
                                     <input type="hidden" name="enough" value="@(documentation.Enough ? "false" : "true")" />
-                                    <input type="hidden" name="sub" value="@sub" />
-                                    <input type="hidden" name="req" value="@requirement.Code" />
+                                    <partial name="_ReturnAddress" model="here" />
                                     <input name="reason" maxlength="500" required class="form-control form-control-sm w-auto" placeholder="Why" aria-label="Why @(documentation.Enough ? "proof is needed" : "documentation is enough") for @requirement.Code" />
                                     <button type="submit" class="btn btn-sm btn-outline-secondary">Save</button>
                                 </form>
@@ -718,8 +702,7 @@
                     <form asp-action="AddEvidence" method="post" enctype="multipart/form-data" class="d-flex flex-column gap-1 mt-1 add-evidence" data-busy="Uploading…">
                         <input type="hidden" name="projectId" value="@project.Id" />
                         <input type="hidden" name="requirementId" value="@requirement.Id" />
-                        <input type="hidden" name="sub" value="@sub" />
-                        <input type="hidden" name="req" value="@requirement.Code" />
+                        <partial name="_ReturnAddress" model="here" />
                         <input name="title" class="form-control form-control-sm" maxlength="200" placeholder="Title, e.g. PR 42 merged" aria-label="Evidence title for @requirement.Code" />
                         <input name="url" type="url" class="form-control form-control-sm" placeholder="Link (https://…)" aria-label="Evidence link for @requirement.Code" />
                         <input name="file" type="file" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg,.txt,.csv,.md" aria-label="Or a file (max 10 MB)" />
@@ -736,8 +719,7 @@
                         <form asp-action="LinkExistingEvidence" method="post" class="d-flex flex-wrap gap-1 mt-1 pick-evidence">
                             <input type="hidden" name="projectId" value="@project.Id" />
                             <input type="hidden" name="requirementId" value="@requirement.Id" />
-                            <input type="hidden" name="sub" value="@sub" />
-                            <input type="hidden" name="req" value="@requirement.Code" />
+                            <partial name="_ReturnAddress" model="here" />
                             <select name="evidenceId" class="form-select form-select-sm" aria-label="Pick existing evidence for @requirement.Code">
                                 @foreach (var existing in pickable)
                                 {
@@ -783,15 +765,13 @@
                                         <form asp-action="AcceptSuggestedEvidence" method="post" class="accept-evidence-suggestion">
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="suggestionId" value="@suggested.Id" />
-                                            <input type="hidden" name="sub" value="@sub" />
-                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <partial name="_ReturnAddress" model="here" />
                                             <button type="submit" class="btn btn-sm btn-outline-success">Accept</button>
                                         </form>
                                         <form asp-action="RejectSuggestedEvidence" method="post" class="d-flex gap-1 reject-evidence-suggestion-row">
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="suggestionId" value="@suggested.Id" />
-                                            <input type="hidden" name="sub" value="@sub" />
-                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <partial name="_ReturnAddress" model="here" />
                                             <input name="reason" class="form-control form-control-sm" placeholder="Why, e.g. only a refactoring" aria-label="Reason" required />
                                             <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
                                         </form>
@@ -813,16 +793,14 @@
                                         <form asp-action="AcceptApplicability" method="post" class="d-flex gap-1 accept-applicability">
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="suggestionId" value="@applicability.Id" />
-                                            <input type="hidden" name="sub" value="@sub" />
-                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <partial name="_ReturnAddress" model="here" />
                                             <input name="reason" class="form-control form-control-sm" value="@applicability.Reason" maxlength="1000" aria-label="Reason for not applicable" />
                                             <button type="submit" class="btn btn-sm btn-outline-success text-nowrap">Accept</button>
                                         </form>
                                         <form asp-action="RejectApplicability" method="post" class="reject-applicability">
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="suggestionId" value="@applicability.Id" />
-                                            <input type="hidden" name="sub" value="@sub" />
-                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <partial name="_ReturnAddress" model="here" />
                                             <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
                                         </form>
                                     </div>
@@ -849,15 +827,13 @@
                                             <form asp-action="ApproveEvidenceSuggestion" method="post" class="approve-row-evidence-suggestion">
                                                 <input type="hidden" name="projectId" value="@project.Id" />
                                                 <input type="hidden" name="suggestionId" value="@entry.Suggestion.Id" />
-                                                <input type="hidden" name="sub" value="@sub" />
-                                                <input type="hidden" name="req" value="@requirement.Code" />
+                                                <partial name="_ReturnAddress" model="here" />
                                                 <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
                                             </form>
                                             <form asp-action="RejectEvidenceSuggestion" method="post" class="d-flex flex-wrap gap-1 reject-row-evidence-suggestion">
                                                 <input type="hidden" name="projectId" value="@project.Id" />
                                                 <input type="hidden" name="suggestionId" value="@entry.Suggestion.Id" />
-                                                <input type="hidden" name="sub" value="@sub" />
-                                                <input type="hidden" name="req" value="@requirement.Code" />
+                                                <partial name="_ReturnAddress" model="here" />
                                                 <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason">
                                                     <option value="">Reason…</option>
                                                     @foreach (var reason in Enum.GetValues<ComplianceTracker.Domain.Mappings.RejectionReason>())
@@ -882,8 +858,7 @@
                                         <form asp-action="AcceptStoryDraft" method="post" class="d-flex flex-column gap-1 mt-1 accept-story-draft">
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="draftId" value="@draft.Id" />
-                                            <input type="hidden" name="sub" value="@sub" />
-                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <partial name="_ReturnAddress" model="here" />
                                             <input name="title" class="form-control form-control-sm" value="@draft.Title" maxlength="200" aria-label="Title" />
                                             <input name="role" class="form-control form-control-sm" value="@draft.Role" placeholder="Role" aria-label="Role" />
                                             <textarea name="story" class="form-control form-control-sm" rows="2" aria-label="User story">@draft.Story</textarea>
@@ -894,8 +869,7 @@
                                         <form asp-action="DiscardStoryDraft" method="post" class="d-flex gap-1 mt-1 discard-story-draft">
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="draftId" value="@draft.Id" />
-                                            <input type="hidden" name="sub" value="@sub" />
-                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <partial name="_ReturnAddress" model="here" />
                                             <input name="reason" class="form-control form-control-sm" placeholder="Why it is discarded" aria-label="Reason" required />
                                             <button type="submit" class="btn btn-sm btn-outline-danger">Discard</button>
                                         </form>
@@ -930,17 +904,13 @@
                                             <form asp-action="ApproveSuggestion" method="post" class="approve-suggestion">
                                                 <input type="hidden" name="projectId" value="@project.Id" />
                                                 <input type="hidden" name="suggestionId" value="@suggestion.Id" />
-                                                <input type="hidden" name="sub" value="@sub" />
-                                                <input type="hidden" name="req" value="@requirement.Code" />
-                                                <input type="hidden" name="show" value="@Model.ShowFilter" />
+                                                <partial name="_ReturnAddress" model="here" />
                                                 <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
                                             </form>
                                             <form asp-action="RejectSuggestion" method="post" class="d-flex flex-wrap gap-1 reject-suggestion">
                                                 <input type="hidden" name="projectId" value="@project.Id" />
                                                 <input type="hidden" name="suggestionId" value="@suggestion.Id" />
-                                                <input type="hidden" name="sub" value="@sub" />
-                                                <input type="hidden" name="req" value="@requirement.Code" />
-                                                <input type="hidden" name="show" value="@Model.ShowFilter" />
+                                                <partial name="_ReturnAddress" model="here" />
                                                 <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason">
                                                     <option value="">Reason…</option>
                                                     @foreach (var reason in Enum.GetValues<ComplianceTracker.Domain.Mappings.RejectionReason>())
@@ -973,8 +943,7 @@
                                         <form asp-action="UndoStoryRejection" method="post" class="undo-rejection">
                                             <input type="hidden" name="projectId" value="@project.Id" />
                                             <input type="hidden" name="suggestionId" value="@no.Suggestion.Id" />
-                                            <input type="hidden" name="sub" value="@sub" />
-                                            <input type="hidden" name="req" value="@requirement.Code" />
+                                            <partial name="_ReturnAddress" model="here" />
                                             <button type="submit" class="btn btn-sm btn-link p-0">Undo rejection</button>
                                         </form>
                                     }

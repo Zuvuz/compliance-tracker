@@ -42,21 +42,9 @@
             <form asp-action="@action" method="post" id="confirm-suggestion" class="mt-3">
                 <input type="hidden" name="projectId" value="@Model.ProjectId" />
                 <input type="hidden" name="suggestionId" value="@Model.SuggestionId" />
-                @if (ViewData["Sub"] is string sub)
+                @if (ViewData["ReturnAddress"] is ReturnAddress returnTo)
                 {
-                    <input type="hidden" name="sub" value="@sub" />
-                }
-                @if (ViewData["Show"] is string show)
-                {
-                    <input type="hidden" name="show" value="@show" />
-                }
-                @if (ViewData["Req"] is string req)
-                {
-                    <input type="hidden" name="req" value="@req" />
-                }
-                @if (ViewData["BackTo"] is string backTo)
-                {
-                    <input type="hidden" name="back" value="@backTo" />
+                    <partial name="_ReturnAddress" model="returnTo" /> @* US-228 R4 *@
                 }
                 <div class="form-check mb-2">
                     <input class="form-check-input" type="checkbox" id="argument-confirmed" name="argumentConfirmed" value="true" required />

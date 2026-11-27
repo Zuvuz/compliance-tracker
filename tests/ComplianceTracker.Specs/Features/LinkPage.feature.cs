@@ -138,7 +138,7 @@ namespace ComplianceTracker.Specs.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/LinkPage.feature.ndjson", 7);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/LinkPage.feature.ndjson", 8);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -392,21 +392,21 @@ namespace ComplianceTracker.Specs.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="The page opens with only the requirements that are not covered")]
+        [global::Xunit.SkippableFactAttribute(DisplayName="A rule broken on the Link page shows its message on the Link page")]
         [global::Xunit.TraitAttribute("FeatureTitle", "One Link page for requirements, product requirements and evidence")]
-        [global::Xunit.TraitAttribute("Description", "The page opens with only the requirements that are not covered")]
-        [global::Xunit.TraitAttribute("Category", "US-220")]
+        [global::Xunit.TraitAttribute("Description", "A rule broken on the Link page shows its message on the Link page")]
+        [global::Xunit.TraitAttribute("Category", "US-228")]
         [global::Xunit.TraitAttribute("Category", "usability")]
         [global::Xunit.TraitAttribute("Category", "integration")]
-        public async global::System.Threading.Tasks.Task ThePageOpensWithOnlyTheRequirementsThatAreNotCovered()
+        public async global::System.Threading.Tasks.Task ARuleBrokenOnTheLinkPageShowsItsMessageOnTheLinkPage()
         {
             string[] tagsOfScenario = new string[] {
-                    "US-220",
+                    "US-228",
                     "usability",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "4";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The page opens with only the requirements that are not covered", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A rule broken on the Link page shows its message on the Link page", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 56
@@ -423,19 +423,72 @@ namespace ComplianceTracker.Specs.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 57
+    await testRunner.GivenAsync("the AI rates \"[US-004] Sign in with OpenID Connect\" against \"SP-1\" with 0.86", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 58
+    await testRunner.AndAsync("I have clicked \"Suggest mappings\" for \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 59
+    await testRunner.WhenAsync("I open the Link page of \"Acme Portal\" and choose \"SP-1\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 60
+    await testRunner.AndAsync("I reject the suggested product requirement \"[US-004] Sign in with OpenID Connect\"" +
+                        " without a reason", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 61
+    await testRunner.ThenAsync("I see the error \"Choose a reason\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 62
+    await testRunner.AndAsync("the Link page still has \"SP-1\" chosen", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="The page opens with only the requirements that are not covered")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "One Link page for requirements, product requirements and evidence")]
+        [global::Xunit.TraitAttribute("Description", "The page opens with only the requirements that are not covered")]
+        [global::Xunit.TraitAttribute("Category", "US-220")]
+        [global::Xunit.TraitAttribute("Category", "usability")]
+        [global::Xunit.TraitAttribute("Category", "integration")]
+        public async global::System.Threading.Tasks.Task ThePageOpensWithOnlyTheRequirementsThatAreNotCovered()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "US-220",
+                    "usability",
+                    "integration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "5";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The page opens with only the requirements that are not covered", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 65
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 8
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 66
     await testRunner.GivenAsync("the user story \"[US-007] Lock the account after 5 attempts\" is linked to the requ" +
                         "irement \"SP-1\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 58
+#line 67
     await testRunner.WhenAsync("I open the Link page of \"Acme Portal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 59
+#line 68
     await testRunner.ThenAsync("the Link page\'s filter \"not-covered\" is chosen", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 60
+#line 69
     await testRunner.AndAsync("every requirement shown on the Link page is not covered", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 61
+#line 70
     await testRunner.AndAsync("the requirement \"SP-1\" is not shown on the Link page", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }

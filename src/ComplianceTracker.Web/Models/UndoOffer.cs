@@ -17,6 +17,14 @@ namespace ComplianceTracker.Web.Models
         public static void Offer(ITempDataDictionary tempData, DateTime nowUtc, string text, string controller, string action, Dictionary<string, string> fields)
             => tempData[Key] = JsonSerializer.Serialize(new UndoOffer(text, controller, action, fields, nowUtc + Window));
 
+        // US-228 R5: the Undo goes back to the page the removal was made on
+        public static void Offer(ITempDataDictionary tempData, DateTime nowUtc, string text, string controller, string action, Dictionary<string, string> fields,
+            ReturnAddress returnTo)
+        {
+            returnTo.AddTo(fields);
+            Offer(tempData, nowUtc, text, controller, action, fields);
+        }
+
         public static UndoOffer? From(object? value)
         {
             if (value is not string json)

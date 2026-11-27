@@ -41,6 +41,10 @@ namespace ComplianceTracker.Specs.StepDefinitions
         [When("I click \"Link\" on the suggested product requirement {string}")]
         public Task WhenIClickLinkOnTheSuggestion(string title) => SendAsync(Item("link-stories", title, "suggested"), "form.link-approve");
 
+        // US-228 R2: the reason is left empty, so the rule is broken
+        [When("I reject the suggested product requirement {string} without a reason")]
+        public Task WhenIRejectWithoutAReason(string title) => SendAsync(Item("link-stories", title, "suggested"), "form.link-reject");
+
         [Then("the product requirements column shows {string} as {string}")]
         public void ThenTheStoriesColumnShows(string title, string state) => Assert.NotNull(Item("link-stories", title, state));
 

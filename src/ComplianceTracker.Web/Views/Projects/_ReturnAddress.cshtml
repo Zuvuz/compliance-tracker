@@ -1,0 +1,7 @@
+@* US-228: the hidden fields that say where a form on a project page goes back to, after the action and after a broken
+   rule (ReturnAddress). One partial for every such form, so the fields are written the same way everywhere. *@
+@model ReturnAddress
+@foreach (var (name, value) in Model.Fields())
+{
+    <input type="hidden" name="@name" value="@value" />
+}

@@ -2871,6 +2871,21 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - at logge læsning gennem API'et
   - at gemme "beskeden er læst" i databasen. En cookie er nok til en besked, og afsnittet på Privacy står der altid.
 
+### B182 – Én return address for projektsiderne (US-228)
+
+- **Beslutning:**
+  - **Én module:** reglen for, hvor en formular på en projektside vender tilbage til, ligger i én module, `ReturnAddress` i Web. Det gælder både efter handlingen og ved en brudt regel.
+  - **Formularens felter:** formularen bærer fire navngivne felter (`back`, `sub`, `req`, `show`), som ét partial skriver (`_ReturnAddress.cshtml`). Feltet `back` siger altid, hvilken side formularen kom fra: `compliance`, `requirement`, `link` eller `evidence`.
+  - **Ingen URL fra formularen:** serveren bygger adressen ud fra kendte sider. Intet felt bruges som URL, så ingen kan sendes et andet sted hen (ingen open redirect). En ukendt side giver ingen adresse.
+  - **Ved fejl:** fejlfilteret bruger den samme adresse, så en brudt regel lander samme sted som en handling, der lykkes. `[OnDomainError(Tab=…)]` er kun en reserve og er ikke ændret.
+  - **Følger med:** bekræftelsen af et AI-forslag og undo-tilbuddene tager adressen med.
+  - **Formularer uden `back`:** fx compliance-fanens AI-knapper og tests, der poster felterne selv, går tilbage efter den gamle regel. Hvis formularen sendte en kravkode, er det kravets side. Ellers er det rammens liste.
+- **Begrundelse:** arkitekturgennemgangen af `ProjectsController` (27-11-2026) viste, at reglen fandtes fire steder, og at kopierne var gledet fra hinanden. En fejl på Link-siden landede derfor på kravets side.
+- **Fravalgt:**
+  - ét felt med en færdig URL, på grund af risikoen for open redirect
+  - at fjerne de 114 `[OnDomainError]`-attributter
+  - at tage andre controllere med nu
+
 ## Spørgsmål til klassediagrammet
 
 Der er ingen åbne spørgsmål. De første spørgsmål fra oktober 2026 er besvaret sådan:
