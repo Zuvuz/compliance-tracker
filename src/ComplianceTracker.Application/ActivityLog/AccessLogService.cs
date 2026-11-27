@@ -186,6 +186,12 @@ namespace ComplianceTracker.Application.ActivityLog
             return Rows(await _visits.ForUserAsync(organization.Id, me.Id, MaxRows, cancellationToken), organization, names);
         }
 
+        // R5: the organisation's projects for the filter, the organisation area first
+        public async Task<IReadOnlyList<Domain.Projects.Project>> ProjectsAsync(CancellationToken cancellationToken = default)
+            => await _member.FindOrganizationAsync(cancellationToken) is { } organization
+                ? (await _projects.ListAsync(organization.Id, cancellationToken)).OrderBy(p => p.IsOrganisationArea ? 0 : 1).ThenBy(p => p.Name).ToList()
+                : [];
+
         // R8: the visits of one project in a period, for the audit package and the export; no check of the role here
         public async Task<IReadOnlyList<VisitRow>> ForPeriodAsync(Organization organization, Guid? projectId, DateOnly from, DateOnly to,
             CancellationToken cancellationToken = default)

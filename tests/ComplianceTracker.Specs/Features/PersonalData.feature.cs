@@ -184,10 +184,11 @@ namespace ComplianceTracker.Specs.Features
 #line 14
     await testRunner.WhenAsync("I open the privacy page", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 15
-    await testRunner.ThenAsync("the privacy page lists \"name\", \"keycloak-id\", \"role\", \"activity\" and \"content\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-#line hidden
 #line 16
+    await testRunner.ThenAsync("the privacy page lists \"name\", \"keycloak-id\", \"role\", \"activity\", \"content\" and \"" +
+                        "access-log\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 17
     await testRunner.AndAsync("the privacy page links to \"my data\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -211,7 +212,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A member downloads their own data", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 19
+#line 20
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -224,16 +225,16 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 20
+#line 21
     await testRunner.GivenAsync("the project \"Acme Portal\" exists", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 21
+#line 22
     await testRunner.WhenAsync("I download my data", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 22
+#line 23
     await testRunner.ThenAsync("my data has the name \"Anna\" and an entry \"ProjectCreated\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 23
+#line 24
     await testRunner.AndAsync("the activity log has \"PersonalDataExported\" without the name \"Anna\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -257,7 +258,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("An Admin erases a removed member\'s personal data", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 26
+#line 27
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -270,19 +271,19 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 27
+#line 28
     await testRunner.GivenAsync("I have removed \"Carl\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 28
+#line 29
     await testRunner.WhenAsync("I erase the personal data of \"Carl\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 29
+#line 30
     await testRunner.ThenAsync("the removed members list a \"Former member\" with the personal data erased", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 30
+#line 31
     await testRunner.AndAsync("no member is called \"Carl\" any more", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 31
+#line 32
     await testRunner.AndAsync("the activity log has \"PersonalDataErased\" without the name \"Carl\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -306,7 +307,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("An active member cannot be erased", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 34
+#line 35
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -319,13 +320,13 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 35
+#line 36
     await testRunner.WhenAsync("I send an erasure of \"Carl\" anyway", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 36
+#line 37
     await testRunner.ThenAsync("I see the error \"Remove the member first\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 37
+#line 38
     await testRunner.AndAsync("\"Carl\" is still a member", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -349,7 +350,7 @@ namespace ComplianceTracker.Specs.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Only who manages members can erase", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 40
+#line 41
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -362,16 +363,16 @@ namespace ComplianceTracker.Specs.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 41
+#line 42
     await testRunner.GivenAsync("I have removed \"Carl\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 42
+#line 43
     await testRunner.AndAsync("\"Dan\" has joined \"Acme ApS\" as \"Developer\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 43
+#line 44
     await testRunner.WhenAsync("\"Dan\" sends an erasure of \"Carl\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 44
+#line 45
     await testRunner.ThenAsync("no personal data was erased", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }

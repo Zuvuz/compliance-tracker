@@ -2,7 +2,6 @@ using System.Globalization;
 using ComplianceTracker.Application.ActivityLog;
 using ComplianceTracker.Application.Common;
 using ComplianceTracker.Application.Organizations;
-using ComplianceTracker.Application.Projects;
 using ComplianceTracker.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,14 +13,12 @@ namespace ComplianceTracker.Web.Controllers
     {
         private readonly AccessLogService _accessLog;
         private readonly OrganizationQueries _organizations;
-        private readonly IProjectRepository _projects;
         private readonly TimeProvider _clock;
 
-        public AccessLogController(AccessLogService accessLog, OrganizationQueries organizations, IProjectRepository projects, TimeProvider clock)
+        public AccessLogController(AccessLogService accessLog, OrganizationQueries organizations, TimeProvider clock)
         {
             _accessLog = accessLog;
             _organizations = organizations;
-            _projects = projects;
             _clock = clock;
         }
 
@@ -45,7 +42,7 @@ namespace ComplianceTracker.Web.Controllers
                 return Forbid(); // R4
             }
 
-            var projects = (await _projects.ListAsync(organization.Id, cancellationToken)).OrderBy(x => x.IsOrganisationArea ? 0 : 1).ThenBy(x => x.Name).ToList();
+            var projects = await _accessLog.ProjectsAsync(cancellationToken);
             ViewData["Title"] = "Access log";
             return View(new AccessLogPageModel(view, organization, projects, projectId, userId, visitKind, fromDate, toDate,
                 projectId is not null || await CanSeeChangesAsync(cancellationToken), // a project's change log is for everyone who reads it
