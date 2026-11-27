@@ -1,0 +1,25 @@
+@* US-219: "Seen by" on a risk or a piece of evidence, for Organisation admin, Compliance manager and Auditor: each member
+   with the last time and the total time (two tabs at the same time count once). Ids used by the tests: #seen-by with
+   li.seen-by (data-user, data-total). *@
+@using ComplianceTracker.Domain.ActivityLog
+@if (ViewData[PageVisits.SeenByKey] is IReadOnlyList<ComplianceTracker.Application.ActivityLog.SeenBy> seen)
+{
+    <details class="small mb-3" id="seen-by">
+        <summary>Seen by (@seen.Count)</summary>
+        @if (seen.Count == 0)
+        {
+            <p class="text-muted mb-0">No one yet, or the access log is off.</p>
+        }
+        else
+        {
+            <ul class="list-unstyled mb-0 mt-1">
+                @foreach (var s in seen)
+                {
+                    <li class="seen-by" data-user="@s.UserName" data-total="@AccessLogRules.Text(s.Total)">
+                        @s.UserName (@s.Role) – last @s.LastSeenAt.ToString("dd-MM-yyyy HH:mm") UTC, @AccessLogRules.Text(s.Total) in all
+                    </li>
+                }
+            </ul>
+        }
+    </details>
+}

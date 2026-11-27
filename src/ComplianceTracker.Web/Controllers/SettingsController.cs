@@ -95,6 +95,34 @@ namespace ComplianceTracker.Web.Controllers
             return RedirectToAction(nameof(Index), null, null, "risk-approvers");
         }
 
+        // POST /Settings/TurnOnAccessLog: US-219 R6, R7, the organisation admin only (checked in the use case)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> TurnOnAccessLog(DateOnly? startsOn, int? retentionMonths, [FromServices] Application.ActivityLog.AccessLogService accessLog,
+            CancellationToken cancellationToken)
+        {
+            if (startsOn is null)
+            {
+                throw new Domain.Common.DomainException("Choose the day the access log starts");
+            }
+
+            await accessLog.TurnOnAsync(startsOn.Value, retentionMonths ?? Domain.ActivityLog.AccessLogRules.DefaultRetentionMonths, cancellationToken);
+            TempData["Success"] = $"The access log starts on {startsOn:dd-MM-yyyy}. The members are told before then.";
+            return RedirectToAction(nameof(Index), null, null, "access-log-settings");
+        }
+
+        // POST /Settings/TurnOffAccessLog: US-219 R7, off at once
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [OnDomainError(nameof(Index))]
+        public async Task<IActionResult> TurnOffAccessLog([FromServices] Application.ActivityLog.AccessLogService accessLog, CancellationToken cancellationToken)
+        {
+            await accessLog.TurnOffAsync(cancellationToken);
+            TempData["Success"] = "The access log is off.";
+            return RedirectToAction(nameof(Index), null, null, "access-log-settings");
+        }
+
         // GET /Settings/Export: US-184 R1, R2, every piece of the organisation's data as one ZIP
         [HttpGet]
         public async Task<IActionResult> Export([FromServices] Application.Organizations.OrganisationExitService exit, CancellationToken cancellationToken)

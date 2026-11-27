@@ -33,6 +33,7 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             ViewData["SupplierAssets"] = await assets.BySupplierAsync(cancellationToken); // US-214
+            await Models.PageVisits.StartVisitAsync(this, null, Domain.ActivityLog.VisitKind.Supplier, null, "suppliers", "Suppliers", cancellationToken); // US-219 R1
             var organization = await _member.FindOrganizationAsync(cancellationToken);
             return View(new SuppliersViewModel(await _suppliers.ListAsync(cancellationToken), await _member.CanAsync(Permission.DecideCompliance, cancellationToken))
             {

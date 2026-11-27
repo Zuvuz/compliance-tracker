@@ -1,0 +1,21 @@
+@* US-219 R7: the members are told about the access log before it starts, in a short notice after sign-in, until each has
+   read it. Ids used by the tests: #access-log-notice with #access-log-notice-starts and form#read-access-log-notice. *@
+@inject ComplianceTracker.Application.Common.CurrentMember Member
+@inject TimeProvider Clock
+@if (await Member.FindOrganizationAsync() is { AccessLogStartsOn: { } startsOn } organization
+     && !Context.Request.Cookies.ContainsKey(PageVisits.NoticeCookie(organization.Id, startsOn)))
+{
+    var today = DateOnly.FromDateTime(Clock.GetUtcNow().UtcDateTime);
+    <div class="alert alert-info small" id="access-log-notice" role="status">
+        <strong>@(today >= startsOn ? "The access log is on" : "The access log starts")</strong>
+        @(today >= startsOn ? "since" : "on") <span id="access-log-notice-starts">@startsOn.ToString("dd-MM-yyyy")</span>.
+        The tracker then logs which pages with sensitive data you open (a project's pages, a risk, evidence, a report, the suppliers),
+        when, and for how long they are visible, so that @organization.Name can show who knew what and when in an audit or after an incident.
+        Only the organisation's admins, compliance managers and auditors see it. It is kept for @organization.AccessLogRetentionMonths months.
+        <a asp-controller="Home" asp-action="Privacy" asp-fragment="access-log-retention">Read more</a> ·
+        <a asp-controller="AccessLog" asp-action="Mine">My page visits</a>
+        <form asp-controller="AccessLog" asp-action="ReadNotice" method="post" class="d-inline ms-2" id="read-access-log-notice">
+            <button type="submit" class="btn btn-sm btn-outline-primary py-0">I have read it</button>
+        </form>
+    </div>
+}

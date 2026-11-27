@@ -316,6 +316,22 @@ namespace ComplianceTracker.Web.Controllers
 
             // US-071, US-047: the gate and the checklist from one look-up
             var overview = activeTab is ProjectTabs.Overview ? await phaseGates.OverviewAsync(id, cancellationToken) : (null, null);
+
+            // US-219 R1: opening a tab, or one piece of evidence, is a visit; R3: who else is here now
+            var place = project.IsOrganisationArea ? "Organisation" : project.Name;
+            var tabTitle = ProjectTabs.For(project).FirstOrDefault(t => t.Slug == activeTab).Title ?? activeTab;
+            if (activeTab is ProjectTabs.Evidence && Guid.TryParse(sub, out var openedEvidence)
+                && evidenceTab?.Evidence.FirstOrDefault(e => e.Evidence.Id == openedEvidence) is { } opened)
+            {
+                await this.StartVisitAsync(id, Domain.ActivityLog.VisitKind.Evidence, openedEvidence, activeTab, $"Evidence: {opened.Evidence.Title} ({place})", cancellationToken);
+                await this.ShowSeenByAsync(Domain.ActivityLog.VisitKind.Evidence, openedEvidence, cancellationToken);
+            }
+            else
+            {
+                await this.StartVisitAsync(id, Domain.ActivityLog.VisitKind.Tab, null, activeTab, $"{place} – {tabTitle}", cancellationToken);
+            }
+
+            await this.ShowWhoIsHereAsync(id, activeTab, cancellationToken);
             return View(new ProjectDetailsViewModel(
                 project,
                 await _frameworks.ListAsync(cancellationToken),
@@ -1993,6 +2009,10 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound();
             }
 
+            // US-219 R1: a report or an audit package that is opened is a visit, over at once
+            var isPackage = locked.Snapshot.Kind == Application.Reports.AuditPackageService.Kind;
+            await this.StartVisitAsync(id, isPackage ? Domain.ActivityLog.VisitKind.AuditPackage : Domain.ActivityLog.VisitKind.Report, snapshotId,
+                ProjectTabs.Reports, $"{(isPackage ? "Audit package" : "Report")}: {locked.Snapshot.FileName}", cancellationToken, once: true);
             Response.Headers["X-Content-Type-Options"] = "nosniff";
             return File(locked.Content, locked.Snapshot.ContentType, locked.Snapshot.FileName);
         }

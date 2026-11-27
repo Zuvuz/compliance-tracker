@@ -228,6 +228,10 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             ViewData["OrganisationArea"] = project.IsOrganisationArea; // #52: the top bar marks "Organisation"
+            // US-219 R1: opening a risk is a visit; "Seen by" for the roles that see the access log
+            await this.StartVisitAsync(project.Id, Domain.ActivityLog.VisitKind.Risk, risk.Id, ProjectTabs.Risks,
+                $"Risk: {risk.Title} ({(project.IsOrganisationArea ? "Organisation" : project.Name)})", cancellationToken);
+            await this.ShowSeenByAsync(Domain.ActivityLog.VisitKind.Risk, risk.Id, cancellationToken);
             var compliance = await _compliance.ForProjectAsync(project.Id, cancellationToken);
             var evidenceRows = (await evidence.ForProjectAsync(project.Id, cancellationToken))?.Evidence ?? [];
             var pending = (await measures.ListAsync(project.Id, cancellationToken)).Where(s => s.RiskId == risk.Id && s.IsPending)

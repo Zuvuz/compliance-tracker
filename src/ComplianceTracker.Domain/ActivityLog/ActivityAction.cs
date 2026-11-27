@@ -471,6 +471,14 @@ namespace ComplianceTracker.Domain.ActivityLog
 
         // US-217 R7: the organisation admin changed the roles that approve accepting High and Critical risks (Details has the
         // old and new roles). SubjectId points at the organisation.
-        RiskApproverRolesChanged
+        RiskApproverRolesChanged,
+
+        // US-219 R7: the organisation admin turned the access log on (Details has the start date and the retention period),
+        // changed its retention period, or turned it off. SubjectId points at the organisation.
+        AccessLogTurnedOn,
+        AccessLogTurnedOff,
+
+        // US-219 R6: visits older than the retention period were deleted (Details has the count). Logged by the system.
+        AccessLogCleanedUp
     }
 }

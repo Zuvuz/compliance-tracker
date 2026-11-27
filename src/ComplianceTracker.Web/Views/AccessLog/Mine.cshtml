@@ -1,0 +1,31 @@
+@* US-219 R7, GDPR art. 15: the pages the signed-in member opened, whatever their role. Ids used by the tests:
+   table#my-visits with tr.my-visit (data-title), #no-my-visits. *@
+@model IReadOnlyList<ComplianceTracker.Application.ActivityLog.VisitRow>
+@using ComplianceTracker.Domain.ActivityLog
+
+<page-header heading="My page visits" heading-id="my-visits-title" back-href="@Url.Action("Privacy", "Home")" back-text="Privacy" />
+<p class="text-muted">The pages with sensitive data you opened while your organisation's access log was on, newest first. They are deleted after the time your organisation chose.</p>
+
+@if (Model.Count == 0)
+{
+    <p class="text-muted" id="no-my-visits">No visits.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm" id="my-visits">
+            <thead><tr><th scope="col">Opened (UTC)</th><th scope="col">What</th><th scope="col">Role</th><th scope="col">Time spent</th></tr></thead>
+            <tbody>
+                @foreach (var row in Model)
+                {
+                    <tr class="my-visit" data-title="@row.Visit.Title">
+                        <td>@row.Visit.StartedAt.ToString("dd-MM-yyyy HH:mm")</td>
+                        <td>@row.Visit.Title</td>
+                        <td>@row.Role</td>
+                        <td>@AccessLogRules.Text(row.Visit.TimeSpent)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,0 +1,129 @@
+@* US-219: the access log. Who opened which page with sensitive data, when and for how long (R5), and who is on a page
+   now (R3). Organisation admin, Compliance manager and Auditor only (R4). Ids used by the tests: #access-log,
+   #access-log-status, #on-page-now with li.on-page-now (data-user), form#access-log-filters, table#access-log-visits
+   with tr.access-visit (data-user, data-title, data-started, data-spent), #access-log-cut, #access-log-export, and the
+   pills #log-changes and #log-access (_LogPills). *@
+@model AccessLogPageModel
+@using ComplianceTracker.Domain.ActivityLog
+@{
+    var view = Model.View;
+    var project = Model.ProjectId is { } pid ? Model.Projects.FirstOrDefault(p => p.Id == pid) : null;
+}
+
+<partial name="_OrganizationHeader" model="Model.Organization" />
+
+<section id="access-log">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+        <div>
+            <h1 class="h4 mb-1">Activity@(project is null ? "" : $": {(project.IsOrganisationArea ? "Organisation" : project.Name)}")</h1>
+            <p class="small text-muted mb-0">Who opened pages with sensitive data, when and for how long. Only Organisation admins, Compliance managers and Auditors see this.</p>
+        </div>
+        <a class="btn btn-sm btn-outline-secondary" id="access-log-export"
+           href="@Url.Action("Export", new { project = Model.ProjectId, from = Model.From?.ToString("dd-MM-yyyy"), to = Model.To?.ToString("dd-MM-yyyy") })">Export CSV</a>
+    </div>
+
+    <partial name="_LogPills" model="@(new LogPills(LogPills.Access, Model.CanSeeChanges, project))" />
+
+    <p class="small mb-3" id="access-log-status" data-on="@(view.IsOn ? "true" : "false")">
+        @if (view.IsOn)
+        {
+            <span>The access log is on since @view.StartsOn?.ToString("dd-MM-yyyy"). Visits are kept for @view.RetentionMonths months.</span>
+        }
+        else if (view.StartsOn is { } starts)
+        {
+            <span>The access log starts on @starts.ToString("dd-MM-yyyy"). The members are told before then.</span>
+        }
+        else
+        {
+            <span>The access log is off. The organisation admin can turn it on under <a asp-controller="Settings" asp-action="Index" asp-fragment="access-log-settings">Settings</a>.</span>
+        }
+    </p>
+
+    @if (view.OnPageNow.Count > 0)
+    {
+        <div class="card mb-3"><div class="card-body py-2">
+            <h2 class="h6 mb-1">On a page now</h2>
+            <ul class="list-unstyled small mb-0" id="on-page-now">
+                @foreach (var row in view.OnPageNow)
+                {
+                    <li class="on-page-now" data-user="@row.UserName">@row.UserName – @row.Visit.Title (@AccessLogRules.Text(Model.Now - row.Visit.StartedAt))</li>
+                }
+            </ul>
+        </div></div>
+    }
+
+    <form method="get" class="row g-2 align-items-end mb-3" id="access-log-filters">
+        <div class="col-sm-6 col-lg-3">
+            <label class="form-label small mb-0" for="access-project">Project</label>
+            <select class="form-select form-select-sm" id="access-project" name="project">
+                <option value="">All</option>
+                @foreach (var p in Model.Projects)
+                {
+                    <option value="@p.Id" selected="@(p.Id == Model.ProjectId)">@(p.IsOrganisationArea ? "Organisation" : p.Name)</option>
+                }
+            </select>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <label class="form-label small mb-0" for="access-user">Member</label>
+            <select class="form-select form-select-sm" id="access-user" name="user">
+                <option value="">Everyone</option>
+                @foreach (var u in Model.Organization.Users.OrderBy(u => u.Name))
+                {
+                    <option value="@u.Id" selected="@(u.Id == Model.UserId)">@u.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-sm-4 col-lg-2">
+            <label class="form-label small mb-0" for="access-kind">What</label>
+            <select class="form-select form-select-sm" id="access-kind" name="kind">
+                <option value="">Everything</option>
+                @foreach (var kind in Enum.GetValues<VisitKind>())
+                {
+                    <option value="@kind" selected="@(kind == Model.Kind)">@PageVisits.Title(kind)</option>
+                }
+            </select>
+        </div>
+        <div class="col-sm-4 col-lg-2">
+            <label class="form-label small mb-0" for="access-from">From</label>
+            <input class="form-control form-control-sm" type="date" id="access-from" name="from" value="@Model.From?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="col-sm-4 col-lg-2">
+            <label class="form-label small mb-0" for="access-to">To</label>
+            <input class="form-control form-control-sm" type="date" id="access-to" name="to" value="@Model.To?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="col-12"><button type="submit" class="btn btn-sm btn-primary">Filter</button></div>
+    </form>
+
+    @if (view.Visits.Count == 0)
+    {
+        <p class="text-muted" id="no-access-visits">No visits.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm align-middle" id="access-log-visits">
+                <thead>
+                    <tr><th scope="col">Opened (UTC)</th><th scope="col">Person</th><th scope="col">Role</th><th scope="col">Project</th><th scope="col">What</th><th scope="col">Time spent</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in view.Visits)
+                    {
+                        <tr class="access-visit" data-user="@row.UserName" data-title="@row.Visit.Title"
+                            data-started="@row.Visit.StartedAt.ToString("yyyy-MM-dd HH:mm")" data-spent="@AccessLogRules.Text(row.Visit.TimeSpent)">
+                            <td>@row.Visit.StartedAt.ToString("dd-MM-yyyy HH:mm")</td>
+                            <td>@row.UserName</td>
+                            <td>@row.Role</td>
+                            <td>@row.ProjectName</td>
+                            <td>@row.Visit.Title</td>
+                            <td>@AccessLogRules.Text(row.Visit.TimeSpent)@(row.Visit.IsOnPage(Model.Now) ? " (on the page now)" : "")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (view.Cut)
+        {
+            <p class="small text-muted" id="access-log-cut">Only the newest @ComplianceTracker.Application.ActivityLog.AccessLogService.MaxRows visits are shown. Narrow the filters or export the log.</p>
+        }
+    }
+</section>

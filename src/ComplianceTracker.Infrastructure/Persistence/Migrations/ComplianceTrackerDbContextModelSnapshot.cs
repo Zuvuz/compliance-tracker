@@ -75,6 +75,70 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                     b.ToTable("ActivityLog", (string)null);
                 });
 
+            modelBuilder.Entity("ComplianceTracker.Domain.ActivityLog.PageVisit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Ended")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("LastSeenAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("SecondsSpent")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Tab")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Visible")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "StartedAt");
+
+                    b.HasIndex("OrganizationId", "Kind", "ItemId");
+
+                    b.HasIndex("OrganizationId", "ProjectId", "LastSeenAt");
+
+                    b.HasIndex("OrganizationId", "UserId", "StartedAt");
+
+                    b.ToTable("PageVisits", (string)null);
+                });
+
             modelBuilder.Entity("ComplianceTracker.Domain.Ai.AiEvaluation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5949,6 +6013,12 @@ namespace ComplianceTracker.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
+
+                    b.Property<int>("AccessLogRetentionMonths")
+                        .HasColumnType("integer");
+
+                    b.Property<DateOnly?>("AccessLogStartsOn")
+                        .HasColumnType("date");
 
                     b.Property<int>("AuditCertificateMonths")
                         .ValueGeneratedOnAdd()

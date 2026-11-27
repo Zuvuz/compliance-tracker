@@ -428,6 +428,7 @@
                 @if (single is not null)
                 {
                     <p class="small mb-0"><a id="back-to-evidence" asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Evidence" asp-route-sub="">‹ All evidence</a></p>
+                    <partial name="_SeenBy" /> @* US-219 *@
                     foreach (var row in tab.Evidence.Where(r => r.Evidence.Id == single))
                     {
                         await Card(row);

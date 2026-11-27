@@ -110,6 +110,7 @@ namespace ComplianceTracker.Application
             services.AddScoped<Approvals.ApprovalService>();
             services.AddScoped<Approvals.IApprovalExecutor, RiskService>();
             services.AddScoped<RiskApproverService>(); // US-217
+            services.AddScoped<ActivityLog.AccessLogService>(); // US-219
             services.AddScoped<Approvals.IApprovalExecutor, Security.SecurityEventService>();
             services.AddScoped<Approvals.IApprovalExecutor, ProjectService>();
             services.AddScoped<Approvals.IApprovalExecutor, Frameworks.FrameworkService>(); // US-137 R5

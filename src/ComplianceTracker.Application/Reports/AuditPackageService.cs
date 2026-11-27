@@ -54,14 +54,16 @@ namespace ComplianceTracker.Application.Reports
         private readonly ISecretProtector _secrets; // US-197
         private readonly IPackageSigner _packageSigner; // US-180
         private readonly Projects.IClassificationRepository _classifications; // US-181
+        private readonly AccessLogService _accessLog; // US-219
 
         public AuditPackageService(
             ReportFiles files, ProjectQueries projects, ComplianceQueries compliance, IEvidenceRepository evidence, IRequirementDocumentRepository documents,
             ISbomRepository sboms, AuditService audits, IActivityLogRepository log, IReportSnapshotRepository snapshots, CurrentMember member,
             IActivityLogger logger, IUnitOfWork unitOfWork, ICurrentUser currentUser, TimeProvider clock, AuditReadinessService readiness,
             ISpreadsheetWriter spreadsheets, Projects.PhaseGates gates, IPdfWriter pdf, IReportSealer sealer, IReportSigningRepository signings,
-            ISecretProtector secrets, IPackageSigner packageSigner, Projects.IClassificationRepository classifications)
+            ISecretProtector secrets, IPackageSigner packageSigner, Projects.IClassificationRepository classifications, AccessLogService accessLog)
         {
+            _accessLog = accessLog;
             _classifications = classifications;
             _packageSigner = packageSigner;
             _pdf = pdf;
@@ -183,6 +185,16 @@ namespace ComplianceTracker.Application.Reports
 
             parts.Add(new PackagePart($"05-activity-log-{start:yyyy-MM-dd}-to-{end:yyyy-MM-dd}.csv",
                 await ActivityCsvAsync(organization, project, start, end, cancellationToken), $"Activity log of the project, {start:dd-MM-yyyy} – {end:dd-MM-yyyy} (US-055)"));
+
+            // US-219 R8: who opened the project's sensitive pages in the period, when and for how long; only when the one who
+            // makes the package may see the access log (R4)
+            var accessLogPath = $"05-access-log-{start:yyyy-MM-dd}-to-{end:yyyy-MM-dd}.csv";
+            parts.Add(AccessLogRules.CanSee(user.Role)
+                ? new PackagePart(accessLogPath,
+                    CsvFile.Write(AccessLogService.Columns, AccessLogService.CsvRows(await _accessLog.ForPeriodAsync(organization, project.Id, start, end, cancellationToken))),
+                    $"Access log of the project, {start:dd-MM-yyyy} – {end:dd-MM-yyyy} (US-219)")
+                : new PackagePart(accessLogPath, null, "Access log of the project (US-219)",
+                    "Only an Organisation admin, a Compliance manager or an Auditor may see the access log"));
 
             // Every evidence file with its fingerprint, stored once (US-179 R3); links are listed in the contents
             var links = new List<string>();

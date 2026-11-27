@@ -74,6 +74,52 @@
         <div><button type="submit" class="btn btn-sm btn-primary mt-1">Save the approver roles</button></div>
     </form>
 
+    @* US-219 R6, R7: the access log, off by default. It starts at least 6 weeks after it is turned on, so the members are
+       told first. Ids used by the tests: #access-log-settings, #access-log-state, form#turn-on-access-log (startsOn,
+       retentionMonths) and form#turn-off-access-log. *@
+    @{
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var earliest = today.AddDays(ComplianceTracker.Domain.ActivityLog.AccessLogRules.NoticeDays);
+    }
+    <h2 class="h4" id="access-log-settings">Access log</h2>
+    <p class="text-muted small">When it is on, the tracker logs who opens a project's pages, a risk, evidence, a report or the suppliers, when and for how long.
+        Only Organisation admins, Compliance managers and Auditors see it. Each member sees their own visits on their profile.
+        It starts at least 6 weeks after it is turned on, and the members are told first. Visits are deleted after the time chosen here.</p>
+    <p id="access-log-state">
+        @if (Model.IsAccessLogOn(today))
+        {
+            <span>On since <strong>@Model.AccessLogStartsOn?.ToString("dd-MM-yyyy")</strong>, kept for @Model.AccessLogRetentionMonths months.</span>
+        }
+        else if (Model.AccessLogStartsOn is { } starts)
+        {
+            <span>Starts on <strong>@starts.ToString("dd-MM-yyyy")</strong>, kept for @Model.AccessLogRetentionMonths months.</span>
+        }
+        else
+        {
+            <span>Off.</span>
+        }
+    </p>
+    <form asp-action="TurnOnAccessLog" method="post" class="row g-2 align-items-end mb-2" id="turn-on-access-log">
+        <div class="col-sm-4">
+            <label class="form-label small mb-0" for="access-log-starts">Starts on</label>
+            <input class="form-control form-control-sm" type="date" id="access-log-starts" name="startsOn" min="@earliest.ToString("yyyy-MM-dd")"
+                   value="@((Model.AccessLogStartsOn ?? earliest).ToString("yyyy-MM-dd"))" required readonly="@Model.IsAccessLogOn(today)" />
+        </div>
+        <div class="col-sm-4">
+            <label class="form-label small mb-0" for="access-log-retention">Kept for (months, at most 60)</label>
+            <input class="form-control form-control-sm" type="number" id="access-log-retention" name="retentionMonths"
+                   min="@ComplianceTracker.Domain.ActivityLog.AccessLogRules.MinRetentionMonths" max="@ComplianceTracker.Domain.ActivityLog.AccessLogRules.MaxRetentionMonths"
+                   value="@Model.AccessLogRetentionMonths" required />
+        </div>
+        <div class="col-sm-4"><button type="submit" class="btn btn-sm btn-primary">@(Model.AccessLogStartsOn is null ? "Turn on" : "Save")</button></div>
+    </form>
+    @if (Model.AccessLogStartsOn is not null)
+    {
+        <form asp-action="TurnOffAccessLog" method="post" class="mb-4" id="turn-off-access-log">
+            <button type="submit" class="btn btn-sm btn-outline-danger">Turn off the access log</button>
+        </form>
+    }
+
 </section>
 
 @* US-132: the certificate signed reports are sealed with. The file and password are kept encrypted and never shown. *@

@@ -99,6 +99,8 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound();
             }
 
+            // US-219 R1: an audit report that is opened is a visit, over at once
+            await this.StartVisitAsync(projectId, Domain.ActivityLog.VisitKind.Report, auditId, null, $"Audit report: {found.Audit.ReportFileName}", cancellationToken, once: true);
             Response.Headers["X-Content-Type-Options"] = "nosniff";
             return File(found.File.Content, found.File.ContentType, found.Audit.ReportFileName);
         }
