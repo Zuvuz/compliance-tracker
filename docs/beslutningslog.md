@@ -2768,7 +2768,7 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
 
 - **Beslutning:**
   - **Topmenuen:** Home · Projects · Compliance · ISMS · Organisation (brugerens valg efter en mockup).
-    - **Home** er "My tasks" indtil videre, med tælleren for det forfaldne. US-227 gør det til "Your week" og landingssiden.
+    - **Home** er "My tasks" indtil videre, med tælleren for det forfaldne. Fra US-227 er det "Your week" og landingssiden (B179).
     - "Frameworks" og "My tasks" er ikke længere selvstændige punkter.
   - **Compliance** er de regler, hele organisationen følger: Frameworks (først), NIS2 scope, NIS2 gap analysis, Requirements, Evidence, Checklists og Reports. Link-siden kommer med US-220.
   - **Organisation** er administrationen: Profile, Suppliers, Documents, Users, Activity og Settings. Documents og Suppliers er flyttet til ISMS med US-226 (B178).
@@ -2793,6 +2793,24 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - Layoutet tegner ISMS' række på alle ISMS-sider. Siderne tegner den ikke længere selv.
 - **Begrundelse:** ISMS' dele lå spredt under både Organisation og ISMS. Nu ligger de ét sted i den rækkefølge, man bygger et ISMS op i.
 - **Fravalgt:** Et separat dokumentbibliotek under Organisation. Det ville give to steder at lede efter den samme politik.
+
+### B179 – Home er "Your week", og man lander der efter login (US-227)
+
+- **Beslutning:**
+  - **Man lander på Home efter login** og når man skifter organisation. En auditor med adgang til ét projekt lander stadig på projektet (US-182).
+  - **Home har én del: "Your week"** (brugerens valg). Den samler tre ting i én liste, det forfaldne først:
+    - medlemmets opgaver med en frist fra projekterne (det, der før var "My tasks")
+    - "My week" fra ISMS-oversigten
+    - de godkendelser, der venter på medlemmet. Fristen er, når anmodningen udløber.
+  - Listen viser de næste 7 dage. Resten ligger under "Show more".
+  - Medlemmets egne anmodninger står ikke på listen, fordi de venter på en anden.
+  - **"Waiting for your decision"** (AI-forslagene) står stadig under listen. Godkendelserne står ikke også dér.
+  - **Filtrene** (projekt og type) gælder projekternes opgaver. Når et filter er valgt, udelades ISMS-punkterne.
+  - **Klokken** tæller det samme som listen: det, der er forfaldent eller forfalder inden for 7 dage.
+  - **ISMS-status og den guidede start** bliver på ISMS-oversigten. De er ikke på Home.
+  - **Et fast antal databaseforespørgsler:** "My tasks" og beslutningerne læste før hvert projekt for sig (244 forespørgsler med 16 projekter). Nu læses hver slags én gang for alle projekter (34 forespørgsler).
+- **Begrundelse:** man skal kunne starte dagen fra én side uden at lede på flere.
+- **Fravalgt:** ISMS-status og projekternes dækning på Home. Brugeren valgte kun "Your week", så siden er kort.
 
 ## Spørgsmål til klassediagrammet
 

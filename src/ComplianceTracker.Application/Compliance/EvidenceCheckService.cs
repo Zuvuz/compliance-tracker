@@ -17,6 +17,9 @@ namespace ComplianceTracker.Application.Compliance
         // The project's checks, newest first
         Task<IReadOnlyList<EvidenceCheck>> ListAsync(Guid projectId, CancellationToken cancellationToken = default);
 
+        // US-227: the same for many projects in one query, so Home makes a fixed number of queries
+        Task<IReadOnlyList<EvidenceCheck>> ListForProjectsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default);
+
         Task AddAsync(EvidenceCheck check, CancellationToken cancellationToken = default);
     }
 

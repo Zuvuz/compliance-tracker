@@ -8,6 +8,9 @@ namespace ComplianceTracker.Application.Ai
     {
         Task<IReadOnlyList<StoryDraft>> ListAsync(Guid projectId, CancellationToken cancellationToken = default);
 
+        // US-227: the same for many projects in one query, so Home makes a fixed number of queries
+        Task<IReadOnlyList<StoryDraft>> ListForProjectsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default);
+
         Task AddAsync(StoryDraft draft, CancellationToken cancellationToken = default);
     }
 
@@ -15,6 +18,9 @@ namespace ComplianceTracker.Application.Ai
     public interface IRiskMeasureSuggestionRepository
     {
         Task<IReadOnlyList<RiskMeasureSuggestion>> ListAsync(Guid projectId, CancellationToken cancellationToken = default);
+
+        // US-227: the same for many projects in one query, so Home makes a fixed number of queries
+        Task<IReadOnlyList<RiskMeasureSuggestion>> ListForProjectsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default);
 
         Task AddRangeAsync(IEnumerable<RiskMeasureSuggestion> suggestions, CancellationToken cancellationToken = default);
     }

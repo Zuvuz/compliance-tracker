@@ -17,6 +17,9 @@ namespace ComplianceTracker.Application.Ai
     {
         Task<IReadOnlyList<ApplicabilitySuggestion>> ListAsync(Guid projectId, CancellationToken cancellationToken = default);
 
+        // US-227: the same for many projects in one query, so Home makes a fixed number of queries
+        Task<IReadOnlyList<ApplicabilitySuggestion>> ListForProjectsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default);
+
         Task<ApplicabilitySuggestion?> GetAsync(Guid projectId, Guid suggestionId, CancellationToken cancellationToken = default);
 
         Task AddRangeAsync(IEnumerable<ApplicabilitySuggestion> suggestions, CancellationToken cancellationToken = default);

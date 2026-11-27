@@ -103,7 +103,7 @@ namespace ComplianceTracker.Application.Review
     }
 
     // US-099 R1, R5: the tasks with a date across the projects the member can see; closed projects are left out.
-    // A fixed number of queries per project, like "To review" (US-169).
+    // US-227 R4: a fixed number of queries, however many projects: each kind is read for all the projects at once.
     public class MyTasks
     {
         private readonly IProjectRepository _projects;
@@ -148,6 +148,11 @@ namespace ComplianceTracker.Application.Review
                 can[kind] = await _member.CanAsync(MyTaskPlan.RightFor(kind), cancellationToken);
             }
 
+            var ids = projects.Select(p => p.Id).ToList();
+            var evidenceOf = (await _evidence.ListActiveForProjectsAsync(ids, cancellationToken)).ToLookup(e => e.ProjectId);
+            var risksOf = (await _risks.ListAsync(ids, cancellationToken)).ToLookup(r => r.ProjectId);
+            var eventsOf = (await _events.ListForProjectsAsync(ids, cancellationToken)).ToLookup(e => e.ProjectId);
+
             var tasks = new List<TaskItem>();
             foreach (var project in projects)
             {
@@ -156,7 +161,7 @@ namespace ComplianceTracker.Application.Review
                 TaskItem Item(TaskKind kind, Guid id, string title, DateTime due, string path) => new(project.Id, name, kind, id, title, due, path, can[kind]);
 
                 // Evidence that has expired or expires within a week; an organisation document's evidence follows the document
-                foreach (var evidence in await _evidence.ListActiveAsync(project.Id, cancellationToken))
+                foreach (var evidence in evidenceOf[project.Id])
                 {
                     if (evidence.ValidUntil is { } until && evidence.OrganisationDocumentId is null && MyTaskPlan.IsSoon(until.ToDateTime(TimeOnly.MinValue), now))
                     {
@@ -166,14 +171,14 @@ namespace ComplianceTracker.Application.Review
                     }
                 }
 
-                foreach (var (kind, risk, due) in MyTaskPlan.Risks(await _risks.ListAsync(project.Id, cancellationToken), me.Id, now))
+                foreach (var (kind, risk, due) in MyTaskPlan.Risks(risksOf[project.Id], me.Id, now))
                 {
                     tasks.Add(Item(kind, risk.Id, kind == TaskKind.RiskReview ? $"Review the risk \"{risk.Title}\"" : $"Your risk \"{risk.Title}\"",
                         due, $"{at}/risks?risk={risk.Id}"));
                 }
 
                 // R1: the reports of a security event that are not sent yet (US-073)
-                foreach (var securityEvent in (await _events.ListAsync(project.Id, cancellationToken)).Where(e => e.IsOpen && e.IsReportable && !e.RecordedInError))
+                foreach (var securityEvent in eventsOf[project.Id].Where(e => e.IsOpen && e.IsReportable && !e.RecordedInError))
                 {
                     foreach (var report in Enum.GetValues<SecurityReportKind>())
                     {

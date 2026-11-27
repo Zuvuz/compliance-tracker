@@ -17,6 +17,9 @@ namespace ComplianceTracker.Infrastructure.Persistence.Repositories
         public async Task<IReadOnlyList<EvidenceLinkSuggestion>> ListAsync(Guid projectId, CancellationToken cancellationToken = default)
             => await _db.EvidenceLinkSuggestions.Where(s => s.ProjectId == projectId).ToListAsync(cancellationToken);
 
+        public async Task<IReadOnlyList<EvidenceLinkSuggestion>> ListForProjectsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default)
+            => await _db.EvidenceLinkSuggestions.Where(s => projectIds.Contains(s.ProjectId)).ToListAsync(cancellationToken);
+
         public Task AddRangeAsync(IEnumerable<EvidenceLinkSuggestion> suggestions, CancellationToken cancellationToken = default)
             => _db.EvidenceLinkSuggestions.AddRangeAsync(suggestions, cancellationToken);
 

@@ -53,8 +53,8 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
             var response = await client.PostAsync(_invitationPath,
                 new FormUrlEncodedContent(new Dictionary<string, string> { ["__RequestVerificationToken"] = token }));
-            // Lands on the organisation's projects, not on "create your organisation" (US-045)
-            Assert.Equal("/Projects", response.RequestMessage!.RequestUri!.AbsolutePath);
+            // Lands on the organisation's Home (US-227), not on "create your organisation" (US-045)
+            Assert.Equal("/Review", response.RequestMessage!.RequestUri!.AbsolutePath);
         }
 
         [When("{string} opens the invitation link")]

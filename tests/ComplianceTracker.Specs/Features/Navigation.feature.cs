@@ -379,19 +379,19 @@ namespace ComplianceTracker.Specs.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="The front page after sign-in is the projects page")]
+        [global::Xunit.SkippableFactAttribute(DisplayName="The front page after sign-in is Home")]
         [global::Xunit.TraitAttribute("FeatureTitle", "The main pages are in the top bar")]
-        [global::Xunit.TraitAttribute("Description", "The front page after sign-in is the projects page")]
+        [global::Xunit.TraitAttribute("Description", "The front page after sign-in is Home")]
         [global::Xunit.TraitAttribute("Category", "US-045")]
         [global::Xunit.TraitAttribute("Category", "integration")]
-        public async global::System.Threading.Tasks.Task TheFrontPageAfterSign_InIsTheProjectsPage()
+        public async global::System.Threading.Tasks.Task TheFrontPageAfterSign_InIsHome()
         {
             string[] tagsOfScenario = new string[] {
                     "US-045",
                     "integration"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "5";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The front page after sign-in is the projects page", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The front page after sign-in is Home", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 50
@@ -411,7 +411,7 @@ namespace ComplianceTracker.Specs.Features
     await testRunner.WhenAsync("I open the front page", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 52
-    await testRunner.ThenAsync("I am on the page \"/Projects\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("I am on the page \"/Review\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

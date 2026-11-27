@@ -2,7 +2,7 @@ Feature: The ISMS start page
 
   # US-216: the first page of the ISMS area tells each member what they must do this week, shows how far the organisation
   # is with each part of the ISMS (clauses 4–10 and the SoA) with a plain sentence on what is missing, and guides a new
-  # organisation through the first steps. Sign-in still lands on the projects (the user's choice).
+  # organisation through the first steps. "My week" is also part of Home (US-227).
 
   Background:
     Given an empty database

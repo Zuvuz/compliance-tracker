@@ -1,0 +1,22 @@
+@* US-227: one line of "Your week" on Home: the deadline, the project (none for the ISMS), what to do and where it is done *@
+@model (ComplianceTracker.Web.Models.HomeItem Item, DateTime Now)
+@using ComplianceTracker.Application.Review
+@using ComplianceTracker.Web.Models
+@{
+    var item = Model.Item;
+    var status = MyTaskPlan.IsOverdue(item.Due, Model.Now) ? "Overdue" : MyTaskPlan.IsSoon(item.Due, Model.Now) ? "Due soon" : "Later";
+    var where = item.Kind switch { HomeWeek.Isms => "ISMS", HomeWeek.Approval => item.Project ?? "Approval", _ => item.Project };
+}
+<li class="task-item d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom" data-kind="@item.Kind" data-project="@item.Project">
+    <status-badge status="@status" text="@MyTaskPlan.DueText(item.Due, Model.Now)" class="task-due" />
+    <span class="task-project text-muted small">@where</span>
+    <span class="task-title">@item.Title</span>
+    @if (item.Href is { } href)
+    {
+        <a class="ms-auto btn btn-sm btn-outline-primary task-open" href="@href">Open</a>
+    }
+    else
+    {
+        <span class="ms-auto small text-muted task-read-only">Your role can only read this</span>
+    }
+</li>

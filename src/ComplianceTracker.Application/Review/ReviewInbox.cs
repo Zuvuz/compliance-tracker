@@ -120,8 +120,24 @@ namespace ComplianceTracker.Application.Review
                 return may;
             }
 
+            // US-227 R4: each kind is read for all the projects at once, so the number of queries does not grow with them
+            var projects = (await _projects.ListAsync(organization.Id, cancellationToken)).Where(p => !p.IsClosed).OrderBy(p => p.Name).ToList();
+            var ids = projects.Select(p => p.Id).ToList();
+            var stories = (await _stories.ListForProjectsAsync(ids, cancellationToken)).ToLookup(s => s.ProjectId);
+            var needsAction = (await _needsAction.ListForProjectsAsync(ids, cancellationToken)).ToLookup(s => s.ProjectId);
+            var applicability = (await _applicability.ListForProjectsAsync(ids, cancellationToken)).ToLookup(s => s.ProjectId);
+            var checks = (await _checks.ListForProjectsAsync(ids, cancellationToken)).ToLookup(c => c.ProjectId);
+            var drafts = (await _drafts.ListForProjectsAsync(ids, cancellationToken)).ToLookup(d => d.ProjectId);
+            var evidenceSuggestions = (await _evidence.ListForProjectsAsync(ids, cancellationToken)).ToLookup(s => s.ProjectId);
+            var riskDrafts = (await _riskDrafts.ListForProjectsAsync(ids, cancellationToken)).ToLookup(d => d.ProjectId);
+            var measures = (await _measures.ListForProjectsAsync(ids, cancellationToken)).ToLookup(s => s.ProjectId);
+            var events = (await _events.ListForProjectsAsync(ids, cancellationToken)).ToLookup(s => s.ProjectId);
+            var evidence = (await _allEvidence.ListActiveForProjectsAsync(ids, cancellationToken)).ToLookup(e => e.ProjectId);
+            var approvalsOf = (await _approvals.PendingAsync(null, cancellationToken)).Where(a => a.CanApprove && a.Request.ProjectId is not null)
+                .ToLookup(a => a.Request.ProjectId!.Value);
+
             var items = new List<ReviewItem>();
-            foreach (var project in (await _projects.ListAsync(organization.Id, cancellationToken)).Where(p => !p.IsClosed).OrderBy(p => p.Name))
+            foreach (var project in projects)
             {
                 async Task AddAsync(ReviewKind kind, Func<Task<int>> count)
                 {
@@ -131,19 +147,19 @@ namespace ComplianceTracker.Application.Review
                     }
                 }
 
-                await AddAsync(ReviewKind.StorySuggestions, async () => (await _stories.ListAsync(project.Id, cancellationToken)).Count(s => s.IsPending));
-                await AddAsync(ReviewKind.NeedsAction, async () => (await _needsAction.ListAsync(project.Id, cancellationToken)).Count(m => m.IsPending));
-                await AddAsync(ReviewKind.NotApplicable, async () => (await _applicability.ListAsync(project.Id, cancellationToken)).Count(s => s.IsPending));
-                await AddAsync(ReviewKind.EvidenceChecks, async () => (await _checks.ListAsync(project.Id, cancellationToken)).Count(c => !c.IsDecided));
-                await AddAsync(ReviewKind.StoryDrafts, async () => (await _drafts.ListAsync(project.Id, cancellationToken)).Count(d => d.IsOpen));
-                await AddAsync(ReviewKind.EvidenceSuggestions, async () => (await _evidence.ListAsync(project.Id, cancellationToken)).Count(s => s.IsPending));
-                await AddAsync(ReviewKind.RiskDrafts, async () => (await _riskDrafts.ListAsync(project.Id, cancellationToken)).Count(d => d.IsOpen));
-                await AddAsync(ReviewKind.MeasureSuggestions, async () => (await _measures.ListAsync(project.Id, cancellationToken)).Count(s => s.IsPending));
-                await AddAsync(ReviewKind.SecurityEventSuggestions, async () => (await _events.ListAsync(project.Id, cancellationToken)).Count(s => s.IsPending));
+                await AddAsync(ReviewKind.StorySuggestions, () => Task.FromResult(stories[project.Id].Count(s => s.IsPending)));
+                await AddAsync(ReviewKind.NeedsAction, () => Task.FromResult(needsAction[project.Id].Count(m => m.IsPending)));
+                await AddAsync(ReviewKind.NotApplicable, () => Task.FromResult(applicability[project.Id].Count(s => s.IsPending)));
+                await AddAsync(ReviewKind.EvidenceChecks, () => Task.FromResult(checks[project.Id].Count(c => !c.IsDecided)));
+                await AddAsync(ReviewKind.StoryDrafts, () => Task.FromResult(drafts[project.Id].Count(d => d.IsOpen)));
+                await AddAsync(ReviewKind.EvidenceSuggestions, () => Task.FromResult(evidenceSuggestions[project.Id].Count(s => s.IsPending)));
+                await AddAsync(ReviewKind.RiskDrafts, () => Task.FromResult(riskDrafts[project.Id].Count(d => d.IsOpen)));
+                await AddAsync(ReviewKind.MeasureSuggestions, () => Task.FromResult(measures[project.Id].Count(s => s.IsPending)));
+                await AddAsync(ReviewKind.SecurityEventSuggestions, () => Task.FromResult(events[project.Id].Count(s => s.IsPending)));
                 // US-195 R5: what has no date; the organisation area also counts its documents and its suppliers' evidence
                 await AddAsync(ReviewKind.WithoutDate, async () =>
                 {
-                    var count = (await _allEvidence.ListActiveAsync(project.Id, cancellationToken)).Count(e => e.ValidUntil is null && e.OrganisationDocumentId is null);
+                    var count = evidence[project.Id].Count(e => e.ValidUntil is null && e.OrganisationDocumentId is null);
                     if (project.IsOrganisationArea)
                     {
                         count += (await _documents.ListAsync(organization.Id, cancellationToken: cancellationToken)).Count(d => d.IsActive && d.ReviewDueOn is null);
@@ -154,7 +170,7 @@ namespace ComplianceTracker.Application.Review
 
                     return count;
                 });
-                var approvals = (await _approvals.ForProjectAsync(project.Id, cancellationToken)).Count(a => a.CanApprove);
+                var approvals = approvalsOf[project.Id].Count();
                 if (approvals > 0)
                 {
                     items.Add(new ReviewItem(project.Id, project.Name, ReviewKind.Approvals, approvals));

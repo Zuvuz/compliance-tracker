@@ -35,6 +35,9 @@ namespace ComplianceTracker.Application.Security
     {
         Task<IReadOnlyList<SecurityEventSuggestion>> ListAsync(Guid projectId, CancellationToken cancellationToken = default);
 
+        // US-227: the same for many projects in one query, so Home makes a fixed number of queries
+        Task<IReadOnlyList<SecurityEventSuggestion>> ListForProjectsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default);
+
         Task<SecurityEventSuggestion?> GetAsync(Guid projectId, Guid suggestionId, CancellationToken cancellationToken = default);
 
         Task AddAsync(IEnumerable<SecurityEventSuggestion> suggestions, CancellationToken cancellationToken = default);

@@ -14,7 +14,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
 
         public MyTasksStepDefinitions(WebScenario web) => _web = web;
 
-        private List<IElement> Tasks => _web.Page!.QuerySelectorAll("#my-tasks li.task-item").ToList();
+        private List<IElement> Tasks => _web.Page!.QuerySelectorAll("#my-tasks li.task-item, #my-tasks-later li.task-item").ToList();
 
         private static string Title(IElement task) => task.QuerySelector(".task-title")!.TextContent.Trim();
 

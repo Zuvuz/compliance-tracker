@@ -41,6 +41,9 @@ namespace ComplianceTracker.Application.Compliance
         // The project's evidence that is not removed
         Task<IReadOnlyList<Evidence>> ListActiveAsync(Guid projectId, CancellationToken cancellationToken = default);
 
+        // US-227: the same for many projects in one query, so Home makes a fixed number of queries
+        Task<IReadOnlyList<Evidence>> ListActiveForProjectsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken = default);
+
         Task<Evidence?> GetAsync(Guid projectId, Guid evidenceId, CancellationToken cancellationToken = default);
 
         // content: the file's bytes, or null for a link

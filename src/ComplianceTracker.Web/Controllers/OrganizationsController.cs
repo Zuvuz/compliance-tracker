@@ -20,12 +20,15 @@ namespace ComplianceTracker.Web.Controllers
             _organizations = organizations;
         }
 
-        // "My organisation": the Projects page, or the create page on first sign-in (US-004 R3, US-045 R4)
+        // "My organisation": Home, or the create page on first sign-in (US-004 R3, US-045 R4). US-227 R1: sign-in lands on
+        // Home; an auditor limited to one project goes to that project (US-182).
         [HttpGet]
-        public async Task<IActionResult> Mine(CancellationToken cancellationToken)
+        public async Task<IActionResult> Mine([FromServices] Application.Common.CurrentMember member, CancellationToken cancellationToken)
             => await _organizations.MineAsync(cancellationToken) is null
                 ? RedirectToAction(nameof(Create))
-                : RedirectToAction("Index", "Projects");
+                : await member.OnlyProjectAsync(cancellationToken) is null
+                    ? RedirectToAction("Index", "Review")
+                    : RedirectToAction("Index", "Projects");
 
         // POST /Organizations/Switch: US-187 R2, work in another organisation the person is a member of
         [HttpPost]
@@ -38,7 +41,7 @@ namespace ComplianceTracker.Web.Controllers
             }
 
             Security.ChosenOrganisation.Write(Response, organizationId, environment.IsDevelopment());
-            return RedirectToAction("Index", "Projects");
+            return RedirectToAction(nameof(Mine)); // US-227: Home of the other organisation
         }
 
         // GET /Organizations/Customers: US-187 R5, every organisation the person works in, with its status

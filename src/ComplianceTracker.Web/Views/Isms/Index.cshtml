@@ -7,18 +7,7 @@
 @using ComplianceTracker.Application.Isms
 @{
     ViewData["Title"] = "ISMS";
-    string Href(string page, string? fragment = null)
-    {
-        var url = page switch
-        {
-            "Documents" => Url.Action("Index", "Documents"),
-            "Projects" => Url.Action("Index", "Projects"),
-            "Frameworks" => Url.Action("Index", "Frameworks"),
-            _ when page.StartsWith("risk:", StringComparison.Ordinal) => Url.Action("Details", "Risks", new { id = page[5..] }),
-            _ => Url.Action(page, "Isms")
-        } ?? "#";
-        return fragment is null ? url : $"{url}#{fragment}";
-    }
+    string Href(string page, string? fragment = null) => ComplianceTracker.Web.Models.IsmsLinks.Href(Url, page, fragment);
     string Word(PartState state) => state switch { PartState.Red => "Needs action", PartState.Yellow => "Due soon", _ => "OK" };
     string Icon(PartState state) => state switch { PartState.Red => "✗", PartState.Yellow => "!", _ => "✓" };
 }
