@@ -1,0 +1,313 @@
+@* US-220: the one page for linking. Left: the compliance requirements of one framework with their marks (R4), search and
+   the filters "Not covered" (the start view) and "Has suggestions" (R6, shared as ?show=…). Choosing one fills the two
+   other columns: its product requirements in the middle and its evidence on the right, each with what is linked first,
+   then the AI's suggestions (with the reason in one line), then the rest (R1). Link and Unlink are one click and use the
+   actions of the Compliance tab, so the permission and the log are the same (R2); an AI suggestion goes through the
+   double confirmation (US-221, R3). A requirement that is not applicable shows its reason and has no links (R5).
+   On a phone the columns are stacked as three steps (R7); the arrow keys move in a column and Enter links (link-page.js).
+   Ids and classes used by the tests: #link-page, #link-frameworks, #link-requirements with a.link-requirement-choice
+   (data-code, data-mark, data-covered, aria-current on the chosen one), a.link-filter (data-filter, .active),
+   #no-link-requirements, #link-stories and #link-evidence with li.link-item (data-title, data-state = linked | suggested |
+   other), forms .link-unlink, .link-link, .link-approve, .link-reject, #link-not-applicable, .link-more, #link-upload. *@
+@model ProjectDetailsViewModel
+@using ComplianceTracker.Application.Compliance
+@{
+    var project = Model.Project;
+    var link = Model.LinkPage;
+    var canLink = !project.IsClosed && await Permissions.CanAsync(Permission.LinkWork);
+    var canDecide = !project.IsClosed && await Permissions.CanAsync(Permission.DecideCompliance);
+    var chosen = link?.Chosen;
+    var code = chosen?.Requirement.Code;
+    string MarkClass(string mark) => mark switch
+    {
+        LinkMarks.Covered => "text-bg-success",
+        LinkMarks.Partly => "text-bg-warning",
+        LinkMarks.NotApplicable => "text-bg-secondary",
+        _ => "text-bg-light border"
+    };
+}
+
+<section id="link-page">
+    @if (link is null)
+    {
+        <p class="text-muted" id="no-frameworks-link">
+            No frameworks yet. <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Frameworks">Add one on the Frameworks tab</a>.
+        </p>
+        return;
+    }
+
+    @if (Model.Compliance is { Frameworks.Count: > 1 } compliance)
+    {
+        <ul class="nav nav-pills mb-3" id="link-frameworks">
+            @foreach (var framework in compliance.Frameworks)
+            {
+                var slug = FrameworkNames.Slug(framework.Framework.Name);
+                <li class="nav-item">
+                    <a class="nav-link @(slug == link.Sub ? "active" : "")" data-sub="@slug"
+                       asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Link" asp-route-sub="@slug" asp-route-req="" asp-route-show="@link.Filter">@FrameworkNames.Short(framework.Framework.Name)</a>
+                </li>
+            }
+        </ul>
+    }
+
+    <div class="row g-3 link-columns">
+        @* 1. The compliance requirements *@
+        <section class="col-lg-4 link-column" id="link-requirements" aria-labelledby="link-requirements-title">
+            <div class="card h-100"><div class="card-body">
+                <h2 class="h6 mb-2" id="link-requirements-title"><span class="link-step">1</span> Compliance requirement</h2>
+                <form method="get" asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Link" asp-route-sub="@link.Sub" class="mb-2" role="search">
+                    <input type="hidden" name="show" value="@link.Filter" />
+                    <input type="search" name="q" value="@link.Search" class="form-control form-control-sm" placeholder="Search requirements" aria-label="Search requirements" />
+                </form>
+                <div class="d-flex flex-wrap gap-1 mb-2" role="group" aria-label="Filter">
+                    @foreach (var (slug, title) in LinkPage.Filters)
+                    {
+                        <a class="btn btn-sm link-filter @(slug == link.Filter ? "btn-secondary active" : "btn-outline-secondary")" data-filter="@slug"
+                           aria-current="@(slug == link.Filter ? "true" : null)"
+                           asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Link" asp-route-sub="@link.Sub" asp-route-req="" asp-route-show="@slug" asp-route-q="@link.Search">@title</a>
+                    }
+                </div>
+                @if (link.Requirements.Count == 0)
+                {
+                    <p class="small text-muted mb-0" id="no-link-requirements">No requirements match. <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Link" asp-route-sub="@link.Sub" asp-route-show="@ComplianceFilters.All">Show all</a></p>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush link-list" data-link-list="requirements">
+                        @foreach (var item in link.Requirements)
+                        {
+                            var isChosen = chosen?.Requirement.Id == item.Row.Requirement.Id;
+                            <a class="list-group-item list-group-item-action link-requirement-choice @(isChosen ? "active" : "")"
+                               data-code="@item.Row.Requirement.Code" data-mark="@item.Mark" data-covered="@(item.Row.IsCovered ? "true" : "false")"
+                               aria-current="@(isChosen ? "true" : null)"
+                               asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Link" asp-route-sub="@link.Sub"
+                               asp-route-req="@item.Row.Requirement.Code" asp-route-show="@link.Filter" asp-route-q="@link.Search">
+                                <div class="d-flex justify-content-between gap-2">
+                                    <span class="fw-semibold">@item.Row.Requirement.Code</span>
+                                    <span>
+                                        @if (item.HasSuggestions)
+                                        {
+                                            <span class="badge text-bg-info link-has-suggestions">AI</span>
+                                        }
+                                        <span class="badge @MarkClass(item.Mark) link-mark">@LinkMarks.Text(item.Mark)</span>
+                                    </span>
+                                </div>
+                                <div class="small text-truncate">@item.Row.Requirement.Title</div>
+                            </a>
+                        }
+                    </div>
+                }
+            </div></div>
+        </section>
+
+        @* 2. The product requirements *@
+        <section class="col-lg-4 link-column" id="link-stories" aria-labelledby="link-stories-title">
+            <div class="card h-100"><div class="card-body">
+                <h2 class="h6 mb-2" id="link-stories-title"><span class="link-step">2</span> Product requirements@(code is null ? "" : $" for {code}")</h2>
+                @if (chosen is null)
+                {
+                    <p class="small text-muted mb-0">Choose a compliance requirement.</p>
+                }
+                else if (!chosen.IsApplicable)
+                {
+                    <div class="alert alert-secondary small mb-0" id="link-not-applicable" role="status">
+                        Not applicable: @chosen.NotApplicableReason. Remove the mark on the
+                        <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Compliance" asp-route-sub="@link.Sub" asp-route-req="@code">requirement's page</a> to link it.
+                    </div>
+                }
+                else
+                {
+                    <ul class="list-unstyled mb-0 link-list" data-link-list="stories">
+                        @foreach (var linked in link.LinkedStories)
+                        {
+                            <li class="link-item d-flex align-items-start gap-2 py-1" data-title="@linked.WorkItem.Title" data-state="linked">
+                                <span class="badge text-bg-success">Linked</span>
+                                <a class="flex-grow-1" href="@linked.WorkItem.Url" target="_blank" rel="noopener noreferrer">@linked.WorkItem.Title</a>
+                                @if (canLink)
+                                {
+                                    <form asp-action="UnlinkRequirement" method="post" class="link-unlink">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="linkId" value="@linked.LinkId" />
+                                        <partial name="_LinkBack" model="link" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Unlink @linked.WorkItem.Title">Unlink</button>
+                                    </form>
+                                }
+                            </li>
+                        }
+                        @foreach (var entry in link.SuggestedStories)
+                        {
+                            <li class="link-item py-1" data-title="@entry.WorkItem.Title" data-state="suggested">
+                                <div class="d-flex align-items-start gap-2">
+                                    <span class="badge text-bg-info">AI</span>
+                                    <a class="flex-grow-1" href="@entry.WorkItem.Url" target="_blank" rel="noopener noreferrer">@entry.WorkItem.Title</a>
+                                </div>
+                                <div class="small text-muted text-truncate link-reason">@(entry.Suggestion.Rationale ?? "Writing the reason…")</div>
+                                @if (canDecide)
+                                {
+                                    <div class="d-flex flex-wrap gap-1 mt-1">
+                                        <form asp-action="ApproveSuggestion" method="post" class="link-approve">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="suggestionId" value="@entry.Suggestion.Id" />
+                                            <partial name="_LinkBack" model="link" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success" aria-label="Link @entry.WorkItem.Title">Link</button>
+                                        </form>
+                                        <form asp-action="RejectSuggestion" method="post" class="d-flex flex-wrap gap-1 link-reject">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="suggestionId" value="@entry.Suggestion.Id" />
+                                            <partial name="_LinkBack" model="link" />
+                                            <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason" required>
+                                                <option value="">Reason…</option>
+                                                @foreach (var reason in Enum.GetValues<ComplianceTracker.Domain.Mappings.RejectionReason>())
+                                                {
+                                                    <option value="@reason">@reason</option>
+                                                }
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                        </form>
+                                    </div>
+                                }
+                            </li>
+                        }
+                    </ul>
+                    <form method="get" asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Link" asp-route-sub="@link.Sub" class="my-2" role="search">
+                        <input type="hidden" name="req" value="@code" />
+                        <input type="hidden" name="show" value="@link.Filter" />
+                        <input type="hidden" name="q" value="@link.Search" />
+                        <input type="search" name="sq" value="@Context.Request.Query["sq"]" class="form-control form-control-sm" placeholder="Search product requirements" aria-label="Search product requirements" />
+                    </form>
+                    <ul class="list-unstyled mb-0 link-list" data-link-list="other-stories">
+                        @foreach (var story in link.OtherStories)
+                        {
+                            <li class="link-item d-flex align-items-start gap-2 py-1" data-title="@story.Title" data-state="other">
+                                <a class="flex-grow-1" href="@story.Url" target="_blank" rel="noopener noreferrer">@story.Title</a>
+                                @if (canLink)
+                                {
+                                    <form asp-action="LinkRequirement" method="post" class="link-link">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="requirementId" value="@chosen.Requirement.Id" />
+                                        <input type="hidden" name="workItemId" value="@story.Id" />
+                                        <partial name="_LinkBack" model="link" />
+                                        <button type="submit" class="btn btn-sm btn-outline-primary" aria-label="Link @story.Title">Link</button>
+                                    </form>
+                                }
+                            </li>
+                        }
+                    </ul>
+                    @if (link.MoreStories > 0)
+                    {
+                        <p class="small text-muted mt-1 mb-0 link-more">@link.MoreStories more. Search to find them.</p>
+                    }
+                    @if (link.LinkedStories.Count + link.SuggestedStories.Count + link.OtherStories.Count == 0)
+                    {
+                        <p class="small text-muted mb-0">No product requirements yet. <a asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.ProductRequirements">Add them</a>.</p>
+                    }
+                }
+            </div></div>
+        </section>
+
+        @* 3. The evidence *@
+        <section class="col-lg-4 link-column" id="link-evidence" aria-labelledby="link-evidence-title">
+            <div class="card h-100"><div class="card-body">
+                <h2 class="h6 mb-2" id="link-evidence-title"><span class="link-step">3</span> Evidence@(code is null ? "" : $" for {code}")</h2>
+                @if (chosen is null)
+                {
+                    <p class="small text-muted mb-0">Choose a compliance requirement.</p>
+                }
+                else if (!chosen.IsApplicable)
+                {
+                    <p class="small text-muted mb-0">Not applicable, so no evidence is needed.</p>
+                }
+                else
+                {
+                    <ul class="list-unstyled mb-0 link-list" data-link-list="evidence">
+                        @foreach (var item in link.LinkedEvidence)
+                        {
+                            <li class="link-item d-flex align-items-start gap-2 py-1" data-title="@item.Evidence.Title" data-state="linked">
+                                <span class="badge @(item.Counts ? "text-bg-success" : "text-bg-warning")">@(item.IsExpired ? "Expired" : item.NeedsReview ? "Review" : "Linked")</span>
+                                <span class="flex-grow-1">@item.Evidence.Title</span>
+                                @if (canLink)
+                                {
+                                    <form asp-action="RemoveEvidence" method="post" class="link-unlink">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="evidenceId" value="@item.Evidence.Id" />
+                                        <input type="hidden" name="requirementId" value="@chosen.Requirement.Id" />
+                                        <partial name="_LinkBack" model="link" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Unlink @item.Evidence.Title">Unlink</button>
+                                    </form>
+                                }
+                            </li>
+                        }
+                        @foreach (var entry in link.SuggestedEvidence)
+                        {
+                            <li class="link-item py-1" data-title="@entry.Evidence.Title" data-state="suggested">
+                                <div class="d-flex align-items-start gap-2">
+                                    <span class="badge text-bg-info">AI</span>
+                                    <span class="flex-grow-1">@entry.Evidence.Title</span>
+                                </div>
+                                <div class="small text-muted text-truncate link-reason">@(entry.Suggestion.Rationale ?? "Writing the reason…")</div>
+                                @if (canLink)
+                                {
+                                    <div class="d-flex flex-wrap gap-1 mt-1">
+                                        <form asp-action="ApproveEvidenceSuggestion" method="post" class="link-approve">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="suggestionId" value="@entry.Suggestion.Id" />
+                                            <partial name="_LinkBack" model="link" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success" aria-label="Link @entry.Evidence.Title">Link</button>
+                                        </form>
+                                        <form asp-action="RejectEvidenceSuggestion" method="post" class="d-flex flex-wrap gap-1 link-reject">
+                                            <input type="hidden" name="projectId" value="@project.Id" />
+                                            <input type="hidden" name="suggestionId" value="@entry.Suggestion.Id" />
+                                            <partial name="_LinkBack" model="link" />
+                                            <select name="reason" class="form-select form-select-sm w-auto" aria-label="Reason" required>
+                                                <option value="">Reason…</option>
+                                                @foreach (var reason in Enum.GetValues<ComplianceTracker.Domain.Mappings.RejectionReason>())
+                                                {
+                                                    <option value="@reason">@reason</option>
+                                                }
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                        </form>
+                                    </div>
+                                }
+                            </li>
+                        }
+                    </ul>
+                    <form method="get" asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Link" asp-route-sub="@link.Sub" class="my-2" role="search">
+                        <input type="hidden" name="req" value="@code" />
+                        <input type="hidden" name="show" value="@link.Filter" />
+                        <input type="hidden" name="q" value="@link.Search" />
+                        <input type="search" name="eq" value="@Context.Request.Query["eq"]" class="form-control form-control-sm" placeholder="Search evidence" aria-label="Search evidence" />
+                    </form>
+                    <ul class="list-unstyled mb-0 link-list" data-link-list="other-evidence">
+                        @foreach (var evidence in link.OtherEvidence)
+                        {
+                            <li class="link-item d-flex align-items-start gap-2 py-1" data-title="@evidence.Title" data-state="other">
+                                <span class="flex-grow-1">@evidence.Title</span>
+                                @if (canLink)
+                                {
+                                    <form asp-action="LinkExistingEvidence" method="post" class="link-link">
+                                        <input type="hidden" name="projectId" value="@project.Id" />
+                                        <input type="hidden" name="requirementId" value="@chosen.Requirement.Id" />
+                                        <input type="hidden" name="evidenceId" value="@evidence.Id" />
+                                        <partial name="_LinkBack" model="link" />
+                                        <button type="submit" class="btn btn-sm btn-outline-primary" aria-label="Link @evidence.Title">Link</button>
+                                    </form>
+                                }
+                            </li>
+                        }
+                    </ul>
+                    @if (link.MoreEvidence > 0)
+                    {
+                        <p class="small text-muted mt-1 mb-0 link-more">@link.MoreEvidence more. Search to find them.</p>
+                    }
+                    @if (canLink)
+                    {
+                        @* A new file is added on the requirement's page, where the upload form is *@
+                        <a class="btn btn-sm btn-outline-primary mt-2" id="link-upload"
+                           asp-action="Details" asp-route-id="@project.Id" asp-route-tab="@ProjectTabs.Compliance" asp-route-sub="@link.Sub" asp-route-req="@code" asp-fragment="add-evidence">Upload evidence</a>
+                    }
+                }
+            </div></div>
+        </section>
+    </div>
+</section>

@@ -166,6 +166,8 @@ namespace ComplianceTracker.Web.Controllers
             string? cell, Guid? risk,
             // US-203 R2: "after" shows the risk matrix by the residual risk; a cell then filters by it too
             string? matrix,
+            // US-220: the Link tab's searches of its middle and right columns (q searches the requirements)
+            string? sq, string? eq,
             [FromServices] ClassificationService classifications,
             [FromServices] Application.Projects.GapFinder gapFinder,
             [FromServices] Application.Security.SecurityEventQueries securityEventQueries,
@@ -225,14 +227,14 @@ namespace ComplianceTracker.Web.Controllers
             // Requirements and links: for the Compliance tab, the overview's summary and the user stories' requirements.
             // US-129: the Reports tab, for which reports can be made.
             var compliance = activeTab is ProjectTabs.Compliance or ProjectTabs.Overview or ProjectTabs.ProductRequirements or ProjectTabs.Scans
-                or ProjectTabs.Reports
+                or ProjectTabs.Reports or ProjectTabs.Link
                 ? await _complianceQueries.ForProjectAsync(id, cancellationToken)
                 : null;
 
             // US-059: the Evidence tab, and the evidence that can be picked on the Compliance tab
             // US-153: on the Compliance tab only a requirement's page has the evidence picker
             var requirementPage = activeTab is ProjectTabs.Compliance && req is not null;
-            var evidenceTab = activeTab is ProjectTabs.Evidence || requirementPage
+            var evidenceTab = activeTab is ProjectTabs.Evidence or ProjectTabs.Link || requirementPage
                 ? await evidenceQueries.ForProjectAsync(id, cancellationToken)
                 : null;
 
@@ -302,6 +304,16 @@ namespace ComplianceTracker.Web.Controllers
                 return NotFound();
             }
 
+            // US-220: the Link tab; an unknown framework or requirement is "not found", like on the Compliance tab
+            var linkPage = activeTab is ProjectTabs.Link && compliance is { Frameworks.Count: > 0 }
+                ? LinkPage.Build(compliance, evidenceTab?.Evidence.Where(e => !e.IsExpired).Select(e => e.Evidence).ToList() ?? [], sub, req, show, q, sq, eq)
+                : null;
+            if (activeTab is ProjectTabs.Link && compliance is { Frameworks.Count: > 0 }
+                && (linkPage is null || (RequirementPages.Clean(req) is not null && linkPage.Chosen is null)))
+            {
+                return NotFound();
+            }
+
             // US-071, US-047: the gate and the checklist from one look-up
             var overview = activeTab is ProjectTabs.Overview ? await phaseGates.OverviewAsync(id, cancellationToken) : (null, null);
             return View(new ProjectDetailsViewModel(
@@ -340,6 +352,7 @@ namespace ComplianceTracker.Web.Controllers
                 Gaps = activeTab == ProjectTabs.Suggestions ? await gapFinder.ForProjectAsync(id, cancellationToken) : null,
                 Search = q,
                 ComplianceFilter = ComplianceFilters.Find(show),
+                LinkPage = linkPage,
                 Risks = risks,
                 AllRisks = allRisks,
                 Classifications = classified,
@@ -389,6 +402,11 @@ namespace ComplianceTracker.Web.Controllers
         // The page's forms send the requirement's code as "req".
         private RedirectToActionResult BackToCompliance(Guid projectId, string? sub, string? show = null)
         {
+            if (BackToLinkPage(projectId, sub) is { } link)
+            {
+                return link; // US-220
+            }
+
             var req = Request.HasFormContentType ? RequirementPages.Clean(Request.Form["req"]) : null;
             return RedirectToAction(nameof(Details), new
             {
@@ -399,6 +417,28 @@ namespace ComplianceTracker.Web.Controllers
                 show = string.IsNullOrEmpty(show) || req is not null ? null : show
             });
         }
+
+        // US-220: the Link page's forms send back=link with the framework, the requirement and the filter, so the page is
+        // shown again with the same requirement chosen and its marks changed (R4). Null for every other page.
+        private RedirectToActionResult? BackToLinkPage(Guid projectId, string? sub)
+        {
+            if (!Request.HasFormContentType || Request.Form["back"] != LinkBack)
+            {
+                return null;
+            }
+
+            var show = Request.Form["show"].ToString();
+            return RedirectToAction(nameof(Details), new
+            {
+                id = projectId,
+                tab = ProjectTabs.Link,
+                sub = string.IsNullOrEmpty(sub) || sub == ComplianceFilters.AllSub ? null : sub,
+                req = RequirementPages.Clean(Request.Form["req"]),
+                show = string.IsNullOrEmpty(show) ? null : LinkPage.FilterOf(show)
+            });
+        }
+
+        public const string LinkBack = "link";
 
         // POST /Projects/AssessNis2: US-142 R3, the NIS2 scope check of the organisation (DecideCompliance)
         [HttpPost]
@@ -581,7 +621,10 @@ namespace ComplianceTracker.Web.Controllers
             UndoOffer.Offer(TempData, _clock.GetUtcNow().UtcDateTime, $"Removed the link to {name}", "Projects", nameof(LinkRequirement), new()
             {
                 ["projectId"] = projectId.ToString(), ["requirementId"] = requirementId.ToString(), ["workItemId"] = workItemId.ToString(),
-                ["sub"] = sub ?? "", ["req"] = Request.HasFormContentType ? Request.Form["req"].ToString() : ""
+                ["sub"] = sub ?? "", ["req"] = Request.HasFormContentType ? Request.Form["req"].ToString() : "",
+                // US-220: from the Link page, the Undo goes back there
+                ["back"] = Request.HasFormContentType ? Request.Form["back"].ToString() : "",
+                ["show"] = Request.HasFormContentType ? Request.Form["show"].ToString() : ""
             });
             return BackToCompliance(projectId, sub);
         }
@@ -811,7 +854,10 @@ namespace ComplianceTracker.Web.Controllers
             UndoOffer.Offer(TempData, _clock.GetUtcNow().UtcDateTime, "Removed the evidence from the requirement", "Projects", nameof(LinkExistingEvidence), new()
             {
                 ["projectId"] = projectId.ToString(), ["requirementId"] = requirementId.ToString(), ["evidenceId"] = evidenceId.ToString(),
-                ["sub"] = sub ?? "", ["req"] = Request.HasFormContentType ? Request.Form["req"].ToString() : ""
+                ["sub"] = sub ?? "", ["req"] = Request.HasFormContentType ? Request.Form["req"].ToString() : "",
+                // US-220: from the Link page, the Undo goes back there
+                ["back"] = Request.HasFormContentType ? Request.Form["back"].ToString() : "",
+                ["show"] = Request.HasFormContentType ? Request.Form["show"].ToString() : ""
             });
             return BackToCompliance(projectId, sub);
         }
@@ -941,7 +987,8 @@ namespace ComplianceTracker.Web.Controllers
         public async Task<IActionResult> UnlinkEvidence(Guid projectId, Guid linkId, [FromServices] EvidenceService evidence, CancellationToken cancellationToken)
         {
             await evidence.UnlinkAsync(projectId, linkId, cancellationToken);
-            return RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
+            return BackToLinkPage(projectId, Request.HasFormContentType ? Request.Form["sub"].ToString() : null)
+                ?? RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence });
         }
 
         // POST /Projects/RemoveProjectEvidence: R7, off every requirement
@@ -991,9 +1038,9 @@ namespace ComplianceTracker.Web.Controllers
 
         // US-106: a decision made in a requirement row goes back to the Compliance tab (sub is set), else to the Evidence tab
         private RedirectToActionResult BackFromSuggestion(Guid projectId, string? sub)
-            => sub is null
+            => BackToLinkPage(projectId, sub) ?? (sub is null
                 ? RedirectToAction(nameof(Details), new { id = projectId, tab = ProjectTabs.Evidence })
-                : BackToCompliance(projectId, sub);
+                : BackToCompliance(projectId, sub));
 
         // POST /Projects/UndoEvidenceRejection, UndoStoryRejection: US-145 R6, the pair can be suggested again
         [HttpPost]
@@ -2131,7 +2178,7 @@ namespace ComplianceTracker.Web.Controllers
         // A page of its own, so it works without JavaScript.
         [HttpGet]
         public async Task<IActionResult> ConfirmSuggestion(Guid projectId, Domain.Mappings.SuggestionKind kind, Guid suggestionId, string? sub, string? show,
-            string? req, [FromServices] Application.Ai.SuggestionArgumentService arguments, CancellationToken cancellationToken)
+            string? req, [FromServices] Application.Ai.SuggestionArgumentService arguments, CancellationToken cancellationToken, string? back = null)
         {
             var confirmation = await arguments.ForAsync(projectId, kind, suggestionId, cancellationToken);
             if (confirmation is null)
@@ -2143,6 +2190,14 @@ namespace ComplianceTracker.Web.Controllers
             ViewData["Sub"] = sub;
             ViewData["Show"] = show;
             ViewData["Req"] = req;
+            if (back == LinkBack)
+            {
+                // US-220: approved from the Link page, back to it with the same requirement chosen
+                ViewData["BackTo"] = LinkBack;
+                ViewData["Back"] = Url.Action(nameof(Details), new { id = projectId, tab = ProjectTabs.Link, sub, req, show = string.IsNullOrEmpty(show) ? null : LinkPage.FilterOf(show) });
+                return View(confirmation);
+            }
+
             ViewData["Back"] = kind == Domain.Mappings.SuggestionKind.Story || (kind == Domain.Mappings.SuggestionKind.Evidence && (sub is not null || req is not null))
                 ? Url.Action(nameof(Details), new
                 {
@@ -2160,7 +2215,8 @@ namespace ComplianceTracker.Web.Controllers
             => RedirectToAction(nameof(ConfirmSuggestion), new
             {
                 projectId, kind, suggestionId, sub, show,
-                req = Request.HasFormContentType ? RequirementPages.Clean(Request.Form["req"]) : null // the requirement page comes back to itself
+                req = Request.HasFormContentType ? RequirementPages.Clean(Request.Form["req"]) : null, // the requirement page comes back to itself
+                back = Request.HasFormContentType && Request.Form["back"] == LinkBack ? LinkBack : null // US-220
             });
 
         // POST /Projects/RejectSuggestion: US-020 R7. An unknown reason binds as null and is refused by the domain.

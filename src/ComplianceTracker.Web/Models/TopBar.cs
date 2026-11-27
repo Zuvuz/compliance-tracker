@@ -36,6 +36,7 @@ namespace ComplianceTracker.Web.Models
                 {
                     ProjectTabs.Frameworks => "Frameworks",
                     ProjectTabs.Compliance => "Requirements",
+                    ProjectTabs.Link => "Link", // US-220
                     ProjectTabs.Evidence => "Evidence",
                     ProjectTabs.Reports => "Reports",
                     _ => "Nis2"

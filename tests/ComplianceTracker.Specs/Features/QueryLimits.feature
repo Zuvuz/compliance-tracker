@@ -34,6 +34,7 @@ Feature: Each page has a limit on database queries
     # US-216: the ISMS start page reads each part of the ISMS once (the risks of all projects in one query): 17.
     # US-227: sign-in lands on Home instead of the projects. Home reads the tasks, the decisions, the ISMS week and the
     # approvals, each kind for all the projects at once (before, My tasks read them per project: 244 with 16 projects): 35.
+    # US-220: the Link page reads the compliance view and the evidence overview, each once: 57.
     Then each page stays within its limit and does not grow with the data:
       | Page                  | Limit |
       | Home                  | 35    |
@@ -41,6 +42,7 @@ Feature: Each page has a limit on database queries
       | Overview              | 58    |
       | Compliance            | 54    |
       | Evidence              | 36    |
+      | Link                  | 57    |
       | Risks                 | 18    |
       | Work items            | 31    |
       | Reports               | 33    |

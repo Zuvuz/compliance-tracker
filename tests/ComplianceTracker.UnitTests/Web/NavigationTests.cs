@@ -27,8 +27,8 @@ public class NavigationTests
     }
 
     [Fact]
-    public void The_requirements_group_holds_compliance_product_requirements_and_frameworks_in_that_order()
-        => Assert.Equal([ProjectTabs.Compliance, ProjectTabs.ProductRequirements, ProjectTabs.Frameworks],
+    public void The_requirements_group_holds_compliance_link_product_requirements_and_frameworks_in_that_order() // US-220: Link after Compliance
+        => Assert.Equal([ProjectTabs.Compliance, ProjectTabs.Link, ProjectTabs.ProductRequirements, ProjectTabs.Frameworks],
             ProjectTabs.GroupsFor(Project()).Single(g => g.Title == "Requirements").Tabs.Select(t => t.Slug));
 
     [Fact]

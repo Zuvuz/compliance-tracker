@@ -1,0 +1,7 @@
+@* US-220: the hidden fields of a Link page form, so the action shows the Link page again with the same framework,
+   requirement and filter (ProjectsController.BackToLinkPage) *@
+@model LinkPage
+<input type="hidden" name="back" value="@ComplianceTracker.Web.Controllers.ProjectsController.LinkBack" />
+<input type="hidden" name="sub" value="@Model.Sub" />
+<input type="hidden" name="req" value="@Model.Chosen?.Requirement.Code" />
+<input type="hidden" name="show" value="@Model.Filter" />
