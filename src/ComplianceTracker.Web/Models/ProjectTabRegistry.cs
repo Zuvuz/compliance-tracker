@@ -21,8 +21,9 @@ namespace ComplianceTracker.Web.Models
     // tab that still uses ProjectDetailsViewModel (Content), until every tab has its own loader (US-235).
     public record ProjectPage(ProjectShellView Shell, string? Partial, object Content);
 
-    // US-229: what a tab's handler gets: the shell, the address's sub-page and requirement, and the query string
-    public record ProjectTabContext(ProjectShellView Shell, string? Sub, string? Req, IQueryCollection Query)
+    // US-229: what a tab's handler gets: the shell, the address's sub-page and requirement, and the query string.
+    // US-232: and the language requirement texts are shown in (US-142 R8).
+    public record ProjectTabContext(ProjectShellView Shell, string? Sub, string? Req, IQueryCollection Query, string Language = Domain.Frameworks.Requirement.DefaultLanguage)
     {
         // Like MVC's model binding of a string: the first value, and an empty one is no value
         public string? Value(string name)

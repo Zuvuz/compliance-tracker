@@ -76,6 +76,7 @@ builder.Services.AddScoped<PermissionView>();
 
 // US-229: the project page's tabs, one handler each, found by (slug, area)
 builder.Services.AddScoped<ComplianceTracker.Web.Models.IProjectTab, ComplianceTracker.Web.Models.RisksProjectTab>();
+builder.Services.AddScoped<ComplianceTracker.Web.Models.IProjectTab, ComplianceTracker.Web.Models.ComplianceProjectTab>(); // US-232
 builder.Services.AddScoped<ComplianceTracker.Web.Models.ProjectTabRegistry>();
 
 // US-018: open project pages update themselves (R7), and GitHub is checked at a fixed interval (R6)

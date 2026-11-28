@@ -175,7 +175,6 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] Application.Reports.StatementOfApplicabilityQueries soa,
             [FromServices] Application.Reports.AuditReadinessService readiness,
             [FromServices] Application.Organizations.AuditorAccessService auditorAccess,
-            [FromServices] Application.Ai.INeedsActionReassessmentRepository reassessments,
             [FromServices] Application.Security.SecurityEventSuggestionService suggestionService,
             [FromServices] Application.Approvals.ApprovalService approvalService,
             [FromServices] Application.Organizations.OrganisationDocumentService documentService,
@@ -213,7 +212,7 @@ namespace ComplianceTracker.Web.Controllers
             // US-229: a tab with its own handler; it says "not found" for a sub-page it does not have
             if (tabs.Find(activeTab, project.IsOrganisationArea) is { } handler)
             {
-                if (await handler.LoadAsync(new ProjectTabContext(shellView, sub, req, Request.Query), cancellationToken) is not { } view)
+                if (await handler.LoadAsync(new ProjectTabContext(shellView, sub, req, Request.Query, PageLanguage.From(Request)), cancellationToken) is not { } view)
                 {
                     return NotFound();
                 }
@@ -231,22 +230,20 @@ namespace ComplianceTracker.Web.Controllers
                 ? await _projects.SearchActivityAsync(id, activityQuery, cancellationToken)
                 : null;
 
-            // Requirements and links: for the Compliance tab, the overview's summary and the user stories' requirements.
-            // US-129: the Reports tab, for which reports can be made.
-            var compliance = activeTab is ProjectTabs.Compliance or ProjectTabs.Overview or ProjectTabs.ProductRequirements or ProjectTabs.Scans
+            // Requirements and links: the overview's summary and the user stories' requirements (the Compliance tab has its
+            // own loader, US-232). US-129: the Reports tab, for which reports can be made.
+            var compliance = activeTab is ProjectTabs.Overview or ProjectTabs.ProductRequirements or ProjectTabs.Scans
                 or ProjectTabs.Reports or ProjectTabs.Link
                 ? await _complianceQueries.ForProjectAsync(id, cancellationToken)
                 : null;
 
-            // US-059: the Evidence tab, and the evidence that can be picked on the Compliance tab
-            // US-153: on the Compliance tab only a requirement's page has the evidence picker
-            var requirementPage = activeTab is ProjectTabs.Compliance && req is not null;
-            var evidenceTab = activeTab is ProjectTabs.Evidence or ProjectTabs.Link || requirementPage
+            // US-059: the Evidence tab, and the evidence the Link tab links
+            var evidenceTab = activeTab is ProjectTabs.Evidence or ProjectTabs.Link
                 ? await evidenceQueries.ForProjectAsync(id, cancellationToken)
                 : null;
 
-            // US-048 R3: the overview counts the risks; a requirement's page shows those it is a measure of
-            var allRisks = activeTab is ProjectTabs.Overview || requirementPage ? await _risks.ForProjectAsync(id, cancellationToken) ?? [] : [];
+            // US-048 R3: the overview counts the risks
+            var allRisks = activeTab is ProjectTabs.Overview ? await _risks.ForProjectAsync(id, cancellationToken) ?? [] : [];
             var classified = activeTab is ProjectTabs.Overview ? await classifications.ForProjectAsync(id, cancellationToken) ?? [] : [];
             var securityEvents = activeTab is ProjectTabs.SecurityEvents or ProjectTabs.Overview
                 ? await securityEventQueries.ForProjectAsync(id, cancellationToken) ?? []
@@ -277,23 +274,9 @@ namespace ComplianceTracker.Web.Controllers
                 ? Application.Risks.RiskBackings.For(allRisks, Application.Risks.ProjectLinks.From(compliance))
                 : new Dictionary<Guid, Application.Risks.RiskBacking>();
 
-            // An unknown sub-tab is "not found", like an unknown tab
-            if (activeTab == ProjectTabs.Compliance && sub is not null
-                && !(sub == ComplianceFilters.AllSub && compliance?.Frameworks.Count > 1)
-                && compliance?.Frameworks.Any(f => FrameworkNames.Slug(f.Framework.Name) == sub) != true)
-            {
-                return NotFound();
-            }
-
             // US-154: one piece of evidence on its own address; an unknown id is "not found"
             if (activeTab is ProjectTabs.Evidence && sub is not null
                 && !(Guid.TryParse(sub, out var evidenceId) && evidenceTab?.Evidence.Any(e => e.Evidence.Id == evidenceId) == true))
-            {
-                return NotFound();
-            }
-
-            // US-153 R3: a requirement's page; an unknown code is "not found"
-            if (requirementPage && RequirementPages.Find(compliance, sub, req) is null)
             {
                 return NotFound();
             }
@@ -345,7 +328,6 @@ namespace ComplianceTracker.Web.Controllers
                 OrganisationArea = project.IsOrganisationArea && activeTab is ProjectTabs.Overview or ProjectTabs.Nis2Scope
                     ? await areaService.ViewAsync(cancellationToken)
                     : null,
-                Language = PageLanguage.From(Request),
                 Activity = activity,
                 ActivityPage = activityPage,
                 ActivityQuery = activityQuery,
@@ -353,14 +335,9 @@ namespace ComplianceTracker.Web.Controllers
                 Compliance = compliance,
                 EvidenceTab = evidenceTab,
                 Sub = sub,
-                OpenRequirement = activeTab == ProjectTabs.Compliance ? req : null,
                 AuditReadiness = activeTab == ProjectTabs.Reports && check == "1" ? await readiness.CheckAsync(id, frameworks, cancellationToken) : null, // US-178
                 AuditorGrants = activeTab == ProjectTabs.Reports ? await auditorAccess.ForProjectAsync(id, cancellationToken) : [], // US-182
-                // US-156: the newest assessment asked for after a change
-                Reassessment = activeTab == ProjectTabs.Compliance ? await reassessments.LatestAsync(id, cancellationToken) : null,
                 Gaps = activeTab == ProjectTabs.Suggestions ? await gapFinder.ForProjectAsync(id, cancellationToken) : null,
-                Search = q,
-                ComplianceFilter = ComplianceFilters.Find(show),
                 LinkPage = linkPage,
                 AllRisks = allRisks,
                 Classifications = classified,

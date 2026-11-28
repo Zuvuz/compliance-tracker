@@ -201,50 +201,56 @@ namespace ComplianceTracker.Specs.Features
 #line 20
     await testRunner.AndAsync("the organisation gets 15 more projects that use the same framework", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table20 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
                             "Page",
                             "Limit"});
-                table20.AddRow(new string[] {
-                            "Dashboard",
-                            "12"});
-                table20.AddRow(new string[] {
+                table1.AddRow(new string[] {
+                            "Home",
+                            "35"});
+                table1.AddRow(new string[] {
                             "Projects",
                             "12"});
-                table20.AddRow(new string[] {
+                table1.AddRow(new string[] {
                             "Overview",
                             "58"});
-                table20.AddRow(new string[] {
+                table1.AddRow(new string[] {
                             "Compliance",
-                            "54"});
-                table20.AddRow(new string[] {
+                            "30"});
+                table1.AddRow(new string[] {
+                            "Requirement page",
+                            "37"});
+                table1.AddRow(new string[] {
                             "Evidence",
                             "36"});
-                table20.AddRow(new string[] {
+                table1.AddRow(new string[] {
+                            "Link",
+                            "57"});
+                table1.AddRow(new string[] {
                             "Risks",
                             "18"});
-                table20.AddRow(new string[] {
+                table1.AddRow(new string[] {
                             "Work items",
                             "31"});
-                table20.AddRow(new string[] {
+                table1.AddRow(new string[] {
                             "Reports",
                             "33"});
-                table20.AddRow(new string[] {
+                table1.AddRow(new string[] {
                             "Project activity",
                             "14"});
-                table20.AddRow(new string[] {
+                table1.AddRow(new string[] {
                             "Frameworks",
                             "5"});
-                table20.AddRow(new string[] {
+                table1.AddRow(new string[] {
                             "Organisation activity",
                             "8"});
-                table20.AddRow(new string[] {
+                table1.AddRow(new string[] {
                             "Traceability download",
                             "65"});
-                table20.AddRow(new string[] {
+                table1.AddRow(new string[] {
                             "ISMS",
                             "17"});
-#line 35
-    await testRunner.ThenAsync("each page stays within its limit and does not grow with the data:", ((string)(null)), table20, "Then ");
+#line 40
+    await testRunner.ThenAsync("each page stays within its limit and does not grow with the data:", ((string)(null)), table1, "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

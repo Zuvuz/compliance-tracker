@@ -21,25 +21,26 @@
    US-144: the "All" sub-tab (data-sub="all") groups every framework (.framework-group rows); #unused-frameworks with
    forms .add-unused-framework.
    US-153: the rows are light (_RequirementSummaryRow.cshtml, no forms); a requirement's own address shows its page
-   (_RequirementPage.cshtml) with every action. The forms named above for a row are on that page. *@
-@model ProjectDetailsViewModel
+   (_RequirementPage.cshtml) with every action. The forms named above for a row are on that page.
+   US-232: its own loaders; Model.List is the list, Model.Page a requirement's page. *@
+@model ComplianceTabViewModel
 @using ComplianceTracker.Application.Compliance
 @{
     var project = Model.Project;
     var compliance = Model.Compliance;
     // US-144 R13: "all" shows every framework the project uses
-    var all = Model.Sub == ComplianceFilters.AllSub && Model.Compliance is { Frameworks.Count: > 1 };
+    var all = Model.ShowsAll;
     var active = all ? null : Model.ActiveCompliance;
     var activeSlug = all ? ComplianceFilters.AllSub : active is null ? null : FrameworkNames.Slug(active.Framework.Name);
     var canLink = await Permissions.CanAsync(Permission.LinkWork);
     var canDecide = await Permissions.CanAsync(Permission.DecideCompliance);
     var filter = Model.ComplianceFilter;
     var showFilter = filter == ComplianceFilters.All ? null : filter;
-    string NameOf(Guid userId) => Model.Organization?.Users.FirstOrDefault(u => u.Id == userId)?.Name ?? "Unknown";
+    string NameOf(Guid userId) => Model.Organization.Users.FirstOrDefault(u => u.Id == userId)?.Name ?? "Unknown";
 }
 
 <section id="project-compliance">
-    @if (compliance is null || compliance.Frameworks.Count == 0)
+    @if (compliance.Frameworks.Count == 0)
     {
         @* US-041 R8 *@
         <p class="text-muted" id="no-frameworks-compliance">
@@ -79,10 +80,10 @@
         }
     </ul>
 
-    @if (Model.OpenRequirement is not null && RequirementPages.Find(compliance, Model.Sub, Model.OpenRequirement) is { } found)
+    @if (Model.Page is { } page)
     {
         @* US-153 R3: the requirement's own page, with its actions *@
-        var (pageFramework, pageRow) = found;
+        var (pageFramework, pageRow) = (page.Framework, page.Row);
         var pageStories = compliance.WorkItems
             .Where(w => w.State != ComplianceTracker.Domain.WorkItems.WorkItemState.Removed)
             .OrderBy(w => w.Title, StringComparer.OrdinalIgnoreCase)
@@ -94,7 +95,7 @@
             : null;
         var pageFilter = Model.ComplianceFilter;
         <partial name="_RequirementPage" model="new RequirementRowModel(project, pageFramework, pageRow, Model.Sub, pageFilter == ComplianceFilters.All ? null : pageFilter, canLink, canDecide,
-            pageStories, Model.EvidenceTab?.Evidence ?? [], Model.AllRisks.Where(r => r.Status != ComplianceTracker.Domain.Risks.RiskStatus.Closed).ToList(),
+            pageStories, page.Evidence, page.OpenRisks,
             NameOf, Model.Language, pageTranslations, 0, false, true, pageImplements)
             {
                 StoryEvidence = compliance.StoryEvidence, // US-200
