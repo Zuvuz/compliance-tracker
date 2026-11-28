@@ -35,12 +35,15 @@ Feature: Each page has a limit on database queries
     # US-227: sign-in lands on Home instead of the projects. Home reads the tasks, the decisions, the ISMS week and the
     # approvals, each kind for all the projects at once (before, My tasks read them per project: 244 with 16 projects): 35.
     # US-220: the Link page reads the compliance view and the evidence overview, each once: 57.
+    # US-232: the Compliance tab has its own loader and reads only what it shows (not the work items, the evidence or
+    # the risks): 54 -> 30. A requirement's page reads the compliance view once, its evidence and its risks: 37.
     Then each page stays within its limit and does not grow with the data:
       | Page                  | Limit |
       | Home                  | 35    |
       | Projects              | 12    |
       | Overview              | 58    |
-      | Compliance            | 54    |
+      | Compliance            | 30    |
+      | Requirement page      | 37    |
       | Evidence              | 36    |
       | Link                  | 57    |
       | Risks                 | 18    |

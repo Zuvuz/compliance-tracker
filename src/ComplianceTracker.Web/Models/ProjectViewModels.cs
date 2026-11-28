@@ -164,7 +164,7 @@ namespace ComplianceTracker.Web.Models
         public const string WithoutEvidence = "without-evidence"; // #52
 
         // US-144 R13: the sub-tab with every framework's requirements
-        public const string AllSub = "all";
+        public const string AllSub = Application.Compliance.ComplianceAddresses.AllSub;
         public const string Recommendations = "recommendations"; // US-143 R6
 
         // In the order they are shown, with the text on the button
@@ -281,9 +281,8 @@ namespace ComplianceTracker.Web.Models
         public string Tab { get; init; } = ProjectTabs.Overview;
         public Organization? Organization { get; init; }
 
-        // US-142: the organisation area's NIS2 scope checks (Overview and NIS2 scope tabs), and the page language (R8)
+        // US-142: the organisation area's NIS2 scope checks (Overview and NIS2 scope tabs)
         public Application.Organizations.OrganisationAreaView? OrganisationArea { get; init; }
-        public string Language { get; init; } = Domain.Frameworks.Requirement.DefaultLanguage;
         public IReadOnlyList<ActivityLogEntry> Activity { get; init; } = [];
 
         // US-101: the Activity tab's page of entries, the filters behind it, and filters that were ignored (R9)
@@ -291,32 +290,25 @@ namespace ComplianceTracker.Web.Models
         public Application.ActivityLog.ActivityLogQuery ActivityQuery { get; init; } = new();
         public IReadOnlyList<string> ActivityIgnored { get; init; } = [];
 
-        // US-019, US-021, US-041: the Compliance tab's data, the chosen sub-tab (slug), the search and the filter
+        // US-019: the project's requirements, for the Overview, the Link, Scans, Reports and User stories tabs (the
+        // Compliance tab has its own model since US-232: ComplianceTabViewModel)
         public ProjectCompliance? Compliance { get; init; }
 
-        // US-059: the Evidence tab, and the project's evidence for "Pick existing evidence" on the Compliance tab
+        // US-059: the Evidence tab, and the Link tab's evidence; Sub: the sub-page in the address
         public EvidenceTab? EvidenceTab { get; init; }
         public string? Sub { get; init; }
-
-        // US-144 R12: the requirement code in the address, e.g. ".../compliance/cra/I.2(d)"; that row is shown open
-        public string? OpenRequirement { get; init; }
 
         // US-178: the audit package's check, when asked for on the Reports tab
         public Application.Reports.PackageReadiness? AuditReadiness { get; init; }
 
-        // US-156: the newest assessment of what needs action asked for after a change; null when none was
-        public Domain.Mappings.NeedsActionReassessment? Reassessment { get; init; }
-
         // US-119: the gaps on the Suggestions tab
         public Application.Projects.GapsView? Gaps { get; init; }
-        public string? Search { get; init; }
-        public string ComplianceFilter { get; init; } = ComplianceFilters.All;
 
         // US-220: the Link tab's three columns; null on the other tabs
         public LinkPage? LinkPage { get; init; }
 
-        // US-048 R3: the project's risks, for the Overview's counts and a requirement's page (the Risks tab has its own
-        // model since US-229: RiskTabViewModel)
+        // US-048 R3: the project's risks, for the Overview's counts (the Risks tab has its own model since US-229:
+        // RiskTabViewModel)
         public IReadOnlyList<Risk> AllRisks { get; init; } = [];
 
         // US-026: each built-in regulation the project follows, with its class (Overview tab)
@@ -378,11 +370,6 @@ namespace ComplianceTracker.Web.Models
         // US-159: what stands behind each risk, for the Overview's counts
         public IReadOnlyDictionary<Guid, Application.Risks.RiskBacking> RiskBacking { get; init; } = new Dictionary<Guid, Application.Risks.RiskBacking>();
         public DateTime Now { get; init; }
-
-        // The framework of the chosen sub-tab, or the first one (R3)
-        public FrameworkCompliance? ActiveCompliance
-            => Compliance?.Frameworks.FirstOrDefault(f => FrameworkNames.Slug(f.Framework.Name) == Sub)
-               ?? Compliance?.Frameworks.FirstOrDefault();
 
         // US-032: the project's requirement specifications with their versions (User stories tab)
         public IReadOnlyList<RequirementDocument> Documents { get; init; } = [];

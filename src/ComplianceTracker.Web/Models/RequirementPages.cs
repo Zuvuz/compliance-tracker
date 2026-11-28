@@ -7,39 +7,14 @@ namespace ComplianceTracker.Web.Models
     public static class RequirementPages
     {
         // A requirement code is short; anything longer is not one
-        public const int MaxCodeLength = 100;
+        public const int MaxCodeLength = ComplianceAddresses.MaxCodeLength;
 
         // The code a form sent back ("req"), so the action ends on the same requirement page (R4). Blank or too long: none.
-        public static string? Clean(string? code)
-        {
-            var trimmed = code?.Trim();
-            return string.IsNullOrEmpty(trimmed) || trimmed.Length > MaxCodeLength ? null : trimmed;
-        }
+        public static string? Clean(string? code) => ComplianceAddresses.Clean(code);
 
-        // R3: the requirement the address points at, in the sub-tab's framework (any framework on "all"), whatever the
-        // case of the code. Null when the code or the framework is unknown, so the page is "not found".
+        // R3: the requirement the address points at (US-232: the rule lives in Application, with the page's loader)
         public static (FrameworkCompliance Framework, RequirementCoverage Row)? Find(ProjectCompliance? compliance, string? sub, string? code)
-        {
-            var wanted = Clean(code);
-            if (compliance is null || wanted is null)
-            {
-                return null;
-            }
-
-            var frameworks = sub is null || sub == ComplianceFilters.AllSub
-                ? compliance.Frameworks
-                : compliance.Frameworks.Where(f => FrameworkNames.Slug(f.Framework.Name) == sub).ToList();
-            foreach (var framework in frameworks)
-            {
-                var row = framework.Requirements.FirstOrDefault(r => string.Equals(r.Requirement.Code, wanted, StringComparison.OrdinalIgnoreCase));
-                if (row is not null)
-                {
-                    return (framework, row);
-                }
-            }
-
-            return null;
-        }
+            => ComplianceAddresses.Find(compliance, sub, code);
 
         // R1: the status a row and the page show, in one place
         public static string Status(RequirementCoverage row)

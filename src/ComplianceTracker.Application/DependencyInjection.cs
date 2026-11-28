@@ -106,6 +106,8 @@ namespace ComplianceTracker.Application
             // US-229: the project page's shell and one loader per tab
             services.AddScoped<Projects.Tabs.ProjectShellQuery>();
             services.AddScoped<Projects.Tabs.IProjectTabLoader<RiskTabRequest, RiskTabDto>, RiskTabLoader>();
+            services.AddScoped<Projects.Tabs.IProjectTabLoader<ComplianceTabRequest, ComplianceTabDto>, ComplianceTabLoader>(); // US-232
+            services.AddScoped<Projects.Tabs.IProjectTabLoader<RequirementPageRequest, RequirementPageDto>, RequirementPageLoader>();
             services.AddScoped<ClassificationService>(); // US-026
             services.AddScoped<Security.SecurityEventService>(); // US-073
 

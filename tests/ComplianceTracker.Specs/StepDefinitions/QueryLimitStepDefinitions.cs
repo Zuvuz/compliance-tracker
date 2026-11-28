@@ -117,6 +117,7 @@ namespace ComplianceTracker.Specs.StepDefinitions
                 ["Projects"] = "/Projects",
                 ["Overview"] = $"/Projects/Details/{id}",
                 ["Compliance"] = $"/Projects/Details/{id}/compliance",
+                ["Requirement page"] = $"/Projects/Details/{id}/compliance/cra/I.2(d)", // US-232: a requirement's page
                 ["Evidence"] = $"/Projects/Details/{id}/evidence",
                 ["Link"] = $"/Projects/Details/{id}/link?show=all", // US-220
                 ["Risks"] = $"/Projects/Details/{id}/risks",

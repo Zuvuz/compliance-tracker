@@ -34,10 +34,15 @@ namespace ComplianceTracker.Application.Compliance
         }
 
         public async Task<EvidenceTab?> ForProjectAsync(Guid projectId, CancellationToken cancellationToken = default)
+            => await _compliance.ForProjectAsync(projectId, cancellationToken) is { } compliance
+                ? await ForProjectAsync(projectId, compliance, cancellationToken)
+                : null;
+
+        // US-232: with the project's requirements the caller already has, so a requirement's page reads them once
+        public async Task<EvidenceTab?> ForProjectAsync(Guid projectId, ProjectCompliance compliance, CancellationToken cancellationToken = default)
         {
             if (await _member.FindOrganizationAsync(cancellationToken) is not { } organization
-                || await _projects.GetAsync(organization.Id, projectId, cancellationToken) is not { } project
-                || await _compliance.ForProjectAsync(projectId, cancellationToken) is not { } compliance)
+                || await _projects.GetAsync(organization.Id, projectId, cancellationToken) is not { } project)
             {
                 return null;
             }
