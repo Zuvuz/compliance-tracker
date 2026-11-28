@@ -1,72 +1,79 @@
 @* US-008: the project's own page. US-022: split into tabs, each with its own address (/Projects/Details/{id}/{tab}).
    The header (_ProjectHeader) is the same on every tab; each tab is a partial of its own.
+   US-229: a tab with its own handler names its partial and model; the others still use ProjectDetailsViewModel (until US-235).
    The ids and classes used by the tests are listed in each partial. *@
-@model ProjectDetailsViewModel
+@model ProjectPage
 @{
-    ViewData["Title"] = Model.Project.IsOrganisationArea ? $"Organisation – {Model.Organization?.Name}" : Model.Project.Name;
-    ViewData["OrganisationArea"] = Model.Project.IsOrganisationArea; // US-142
-    ViewData["AreaTab"] = Model.Tab; // US-225: the area's risks are ISMS, its other pages Compliance
+    var shell = Model.Shell;
+    ViewData["Title"] = shell.Project.IsOrganisationArea ? $"Organisation – {shell.Organization.Name}" : shell.Project.Name;
+    ViewData["OrganisationArea"] = shell.Project.IsOrganisationArea; // US-142
+    ViewData["AreaTab"] = shell.Tab; // US-225: the area's risks are ISMS, its other pages Compliance
 }
 
-<partial name="_ProjectHeader" model="Model" />
+<partial name="_ProjectHeader" model="shell" />
 
-@switch (Model.Tab)
+@if (Model.Partial is { } tabPartial)
 {
-    case ProjectTabs.Frameworks:
-        <partial name="_FrameworksTab" model="Model" />
-        break;
-    case ProjectTabs.Compliance:
-        <partial name="_ComplianceTab" model="Model" />
-        break;
-    case ProjectTabs.Link:
-        <partial name="_LinkTab" model="Model" />
-        break;
-    case ProjectTabs.Evidence:
-        <partial name="_EvidenceTab" model="Model" />
-        break;
-    case ProjectTabs.SecurityEvents:
-        <partial name="_SecurityEventsTab" model="Model" />
-        break;
-    case ProjectTabs.Scans:
-        <partial name="_ScansTab" model="Model" />
-        break;
-    case ProjectTabs.Risks:
-        <partial name="_RisksTab" model="Model" />
-        break;
-    case ProjectTabs.ProductRequirements:
-        <partial name="_ProductRequirementsTab" model="Model" />
-        break;
-    case ProjectTabs.Activity:
-        <partial name="_ActivityTab" model="Model" />
-        break;
-    case ProjectTabs.Reports:
-        <partial name="_ReportsTab" model="Model" />
-        break;
-    case ProjectTabs.Suggestions:
-        <partial name="_SuggestionsTab" model="Model" />
-        break;
-    case ProjectTabs.Nis2Scope:
-        <partial name="_Nis2ScopeTab" model="Model" />
-        break;
-    default:
-        if (Model.Project.IsOrganisationArea)
-        {
-            <partial name="_OrganisationOverviewTab" model="Model" />
-        }
-        else
-        {
-            <partial name="_OverviewTab" model="Model" />
-        }
-        break;
+    <partial name="@tabPartial" model="Model.Content" />
+}
+else
+{
+    var details = (ProjectDetailsViewModel)Model.Content;
+    switch (shell.Tab)
+    {
+        case ProjectTabs.Frameworks:
+            <partial name="_FrameworksTab" model="details" />
+            break;
+        case ProjectTabs.Compliance:
+            <partial name="_ComplianceTab" model="details" />
+            break;
+        case ProjectTabs.Link:
+            <partial name="_LinkTab" model="details" />
+            break;
+        case ProjectTabs.Evidence:
+            <partial name="_EvidenceTab" model="details" />
+            break;
+        case ProjectTabs.SecurityEvents:
+            <partial name="_SecurityEventsTab" model="details" />
+            break;
+        case ProjectTabs.Scans:
+            <partial name="_ScansTab" model="details" />
+            break;
+        case ProjectTabs.ProductRequirements:
+            <partial name="_ProductRequirementsTab" model="details" />
+            break;
+        case ProjectTabs.Activity:
+            <partial name="_ActivityTab" model="details" />
+            break;
+        case ProjectTabs.Reports:
+            <partial name="_ReportsTab" model="details" />
+            break;
+        case ProjectTabs.Suggestions:
+            <partial name="_SuggestionsTab" model="details" />
+            break;
+        case ProjectTabs.Nis2Scope:
+            <partial name="_Nis2ScopeTab" model="details" />
+            break;
+        default:
+            if (shell.Project.IsOrganisationArea)
+            {
+                <partial name="_OrganisationOverviewTab" model="details" />
+            }
+            else
+            {
+                <partial name="_OverviewTab" model="details" />
+            }
+            break;
+    }
 }
 
 @section Scripts {
-    @if (Model.Tab == ProjectTabs.Link)
+    @if (shell.Tab == ProjectTabs.Link)
     {
         <script src="~/js/link-page.js" asp-append-version="true"></script> @* US-220 R7 *@
     }
     @* US-018 R7: live updates, only on the tab that shows the user stories *@
-    @if (Model.Tab == ProjectTabs.ProductRequirements && Model.Project.GitHub is not null)
+    @if (shell.Tab == ProjectTabs.ProductRequirements && shell.Project.GitHub is not null)
     {
         <script src="~/lib/microsoft-signalr/signalr.min.js"></script>
         <script src="~/js/work-items.js" asp-append-version="true"></script>

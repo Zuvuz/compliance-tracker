@@ -150,24 +150,19 @@ namespace ComplianceTracker.Web.Controllers
         // q searches the requirements (US-019 R3); show filters them (US-021 R6, US-044 R2: ComplianceFilters).
         // US-144 R12: one requirement has its own address, e.g. /Projects/Details/{id}/compliance/cra/I.2(d)
         [HttpGet("Projects/Details/{id:guid}/{tab?}/{sub?}/{req?}")]
-        // US-042: on the Risks tab, status, level and due=1 filter the register (R8)
+        // US-229: a tab with its own handler (ProjectTabRegistry) reads its own filters from the address, e.g. the Risks tab's
         public async Task<IActionResult> Details(
             Guid id, string? tab, string? sub, string? q, string? show, string? req,
-            string? status, string? level, string? due,
             // US-178: check=1 on the Reports tab checks the audit package for the chosen frameworks
             string? check, string[]? frameworks,
-            // US-159 R4: nothing=1 shows only the risks with nothing behind them
-            string? nothing,
             // US-101: the Activity tab's filters (q is the search there too)
             string? from, string? to, string? group, string? user, string? sort, string? page,
             // US-079: the SBOM version shown on the Scans tab
             string? sbom,
-            // US-147 R2, R4: a cell of the risk matrix ("3x4") filters the register; risk opens one in the side panel
-            string? cell, Guid? risk,
-            // US-203 R2: "after" shows the risk matrix by the residual risk; a cell then filters by it too
-            string? matrix,
             // US-220: the Link tab's searches of its middle and right columns (q searches the requirements)
             string? sq, string? eq,
+            [FromServices] Application.Projects.Tabs.ProjectShellQuery shellQuery,
+            [FromServices] ProjectTabRegistry tabs,
             [FromServices] ClassificationService classifications,
             [FromServices] Application.Projects.GapFinder gapFinder,
             [FromServices] Application.Security.SecurityEventQueries securityEventQueries,
@@ -178,11 +173,8 @@ namespace ComplianceTracker.Web.Controllers
             [FromServices] Application.Scanning.SbomService sbomService,
             [FromServices] Application.Projects.PhaseGates phaseGates,
             [FromServices] Application.Reports.StatementOfApplicabilityQueries soa,
-            [FromServices] Application.Audits.AuditService audits,
-            [FromServices] Application.Risks.RiskDraftService riskDrafts,
             [FromServices] Application.Reports.AuditReadinessService readiness,
             [FromServices] Application.Organizations.AuditorAccessService auditorAccess,
-            [FromServices] Application.Risks.RiskBackingQueries riskBacking,
             [FromServices] Application.Ai.INeedsActionReassessmentRepository reassessments,
             [FromServices] Application.Security.SecurityEventSuggestionService suggestionService,
             [FromServices] Application.Approvals.ApprovalService approvalService,
@@ -207,12 +199,27 @@ namespace ComplianceTracker.Web.Controllers
                 return RedirectToActionPermanent(nameof(Details), values);
             }
 
-            var project = await _projects.GetAsync(id, cancellationToken);
-            var organization = await _organizations.MineAsync(cancellationToken);
-            var activeTab = ProjectTabs.Find(tab, project?.IsOrganisationArea ?? false); // US-142: the area has fewer tabs
-            if (project is null || organization is null || activeTab is null)
+            // US-229: the project, the organisation and the header's audits, for every tab
+            var shell = await shellQuery.LoadAsync(id, cancellationToken);
+            var activeTab = ProjectTabs.Find(tab, shell?.Project.IsOrganisationArea ?? false); // US-142: the area has fewer tabs
+            if (shell is null || activeTab is null)
             {
                 return NotFound(); // US-008 R5: also when the project belongs to another organisation
+            }
+
+            var (project, organization) = (shell.Project, shell.Organization);
+            var shellView = new ProjectShellView(project, organization, activeTab, shell.Audits);
+
+            // US-229: a tab with its own handler; it says "not found" for a sub-page it does not have
+            if (tabs.Find(activeTab, project.IsOrganisationArea) is { } handler)
+            {
+                if (await handler.LoadAsync(new ProjectTabContext(shellView, sub, req, Request.Query), cancellationToken) is not { } view)
+                {
+                    return NotFound();
+                }
+
+                await StartTabVisitAsync(shellView, cancellationToken);
+                return View(new ProjectPage(shellView, view.Partial, view.Model));
             }
 
             // The Overview shows the latest entries (US-048 R5); the Activity tab searches the log (US-101)
@@ -238,8 +245,8 @@ namespace ComplianceTracker.Web.Controllers
                 ? await evidenceQueries.ForProjectAsync(id, cancellationToken)
                 : null;
 
-            // US-042: the register, sorted by level; closed risks only when asked for (R7). US-048 R3: the overview counts them.
-            var allRisks = activeTab is ProjectTabs.Risks or ProjectTabs.Overview || requirementPage ? await _risks.ForProjectAsync(id, cancellationToken) ?? [] : [];
+            // US-048 R3: the overview counts the risks; a requirement's page shows those it is a measure of
+            var allRisks = activeTab is ProjectTabs.Overview || requirementPage ? await _risks.ForProjectAsync(id, cancellationToken) ?? [] : [];
             var classified = activeTab is ProjectTabs.Overview ? await classifications.ForProjectAsync(id, cancellationToken) ?? [] : [];
             var securityEvents = activeTab is ProjectTabs.SecurityEvents or ProjectTabs.Overview
                 ? await securityEventQueries.ForProjectAsync(id, cancellationToken) ?? []
@@ -264,24 +271,11 @@ namespace ComplianceTracker.Web.Controllers
                 ? (await signingService.WaitingForMeAsync(cancellationToken)).Where(w => w.ProjectId == id).Select(w => w.Title).ToList()
                 : [];
             var now = _clock.GetUtcNow().UtcDateTime;
-            // US-159: what stands behind each risk. The Overview counts it from the Compliance data it has; the Risks tab
-            // asks for the links in a fixed number of queries (R5).
-            var backing = activeTab is ProjectTabs.Risks
-                ? Application.Risks.RiskBackings.For(allRisks, await riskBacking.LinksAsync(id, cancellationToken))
-                : activeTab is ProjectTabs.Overview && compliance is not null
-                    ? Application.Risks.RiskBackings.For(allRisks, Application.Risks.ProjectLinks.From(compliance))
-                    : new Dictionary<Guid, Application.Risks.RiskBacking>();
-            var risks = allRisks
-                .Where(r => string.IsNullOrEmpty(status) ? r.Status != RiskStatus.Closed : r.DisplayStatus.Equals(status, StringComparison.OrdinalIgnoreCase))
-                .Where(r => nothing != "1" || (backing.TryGetValue(r.Id, out var b) && b.NothingBehind))
-                .Where(r => string.IsNullOrEmpty(level) || r.Level.ToString().Equals(level, StringComparison.OrdinalIgnoreCase))
-                .Where(r => due != "1" || r.IsReviewDue(now))
-                .Where(r => RiskCells.Parse(cell) is not { } c || (RiskMatrix.IsAfter(matrix)
-                    ? r.LikelihoodAfter == c.Likelihood && r.ImpactAfter == c.Impact
-                    : r.Likelihood == c.Likelihood && r.Impact == c.Impact))
-                // US-147 R1: highest level first, then by title
-                .OrderByDescending(r => r.Score).ThenBy(r => r.Title, StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            // US-159: what stands behind each risk; the Overview counts it from the Compliance data it has (the Risks tab
+            // has its own loader, US-229)
+            var backing = activeTab is ProjectTabs.Overview && compliance is not null
+                ? Application.Risks.RiskBackings.For(allRisks, Application.Risks.ProjectLinks.From(compliance))
+                : new Dictionary<Guid, Application.Risks.RiskBacking>();
 
             // An unknown sub-tab is "not found", like an unknown tab
             if (activeTab == ProjectTabs.Compliance && sub is not null
@@ -318,21 +312,20 @@ namespace ComplianceTracker.Web.Controllers
             var overview = activeTab is ProjectTabs.Overview ? await phaseGates.OverviewAsync(id, cancellationToken) : (null, null);
 
             // US-219 R1: opening a tab, or one piece of evidence, is a visit; R3: who else is here now
-            var place = project.IsOrganisationArea ? "Organisation" : project.Name;
-            var tabTitle = ProjectTabs.For(project).FirstOrDefault(t => t.Slug == activeTab).Title ?? activeTab;
             if (activeTab is ProjectTabs.Evidence && Guid.TryParse(sub, out var openedEvidence)
                 && evidenceTab?.Evidence.FirstOrDefault(e => e.Evidence.Id == openedEvidence) is { } opened)
             {
+                var place = project.IsOrganisationArea ? "Organisation" : project.Name;
                 await this.StartVisitAsync(id, Domain.ActivityLog.VisitKind.Evidence, openedEvidence, activeTab, $"Evidence: {opened.Evidence.Title} ({place})", cancellationToken);
                 await this.ShowSeenByAsync(Domain.ActivityLog.VisitKind.Evidence, openedEvidence, cancellationToken);
+                await this.ShowWhoIsHereAsync(id, activeTab, cancellationToken);
             }
             else
             {
-                await this.StartVisitAsync(id, Domain.ActivityLog.VisitKind.Tab, null, activeTab, $"{place} – {tabTitle}", cancellationToken);
+                await StartTabVisitAsync(shellView, cancellationToken);
             }
 
-            await this.ShowWhoIsHereAsync(id, activeTab, cancellationToken);
-            return View(new ProjectDetailsViewModel(
+            return View(new ProjectPage(shellView, null, new ProjectDetailsViewModel(
                 project,
                 await _frameworks.ListAsync(cancellationToken),
                 await _workItems.ListAsync(id, cancellationToken) ?? [],
@@ -369,7 +362,6 @@ namespace ComplianceTracker.Web.Controllers
                 Search = q,
                 ComplianceFilter = ComplianceFilters.Find(show),
                 LinkPage = linkPage,
-                Risks = risks,
                 AllRisks = allRisks,
                 Classifications = classified,
                 SecurityEvents = securityEvents,
@@ -398,20 +390,22 @@ namespace ComplianceTracker.Web.Controllers
                 ChecklistEvidence = activeTab is ProjectTabs.Overview && overview.Checklist is { Missing.Count: > 0 }
                     ? (await evidenceRepository.ListActiveAsync(id, cancellationToken)).OrderBy(e => e.Title).Select(e => (e.Id, e.Title)).ToList()
                     : [],
-                Audits = await audits.ForProjectAsync(id, cancellationToken), // US-134
-                RiskDrafts = activeTab is ProjectTabs.Risks ? await riskDrafts.OpenAsync(id, cancellationToken) : [], // US-112
+                Audits = shell.Audits, // US-134
                 HasIso27001 = activeTab is ProjectTabs.Reports && project.IsOrganisationArea && await soa.ForOrganizationAsync(cancellationToken) is not null, // US-053
                 SbomFilter = q,
-                RiskStatusFilter = status,
-                RiskLevelFilter = level,
-                OnlyReviewDue = due == "1",
-                OnlyNothingBehind = nothing == "1",
-                RiskCell = RiskCells.Parse(cell), // US-147
-                RiskMatrixAfter = RiskMatrix.IsAfter(matrix), // US-203
-                RiskInPanel = risk is { } inPanel && allRisks.Any(r => r.Id == inPanel) ? inPanel : null,
                 RiskBacking = backing,
                 Now = now
-            });
+            }));
+        }
+
+        // US-219 R1: opening a tab is a visit; R3: who else is on the tab now. A write of its own, after the tab is
+        // loaded, so the loaders only read and a page that is not found is no visit (US-229).
+        private async Task StartTabVisitAsync(ProjectShellView shell, CancellationToken cancellationToken)
+        {
+            var place = shell.Project.IsOrganisationArea ? "Organisation" : shell.Project.Name;
+            var tabTitle = ProjectTabs.For(shell.Project).FirstOrDefault(t => t.Slug == shell.Tab).Title ?? shell.Tab;
+            await this.StartVisitAsync(shell.Project.Id, Domain.ActivityLog.VisitKind.Tab, null, shell.Tab, $"{place} – {tabTitle}", cancellationToken);
+            await this.ShowWhoIsHereAsync(shell.Project.Id, shell.Tab, cancellationToken);
         }
 
         // US-228 R1, R5: after an action, the page the form came from (its ReturnAddress); a form that names no page goes to

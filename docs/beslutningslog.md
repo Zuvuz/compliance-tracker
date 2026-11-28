@@ -2886,6 +2886,22 @@ Beslutninger truffet under arbejdet med [domænemodellen](domaenemodel.md). Hver
   - at fjerne de 114 `[OnDomainError]`-attributter
   - at tage andre controllere med nu
 
+### B183 – Én loader pr. fane på projektsiden (US-229–235)
+
+- **Beslutning:**
+  - **Typede loaders i Application:** hver fane får sin egen `IProjectTabLoader<TRequest, TDto>`, fx `RiskTabLoader`. En loader læser kun (CQS) og kender hverken adresser, slugs eller views. Null betyder, at projektet ikke er brugerens eget, og siden viser "not found". DTO'erne må pege på Domain-entiteter og eksisterende view-records.
+  - **Register i Web:** hver fane har en lille handler (`IProjectTab`) med sin slug og de sider, den findes på (projekt, organisationsområde eller begge). Alle handlere samles fra DI i `ProjectTabRegistry` på (slug, område). Handleren læser fanens filtre fra adressen, tjekker sin egen `sub`/`req` og vælger partial og model.
+  - **Skallen:** `ProjectShellQuery` henter præcis det, headeren og fanebjælken viser: projekt, organisation og audits til certifikat-badges.
+  - **Adgangsloggen:** besøget skrives af controlleren som sit eget kald, efter at fanen er hentet. Så skriver loaderne aldrig, og en side, der ikke findes, bliver ikke et besøg.
+  - **Gradvis flytning:** `ProjectPage(Shell, Partial, Content)` er sidens model. En fane uden handler kører den gamle kode med `ProjectDetailsViewModel`, indtil US-235 fjerner den.
+  - **Uændret opførsel:** samme adresser, samme HTML, og forespørgselsgrænserne må ikke gå op. Risks-fanen er mønsteret. Den henter ikke længere rammer og user stories, som den aldrig viste.
+- **Begrundelse:** `Details` var én metode med 24 injicerede services, som kendte alle faner. Hver fanes data kunne hverken ændres eller testes for sig.
+- **Fravalgt:**
+  - at hente faner med fetch uden genindlæsning
+  - en `switch` i controlleren i stedet for et register
+  - registeret i Application, fordi slugs og partials hører til Web
+  - at lade loaderne skrive besøget i adgangsloggen
+
 ## Spørgsmål til klassediagrammet
 
 Der er ingen åbne spørgsmål. De første spørgsmål fra oktober 2026 er besvaret sådan:

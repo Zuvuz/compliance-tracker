@@ -102,6 +102,10 @@ namespace ComplianceTracker.Application
             services.AddScoped<WorkItemQueries>();
             services.AddScoped<ComplianceQueries>();
             services.AddScoped<RiskQueries>();
+
+            // US-229: the project page's shell and one loader per tab
+            services.AddScoped<Projects.Tabs.ProjectShellQuery>();
+            services.AddScoped<Projects.Tabs.IProjectTabLoader<RiskTabRequest, RiskTabDto>, RiskTabLoader>();
             services.AddScoped<ClassificationService>(); // US-026
             services.AddScoped<Security.SecurityEventService>(); // US-073
 

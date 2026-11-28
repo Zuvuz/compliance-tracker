@@ -1,6 +1,6 @@
 @* US-134 R3: a badge per valid (or expired) certificate of the project or the organisation; #certificate-badges *@
 @using ComplianceTracker.Domain.Audits
-@model ProjectDetailsViewModel
+@model ProjectShellView
 @if (Model.Audits is { } audits && audits.Badges.Count > 0)
 {
     <p class="mb-1" id="certificate-badges">
