@@ -1,9 +1,10 @@
 @* US-042: the project's risk register, a 5×5 matrix of the open risks, and filters.
    Ids and classes used by the tests: #add-risk-link, #risk-filter, #risk-matrix with cells data-likelihood / data-impact,
    #risks-table rows risk-row (data-title) with risk-level, risk-status, risk-flags, and #no-risks.
-   US-165: .risk-residual next to the level ("→ Medium" or "→ –"), and the flags .residual-to-set and .residual-to-review. *@
+   US-165: .risk-residual next to the level ("→ Medium" or "→ –"), and the flags .residual-to-set and .residual-to-review.
+   US-229: its own model, from the Risks tab's loader (RisksProjectTab). *@
 @using ComplianceTracker.Domain.Risks
-@model ProjectDetailsViewModel
+@model RiskTabViewModel
 @{
     var project = Model.Project;
     // US-168 R2: the shared colours of the risk levels

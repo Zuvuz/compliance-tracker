@@ -315,8 +315,8 @@ namespace ComplianceTracker.Web.Models
         // US-220: the Link tab's three columns; null on the other tabs
         public LinkPage? LinkPage { get; init; }
 
-        // US-042: the Risks tab's register (already filtered), the filters and the time for "Review due"
-        public IReadOnlyList<Risk> Risks { get; init; } = [];
+        // US-048 R3: the project's risks, for the Overview's counts and a requirement's page (the Risks tab has its own
+        // model since US-229: RiskTabViewModel)
         public IReadOnlyList<Risk> AllRisks { get; init; } = [];
 
         // US-026: each built-in regulation the project follows, with its class (Overview tab)
@@ -372,27 +372,11 @@ namespace ComplianceTracker.Web.Models
         // US-134: the project's and the organisation's audits, for the header's certificate badge and the Overview
         public Application.Audits.AuditOverview? Audits { get; init; }
 
-        // US-112: the AI agent's open drafts, on the Risks tab
-        public IReadOnlyList<Domain.Risks.RiskDraft> RiskDrafts { get; init; } = [];
-
         // US-107 R3: the organisation's GitHub Projects to choose from
         public IReadOnlyList<Application.WorkItems.GitHubProjectInfo> GitHubProjectChoices { get; init; } = [];
-        public string? RiskStatusFilter { get; init; }
-        public string? RiskLevelFilter { get; init; }
-        public bool OnlyReviewDue { get; init; }
 
-        // US-147 R2: the matrix cell the register is filtered to, or null
-        public (int Likelihood, int Impact)? RiskCell { get; init; }
-
-        // US-203 R2: the risk matrix after the measures (by the residual) instead of before
-        public bool RiskMatrixAfter { get; init; }
-
-        // US-147 R4: the risk opened in the side panel (its own address), or null
-        public Guid? RiskInPanel { get; init; }
-
-        // US-159: what stands behind each risk (Risks tab and Overview), and the filter for those with nothing behind them
+        // US-159: what stands behind each risk, for the Overview's counts
         public IReadOnlyDictionary<Guid, Application.Risks.RiskBacking> RiskBacking { get; init; } = new Dictionary<Guid, Application.Risks.RiskBacking>();
-        public bool OnlyNothingBehind { get; init; }
         public DateTime Now { get; init; }
 
         // The framework of the chosen sub-tab, or the first one (R3)
